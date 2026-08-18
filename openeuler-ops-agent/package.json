@@ -1,0 +1,12 @@
+{
+  "name": "openeuler-ops-agent",
+  "version": "1.0.0",
+  "description": "openEuler 运维 Agent — 覆盖16个场景的智能运维助手，在 opencode 中直接对话使用",
+  "type": "module",
+  "bin": { "openeuler-ops-agent": "./bin/cli.js" },
+  "files": ["agent.md","bin/","scripts/","install.sh","README.md"],
+  "scripts": { "postinstall": "node bin/cli.js configure" },
+  "keywords": ["openeuler","ops","agent","运维","linux","sre"],
+  "engines": { "node": ">=18.0.0" },
+  "license": "MulanPSL-2.0"
+}

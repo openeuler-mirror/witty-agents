@@ -1,0 +1,34 @@
+{
+  "name": "shennong-crash-agent",
+  "version": "0.10.3",
+  "description": "Minimal OpenCode plugin for kernel crash diagnosis using Shennong agent and core skills.",
+  "keywords": ["shennong", "kernel-crash", "diagnosis", "opencode-plugin"],
+  "license": "MIT",
+  "type": "module",
+  "main": "dist/index.js",
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "skills",
+    "postinstall.mjs"
+  ],
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "postinstall": "node postinstall.mjs"
+  },
+  "dependencies": {
+    "@opencode-ai/plugin": "^1.1.19",
+    "@opencode-ai/sdk": "^1.1.19"
+  },
+  "devDependencies": {
+    "tsup": "^8.5.1",
+    "typescript": "^5.7.0",
+    "@types/node": "^20.0.0"
+  }
+}

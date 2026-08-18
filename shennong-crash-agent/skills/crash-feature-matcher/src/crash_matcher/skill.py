@@ -1,0 +1,384 @@
+"""MCP 工具接口"""
+
+import logging
+from typing import Optional
+
+from fastmcp import FastMCP
+from pydantic import Field
+
+from .models import CrashFeatures, HostFeatures, CrashIssue, CrashCase, MatchResult
+from .extractor import parse_dmesg, compute_signature, parse_host_from_dmesg, run_crash_analysis
+from .matcher import match_crash
+from .matcher.community_retriever import retrieve_community_cases
+from .knowledge import RAGClient
+from .config import Config
+
+logger = logging.getLogger(__name__)
+
+mcp = FastMCP("CrashFeatureMatcher")
+
+
+def _get_rag() -> Optional[RAGClient]:
+    rag_cfg = Config().get().rag
+    if rag_cfg.knowledge_kb_id:
+        return RAGClient()
+    return None
+
+
+# ============================================================
+# analyze_crash
+# ============================================================
+
+@mcp.tool()
+async def analyze_crash(
+    dmesg_text: str = Field(default="", description="dmesg 或 vmcore-dmesg 日志的完整文本"),
+    dmesg_file: str = Field(default="", description="dmesg 日志文件路径(与 dmesg_text 二选一)"),
+) -> dict:
+    """
+    分析 Linux 内核宕机日志, 提取特征值并匹配已知问题。
+
+    输入 dmesg 文本或文件路径, 返回提取的宕机特征 + 匹配结果。
+    """
+    text = dmesg_text
+    if not text and dmesg_file:
+        try:
+            with open(dmesg_file) as f:
+                text = f.read()
+        except Exception as e:
+            return {"error": f"failed to read file: {e}"}
+    if not text:
+        return {"error": "provide dmesg_text or dmesg_file"}
+
+    feature, host, has_hw = parse_dmesg(text)
+    host_full = parse_host_from_dmesg(text)
+    for k, v in host_full.model_dump().items():
+        if v and not getattr(host, k):
+            setattr(host, k, v)
+
+    feature_sig = compute_signature(feature)
+    rag = _get_rag()
+    if not rag:
+        return {"error": "RAG knowledge base not configured"}
+
+    result = await match_crash(feature, host, rag)
+
+    # shennong schema 对齐: 仅输出 schema 允许的字段 (additionalProperties:false)
+    crash_dict = {
+        "crash_time": feature.crash_time,
+        "signature": feature_sig,
+        "bug_type": feature.bug_type,
+        "bug_key": feature.bug_key,
+        "bug_summary": feature.bug_summary,
+        "rip": feature.rip,
+        "rip_function": feature.rip_function,
+        "rip_offset": feature.rip_offset,
+        "related_modules": feature.related_modules,
+        "call_trace_signature": feature.call_trace_signature,
+        "call_trace_text": feature.call_trace_text,
+        "kernel_version": host.kernel_version,
+        "anomaly_features": feature.anomaly_features,
+    }
+    host_dict = {
+        "host_name": host.host_name,
+        "kernel_version": host.kernel_version,
+        "cpu_model": host.cpu_model,
+        "machine_model": host.machine_model,
+        "cpu_num": host.cpu_num,
+        "memory_size": host.memory_size,
+        "modules": host.modules,
+    }
+
+    return {
+        "signature": feature_sig,
+        "crash_features": crash_dict,
+        "host_features": host_dict,
+        "match_result": {
+            "matched": result.matched,
+            "fingerprint_match": result.fingerprint_match,
+            "knowledge": result.knowledge.model_dump() if result.knowledge else None,
+            "similar_cases_count": len(result.similar_cases),
+            "suggestions": result.suggestions,
+        },
+        "missing_fields": result.missing_fields,
+    }
+
+
+# ============================================================
+# analyze_vmcore — local crash analysis (no RAG)
+# ============================================================
+
+@mcp.tool()
+async def analyze_vmcore(
+    vmcore: str = Field(..., description="vmcore file path"),
+    vmlinux: str = Field(..., description="vmlinux file path"),
+) -> dict:
+    """Analyze vmcore + vmlinux via crash command (local extraction only, no RAG)."""
+    feature, host, _has_hw = run_crash_analysis(vmcore, vmlinux)
+    if feature is None:
+        return {"error": "crash command failed"}
+
+    feature_sig = compute_signature(feature) if feature.rip else ""
+
+    return {
+        "signature": feature_sig,
+        "crash_features": {
+            "crash_time": feature.crash_time,
+            "signature": feature_sig,
+            "bug_type": feature.bug_type,
+            "bug_key": feature.bug_key,
+            "bug_summary": feature.bug_summary,
+            "rip": feature.rip,
+            "rip_function": feature.rip_function,
+            "rip_offset": feature.rip_offset,
+            "related_modules": feature.related_modules,
+            "call_trace_signature": feature.call_trace_signature,
+            "call_trace_text": feature.call_trace_text,
+            "kernel_version": host.kernel_version,
+            "anomaly_features": feature.anomaly_features,
+        },
+        "host_features": {
+            "host_name": host.host_name,
+            "kernel_version": host.kernel_version,
+            "cpu_model": host.cpu_model,
+            "machine_model": host.machine_model,
+            "cpu_num": host.cpu_num,
+            "memory_size": host.memory_size,
+            "modules": host.modules,
+        },
+    }
+
+
+# ============================================================
+# query_knowledge
+# ============================================================
+
+@mcp.tool()
+async def query_knowledge(
+    bug_type: str = Field(default="", description="Bug 类型过滤"),
+    rip_function: str = Field(default="", description="RIP 函数名过滤"),
+    keyword: str = Field(default="", description="语义搜索关键词"),
+    limit: int = Field(default=5, description="返回数量"),
+) -> dict:
+    """查询已知宕机问题知识库"""
+    rag = _get_rag()
+    if not rag:
+        return {"error": "RAG knowledge base not configured"}
+    try:
+        if rip_function:
+            issues = await rag.search_issues_by_rip_function(rip_function, bug_type, limit)
+        else:
+            issues = await rag.search_issues_semantic(keyword or bug_type or "", bug_type, limit)
+        return {"total": len(issues), "issues": [i.model_dump() for i in issues]}
+    finally:
+        await rag.close()
+
+
+# ============================================================
+# query_cases
+# ============================================================
+
+@mcp.tool()
+async def query_cases(
+    knowledge_id: str = Field(default="", description="已知问题ID"),
+    host_name: str = Field(default="", description="主机名过滤"),
+    limit: int = Field(default=10, description="返回数量"),
+) -> dict:
+    """查询历史宕机案例库"""
+    rag = _get_rag()
+    if not rag:
+        return {"error": "RAG knowledge base not configured"}
+    try:
+        cases = await rag.search_cases_by_knowledge_id(knowledge_id, limit) if knowledge_id else []
+        return {"total": len(cases), "cases": [c.model_dump() for c in cases]}
+    finally:
+        await rag.close()
+
+
+# ============================================================
+# query_community_cases
+# ============================================================
+
+@mcp.tool()
+async def query_community_cases(
+    query_text: str = Field(..., description="查询文本/宕机关键词"),
+    kernel_version: str = Field(default="", description="内核版本, 用于逻辑过滤"),
+) -> dict:
+    """L1/L2/L3 检索社区案例 (Linux/openEuler, 返回top3)"""
+    rag = _get_rag()
+    if not rag:
+        return {"error": "RAG knowledge base not configured"}
+    try:
+        result = await retrieve_community_cases(query_text, kernel_version, rag)
+        return {
+            "matched": result.matched,
+            "stop_reason": result.stop_reason,
+            "total_candidates": result.total_candidates,
+            "cases": [c.model_dump() for c in result.cases],
+        }
+    except Exception as e:
+        logger.exception("query_community_cases failed")
+        return {"error": str(e)}
+    finally:
+        await rag.close()
+
+
+# ============================================================
+# add_knowledge
+# ============================================================
+
+@mcp.tool()
+async def add_knowledge(
+    bug_summary: str = Field(..., description="问题简要描述"),
+    bug_type: str = Field(..., description="Bug 类型"),
+    bug_key: str = Field(default="", description="Bug 关键字"),
+    fingerprints: str = Field(default="", description="指纹列表(逗号分隔, 空则自动生成)"),
+    rip: str = Field(default="", description="RIP 地址"),
+    rip_function: str = Field(default="", description="RIP 函数名"),
+    rip_offset: str = Field(default="", description="RIP 偏移量"),
+    related_modules: str = Field(default="", description="关联模块(逗号分隔)"),
+    call_trace_text: str = Field(default="", description="调用栈文本"),
+    call_trace_signature: str = Field(default="", description="调用栈函数签名(逗号分隔)"),
+    root_cause: str = Field(default="", description="根因分析"),
+    solution: str = Field(default="", description="解决方案"),
+    hotpatch: str = Field(default="", description="热补丁名称"),
+) -> dict:
+    """向知识库中录入一条已知宕机问题"""
+    rag = _get_rag()
+    if not rag:
+        return {"error": "RAG knowledge base not configured"}
+
+    modules_list = [m.strip() for m in related_modules.split(",") if m.strip()]
+    trace_list = [f.strip() for f in call_trace_signature.split(",") if f.strip()]
+    fp_list = [f.strip() for f in fingerprints.split(",") if f.strip()]
+
+    if not fp_list:
+        from .extractor.signature import compute_issue_signature
+        sig = compute_issue_signature(bug_type, modules_list, rip_function, rip_offset)
+        fp_list = [sig]
+
+    issue = CrashIssue(
+        fingerprints=fp_list,
+        bug_type=bug_type,
+        bug_key=bug_key or bug_type,
+        bug_summary=bug_summary,
+        rip=rip,
+        rip_function=rip_function,
+        rip_offset=rip_offset,
+        related_modules=modules_list,
+        call_trace_signature=trace_list,
+        call_trace_text=call_trace_text,
+        root_cause=root_cause,
+        solution=solution,
+        hotpatch=hotpatch,
+        case_count=0,
+    )
+
+    try:
+        json_id = await rag.create_issue(issue)
+        return {"success": True, "json_id": json_id, "knowledge_id": issue.knowledge_id}
+    except Exception as e:
+        return {"error": str(e)}
+    finally:
+        await rag.close()
+
+
+# ============================================================
+# merge_knowledge
+# ============================================================
+
+@mcp.tool()
+async def merge_knowledge(
+    source_ids: str = Field(..., description="要合并的 knowledge_id 列表(逗号分隔)"),
+    target_bug_summary: str = Field(..., description="合并后的 issue 摘要"),
+    target_root_cause: str = Field(default="", description="合并后的根因分析"),
+    target_solution: str = Field(default="", description="合并后的解决方案"),
+    target_hotpatch: str = Field(default="", description="合并后的热补丁"),
+) -> dict:
+    """
+    合并多条相似知识为一个, 保留所有指纹。
+
+    合并后任意指纹命中即可 L1 匹配。
+    """
+    rag = _get_rag()
+    if not rag:
+        return {"error": "RAG knowledge base not configured"}
+
+    ids = [s.strip() for s in source_ids.split(",") if s.strip()]
+    if len(ids) < 2:
+        return {"error": "至少需要 2 个 knowledge_id 进行合并"}
+
+    try:
+        # 拉取所有源 issue (通过语义搜索找 approximate match, 再用 knowledge_id 过滤)
+        all_issues = await rag.search_issues_semantic("", "", top_k=250)
+        sources = [i for i in all_issues if i.knowledge_id in ids]
+
+        if len(sources) < 2:
+            return {"error": f"只找到 {len(sources)}/{len(ids)} 个 issue"}
+
+        # 合并指纹
+        all_fps: list[str] = []
+        all_versions: set[str] = set()
+        total_cases = 0
+        best_hp = target_hotpatch
+        best_sol = target_solution
+        best_wiki = ""
+        first_seen = ""
+        last_seen = ""
+
+        for s in sources:
+            for fp in (s.fingerprints or []):
+                if fp and fp not in all_fps:
+                    all_fps.append(fp)
+            all_versions.update(s.kernel_versions)
+            total_cases += s.case_count or 0
+            if not best_hp and s.hotpatch:
+                best_hp = s.hotpatch
+            if not best_sol and s.solution:
+                best_sol = s.solution
+            if not best_wiki and s.history_wiki:
+                best_wiki = s.history_wiki
+            if not first_seen or (s.first_seen and s.first_seen < first_seen):
+                first_seen = s.first_seen or ""
+            if not last_seen or (s.last_seen and s.last_seen > last_seen):
+                last_seen = s.last_seen or ""
+
+        merged = CrashIssue(
+            fingerprints=all_fps,
+            bug_type=sources[0].bug_type,
+            bug_key=sources[0].bug_key,
+            bug_summary=target_bug_summary,
+            rip=sources[0].rip if sources else "",
+            rip_function=sources[0].rip_function if sources else "",
+            rip_offset=sources[0].rip_offset if sources else "",
+            related_modules=list(set(m for s in sources for m in s.related_modules)),
+            call_trace_signature=sources[0].call_trace_signature if sources else [],
+            call_trace_text=sources[0].call_trace_text if sources else "",
+            kernel_versions=sorted(all_versions),
+            root_cause=target_root_cause,
+            solution=best_sol,
+            hotpatch=best_hp,
+            history_wiki=best_wiki,
+            case_count=total_cases,
+            first_seen=first_seen,
+            last_seen=last_seen,
+        )
+
+        json_id = await rag.create_issue(merged)
+        return {
+            "success": True,
+            "json_id": json_id,
+            "knowledge_id": merged.knowledge_id,
+            "fingerprints": all_fps,
+            "merged_count": len(sources),
+            "total_cases": total_cases,
+        }
+    except Exception as e:
+        return {"error": str(e)}
+    finally:
+        await rag.close()
+
+
+@mcp.tool()
+async def get_stats() -> dict:
+    """获取宕机统计概览"""
+    return {"message": "not implemented", "stats": {}}

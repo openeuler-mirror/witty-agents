@@ -1,0 +1,120 @@
+[rag]
+base_url = "http://localhost:9988"
+knowledge_kb_id = "3438eb43-9d6a-4435-83a7-88ea55b1c452"
+cases_kb_id = "f1008c28-4406-43f1-89d9-d31eca41258c"
+linux_community_kb_id = "8bb4dbdb-53fc-4fcc-a160-f7b08412548c"
+openeuler_community_kb_id = "dfd38576-104c-4e28-baa1-ce66becbbcbe"
+access_key = "34b7cfdcd1d47fc3d11c784c6e981705"
+timeout = 30.0
+
+[matcher]
+stack_similarity_threshold = 0.75
+dmesg_analysis_window_seconds = 180
+max_log_line_in_db = 300
+rip_fuzzy_offset = 8
+
+[community]
+score_threshold = 80      # 兼容字段，当前由 l1_threshold 接管
+top_k_final = 3
+l1_top_k = 10             # L1 每社区召回数。评估表明 5 过低会截断正确案例；10 在当前 API 速率限制下较均衡，可上调至 15 若使用更高配额
+l3_top_k = 10             # L3 每社区召回数，与 L1 保持一致以扩大召回面
+scoring_mode = "llm"      # keyword | llm | hybrid
+
+# 分模式阈值：keyword 过严，需降低；llm 可保持较高
+keyword_l1_threshold = 60
+keyword_l2_threshold = 45
+llm_l1_threshold = 75
+llm_l2_threshold = 55
+hybrid_l1_threshold = 70
+hybrid_l2_threshold = 50
+
+# 多查询融合
+enable_query_expansion = true
+expansion_variants = 3
+expansion_include_kernel = true
+expansion_include_english = true
+
+[community.advanced]
+enable_iterative_retrieval = false
+max_iteration_rounds = 3
+enable_llm_query_generation = false
+logical_expression_strategy = "semantic_only"
+
+[community.commit_analysis]
+enabled = false
+max_commits_to_analyze = 5
+
+[llm_scorer]
+enabled = true
+api_key = "sk-kljekpatgfcpasgnxdubhloovfzaydyyzydsufcwvuvssjab"
+base_url = "https://api.siliconflow.cn/v1"
+model = "Qwen/Qwen2.5-14B-Instruct"
+timeout = 60.0
+temperature = 0.1
+max_tokens = 256
+prompt_template = ""  # 使用默认 prompt
+keyword_weight = 0.3
+llm_weight = 0.7
+
+[[l2_search_rules]]
+bug_key_patterns = ["NULL pointer dereference", "kernel paging request", "page fault for address", "general protection fault", "stack guard page was hit", "NX-protected page", "execute userspace code", "Corrupted page table", "WARNING"]
+query_from = "rip_function"
+search_mode = "like"
+ratio = 0.3
+semantic_keys = []
+filter_bug_type = true
+strategy = "exact_rip_with_bugkey"
+
+[[l2_search_rules]]
+bug_key_patterns = ["hard LOCKUP", "soft lockup"]
+query_from = "rip_function"
+search_mode = "like"
+ratio = 0.3
+semantic_keys = []
+filter_bug_type = true
+strategy = "fuzzy_rip_offset"
+
+[[l2_search_rules]]
+bug_key_patterns = ["invalid opcode"]
+query_from = "rip_function"
+search_mode = "like"
+ratio = 0.3
+semantic_keys = []
+filter_bug_type = true
+strategy = "exact_rip_with_bugkey"
+
+[[l2_search_rules]]
+bug_key_patterns = ["kernel BUG at"]
+query_from = "call_trace_top"
+search_mode = "like"
+ratio = 0.3
+semantic_keys = []
+filter_bug_type = true
+strategy = "match_bug_function"
+
+[[l2_search_rules]]
+bug_key_patterns = ["list_add corruption", "list_del corruption"]
+query_from = "rip_function"
+search_mode = "like"
+ratio = 0.3
+semantic_keys = []
+filter_bug_type = false
+strategy = "exact_rip_with_bugkey"
+
+[[l2_search_rules]]
+bug_key_patterns = ["Bad page map", "Bad page state", "KASAN:", "KFENCE:", "rcu_sched", "rcu_preempt", "blocked", "double fault"]
+query_from = "call_trace_text"
+search_mode = "semantic"
+ratio = 0.3
+semantic_keys = [["call_trace_text"]]
+filter_bug_type = true
+strategy = "stack_similarity"
+
+[[l2_search_rules]]
+bug_key_patterns = ["*"]
+query_from = "call_trace_text"
+search_mode = "semantic"
+ratio = 0.3
+semantic_keys = [["call_trace_text"]]
+filter_bug_type = true
+strategy = "stack_similarity"

@@ -1,0 +1,33 @@
+keywords_regex_and_scores:
+  normal:
+    go: 1.7
+    Golang: 1.7
+    go routine: 1.6
+  anomalous:
+    goroutine \\d+ \\[(running|sleeping|waiting)\\]: 2.0
+    ^goroutine \\d+:$: 1.9
+    created by (\\w+\\.)+\\w+ in .+:\\d+: 1.9
+    at (\\w+\\.)+\\w+(.+:\\d+): 1.8
+    'panic: ': 1.8
+    'runtime error: ': 1.8
+    'interface conversion: ': 1.6
+mandatory:
+  'goroutine \\d+ ':
+  - ^\\s+at (\\w+\\.)+\\w+(.+:\\d+)
+  - ^\\s+created by (\\w+\\.)+\\w+
+  - ^\\s+
+  - $
+  'panic: ':
+  - 'goroutine \\d+ '
+  - 'runtime error: '
+  - at (\\w+\\.)+\\w+(.+:\\d+)
+  - ^\\s+
+  go:
+  - \\b\\d+\\.\\d+\\.\\d+\\b
+  - deadlock
+  - nil pointer dereference
+  - index out of range
+capture_patterns:
+  timestamp: \\b(?:\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?Z?|\\d{4}-\\d{2}-\\d{2}\\s\\d{2}:\\d{2}:\\d{2}|\\d{10,13})\\b
+  level: \\b(?:DEBUG|INFO|WARN|WARNING|ERROR|FATAL|PANIC|panic|CRITICAL|TRACE|UNKNOWN)\\b
+  ip: \\b(?:(?:25[0-5]|2[0-4]\\d|[01]?\\d\\d?)\\.){3}(?:25[0-5]|2[0-4]\\d|[01]?\\d\\d?)(?::\\d{1,5})?(?:\\/\\d{1,2})?\\b

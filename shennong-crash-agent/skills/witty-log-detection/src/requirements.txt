@@ -1,0 +1,37 @@
+# Machine Learning & Data Processing
+numpy==1.26.4
+scikit-learn==1.7.0
+
+# Deep Learning & Embeddings
+faiss-cpu==1.13.2
+
+# NLP Processing
+jieba==0.42.1
+
+# Web & API
+requests==2.32.2
+openai==1.93.0
+
+# Image Processing & OCR
+Pillow==10.4.0
+opencv-python==4.9.0.80
+
+# Configuration & Validation
+PyYAML==6.0.2
+pydantic==2.11.7
+
+# mcp
+mcp==1.9.4
+
+# toml
+toml==0.10.2
+
+# os info
+py-cpuinfo==9.0.0
+
+# OCR
+paddleocr==2.9.1
+paddlepaddle==2.6.2
+
+# Python version constraint (备注：requirements.txt 无法强制指定Python版本，仅作说明)
+# requires-python: ==3.11.6

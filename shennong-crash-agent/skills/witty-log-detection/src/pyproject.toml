@@ -1,0 +1,49 @@
+[project]
+name = "witty_log_detection"
+version = "0.1.0"
+authors = [
+  { name = "zxstty", email = "zhaojiaqi18@huawei.com" }
+]
+description = "Log detection project based on machine learning and NLP"
+requires-python = "==3.11.6"
+dependencies = [
+  # Machine Learning & Data Processing
+  "numpy==1.26.4",
+  "scikit-learn==1.7.0",
+
+  # Deep Learning & Embeddings
+  "faiss-cpu==1.13.2",
+
+  # NLP Processing
+  "jieba==0.42.1",
+
+  # Web & API
+  "requests==2.32.2",
+  "openai==1.93.0",
+
+  # Image Processing & OCR
+  "Pillow==10.4.0",
+  "opencv-python==4.9.0.80",
+
+  # Configuration & Validation
+  "PyYAML==6.0.2",
+  "pydantic==2.11.7",
+
+  # mcp
+  "mcp==1.17.0",
+
+  # toml
+  "toml == 0.10.2",
+
+  # os info
+  "py-cpuinfo==9.0.0",
+
+  # OCR
+  "paddleocr==2.9.1",
+  "paddlepaddle==2.6.2",
+  "setuptools==82.0.1"
+]
+
+[[tool.uv.index]]
+name = "aliyun"
+url = "https://mirrors.aliyun.com/pypi/simple/"

@@ -1,0 +1,33 @@
+keywords_regex_and_scores:
+  normal:
+    'c:': 1.7
+    gcc: 1.7
+    clang: 1.7
+  anomalous:
+    \\#\\d+ 0x[0-9a-fA-F]+ in \\w+ at .+:\\d+: 2.0
+    'Segmentation fault ': 1.9
+    'Aborted ': 1.9
+    '(\\w+)\\.c:\\d+: \\w+: ': 1.8
+    undefined reference to `\\w+\\': 1.8
+    implicit declaration of function: 1.8
+    segfault: 1.6
+mandatory:
+  \\#\\d+ 0x[0-9a-fA-F]+:
+  - in \\w+ at .+:\\d+
+  - from .+:\\d+
+  - ^\\s+
+  - '0x[0-9a-fA-F]+ in \\?  '
+  '(\\w+)\\.c:\\d+:':
+  - '\\w+: .+'
+  - 'warning: .+'
+  - 'note: .+'
+  - ^\\s+
+  c:
+  - \\b\\d+\\.\\d+\\.\\d+\\b
+  - null pointer dereference
+  - buffer overflow
+  - stack overflow
+capture_patterns:
+  timestamp: \\b(?:\\d{4}-\\d{2}-\\d{2}\\s\\d{2}:\\d{2}:\\d{2}|\\[\\s*\\d+\\.\\d+\\]|(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\\s+\\d{1,2}\\s+\\d{2}:\\d{2}:\\d{2}|\\d{10,13})\\b
+  level: \\b(?:emerg|alert|crit|err|warning|notice|info|debug|DEBUG|INFO|WARNING|ERROR|CRITICAL|FATAL|UNKNOWN|LOG_ERR|LOG_INFO|LOG_WARNING)\\b
+  ip: \\b(?:(?:25[0-5]|2[0-4]\\d|[01]?\\d\\d?)\\.){3}(?:25[0-5]|2[0-4]\\d|[01]?\\d\\d?)(?::\\d{1,5})?(?:\\/\\d{1,2})?\\b

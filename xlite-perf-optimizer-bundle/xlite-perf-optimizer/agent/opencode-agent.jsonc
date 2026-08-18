@@ -1,0 +1,18 @@
+{
+  "agent": {
+    "xlite-perf-optimizer": {
+      "description": "xlite 性能优化专家 — 自动分析算子瓶颈、设计并实现优化、在昇腾容器内验证、生成 HTML 报告并支持原子回退",
+      "prompt": "{file:~/.config/opencode/agents/xlite-perf-optimizer/agent.md}",
+      "skills": [
+        "xlite-analyzer",
+        "xlite-complexity-estimator",
+        "xlite-operator-dev",
+        "xlite-atomic-journal",
+        "xlite-profiler",
+        "xlite-ascend-runner",
+        "xlite-gitcode-runner",
+        "xlite-html-reporter"
+      ]
+    }
+  }
+}

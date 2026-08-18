@@ -1,0 +1,36 @@
+keywords_regex_and_scores:
+  normal:
+    'Kdump:': 2.0
+    vmcore: 1.9
+    crash>: 1.8
+    kdump: 1.5
+    core dump: 1.4
+  anomalous:
+    'PANIC: ': 1.8
+    'Vmlinux Path:': 1.7
+    bt\\s+#\\d+: 1.7
+    'PID: \\d+ \\(comm: \\w+\\)': 1.7
+    'RIP: |RSP: |RAX: ': 1.6
+    Segmentation fault: 1.6
+    'Kernel panic - not syncing:': 1.6
+mandatory:
+  crash> bt:
+  - '#\\d+\\s+[0-9a-fx]+\\s+'
+  - in \\w+ at .+:\\d+
+  - ^\\s+
+  - 'RIP: [0-9a-fx]+'
+  - 'RSP: [0-9a-fx]+'
+  'PANIC: .+':
+  - 'CPU: \\d+ PID: \\d+'
+  - 'Call Trace:'
+  - kernel \\[\\#\\d+\\]
+  - ^\\s+
+  vmcore:
+  - ELF64|ELF32
+  - x86_64|arm64|aarch64
+  - crash tool
+  - 'gdb:'
+capture_patterns:
+  timestamp: \\b(?:\\d{4}-\\d{2}-\\d{2}\\s\\d{2}:\\d{2}:\\d{2}\\.\\d+|\\[\\s*\\d+\\.\\d+\\]|(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\\s+\\d{1,2}\\s+\\d{2}:\\d{2}:\\d{2}|\\d{10,13})\\b
+  level: \\b(?:emerg|alert|crit|err|FATAL|PANIC|panic|DEBUG|INFO|WARNING|ERROR|CRITICAL|UNKNOWN|crash|fault|fatal)\\b
+  ip: \\b(?:(?:25[0-5]|2[0-4]\\d|[01]?\\d\\d?)\\.){3}(?:25[0-5]|2[0-4]\\d|[01]?\\d\\d?)(?::\\d{1,5})?(?:\\/\\d{1,2})?\\b

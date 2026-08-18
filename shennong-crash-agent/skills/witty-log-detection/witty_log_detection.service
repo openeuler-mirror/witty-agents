@@ -1,0 +1,19 @@
+[Unit]
+Description=Witty Log Detection MCP Server
+After=network.target
+Requires=network-online.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory={{WITTY_LOG_DETECTION_DIR}}
+Environment=PYTHONUNBUFFERED=1
+Environment=PYTHONPATH={{WITTY_LOG_DETECTION_DIR}}
+ExecStart={{PYTHON_CMD}} src/server.py
+Restart=on-failure
+RestartSec=10
+TimeoutStartSec=60
+TimeoutStopSec=30
+
+[Install]
+WantedBy=multi-user.target

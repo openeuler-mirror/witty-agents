@@ -1,0 +1,44 @@
+keywords_regex_and_scores:
+  normal:
+    'Receiving block': 1.5
+    'addStoredBlock': 1.5
+    'Received block': 1.5
+    'writeBlock': 1.2
+    'PacketResponder': 1.2
+    'DFSClient': 1.0
+    'NameSystem.allocateBlock': 1.0
+    'delete': 0.8
+    'Served block': 0.8
+    'Transmitted block': 0.8
+  anomalous:
+    'received exception': 2.0
+    'Exception java\\.io': 1.9
+    'Exception java\\.net': 1.9
+    'IOException': 1.8
+    'SocketTimeoutException': 1.8
+    'EOFException': 1.8
+    'InterruptedIOException': 1.8
+    'NoRouteToHostException': 1.8
+    'terminating': 1.5
+    'error': 1.5
+    'failed': 1.5
+    'timeout': 1.2
+    'Corrupt': 1.2
+mandatory:
+  'received exception':
+    - '^\\s+at '
+    - '^\\s+Caused by:'
+    - '^\\s+\\.\\.\\. '
+  'Exception java\\.io\\.IOException':
+    - '^\\s+at '
+    - '^\\s+Caused by:'
+    - '^\\s+\\.\\.\\. '
+  'terminating':
+    - '^\\s+at '
+    - '^\\s+Caused by:'
+    - '^\\s+\\.\\.\\. ' 
+capture_patterns:
+  timestamp: '\\b\\d{6}\\s+\\d{6}\\b'
+  level: '\\b(INFO|WARN|ERROR|DEBUG|TRACE|FATAL)\\b'
+  block_id: '\\bblk_-?\\d+\\b'
+  ip_address: '\\b(?:25[0-5]|2[0-4]\\d|[01]?\\d\\d?)(?:\\.(?:25[0-5]|2[0-4]\\d|[01]?\\d\\d?)){3}\\b'

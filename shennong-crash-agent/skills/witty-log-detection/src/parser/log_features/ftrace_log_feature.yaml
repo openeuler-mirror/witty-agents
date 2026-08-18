@@ -1,0 +1,36 @@
+keywords_regex_and_scores:
+  normal:
+    '# tracer:': 2.0
+    'ftrace:': 1.9
+    '^[\\|\\-]+ ': 1.8
+    'function_graph:': 1.8
+    ^[\\d\\.]+\\s+\\d+\\s+\\d+\\s+: 1.7
+    ^<idle>-0\\s+: 1.7
+    ^swapper/\\d+-\\d+\\s+: 1.7
+    ftrace: 1.5
+  anomalous:
+    'latency_top:': 1.6
+    'irqsoff:': 1.6
+    'preemptoff:': 1.6
+mandatory:
+  'function_graph:':
+  - ^[\\|\\-]+ \\w+\\+0x[0-9a-f]+
+  - ^[\\|\\-]+ \\w+\\(\\)
+  - ^\\s*\\d+us\\s+
+  - ^\\+ \\d+\\.\\d+us
+  - ^[\\|\\-]+$
+  '# tracer:':
+  - '#\\s+entries:\\s+\\d+'
+  - '#\\s+buf_size:\\s+\\d+'
+  - '#\\s+CPU:\\s+\\d+'
+  - '#\\s+print-parent:\\s+\\w+'
+  - ^#\\s+\\w+:\\s+.+
+  'ftrace:':
+  - ^\\d+\\.\\d+\\s+\\d+\\s+\\d+\\s+
+  - \\bCPU[:=]?\\s*\\d+\\b
+  - \\bPID[:=]?\\s*\\d+\\b
+  - \\bus\\b|\\bms\\b|\\bs\\b
+capture_patterns:
+  timestamp: \\b(?:\\d+\\.\\d+|\\d{4}-\\d{2}-\\d{2}\\s\\d{2}:\\d{2}:\\d{2}|\\d{10,13}|(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\\s+\\d{1,2}\\s+\\d{2}:\\d{2}:\\d{2})\\b
+  level: \\b(?:emerg|alert|crit|err|warning|notice|info|debug|TRACE|VERBOSE|DEBUG|INFO|WARNING|ERROR|CRITICAL|UNKNOWN)\\b
+  ip: \\b(?:(?:25[0-5]|2[0-4]\\d|[01]?\\d\\d?)\\.){3}(?:25[0-5]|2[0-4]\\d|[01]?\\d\\d?)(?::\\d{1,5})?(?:\\/\\d{1,2})?\\b

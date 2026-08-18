@@ -1,0 +1,55 @@
+# 日志解析配置主文件
+# 日志解析方法，可选值：base、log_detection_base_on_keywords、log_detection_base_on_clustering、log_detection_base_on_llm
+LOG_PARSE_METHOD = "log_detection_base_on_llm"
+
+# SQLite数据库文件路径
+SQL_LITE_DB_PATH = "log_detection_multi_process.db"
+
+# 基于嵌入的日志检测worker处理文件时的批大小
+EMBEDDING_WORKER_BATCH_SIZE = 128
+# 每行日志提取的核心词数量，用于减少embedding调用量
+TOP_CORE_WORDS_PER_LINE = 4
+
+# Embedding模型配置
+[EMBEDDING_MODEL]
+EMBEDDING_PROVIDER = "openai"
+EMBEDDING_END_POINT = "https://api.siliconflow.cn/v1/embeddings"
+EMBEDDING_API_KEY = ""
+EMBEDDING_MODEL_NAME = "BAAI/bge-m3"
+EMBEDDING_BATCH_SIZE = 64
+
+# LLM模型配置
+[LLM_MODEL]
+LLM_PROVIDER = "openai"
+LLM_END_POINT = "https://dashscope.aliyuncs.com/compatible-mode/v1"
+LLM_API_KEY = ""
+LLM_MODEL_NAME = "qwen3-max"
+LLM_MAX_TOKENS = 32000
+LLM_BATCH_SIZE = 32
+
+# 服务运行配置
+[RUN_CONFIG]
+RUN_HOST = "0.0.0.0"
+RUN_PORT = 12144
+
+# OCR配置
+[OCR_CONFIG]
+OCR_METHOD = "online" # 可选值：offline、online。offline 需要有效的 PaddleOCR 模型文件，默认 online 避免启动时加载模型失败。
+OCR_API_URL = ""
+
+# 日志解析特征配置
+[LOG_PARSE_CONFIG]
+# 要加载的日志类型，留空表示加载所有类型
+# 可用类型：dmesg、kdump、ftrace、bash、python、java、go、javascript、c、cpp、hdfs、unknown
+LOG_TYPES_TO_LOAD = []
+
+# vmcore解析配置
+[VMCORE]
+# vmcore解析默认使用的内核调试文件vmlinux路径，留空则自动使用最小模式
+VMCORE_VMLINUX_PATH = "/usr/lib/debug/lib/modules/6.6.0-132.0.0.111.oe2403sp3.x86_64/vmlinux"
+# 是否保存vmcore转储后的文本到本地，默认不保存
+VMCORE_SAVE_PARSED_TEXT = false
+# 转储文本保存目录，留空则默认保存到vmcore所在目录
+VMCORE_SAVE_PATH = ""
+# 转储文本保存后缀，支持txt/log等
+VMCORE_SAVE_SUFFIX = "txt"
