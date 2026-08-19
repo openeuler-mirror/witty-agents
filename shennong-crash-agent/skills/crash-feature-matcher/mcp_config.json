@@ -1,0 +1,9 @@
+{
+    "mcpServers": {
+        "crash-feature-matcher": {
+            "type": "local",
+            "command": ["bash", "run_mcp.sh"],
+            "enabled": true
+        }
+    }
+}

@@ -1,0 +1,32 @@
+keywords_regex_and_scores:
+  normal:
+    javascript: 1.7
+    js: 1.7
+    node: 1.6
+    'v8:': 1.6
+  anomalous:
+    'Error: .+\\n\\s+at .+:\\d+:\\d+': 2.0
+    'Uncaught (\\w+)Error: ': 1.9
+    ^\\s+at (\\w+ )?: 1.9
+    'ReferenceError: ': 1.8
+    'TypeError: ': 1.8
+    'SyntaxError: ': 1.8
+mandatory:
+  'Error: ':
+  - ^\\s+at (\\w+ )?
+  - 'Uncaught '
+  - ^\\s+
+  - ''
+  'node:':
+  - ^\\s+at (\\w+ )?
+  - 'Error: |(\\w+)Error:'
+  - ^\\s+
+  js:
+  - \\b\\d+\\.\\d+\\.\\d+\\b
+  - require
+  - module\\.exports
+  - 'import |export '
+capture_patterns:
+  timestamp: \\b(?:\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?Z?|\\d{4}-\\d{2}-\\d{2}\\s\\d{2}:\\d{2}:\\d{2}|\\d{10,13}|(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\\s+\\d{1,2}\\s+\\d{2}:\\d{2}:\\d{2})\\b
+  level: \\b(?:DEBUG|INFO|WARN|WARNING|ERROR|FATAL|TRACE|LOG|VERBOSE|UNKNOWN)\\b
+  ip: \\b(?:(?:25[0-5]|2[0-4]\\d|[01]?\\d\\d?)\\.){3}(?:25[0-5]|2[0-4]\\d|[01]?\\d\\d?)(?::\\d{1,5})?(?:\\/\\d{1,2})?\\b

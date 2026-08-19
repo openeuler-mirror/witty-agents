@@ -1,0 +1,37 @@
+keywords_regex_and_scores:
+  normal:
+    ^\\#!/bin/(ba|k)?sh: 2.0
+    ^set -[xe]: 1.8
+    ^\\+ \\w+: 1.8
+    bash: 1.5
+    sh: 1.4
+    shell: 1.3
+  anomalous:
+    'line \\d+: (syntax error|command not found|unbound variable)': 1.9
+    '\\bbash: \\w+: No such file or directory': 1.8
+    '\\bsh: \\d+: \\w+: not found': 1.8
+    '\\bbash: .+: Permission denied': 1.8
+    '\\/bin\\/sh: .+ not found': 1.8
+    segmentation fault \\(core dumped\\): 1.7
+mandatory:
+  'line \\d+:':
+  - syntax error near unexpected token
+  - 'command substitution: line \\d+:'
+  - ^\\s+
+  - \\`\\w+\\'
+  - No such file or directory
+  ^\\#!/bin/(ba|k)?sh:
+  - ^#
+  - ^export \\w+=
+  - ^alias \\w+=
+  - ^function \\w+
+  - ^\\w+\\(\\) \\{
+  ^\\+ \\w+:
+  - ^\\+ \\w+
+  - ^\\+\\[\\[
+  - ^\\+if |^\\+for |^\\+while
+  - ^\\+echo |^\\+printf
+capture_patterns:
+  timestamp: \\b(?:(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\\s+\\d{1,2}\\s+\\d{2}:\\d{2}:\\d{2}|\\d{4}-\\d{2}-\\d{2}\\s\\d{2}:\\d{2}:\\d{2}|\\d{10,13})\\b
+  level: \\b(?:emerg|alert|crit|err|warning|notice|info|debug|sudo|auth|error|INFO|WARNING|UNKNOWN)\\b
+  ip: \\b(?:(?:25[0-5]|2[0-4]\\d|[01]?\\d\\d?)\\.){3}(?:25[0-5]|2[0-4]\\d|[01]?\\d\\d?)(?::\\d{1,5})?(?:\\/\\d{1,2})?\\b

@@ -1,0 +1,32 @@
+keywords_regex_and_scores:
+  normal:
+    'cpp:': 1.8
+    c\\+\\+: 1.7
+    g\\+\\+: 1.7
+  anomalous:
+    \\#\\d+ 0x[0-9a-fA-F]+ in (\\w+::)+\\w+ at .+:\\d+: 2.0
+    '(\\w+)\\.cpp:\\d+: \\w+: ': 1.9
+    undefined reference to `(\\w+::)+\\w+\\': 1.9
+    no matching function for call to `\\w+\\': 1.8
+    class `\\w+\\' has no member named `\\w+\\': 1.8
+    template argument deduction failed: 1.7
+mandatory:
+  \\#\\d+ 0x[0-9a-fA-F]+:
+  - in (\\w+::)+\\w+ at .+:\\d+
+  - from .+:\\d+
+  - ^\\s+
+  - (\\w+::)+\\w+
+  '(\\w+)\\.cpp:\\d+:':
+  - '\\w+: .+'
+  - 'warning: .+'
+  - 'note: .+'
+  - ^\\s+
+  cpp:
+  - \\b\\d+\\.\\d+\\.\\d+\\b
+  - pure virtual method called
+  - bad_cast
+  - out_of_range
+capture_patterns:
+  timestamp: \\b(?:\\d{4}-\\d{2}-\\d{2}\\s\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?|\\[\\s*\\d+\\.\\d+\\]|(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\\s+\\d{1,2}\\s+\\d{2}:\\d{2}:\\d{2}|\\d{10,13})\\b
+  level: \\b(?:emerg|alert|crit|err|warning|notice|info|debug|DEBUG|INFO|WARNING|ERROR|CRITICAL|FATAL|UNKNOWN|LOG_ERR|LOG_INFO|LOG_WARNING|TRACE)\\b
+  ip: \\b(?:(?:25[0-5]|2[0-4]\\d|[01]?\\d\\d?)\\.){3}(?:25[0-5]|2[0-4]\\d|[01]?\\d\\d?)(?::\\d{1,5})?(?:\\/\\d{1,2})?\\b

@@ -1,0 +1,55 @@
+keywords_regex_and_scores:
+  normal:
+    'localhost kernel:': 2.0
+    'localhost \\w+:': 1.9
+    '\\[ *\\d+\\.\\d+\\] \\w+:': 1.8
+    'kernel: \\[ *\\d+\\.\\d+\\]': 1.8
+    \\[\\<[0-9a-fA-F]+\\>\\]: 1.6
+    'pc : |lr : |elr_el1:': 1.6
+    'kernel:': 1.5
+    dmesg: 1.2
+    '\\b\\w+\\[\\d+\\]:': 0.8
+  anomalous:
+    '\\[ *\\d+\\.\\d+\\]\\s*Call Trace:': 1.9
+    '\\[ *\\d+\\.\\d+\\]\\s*Oops:': 1.9
+    '\\[ *\\d+\\.\\d+\\]\\s*panic:': 1.9
+    'CPU: \\d+ PID: \\d+ Comm:': 1.7
+    Backtrace:\\s*$: 1.7
+    \\+\\+\\+ killed by KASAN \\+\\+\\+: 1.7
+mandatory:
+  'Call Trace:':
+  - \\+[0-9a-fx]+/[0-9a-fx]+
+  - \\[[a-zA-Z0-9_]+\\]\\s*$
+  - </?(IRQ|NMI|SOFTIRQ|HARDIRQ)>
+  - ^\\s+
+  - '^\\? '
+  - \\[\\<[0-9a-fA-F]+\\>\\]
+  - 'pc : \\w+'
+  - 'lr : \\w+'
+  - \\s+[0-9a-fx]+\\s+
+  Backtrace:\\s*$:
+  - \\+[0-9a-fx]+/[0-9a-fx]+
+  - \\[[a-zA-Z0-9_]+\\]\\s*$
+  - ^\\s+
+  - '^\\? '
+  - 'pc : \\w+'
+  - 'lr : \\w+'
+  'Oops: \\w+, \\[\\#\\d+\\]':
+  - 'CPU: \\d+ PID: \\d+ Comm: \\w+'
+  - 'Call Trace:'
+  - pc is at \\w+\\+0x[0-9a-fx]+
+  - lr is at \\w+\\+0x[0-9a-fx]+
+  'panic: .+':
+  - 'CPU: \\d+ PID: \\d+ Comm: \\w+'
+  - 'Call Trace:'
+  - 'Kernel panic - not syncing:'
+  - 'Pid: \\d+, comm: \\w+'
+  \\+\\+\\+ killed by KASAN \\+\\+\\+:
+  - 'Call Trace:'
+  - ^\\s+
+  - \\+[0-9a-fx]+/[0-9a-fx]+
+  - \\[[a-zA-Z0-9_]+\\]\\s*$
+capture_patterns:
+  timestamp: \\b(?:\\[\\s*\\d+\\.\\d+\\]|\\d{4}-\\d{2}-\\d{2}\\s\\d{2}:\\d{2}:\\d{2}|(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\\s+\\d{1,2}\\s+\\d{2}:\\d{2}:\\d{2})\\b
+  level: \\b(?:emerg|alert|crit|err|warning|notice|info|debug|DEBUG|INFO|WARNING|ERROR|CRITICAL|TRACE|UNKNOWN|FATAL|PANIC|panic)\\b
+  ip: \\b(?:(?:25[0-5]|2[0-4]\\d|[01]?\\d\\d?)\\.){3}(?:25[0-5]|2[0-4]\\d|[01]?\\d\\d?)(?::\\d{1,5})?\\b

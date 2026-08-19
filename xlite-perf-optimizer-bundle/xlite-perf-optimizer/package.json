@@ -1,0 +1,34 @@
+{
+  "name": "xlite-perf-optimizer",
+  "version": "0.1.0",
+  "description": "xlite 性能优化自动化 Agent — 分析、算子优化、测试验证、HTML 报告与原子回滚",
+  "main": "index.js",
+  "bin": {
+    "xlite-opt-init": "./bin/xlite-opt-init.js"
+  },
+  "scripts": {
+    "postinstall": "node scripts/postinstall.js"
+  },
+  "files": [
+    "agent/",
+    "skills/",
+    "helpers/",
+    "bin/",
+    "scripts/",
+    "README.md"
+  ],
+  "keywords": [
+    "xlite",
+    "ascend",
+    "opencode",
+    "agent",
+    "performance",
+    "optimization",
+    "llm-inference"
+  ],
+  "author": "",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

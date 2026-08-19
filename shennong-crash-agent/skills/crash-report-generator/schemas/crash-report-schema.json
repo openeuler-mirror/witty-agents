@@ -1,0 +1,256 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "crash-report-schema.json",
+  "title": "Kernel Crash Analysis Report",
+  "description": "Schema for the final kernel crash diagnosis report produced by the Witty Diagnosis Agent.",
+  "type": "object",
+  "required": [
+    "report_id",
+    "parse_log_range",
+    "host_base_info",
+    "crash_feature_info",
+    "root_cause_analysis",
+    "diagnosis_repair_result",
+    "workflow_trace"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "report_id": {
+      "type": "string",
+      "description": "Report identifier in the format <hostname>-<start_date>-<end_date>."
+    },
+    "parse_log_range": {
+      "type": "array",
+      "description": "List of log sources analyzed (e.g., vmcore, vmcore-dmesg, dmesg).",
+      "items": {
+        "type": "string",
+        "enum": ["vmcore", "vmcore-dmesg", "dmesg", "syslog", "kdump", "var-log-messages"]
+      }
+    },
+    "host_base_info": {
+      "type": "object",
+      "required": [
+        "host_name",
+        "kernel_version",
+        "cpu_model",
+        "machine_model",
+        "cpu_num",
+        "memory_size",
+        "modules"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "host_name": { "type": "string" },
+        "kernel_version": { "type": "string" },
+        "cpu_model": { "type": "string" },
+        "machine_model": { "type": "string" },
+        "cpu_num": { "type": "integer", "minimum": 0 },
+        "memory_size": { "type": "string" },
+        "modules": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "crash_feature_info": {
+      "type": "object",
+      "required": [
+        "crash_time",
+        "signature",
+        "bug_type",
+        "bug_key",
+        "bug_summary",
+        "rip",
+        "rip_function",
+        "rip_offset",
+        "related_modules",
+        "call_trace_signature",
+        "call_trace_text",
+        "kernel_version"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "crash_time": {
+          "type": "string",
+          "description": "Crash time in ISO 8601 with timezone if available; otherwise a non-empty string such as 'unknown'."
+        },
+        "signature": {
+          "type": "string",
+          "description": "Deterministic fingerprint in the form bug_type::module::rip_function::rip_offset."
+        },
+        "bug_type": { "type": "string" },
+        "bug_key": { "type": "string" },
+        "bug_summary": { "type": "string" },
+        "rip": { "type": "string" },
+        "rip_function": { "type": "string" },
+        "rip_offset": { "type": "string" },
+        "related_modules": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "call_trace_signature": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "call_trace_text": { "type": "string" },
+        "kernel_version": { "type": "string" },
+        "anomaly_features": {
+          "type": "object",
+          "description": "额外异常特征上下文: repeated_errors, error_keywords, register_values, dump_stack_context, pre_crash_events, cpu_context"
+        }
+      }
+    },
+    "root_cause_analysis": {
+      "type": "object",
+      "required": [
+        "simplified_root_cause",
+        "detailed_root_cause",
+        "solution",
+        "crash_chains",
+        "analysis_notes"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "simplified_root_cause": {
+          "type": "string",
+          "description": "简化的根因分析，通俗易懂，非专业人员也看得懂"
+        },
+        "detailed_root_cause": {
+          "type": "string",
+          "description": "详细的根因分析，描述问题发生的情况和相关代码的具体联系"
+        },
+        "solution": {
+          "type": "string",
+          "description": "解决方案，具体可执行的修复步骤"
+        },
+        "crash_chains": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "analysis_notes": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "diagnosis_repair_result": {
+      "type": "object",
+      "required": ["community_kernel_result", "internal_kernel_result"],
+      "additionalProperties": false,
+      "properties": {
+        "community_kernel_result": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "properties": {
+              "id": { "type": "string" },
+              "source_url": { "type": "string" },
+              "type": { "type": "string" },
+              "title": { "type": "string" },
+              "kernel_version": { "type": "string" },
+              "phenomenon": { "type": "string" },
+              "root_cause": { "type": "string" },
+              "solution": { "type": "string" },
+              "content": { "type": "string" },
+              "match_score": { "type": "number", "minimum": 0, "maximum": 1 },
+              "source_file": { "type": "string" },
+              "score": { "type": "number", "minimum": 0, "maximum": 100 },
+              "score_details": { "type": "object" },
+              "match_reason": {
+                "type": "object",
+                "description": "社区案例匹配原因解释: phenomenon_similarity, rip_consistency, module_match, commit_relevance, commit_summary"
+              }
+            }
+          }
+        },
+        "internal_kernel_result": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "properties": {
+              "id": { "type": "string" },
+              "source_url": { "type": "string" },
+              "affected_kernel_versions": { "type": "array", "items": { "type": "string" } },
+              "phenomenon": { "type": "string" },
+              "root_cause": { "type": "string" },
+              "solution": { "type": "string" },
+              "hotpatch": { "type": "string" },
+              "match_score": { "type": "number", "minimum": 0, "maximum": 1 },
+              "knowledge_id": { "type": "string" },
+              "history_wiki": { "type": "string" },
+              "kernel_versions": { "type": "array", "items": { "type": "string" } },
+              "bug_summary": { "type": "string" },
+              "bug": { "type": "string" },
+              "call_trace_text": { "type": "string" },
+              "call_trace_signature": { "type": "array", "items": { "type": "string" } },
+              "match_reason": {
+                "type": "object",
+                "description": "内部案例匹配原因解释: rip_match, call_trace_overlap, bug_type_match, module_match, kernel_version_match"
+              }
+            }
+          }
+        }
+      }
+    },
+    "workflow_trace": {
+      "type": "object",
+      "required": ["round_count", "round_history"],
+      "additionalProperties": false,
+      "properties": {
+        "round_count": { "type": "integer", "minimum": 1 },
+        "round_history": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "round",
+              "agent_name",
+              "stage",
+              "status",
+              "start_time",
+              "end_time",
+              "tool_calls"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "round": { "type": "integer", "minimum": 1 },
+              "agent_name": { "type": "string" },
+              "stage": { "type": "string" },
+              "status": {
+                "type": "string",
+                "enum": ["success", "failed", "insufficient", "running", "pending"]
+              },
+              "start_time": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "end_time": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "reason": { "type": "string" },
+              "output": { "type": "string" },
+              "tool_calls": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["tool_name", "input", "output", "start_time", "end_time"],
+                  "additionalProperties": false,
+                  "properties": {
+                    "tool_name": { "type": "string" },
+                    "input": {},
+                    "output": { "type": "string" },
+                    "start_time": { "type": "string", "format": "date-time" },
+                    "end_time": { "type": "string", "format": "date-time" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

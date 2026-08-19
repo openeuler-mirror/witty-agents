@@ -1,0 +1,26 @@
+keywords_regex_and_scores:
+  normal:
+    '^\\w+ \\[\\d+\\]:': 1.0
+    ^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}: 0.9
+    'INFO:': 0.8
+    \\[INFO\\]: 0.8
+    '^LOG:': 0.7
+  anomalous:
+    'WARN|ERROR|DEBUG:': 0.8
+    \\[ERROR\\]|\\[WARN\\]: 0.8
+    '^WARNING:': 0.7
+    '^ERROR:': 0.7
+mandatory:
+  ^\\d{4}-\\d{2}-\\d{2}:
+  - \\d{2}:\\d{2}:\\d{2}
+  - \\b(DEBUG|INFO|WARNING|ERROR)\\b
+  - ^\\s+
+  - \\|\\s+\\w+
+  'INFO|WARN|ERROR|DEBUG:':
+  - ^\\s+
+  - \\b\\w+\\b
+  - \\d+
+capture_patterns:
+  timestamp: \\b(?:\\[\\s*\\d+\\.\\d+\\]|\\d{4}-\\d{2}-\\d{2}\\s\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?|\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?Z?|(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\\s+\\d{1,2}\\s+\\d{2}:\\d{2}:\\d{2}|\\d+\\.\\d+|\\d{10,13})\\b
+  level: \\b(?:emerg|alert|crit|err|warning|notice|info|debug|DEBUG|INFO|WARNING|WARN|ERROR|CRITICAL|TRACE|UNKNOWN|FATAL|PANIC|panic|VERBOSE|LOG|crash|fault|sudo|auth|NOTSET|SEVERE|CONFIG|FINE|FINER|FINEST|LOG_ERR|LOG_INFO|LOG_WARNING)\\b
+  ip: \\b(?:(?:25[0-5]|2[0-4]\\d|[01]?\\d\\d?)\\.){3}(?:25[0-5]|2[0-4]\\d|[01]?\\d\\d?)(?::\\d{1,5})?(?:\\/\\d{1,2})?\\b

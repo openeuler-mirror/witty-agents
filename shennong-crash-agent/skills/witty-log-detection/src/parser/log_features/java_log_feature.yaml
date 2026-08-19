@@ -1,0 +1,35 @@
+keywords_regex_and_scores:
+  normal:
+    java.lang.: 1.8
+    javax.: 1.7
+    org.springframework.: 1.7
+    com.: 1.7
+    java: 1.6
+    jvm: 1.6
+  anomalous:
+    Exception in thread: 2.0
+    '(\\w+)Exception: ': 1.9
+    at (\\w+\\.)+\\w+: 1.9
+    'Caused by: ': 1.8
+    class file for .+ not found: 1.5
+mandatory:
+  Exception in thread:
+  - at (\\w+\\.)+\\w+
+  - 'Caused by: '
+  - '(\\w+)Exception: .+'
+  - ^\\s+
+  - java.lang.(\\w+)Exception
+  'Caused by: ':
+  - at (\\w+\\.)+\\w+
+  - '(\\w+)Exception: .+'
+  - ^\\s+
+  - 'Also caused by: '
+  java:
+  - \\b\\d+\\.\\d+\\.\\d+\\b
+  - OutOfMemoryError
+  - NullPointerException
+  - ClassNotFoundException
+capture_patterns:
+  timestamp: \\b(?:\\d{4}-\\d{2}-\\d{2}\\s\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?|\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?Z?|(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\\s+\\d{1,2},\\s+\\d{4}\\s+\\d{2}:\\d{2}:\\d{2})\\b
+  level: \\b(?:TRACE|DEBUG|INFO|WARN|WARNING|ERROR|FATAL|CRITICAL|SEVERE|INFO|CONFIG|FINE|FINER|FINEST|UNKNOWN)\\b
+  ip: \\b(?:(?:25[0-5]|2[0-4]\\d|[01]?\\d\\d?)\\.){3}(?:25[0-5]|2[0-4]\\d|[01]?\\d\\d?)(?::\\d{1,5})?(?:\\/\\d{1,2})?\\b

@@ -1,0 +1,246 @@
+{
+  "exported_at": "2026-06-30T00:00:00Z",
+  "description": "宕机特征匹配知识库种子数据 - 从 osclinic crashinfos 表移植",
+  "issues": [
+    {
+      "source": "issue",
+      "knowledge_id": "issue-nullptr-mlx5-001",
+      "bug_type": "general_protection",
+      "bug_key": "general protection fault:",
+      "bug_summary": "GPF in __inet_lookup_established via mlx5_core 智能网卡 GRO 路径",
+      "rip": "__inet_lookup_established+0x16d",
+      "rip_function": "__inet_lookup_established",
+      "rip_offset": "0x16d",
+      "related_modules": [
+        "mlx5_core"
+      ],
+      "call_trace_signature": [
+        "__inet_lookup_established",
+        "__inet_lookup",
+        "inet_gro_receive",
+        "dev_gro_receive"
+      ],
+      "call_trace_text": "__inet_lookup_established+0x16d/0x410\n__inet_lookup+0x1a2/0x300\ninet_gro_receive+0x1a2/0x300\ndev_gro_receive+0xd5/0x160",
+      "kernel_versions": [
+        "5.10.0-136.71.0",
+        "5.10.0-218.0.0"
+      ],
+      "affected_components": [
+        "networking",
+        "mlx5_core"
+      ],
+      "root_cause": "mlx5_core 驱动在 GRO receive 路径中访问已释放的 skb，触发 GPF",
+      "solution": "升级 mlx5_core 驱动到 5.8-0 或以上版本",
+      "hotpatch": "hotpatch-CVE-2024-xxx-mlx5",
+      "history_wiki": "https://wiki.internal/pages/crash-mlx5-001",
+      "case_count": 47,
+      "fingerprints": [
+        "general_protection::mlx5_core::__inet_lookup_established::0x16d"
+      ]
+    },
+    {
+      "source": "issue",
+      "knowledge_id": "issue-nullptr-ext4-002",
+      "bug_type": "null_pointer",
+      "bug_key": "BUG: kernel NULL pointer dereference",
+      "bug_summary": "NULL pointer dereference in ext4_htree_store_dirent (ext4 哈希树目录操作)",
+      "rip": "ext4_htree_store_dirent+0x0/0x0",
+      "rip_function": "ext4_htree_store_dirent",
+      "rip_offset": "0x0",
+      "related_modules": [
+        "ext4"
+      ],
+      "call_trace_signature": [
+        "ext4_htree_store_dirent",
+        "htree_dirblock_to_tree",
+        "ext4_htree_fill_tree",
+        "ext4_readdir"
+      ],
+      "call_trace_text": "ext4_htree_store_dirent+0x0\nhtree_dirblock_to_tree+0x12\next4_htree_fill_tree+0x34\next4_readdir+0x56",
+      "kernel_versions": [
+        "5.10.0-136.71.0",
+        "5.10.0-218.0.0",
+        "4.18.0-147.mt20221104.486.el8_1.x86_64"
+      ],
+      "affected_components": [
+        "filesystem",
+        "ext4"
+      ],
+      "root_cause": "ext4 哈希树目录索引损坏导致 dirent 指针为 NULL",
+      "solution": "升级内核到包含 ext4 哈希树修复补丁的版本",
+      "hotpatch": "hotpatch-ext4-htree-nullptr",
+      "history_wiki": "",
+      "case_count": 23,
+      "fingerprints": [
+        "null_pointer::ext4::ext4_htree_store_dirent::0x0"
+      ]
+    },
+    {
+      "source": "issue",
+      "knowledge_id": "issue-softlockup-net-003",
+      "bug_type": "soft_lockup",
+      "bug_key": "watchdog: BUG: soft lockup",
+      "bug_summary": "Soft lockup in dev_watchdog 智能网卡软锁死",
+      "rip": "dev_watchdog+0x0/0x0",
+      "rip_function": "dev_watchdog",
+      "rip_offset": "0x0",
+      "related_modules": [
+        "mlx5_core"
+      ],
+      "call_trace_signature": [
+        "dev_watchdog",
+        "call_timer_fn",
+        "run_timer_softirq",
+        "__do_softirq"
+      ],
+      "call_trace_text": "dev_watchdog+0x0\ncall_timer_fn+0x30\nrun_timer_softirq+0x133\n__do_softirq+0x98",
+      "kernel_versions": [
+        "5.10.0-218.0.0"
+      ],
+      "affected_components": [
+        "networking",
+        "mlx5_core"
+      ],
+      "root_cause": "智能网卡 MLX5 驱动 TX 超时导致 dev_watchdog 触发 soft lockup",
+      "solution": "升级 mlx5_core 驱动或调整 watchdog 超时参数",
+      "hotpatch": "",
+      "history_wiki": "",
+      "case_count": 15,
+      "fingerprints": [
+        "soft_lockup::kernel::dev_watchdog::0x0"
+      ]
+    },
+    {
+      "source": "issue",
+      "knowledge_id": "issue-hardlockup-spinlock-004",
+      "bug_type": "hard_lockup",
+      "bug_key": "Watchdog detected hard LOCKUP",
+      "bug_summary": "Hard lockup in native_queued_spin_lock_slowpath (自旋锁死锁)",
+      "rip": "native_queued_spin_lock_slowpath+0x0/0x0",
+      "rip_function": "native_queued_spin_lock_slowpath",
+      "rip_offset": "0x0",
+      "related_modules": [],
+      "call_trace_signature": [
+        "native_queued_spin_lock_slowpath",
+        "queued_spin_lock_slowpath",
+        "_raw_spin_lock_irqsave"
+      ],
+      "call_trace_text": "native_queued_spin_lock_slowpath+0x0\nqueued_spin_lock_slowpath+0x66\n_raw_spin_lock_irqsave+0x24",
+      "kernel_versions": [
+        "5.10.0-136.71.0",
+        "5.10.0-218.0.0",
+        "4.18.0-147.mt20200626.413.el8_1.x86_64"
+      ],
+      "affected_components": [
+        "kernel_core"
+      ],
+      "root_cause": "其他bug导致的自旋锁死锁 (spinlock本来就是spinlock死锁的症状，根因需要往前追溯)",
+      "solution": "触发 hard lockup panic 以便生成 vmcore 进行深层分析",
+      "hotpatch": "",
+      "history_wiki": "",
+      "case_count": 31,
+      "fingerprints": [
+        "hard_lockup::kernel::native_queued_spin_lock_slowpath::0x0"
+      ]
+    },
+    {
+      "source": "issue",
+      "knowledge_id": "issue-bug-slub-005",
+      "bug_type": "kernel_bug",
+      "bug_key": "kernel BUG at",
+      "bug_summary": "kernel BUG at mm/slub.c in validate_slab_slab (SLUB 分配器数据损坏)",
+      "rip": "validate_slab_slab+0x0/0x0",
+      "rip_function": "validate_slab_slab",
+      "rip_offset": "0x0",
+      "related_modules": [],
+      "call_trace_signature": [
+        "validate_slab_slab",
+        "validate_slab_cache",
+        "__kmem_cache_shutdown",
+        "kmem_cache_destroy"
+      ],
+      "call_trace_text": "validate_slab_slab+0x0\nvalidate_slab_cache+0x50\n__kmem_cache_shutdown+0x78\nkmem_cache_destroy+0x30",
+      "kernel_versions": [
+        "5.10.0-218.0.0"
+      ],
+      "affected_components": [
+        "kernel_core",
+        "memory_management"
+      ],
+      "root_cause": "SLUB 分配器数据被 UAF 或越界写破坏，consistency check 触发 BUG()",
+      "solution": "启用 KASAN/KFENCE 定位内存破坏来源",
+      "hotpatch": "",
+      "history_wiki": "",
+      "case_count": 8,
+      "fingerprints": [
+        "kernel_bug::kernel::validate_slab_slab::0x0"
+      ]
+    },
+    {
+      "source": "issue",
+      "knowledge_id": "issue-oops-hang-006",
+      "bug_type": "hung_task",
+      "bug_key": "blocked for more than",
+      "bug_summary": "Hung task - 进程阻塞超过120秒 (常见于IO等待/文件锁死锁)",
+      "rip": "schedule_timeout+0x0/0x0",
+      "rip_function": "schedule_timeout",
+      "rip_offset": "0x0",
+      "related_modules": [],
+      "call_trace_signature": [
+        "schedule_timeout",
+        "wait_for_completion",
+        "submit_bio_wait"
+      ],
+      "call_trace_text": "schedule_timeout+0x0\nwait_for_completion+0x90\nsubmit_bio_wait+0x45",
+      "kernel_versions": [
+        "5.10.0-136.71.0",
+        "5.10.0-218.0.0"
+      ],
+      "affected_components": [
+        "io_subsystem"
+      ],
+      "root_cause": "IO 操作超时导致进程在 bio submit 路径被阻塞",
+      "solution": "检查底层存储设备状态，确认是否有磁盘坏道或 RAID 降级",
+      "hotpatch": "",
+      "history_wiki": "",
+      "case_count": 12,
+      "fingerprints": [
+        "hung_task::kernel::schedule_timeout::0x0"
+      ]
+    },
+    {
+      "source": "issue",
+      "knowledge_id": "issue-npu-dropped-007",
+      "bug_type": "general_protection",
+      "bug_key": "general protection fault:",
+      "bug_summary": "NPU 掉卡导致的宕机 (devdrv_dma_get_cq_valid_flip via drv_pcie_host)",
+      "rip": "devdrv_dma_get_cq_valid_flip+0x0/0x0 [drv_pcie_host]",
+      "rip_function": "devdrv_dma_get_cq_valid_flip",
+      "rip_offset": "0x0",
+      "related_modules": [
+        "drv_pcie_host"
+      ],
+      "call_trace_signature": [
+        "devdrv_dma_get_cq_valid_flip",
+        "drv_pcie_host_irq_handler"
+      ],
+      "call_trace_text": "devdrv_dma_get_cq_valid_flip+0x0 [drv_pcie_host]\ndrv_pcie_host_irq_handler+0x30 [drv_pcie_host]",
+      "kernel_versions": [
+        "5.10.0-218.0.0",
+        "4.18.0-147.mt20221104.486.el8_1.x86_64"
+      ],
+      "affected_components": [
+        "npu",
+        "pcie"
+      ],
+      "root_cause": "NPU 硬件异常或驱动 bug 导致 DMA CQ 获取失败，触发 GPF",
+      "solution": "联系服务器组同学排查 NPU 硬件状态",
+      "hotpatch": "",
+      "history_wiki": "https://wiki.internal/pages/npu-dropped",
+      "case_count": 19,
+      "fingerprints": [
+        "general_protection::drv_pcie_host::devdrv_dma_get_cq_valid_flip::0x0"
+      ]
+    }
+  ]
+}
