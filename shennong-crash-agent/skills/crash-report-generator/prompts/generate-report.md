@@ -28,11 +28,12 @@ Do not generate the full report in one step. Instead, create a temporary directo
 6. **Generate `root_cause_analysis.json`** — **LLM summarization**. After multi-source fusion and knowledge-graph validation, produce:
    - `simplified_root_cause`: 简化的根因分析, 通俗易懂, 非专业人员也看得懂 (1-2 sentences).
    - `detailed_root_cause`: 详细根因分析, 描述问题发生的情况和相关代码的具体联系 (paragraph).
-   - `solution`: 解决方案, 具体可执行的修复步骤 (actionable steps).
+   - `solution`: 解决方案, 具体可执行的修复步骤. 若 `diagnosis_repair_result` 中有匹配案例（internal/community），优先采用其 `solution` 作为修复方案；若均无匹配案例，仍需基于崩溃特征给出「推测」的解决方案/修复方向，并明确标注为推测。推测内容须包含“可能发生的场景”（如负载、并发/竞态、内存压力等条件下可能触发），再给出针对性修复方向 (actionable steps).
    - `crash_chains`: 崩溃调用链条 (string array).
    - `analysis_notes`: 分析备注 (string array).
+   - **No-match rule**: when the knowledge base has no matching case (`query_knowledge` / `query_cases` / `query_community_cases` all return empty), you **must** still write a speculative solution/direction into `solution` (clearly marked as “推测”) that includes the probable triggering scenarios (e.g. load, concurrency/race, memory-pressure conditions), and record in `analysis_notes` that no case matched. Keep `diagnosis_repair_result` arrays empty as-is — do not fabricate cases into them.
    This is the only section that should be written by the LLM based on context.
-7. **Generate `diagnosis_repair_result.json`** — **script/tool generated**. Byte-for-byte copy of `internal_kernel_result` and `community_kernel_result` from `crash-feature-matcher`. Do not let the LLM rewrite this section.
+7. **Generate `diagnosis_repair_result.json`** — **script/tool generated**. Byte-for-byte copy of `internal_kernel_result` and `community_kernel_result` from `crash-feature-matcher`, **except** the `match_score` field, which must be converted into 匹配等级 高/中/低 (`match_score`(0-1): 高≥0.7 / 中0.4-0.69 / 低<0.4). Do not rewrite any other field of this section.
 8. **Generate `workflow_trace.json`** — **LLM summarization**. Record every round, tool call, input, output, and timestamps based on the actual execution trace. This section should be written by the LLM based on context, but tool inputs/outputs must be faithful to the real tool results.
 9. **Validate each section** against `schemas/crash-report-schema.json` (you can validate a section by wrapping it in a minimal report or using the validation scripts). Fix any errors before proceeding.
 10. **Combine** all sections into a single `DiagnoseReport` using:

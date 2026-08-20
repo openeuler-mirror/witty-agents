@@ -1,0 +1,3 @@
+.venvs/
+__pycache__/
+shennong-crash-agent/skills/crash-feature-matcher/src/crash_matcher/__pycache__/
