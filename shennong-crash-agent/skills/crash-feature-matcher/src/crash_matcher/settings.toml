@@ -1,10 +1,10 @@
 [rag]
 base_url = "http://localhost:9988"
-knowledge_kb_id = "3438eb43-9d6a-4435-83a7-88ea55b1c452"
-cases_kb_id = "f1008c28-4406-43f1-89d9-d31eca41258c"
-linux_community_kb_id = "8bb4dbdb-53fc-4fcc-a160-f7b08412548c"
-openeuler_community_kb_id = "dfd38576-104c-4e28-baa1-ce66becbbcbe"
-access_key = "34b7cfdcd1d47fc3d11c784c6e981705"
+knowledge_kb_id = ""
+cases_kb_id = ""
+linux_community_kb_id = ""
+openeuler_community_kb_id = ""
+access_key = ""
 timeout = 30.0
 
 [matcher]
@@ -46,7 +46,7 @@ max_commits_to_analyze = 5
 
 [llm_scorer]
 enabled = true
-api_key = "sk-kljekpatgfcpasgnxdubhloovfzaydyyzydsufcwvuvssjab"
+api_key = ""
 base_url = "https://api.siliconflow.cn/v1"
 model = "Qwen/Qwen2.5-14B-Instruct"
 timeout = 60.0

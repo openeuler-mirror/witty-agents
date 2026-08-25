@@ -76,7 +76,7 @@ json.dump(report, open('/tmp/wrapped.json', 'w'))
     --validate
 ```
 
-If validation fails, fix the section or the combined report and re-validate. If the crash-report-generator venv is missing, run `node postinstall.mjs` first.
+If validation fails, fix the section or the combined report and re-validate. If the crash-report-generator venv is missing, run `npm exec --offline -- shennong-setup install` first.
 
 ## Example report
 
