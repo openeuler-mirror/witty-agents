@@ -103,18 +103,27 @@
     "root_cause_analysis": {
       "type": "object",
       "required": [
+        "phenomenon",
         "root_cause",
         "solution"
       ],
       "additionalProperties": false,
       "properties": {
+        "phenomenon": {
+          "type": "string",
+          "description": "崩溃现象（一句话，直说发生了什么：什么错误、在哪个位置、什么进程/环境）。"
+        },
         "root_cause": {
           "type": "string",
-          "description": "根因分析（自然语言段落，像人话一样连贯叙述，不分点/不用小标题）。内容需自然融合以下四方面：先一句话说清崩溃现象，再讲根因（有本地知识库匹配时基于案例输出；无本地匹配时调用 git skill 查询社区 commit/issue 作为参考输出；均无匹配时给出推测根因并标注「推测」），顺带说清可能触发该问题的场景（如负载、并发/竞态、内存压力等），最后仅当存在匹配案例时补充知识库检索情况（命中的 knowledge_id、案例来源、匹配度等）"
+          "description": "核心根因（一句话，直指根本原因，不展开论证）。若为推测需标注「推测」。"
+        },
+        "analysis": {
+          "type": "string",
+          "description": "深度分析（可选）。复杂问题在此展开：触发条件/竞态/内存压力等场景、匹配验证（命中 knowledge_id、来源 internal/community、match_score 等级）、无匹配时的 git skill 检索结论等。简单问题留空字符串。"
         },
         "solution": {
           "type": "string",
-          "description": "解决方案（始终必填，自然语言段落，像人话一样连贯叙述，不分点/不用小标题）。按证据强度分层：1) 有本地/社区案例匹配 → 直接采用案例的 solution 作为修复方案；2) 无匹配但 git skill 检索到 commit/issue → 基于社区 commit 给出参考性修复建议，标注「参考社区 commit xxx」；3) git skill 也无结果 → 写「处置建议」而非修复方案：临时缓解措施、信息收集建议、下一步排查方向（如补充 vmcore 分析、联系内核团队、升级到 LTS 验证），不强行推测修复代码"
+          "description": "解决方案（始终必填）。简单问题一句处置方式；复杂问题按证据强度分层：1) 有本地/社区案例匹配 → 采用案例 solution；2) 无匹配但 git skill 检索到 commit/issue → 参考社区 commit 给出修复建议；3) 均无 → 写「处置建议」（临时缓解、信息收集、下一步排查方向），不强行推测修复代码。"
         }
       }
     },

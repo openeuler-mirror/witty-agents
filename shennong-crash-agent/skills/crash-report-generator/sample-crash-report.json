@@ -25,8 +25,10 @@
     "kernel_version": "5.10.0-180.12.0.50.oe2203"
   },
   "root_cause_analysis": {
-    "root_cause": "本次崩溃表现为 mlx5 网卡驱动在高网络负载下处理 GRO 聚合时发生空指针访问导致内核崩溃。根因在于 mlx5_core 驱动的 mlx5e_handle_rx_cqe 函数在处理接收队列完成事件时将数据包送入 GRO 聚合路径，而 __inet_lookup_established 在查找已建立连接时访问了空指针，其背后是 GRO 聚合路径中存在竞态条件，skb 在释放后被再次引用，rip 位于 __inet_lookup_established+0x0 处确认了空指针解引用。这类问题容易在高并发网络收包负载下触发，多个 CPU 同时进行 GRO 聚合时 skb 的释放与再次引用之间存在竞态窗口，内存压力较大时 skb 回收更激进，竞态触发概率也会相应上升。本次分析命中内部知识库记录 issue-mlx5-gro-null-deref（来源 internal，匹配度高），其根因与解决方案与本次崩溃高度一致。",
-    "solution": "本次崩溃已命中内部知识库匹配案例，建议直接应用上游修复补丁，在 GRO 聚合入口处增加 skb 空指针检查以消除竞态窗口，若条件允许也可升级内核至包含该修复的稳定版本，从根源上避免该问题再次发生。"
+    "phenomenon": "高网络负载下 mlx5 网卡处理 GRO 聚合时发生空指针解引用，导致内核 general protection fault 崩溃，故障点位于 __inet_lookup_established。",
+    "root_cause": "mlx5_core 驱动 mlx5e_handle_rx_cqe 处理后 skb 被释放后再次引用，GRO 聚合路径存在竞态条件。",
+    "analysis": "调用栈显示 __inet_lookup_established+0x0 处访问空指针，rip 指向 mlx5_core，说明 skb 在多个 CPU 并发进行 GRO 聚合时被释放后仍被引用，存在竞态窗口；高网络收包负载和内存压力会加剧 skb 回收，提高触发概率。本次分析命中内部知识库 issue-mlx5-gro-null-deref（来源 internal，匹配度高），其根因与本案例一致，进一步佐证结论。",
+    "solution": "已命中内部知识库匹配案例，建议直接应用上游修复补丁，在 GRO 聚合入口处增加 skb 空指针检查以消除竞态窗口；若条件允许也可升级至包含该修复的稳定版本，从根源上避免该问题再次发生。"
   },
   "diagnosis_repair_result": {
     "community_kernel_result": [

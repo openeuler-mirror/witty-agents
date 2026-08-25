@@ -9,6 +9,7 @@ from pydantic import Field
 from .models import CrashFeatures, HostFeatures, CrashIssue, CrashCase, MatchResult
 from .extractor import parse_dmesg, compute_signature, parse_host_from_dmesg, run_crash_analysis
 from .matcher import match_crash
+from .matcher.engine import _compute_issue_match_score
 from .matcher.community_retriever import retrieve_community_cases
 from .knowledge import RAGClient
 from .config import Config
@@ -158,8 +159,10 @@ async def query_knowledge(
     rip_function: str = Field(default="", description="RIP 函数名过滤"),
     keyword: str = Field(default="", description="语义搜索关键词"),
     limit: int = Field(default=5, description="返回数量"),
+    crash_features: dict = Field(default={}, description="可选: analyze_crash 返回的 crash_features, 用于填充 match_reason"),
+    host_features: dict = Field(default={}, description="可选: analyze_crash 返回的 host_features, 用于填充 match_reason"),
 ) -> dict:
-    """查询已知宕机问题知识库"""
+    """查询已知宕机问题知识库。若传入 crash_features/host_features, 则对每条结果运行匹配引擎填充 match_reason。"""
     rag = _get_rag()
     if not rag:
         return {"error": "RAG knowledge base not configured"}
@@ -168,6 +171,11 @@ async def query_knowledge(
             issues = await rag.search_issues_by_rip_function(rip_function, bug_type, limit)
         else:
             issues = await rag.search_issues_semantic(keyword or bug_type or "", bug_type, limit)
+        if crash_features and host_features and issues:
+            feature = CrashFeatures(**crash_features)
+            host = HostFeatures(**host_features)
+            for issue in issues:
+                _compute_issue_match_score(feature, host, issue)
         return {"total": len(issues), "issues": [i.model_dump() for i in issues]}
     finally:
         await rag.close()
