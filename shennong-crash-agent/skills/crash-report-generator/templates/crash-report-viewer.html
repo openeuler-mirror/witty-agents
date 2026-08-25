@@ -202,15 +202,14 @@
   }
   .match-expand button:hover { background:#f1f5f9; color:#475569; }
   .match-empty { color:var(--muted); font-style:italic; font-size:13px; }
-  /* 根因分析三框 */
+  /* 根因分析：一句话结论 + 深度分析 */
   .rc-grid { display:flex; flex-direction:column; gap:12px; }
-  .rc-box { padding:12px 16px; border-radius:8px; border:1px solid var(--code-border); background:var(--code-bg); }
-  .rc-box.phenomenon { border-left:4px solid var(--accent); }
-  .rc-box.root-cause { border-left:4px solid var(--danger); }
+  .rc-box { padding:14px 18px; border-radius:8px; border:1px solid var(--code-border); background:var(--code-bg); }
+  .rc-box.conclusion { border-left:4px solid var(--accent); background:#f8fafc; }
   .rc-box.analysis { border-left:4px solid var(--muted); }
+  .rc-conclusion { font-size:15px; line-height:1.85; color:#1e293b; word-break:break-word; font-weight:500; }
   .rc-label { font-size:11px; color:var(--muted); font-weight:600; display:block; margin-bottom:6px; }
   .rc-text { font-size:14px; line-height:1.8; color:#334155; white-space:pre-wrap; word-break:break-word; }
-  .rc-text.empty { color:var(--muted); font-style:italic; }
 
   /* 异常特征样式 */
   .anomaly-grid { display:flex; flex-direction:column; gap:14px; }
@@ -266,8 +265,7 @@ function buildCore(report){
       cpu_num: hb.cpu_num, kernel_version: hb.kernel_version, memory_size: hb.memory_size,
     },
     call_trace: cf.call_trace_signature||[],
-    phenomenon: ra.phenomenon,
-    root_cause: ra.root_cause,
+    conclusion: ra.conclusion,
     analysis: ra.analysis,
     solution: ra.solution,
   };
@@ -391,10 +389,11 @@ function renderTrace(core){
 function renderProse(id,val){document.getElementById(id).innerHTML=val?`<div class="prose">${esc(val)}</div>`:`<div class="empty-line">无</div>`;}
 function renderRootCause(core){
   const blocks=[];
-  blocks.push(`<div class="rc-box phenomenon"><span class="rc-label">🔎 现象</span><div class="rc-text">${core.phenomenon?esc(core.phenomenon):'<span class="empty">无</span>'}</div></div>`);
-  blocks.push(`<div class="rc-box root-cause"><span class="rc-label">🎯 根因</span><div class="rc-text">${core.root_cause?esc(core.root_cause):'<span class="empty">无</span>'}</div></div>`);
+  if(core.conclusion){
+    blocks.push(`<div class="rc-box conclusion"><div class="rc-conclusion">${esc(core.conclusion)}</div></div>`);
+  }
   if(core.analysis) blocks.push(`<div class="rc-box analysis"><span class="rc-label">🧠 深度分析</span><div class="rc-text">${esc(core.analysis)}</div></div>`);
-  document.getElementById('rootcause-body').innerHTML=`<div class="rc-grid">${blocks.join('')}</div>`;
+  document.getElementById('rootcause-body').innerHTML=`<div class="rc-grid">${blocks.join('')||'<div class="empty-line">无</div>'}</div>`;
 }
 function hlJSON(obj){
   let s=JSON.stringify(obj,null,2);

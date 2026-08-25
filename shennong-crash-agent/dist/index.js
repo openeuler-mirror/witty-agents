@@ -171,8 +171,7 @@ var SHENNONG_BEHAVIORAL_SUMMARY = `## \u8F93\u51FA\u683C\u5F0F (Output Format)
             "anomaly_features": {}
   },
   "root_cause_analysis": {
-    "phenomenon": "",
-    "root_cause": "",
+    "conclusion": "",
     "analysis": "",
     "solution": ""
   },

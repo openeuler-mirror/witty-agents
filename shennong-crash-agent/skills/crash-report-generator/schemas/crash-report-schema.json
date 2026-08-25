@@ -103,19 +103,14 @@
     "root_cause_analysis": {
       "type": "object",
       "required": [
-        "phenomenon",
-        "root_cause",
+        "conclusion",
         "solution"
       ],
       "additionalProperties": false,
       "properties": {
-        "phenomenon": {
+        "conclusion": {
           "type": "string",
-          "description": "崩溃现象（一句话，直说发生了什么：什么错误、在哪个位置、什么进程/环境）。"
-        },
-        "root_cause": {
-          "type": "string",
-          "description": "核心根因（一句话，直指根本原因，不展开论证）。若为推测需标注「推测」。"
+          "description": "一句话结论：自然叙述现象+因果，形如「当前主机发生xxx，通过xxx信息表明，该故障由xxx导致/并非内核缺陷」。保持一句话，流畅自然。"
         },
         "analysis": {
           "type": "string",

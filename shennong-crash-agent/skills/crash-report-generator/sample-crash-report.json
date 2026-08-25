@@ -25,8 +25,7 @@
     "kernel_version": "5.10.0-180.12.0.50.oe2203"
   },
   "root_cause_analysis": {
-    "phenomenon": "高网络负载下 mlx5 网卡处理 GRO 聚合时发生空指针解引用，导致内核 general protection fault 崩溃，故障点位于 __inet_lookup_established。",
-    "root_cause": "mlx5_core 驱动 mlx5e_handle_rx_cqe 处理后 skb 被释放后再次引用，GRO 聚合路径存在竞态条件。",
+    "conclusion": "当前主机在高网络负载下发生内核崩溃，通过调用栈定位到网卡驱动收包路径，存在内存释放后重用的并发竞态（推测）。",
     "analysis": "调用栈显示 __inet_lookup_established+0x0 处访问空指针，rip 指向 mlx5_core，说明 skb 在多个 CPU 并发进行 GRO 聚合时被释放后仍被引用，存在竞态窗口；高网络收包负载和内存压力会加剧 skb 回收，提高触发概率。本次分析命中内部知识库 issue-mlx5-gro-null-deref（来源 internal，匹配度高），其根因与本案例一致，进一步佐证结论。",
     "solution": "已命中内部知识库匹配案例，建议直接应用上游修复补丁，在 GRO 聚合入口处增加 skb 空指针检查以消除竞态窗口；若条件允许也可升级至包含该修复的稳定版本，从根源上避免该问题再次发生。"
   },

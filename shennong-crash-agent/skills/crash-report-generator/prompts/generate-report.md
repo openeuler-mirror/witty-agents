@@ -25,21 +25,26 @@ Do not generate the full report in one step. Instead, create a temporary directo
 3. **Generate `parse_log_range.json`** — array of analyzed log sources.
 4. **Generate `host_base_info.json`** — **script/tool generated**. Save from `01_baseline_info.sh` / `crash` / `vmcore-dmesg` or `analyze_crash` `host_features`. Fields: hostname, kernel version, CPU model, machine model, CPU count (use `0` if unknown), memory size (convert MB to a human-readable string such as `"64GB"` or `"{MB}MB"`), loaded modules. Do not let the LLM rewrite this section.
 5. **Generate `crash_feature_info.json`** — **script/tool generated**. Save strictly from `crash-feature-matcher:analyze_crash` `crash_features`. If `crash_time` is not a valid ISO 8601 timestamp, derive it from the log or use `"unknown"`; do not leave it empty. Do not let the LLM rewrite this section.
-6. **Generate `root_cause_analysis.json`** — **LLM summarization**. After multi-source fusion and knowledge-graph validation, produce a structured object with four fields: `phenomenon`, `root_cause`, `analysis`, `solution`:
+6. **Generate `root_cause_analysis.json`** — **LLM summarization**. After multi-source fusion and knowledge-graph validation, produce a structured object with three fields: `conclusion`, `analysis`, `solution`:
    - **Complexity grading (decide before writing)**: Determine whether the crash is "simple" or "complex":
      - **Simple**: Explicitly human-triggered or expected behavior (e.g., manual sysrq crash via `echo c > /proc/sysrq-trigger`, a kdump drill, an intentional `panic`, a monitoring/thermal shutdown) with no real kernel defect.
      - **Complex**: Involves a real defect (NULL pointer dereference, Use-After-Free, out-of-bounds access, deadlock, RCU stall, MCE, bit flip, etc.) or needs multi-source corroboration.
-   - `phenomenon` (always one sentence): State **what** happened — the concrete onsite fact: error type, location (function/module), and process/context. Keep it descriptive, not causal.
-   - `root_cause` (always one sentence): State **why** it happened — the causal conclusion (the defect, buggy path, or trigger), no argumentation. Label "speculative" if it is an inference. Do not restate the phenomenon; go straight to the cause.
-   - **Distinguish the two**: if `phenomenon` and `root_cause` read as the same sentence, rewrite `root_cause` to name the underlying cause instead of re-describing the symptom.
+   - `conclusion` (always **one natural Chinese sentence**): A flowing narrative that weaves phenomenon + evidence + root cause together. Do not split into labeled "现象/根因" chunks; read it aloud as prose.
+     - **Abstraction rule**: Strip away all implementation details — no function names, register names, flag/state constants, mechanism internals (e.g., "exception table", "single-step", "fixup", "extable", "NMI", "GRO"), and no specific addresses/offsets. Only describe three things at a high level: (1) the scenario/context (e.g., "高网络负载下", "性能采样期间", "人工操作"), (2) the general category of defect (e.g., "内核空指针访问", "模块冲突", "并发竞态", "uaccess 异常修复失败", "内存 use-after-free"), and (3) whether it's speculative ("推测") and whether it's a real kernel defect vs. an expected/manual action.
+     - Reference examples:
+       - Simple: "当前主机发生内核 panic，通过日志及调用栈表明，该故障由人工通过 sysrq 手动触发，并非内核缺陷。"
+       - Complex (perf+kprobe case, long mechanism detail): "当前主机发生内核崩溃，通过调用栈及故障路径分析表明，性能采样与内核探针在中断上下文同时触发时存在冲突，异常修复路径被破坏导致 panic（推测）。"
+       - Complex (mlx5 GRO): "当前主机在高网络负载下发生内核崩溃，通过调用栈定位到网卡驱动收包路径，存在内存释放后重用的并发竞态（推测）。"
+     - Test your sentence: if any token looks like a C identifier (`snake_case`, ALL_CAPS), a hex address, or a subsystem-specific jargon word that a general ops engineer wouldn't recognize, move it to `analysis` instead.
+     - The sentence must read naturally end-to-end; if it feels like two clauses glued by punctuation, rewrite it.
    - `analysis` (paragraph, optional — leave empty string for **simple** cases): For **complex** cases, expand the deep analysis here:
-     - Branch by `diagnosis_repair_result`: local match (`internal_kernel_result` non-empty) → corroborate with its `root_cause`; else community match (`community_kernel_result` non-empty) → corroborate with its `root_cause`; else **must** query the git skill for related commits/issues (record in the `root_cause_validation` stage `tool_calls` of `workflow_trace`) → derive from results, or if git skill finds nothing, give an inferred root cause labeled "speculative";
+     - Branch by `diagnosis_repair_result`: local match (`internal_kernel_result` non-empty) → corroborate with its `root_cause`; else community match (`community_kernel_result` non-empty) → corroborate with its `root_cause`; else **must** query the git skill for related commits/issues (record in the `root_cause_validation` stage `tool_calls` of `workflow_trace`) → derive from results, or if git skill finds nothing, give an inferred root cause labeled "推测";
      - Add likely trigger scenarios (load, concurrency/race, memory pressure, etc.);
      - If a case matched, add the retrieval info (matched `knowledge_id`, source internal/community, `match_score` level); otherwise omit.
-     - Do not copy the phenomenon or the one-sentence root cause into this field; keep them separate.
+     - Do not repeat the conclusion; expand the reasoning and evidence chain here.
    - `solution` (always required): For **simple** cases, one short sentence on how to handle it. For **complex** cases, tier by evidence strength:
      - Local/community match → adopt the matched case's `solution`, no extra annotation;
-     - No match but a git skill commit/issue → give a reference fix, annotated "reference community commit xxx";
+     - No match but a git skill commit/issue → give a reference fix, annotated "参考社区 commit xxx";
      - Neither → write "mitigation advice" (temporary mitigations, information to collect, next investigation steps such as deeper vmcore analysis, contacting the kernel team, or validating on an LTS stable version); do not fabricate fix code.
    - **No-match rule**: when `query_knowledge` / `query_cases` / `query_community_cases` all return empty, keep `diagnosis_repair_result` arrays empty — do not fabricate cases into them; `analysis` and `solution` then follow the git-skill branches above.
    This is the only section that should be written by the LLM based on context.

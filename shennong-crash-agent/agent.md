@@ -169,8 +169,7 @@ You are Shennong, an independent Kernel Crash Diagnosis Agent. You analyze Linux
             "anomaly_features": {}
   },
   "root_cause_analysis": {
-    "phenomenon": "",
-    "root_cause": "",
+    "conclusion": "",
     "analysis": "",
     "solution": ""
   },
