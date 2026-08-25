@@ -1,5 +1,5 @@
 {
-  "name": "shennong-crash-agent",
+  "name": "@openeuler/agent-shennong-crash",
   "version": "0.10.3",
   "description": "Minimal OpenCode plugin for kernel crash diagnosis using Shennong agent and core skills.",
   "keywords": ["shennong", "kernel-crash", "diagnosis", "opencode-plugin"],
@@ -12,21 +12,35 @@
   "files": [
     "dist",
     "skills",
+    "bin",
+    "lib",
     "postinstall.mjs"
   ],
+  "bin": {
+    "shennong-setup": "./bin/shennong-setup.mjs"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "engines": {
     "node": ">=20.0.0"
   },
   "scripts": {
-    "build": "tsup",
-    "typecheck": "tsc --noEmit",
+    "build": "node scripts/validate-dist.mjs",
+    "validate:dist": "node scripts/validate-dist.mjs",
+    "pack:variant": "node scripts/build-package.mjs",
+    "pack:online": "node scripts/build-package.mjs --variant=online",
+    "pack:offline": "node scripts/build-package.mjs --variant=offline",
+    "shennong-setup": "node bin/shennong-setup.mjs",
+    "test:install-contract": "node tests/test-install-contract.mjs",
     "postinstall": "node postinstall.mjs"
   },
   "dependencies": {
-    "@opencode-ai/plugin": "^1.1.19",
-    "@opencode-ai/sdk": "^1.1.19"
+    "jsonc-parser": "^3.3.1"
   },
   "devDependencies": {
+    "@opencode-ai/plugin": "^1.1.19",
+    "@opencode-ai/sdk": "^1.1.19",
     "tsup": "^8.5.1",
     "typescript": "^5.7.0",
     "@types/node": "^20.0.0"

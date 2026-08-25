@@ -12,33 +12,69 @@
   - `vmcore-analysis`（Skill）— vmcore 深度分析
   - `witty-log-detection`（**MCP**）— 日志异常检测
   - `crash-report-generator`（Skill）— 标准化 JSON 报告生成
+- **辅助 Skill**：`gitcode` — 按需查询 GitCode 上的仓库、议题、PR 和提交。
 
 神农作为独立 Agent，直接调用 crash-feature-matcher 与 witty-log-detection 两个 MCP 完成诊断。
 
 ## 安装
 
-### 方式一：使用 `opencode plugin` 命令安装到全局配置（推荐）
+安装分为两步，npm 安装阶段不会创建 Python 虚拟环境，也不会执行 pip。
+
+### 第一步：安装 npm 包并注册 OpenCode
+
+在线包：
 
 ```bash
-opencode plugin /root/shennong-crash-agent/shennong-crash-agent-0.1.0.tgz -g
+npm install @openeuler/agent-shennong-crash-online
 ```
 
-> `-g` 表示安装到全局 `~/.config/opencode/` 配置；去掉 `-g` 则安装到当前项目。
->
-> 推荐全局安装，这样在任何项目目录中都能直接调用 `shennong`。
-
-### 方式二：安装到项目目录
+离线 Python 依赖包：
 
 ```bash
-# 1. 安装到你想让 OpenCode 加载的项目目录
-cd /your/project
-cp /root/shennong-crash-agent/shennong-crash-agent-0.1.0.tgz ./
-npm install ./shennong-crash-agent-0.1.0.tgz
-
-# 2. 等待 postinstall 自动创建 Python venv（依赖 Python 3.11，需要几分钟）
+npm install @openeuler/agent-shennong-crash-offline
 ```
 
-### 方式三：直接引用源码目录（开发调试）
+`npm install` 会安装插件、Skill 等文件，并通过 `postinstall.mjs` 将当前包名
+加入 `~/.config/opencode/opencode.jsonc` 的 `plugin` 数组。它只修改这一项，
+保留其他字段及 `plugin` 数组外的注释。设置 `SHENNONG_SKIP_CONFIG=1` 可以跳过自动注册。
+
+### 第二步：显式安装 Python 依赖
+
+项目本地安装后执行：
+
+```bash
+npm exec --offline -- shennong-setup install
+```
+
+> npm 没有 `npm shennong-setup` 这种子命令语法；项目本地安装必须通过
+> `npm exec --offline --` 调用包提供的可执行文件。
+
+全局 npm 安装后也可以直接执行：
+
+```bash
+shennong-setup install
+```
+
+该命令才会在包目录的 `.venvs/` 下创建三个独立 Python 环境。在线包在此时
+联网下载 Python 依赖；离线包只读取随包携带的 wheelhouse，不访问 Python 包索引。
+当前依赖集合支持 Python 3.11 或 3.12，优先选择 3.11；Python 3.13 暂不放行。
+为避免全局 npm 目录权限问题，当前优先使用项目本地安装方式。安装完成前会对
+每套环境执行 `pip check` 和核心模块导入；任一验证失败都不会写入完成标记，
+使用 `--force` 重装时还会恢复原有可用环境。
+
+可先只检查环境，不写入文件：
+
+```bash
+npm exec --offline -- shennong-setup check
+```
+
+如果安装时使用了 `npm install --ignore-scripts`，可补做 OpenCode 注册：
+
+```bash
+npm exec --offline -- shennong-setup register
+```
+
+### 直接引用源码目录（开发调试）
 
 ```bash
 cd /root/shennong-crash-agent
@@ -46,15 +82,21 @@ npm install
 npm run build
 ```
 
+当前仓库以已提交的 `dist/index.js` 作为发布入口，不包含 TypeScript 源码生成链。
+`npm run build` 会校验该预构建入口的语法、导出和 Shennong Agent 注册结果；
+在线/离线 npm 包则由 `pack:online` / `pack:offline` 生成。
+
 ## 注册到 OpenCode
 
-安装插件后，**必须**让 OpenCode 加载插件。在 `~/.config/opencode/opencode.jsonc`（全局）或 `.opencode/opencode.jsonc`（项目级）中添加 `plugin` 字段：
+安装插件后，**必须**让 OpenCode 加载插件。自动注册默认写入
+`~/.config/opencode/opencode.jsonc`；如需项目级配置，可手动修改
+`.opencode/opencode.jsonc`，或用 `SHENNONG_OPENCODE_CONFIG` 显式指定路径。
 
-### 方式一/二安装后：使用模块名
+### npm 安装后：使用模块名
 
 ```json
 {
-  "plugin": ["shennong-crash-agent"],
+  "plugin": ["@openeuler/agent-shennong-crash-online"],
   "$schema": "https://opencode.ai/config.json"
 }
 ```
@@ -127,6 +169,14 @@ export OPENEULER_COMMUNITY_KB_ID="your-openeuler-community-kb-id"
 export RAG_ACCESS_KEY="your-access-key"
 ```
 
+LLM 相关配置默认不携带密钥，可通过环境变量注入：
+
+```bash
+export SHENNONG_LLM_API_KEY="your-api-key"
+export SHENNONG_LLM_BASE_URL="https://your-openai-compatible-endpoint/v1"
+export SHENNONG_LLM_MODEL="your-model"
+```
+
 若未配置 RAG，神农会：
 
 - 继续使用 `analyze_crash` 提取崩溃特征；
@@ -144,25 +194,50 @@ export RAG_ACCESS_KEY="your-access-key"
 - `crash-feature-matcher` MCP：stdio 类型，由 `skills/crash-feature-matcher/run_mcp.sh` 启动，依赖 `.venvs/crash-feature-matcher`。
 - `witty-log-detection` MCP：SSE 类型，默认地址 `http://localhost:12144/sse`，由 `skills/witty-log-detection/run_server.sh` 启动，依赖 `.venvs/witty-log-detection`。
 
-`npm install` 完成后会自动执行 `postinstall.mjs`，创建上述 Python venv 并安装依赖（需要 Python 3.11）。若安装时跳过了 postinstall，可手动运行：
+`npm install` 只安装 npm 文件并注册 OpenCode，不会创建 Python venv。需要
+Python 3.11 或 3.12；请在安装完成后显式执行：
 
 ```bash
-node node_modules/shennong-crash-agent/postinstall.mjs
+npm exec --offline -- shennong-setup install
 ```
+
+## online / offline 变体打包
+
+统一使用 `variant` 参数生成两个互不污染的 npm 包：
+
+```bash
+# 精简在线包：不携带 Python wheels 和本地 OCR 模型
+npm run pack:variant -- --variant=online --out-dir=artifacts
+
+# 离线包：为当前 Python/操作系统/CPU 构建并携带 Python wheels
+npm run pack:variant -- --variant=offline --out-dir=artifacts
+```
+
+源码基座包名为 `@openeuler/agent-shennong-crash`。为让 npm 上的两个产物可并存，
+发布包名分别为 `@openeuler/agent-shennong-crash-online` 和
+`@openeuler/agent-shennong-crash-offline`；对应 tgz 文件名由 npm 生成。
+在线包在脚本内强制不超过
+10 MiB；离线包不设置体积上限，但会将体积、平台、wheel 数量和 SHA256
+写入 `artifacts/*-package-report.json`。
+
+离线 wheel 与构建机的平台及 Python ABI 绑定，正式产物必须在目标
+openEuler 架构和 Python 3.11 环境中生成。可用 `--python=/path/to/python`
+或环境变量 `PYTHON_BIN` 指定解释器。
+
+构建会生成知识文件 SHA256 清单，并拒绝 Git LFS 占位文件；离线包还会校验
+wheel 清单闭合、SHA256、Python ABI、操作系统、CPU 架构、SOABI 与 libc。
+任何一项不完整都会让 `shennong-setup check` 和发布门禁失败。
+
+离线依赖解析还会读取 `packaging/offline-constraints.txt`。该文件将
+PaddleOCR 的 OpenCV 扩展依赖与项目现有 `opencv-python==4.9.0.80`
+保持一致，避免 pip 在多个几十 MiB 的候选 wheel 之间反复回溯下载。
 
 ## 目录结构
 
 ```
 shennong-crash-agent/
-├── src/
-│   ├── index.ts              # 插件入口，注册 shennong 主 Agent
-│   ├── agents/
-│   │   ├── system-prompt.ts  # Agent 组装与权限
-│   │   ├── identity-constraints.ts
-│   │   └── behavioral-summary.ts
-│   └── shared/
-│       ├── env-prompt.ts
-│       └── language-prompt.ts
+├── bin/shennong-setup.mjs    # 显式安装 Python 依赖的命令
+├── lib/opencode-config.mjs   # OpenCode JSONC 安全注册逻辑
 ├── skills/                   # 4 个核心 Skill / MCP
 │   ├── crash-feature-matcher/
 │   │   ├── mcp_config.json   # MCP 自动注册配置（stdio）
@@ -171,17 +246,19 @@ shennong-crash-agent/
 │   ├── witty-log-detection/
 │   │   └── mcp_config.json   # MCP 自动注册配置（SSE）
 │   └── crash-report-generator/
-├── .venvs/                   # 两个 MCP 的 Python 依赖（未打包，安装后生成）
-├── dist/
+├── .venvs/                   # 三套 Python 依赖（不随包提供，由 shennong-setup 生成）
+├── dist/index.js             # 已提交的预构建 OpenCode 插件入口
+├── scripts/
+│   ├── build-package.mjs     # online/offline 变体打包与检查
+│   └── validate-dist.mjs     # 预构建 dist 入口校验
 ├── package.json
-├── tsconfig.json
-└── tsup.config.ts
+└── postinstall.mjs
 ```
 
 ## 版本
 
-- `0.1.0`
-- 构建产物：`/root/shennong-crash-agent/shennong-crash-agent-0.1.0.tgz`（Skill 与 venv 未打包）
+- `0.10.3`
+- npm 包：`@openeuler/agent-shennong-crash-online` / `@openeuler/agent-shennong-crash-offline`
 
 ## 常见问题
 
@@ -193,13 +270,13 @@ shennong-crash-agent/
 
 ### 2. `opencode` 报插件加载失败
 
-- 检查插件目录是否有 `node_modules`（依赖 `@opencode-ai/plugin` 等）。
-- 检查 `dist/index.js` 是否存在（运行 `npm run build`）。
-- 检查 Python 版本是否为 3.11，且 `pip` 可用。
+- 检查插件目录是否有 `node_modules/jsonc-parser`（用于安全修改 OpenCode JSONC 配置）。
+- 运行 `npm run build`，检查 `dist/index.js` 的语法、导出和 Agent 注册结果。
+- 检查 Python 版本是否为 3.11 或 3.12，且 `pip` 可用。
 
 ### 3. MCP 启动失败
 
-- 确认 `postinstall` 已执行，`.venvs` 目录已生成。
+- 确认已显式执行 `npm exec --offline -- shennong-setup install`，且 `.venvs` 目录已生成。
 - 两个 MCP 通过 `skills/*/mcp_config.json` 自动注册，无需手动配置 `opencode.json` 的 `mcp` 段。
 - 手动运行 `skills/crash-feature-matcher/run_mcp.sh` 看报错。
 - 检查 witty-log-detection 的 SSE 端口 12144 是否被占用。
@@ -220,7 +297,7 @@ shennong-crash-agent/
 
 - 插件通过 `skills/crash-feature-matcher/mcp_config.json` 自动注册该 MCP，与 `witty-log-detection` 机制相同。
 - 确认 `.venvs/crash-feature-matcher/bin/python` 存在且可执行。
-- 如果其他 MCP Server 正常但 crash-feature-matcher 不显示，删除并重新安装插件，确保 postinstall 执行完毕。
+- 如果其他 MCP Server 正常但 crash-feature-matcher 不显示，重新执行 `shennong-setup install --force`。
 - **重启 OpenCode** 后生效。
 
 ### 7. crash-feature-matcher 返回“未配置 RAG 知识库”/“离线模式”
