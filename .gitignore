@@ -4,6 +4,7 @@ tmp/
 shennong-crash-agent/skills/crash-feature-matcher/src/crash_matcher/__pycache__/
 shennong-crash-agent/.package-stage/
 shennong-crash-agent/artifacts/
+shennong-crash-agent/ci-reports/
 shennong-crash-agent/node_modules/
 shennong-crash-agent/**/*.db-wal
 shennong-crash-agent/**/*.db-shm

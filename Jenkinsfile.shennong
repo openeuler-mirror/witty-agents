@@ -1,0 +1,419 @@
+pipeline {
+    agent {
+        docker {
+            image 'shennong-oe2403sp4-acceptance:runtime-v2'
+            label 'built-in'
+            args '--user 0:0 --cap-add SYS_ADMIN --cap-add NET_ADMIN --security-opt seccomp=unconfined -v /home/shennong-jenkins/cache/npm:/root/.npm -v /home/shennong-jenkins/cache/pip:/root/.cache/pip -v /home/shennong-jenkins/ocr-model-cache:/home/shennong-jenkins/ocr-model-cache:ro'
+        }
+    }
+
+    options {
+        timestamps()
+        disableConcurrentBuilds()
+        buildDiscarder(logRotator(numToKeepStr: '20', artifactNumToKeepStr: '10'))
+        timeout(time: 180, unit: 'MINUTES')
+    }
+
+    triggers {
+        pollSCM('H/5 * * * *')
+    }
+
+    parameters {
+        choice(
+            name: 'VARIANT',
+            choices: ['all', 'online', 'offline'],
+            description: 'Build and verify both packages, or only one package variant.'
+        )
+        string(
+            name: 'PYTHON_BIN',
+            defaultValue: 'python3.11',
+            description: 'Python 3.11/3.12 executable used to build and verify package-local environments.'
+        )
+        string(
+            name: 'PYPI_INDEX_URL',
+            defaultValue: 'https://pypi.org/simple',
+            description: 'Python index used only while constructing online environments and offline wheels.'
+        )
+        string(
+            name: 'OCR_MODEL_CACHE_DIR',
+            defaultValue: '/home/shennong-jenkins/ocr-model-cache',
+            description: 'Optional trusted OCR model cache used when the Git LFS server is unavailable.'
+        )
+        booleanParam(
+            name: 'RUN_REAL_INSTALL_VALIDATION',
+            defaultValue: true,
+            description: 'Run the real install -> setup twice -> configure twice flow.'
+        )
+        booleanParam(
+            name: 'STRICT_OFFLINE_NETWORK_CHECK',
+            defaultValue: true,
+            description: 'Require Linux network namespace isolation for the offline real-install flow.'
+        )
+        booleanParam(
+            name: 'PUBLISH',
+            defaultValue: false,
+            description: 'Publish both packages to npm. Allowed only for a commit contained in origin/master.'
+        )
+        string(
+            name: 'NPM_CREDENTIAL_ID',
+            defaultValue: 'npm-token',
+            description: 'Jenkins Secret Text credential containing the npm token.'
+        )
+        string(
+            name: 'NPM_REGISTRY',
+            defaultValue: 'https://registry.npmjs.org/',
+            description: 'npm registry used only by the publish stage.'
+        )
+        string(
+            name: 'NPM_DIST_TAG',
+            defaultValue: 'latest',
+            description: 'npm dist-tag used by the publish stage.'
+        )
+    }
+
+    environment {
+        AGENT_DIR = 'shennong-crash-agent'
+        GIT_LFS_SKIP_SMUDGE = '1'
+        NPM_CONFIG_AUDIT = 'false'
+        NPM_CONFIG_FUND = 'false'
+    }
+
+    stages {
+        stage('Prepare') {
+            steps {
+                script {
+                    if (params.PUBLISH && params.VARIANT != 'all') {
+                        error('PUBLISH=true requires VARIANT=all so online and offline are released together.')
+                    }
+                    env.SELECTED_VARIANTS = params.VARIANT == 'all'
+                        ? 'online,offline'
+                        : params.VARIANT
+                }
+                dir(env.AGENT_DIR) {
+                    sh '''
+                        set -eu
+                        rm -rf artifacts ci-reports .package-stage
+                        mkdir -p artifacts ci-reports
+
+                        node -e 'const major=Number(process.versions.node.split(".")[0]); if (major < 20) throw new Error(`Node.js 20+ required, got ${process.version}`)'
+                        npm_version="$(npm --version)"
+                        npm_major="${npm_version%%.*}"
+                        test "$npm_major" -ge 10 || { echo "npm 10+ required, got $npm_version" >&2; exit 1; }
+                        "$PYTHON_BIN" -c 'import sys; assert (3, 11) <= sys.version_info[:2] < (3, 13), sys.version'
+                        "$PYTHON_BIN" -m pip --version
+                        git lfs version
+
+                        test -r /etc/os-release
+                        . /etc/os-release
+                        os_id="$(printf '%s' "$ID" | tr '[:upper:]' '[:lower:]')"
+                        test "$os_id" = "openeuler" || {
+                          echo "Target Jenkins agent must run openEuler, got ID=$ID" >&2
+                          exit 1
+                        }
+
+                        if [ "$RUN_REAL_INSTALL_VALIDATION" = true ]; then
+                          command -v ldconfig >/dev/null 2>&1 || {
+                            echo 'ldconfig is required for real install validation.' >&2
+                            exit 1
+                          }
+                          for library in \
+                            libGL.so.1 \
+                            libgthread-2.0.so.0 \
+                            libXext.so.6 \
+                            libXrender.so.1 \
+                            libSM.so.6; do
+                            ldconfig -p | grep -Fq "$library" || {
+                              echo "$library is missing; install the documented openEuler runtime RPMs." >&2
+                              exit 1
+                            }
+                          done
+                          if [ "$VARIANT" = all ] || [ "$VARIANT" = offline ]; then
+                            command -v unshare >/dev/null 2>&1 || {
+                              echo 'unshare is required for offline network isolation.' >&2
+                              exit 1
+                            }
+                            command -v ip >/dev/null 2>&1 || {
+                              echo 'iproute is required to enable loopback inside the offline namespace.' >&2
+                              exit 1
+                            }
+                          fi
+                        fi
+
+                        printf 'Node: %s\nnpm: %s\nPython: %s\nOS: %s\n' \
+                          "$(node --version)" "$npm_version" "$($PYTHON_BIN --version)" "$PRETTY_NAME"
+                    '''
+                }
+            }
+        }
+
+        stage('Prepare OCR Assets') {
+            steps {
+                dir(env.AGENT_DIR) {
+                    sh '''
+                        set -eu
+                        git lfs install --local
+                        if ! git lfs pull; then
+                          echo 'WARNING: git lfs pull failed; checking trusted OCR cache.' >&2
+                        fi
+                        node scripts/prepare-ocr-models.mjs \
+                          --cache-dir="$OCR_MODEL_CACHE_DIR"
+                    '''
+                }
+            }
+        }
+
+        stage('Install Build Dependencies') {
+            steps {
+                dir(env.AGENT_DIR) {
+                    sh 'npm ci --ignore-scripts --no-audit --no-fund'
+                }
+            }
+        }
+
+        stage('Validate Plugin') {
+            steps {
+                dir(env.AGENT_DIR) {
+                    sh 'npm run build'
+                }
+            }
+        }
+
+        stage('Build Packages') {
+            steps {
+                dir(env.AGENT_DIR) {
+                    withEnv(["PIP_INDEX_URL=${params.PYPI_INDEX_URL.trim()}"]) {
+                        sh '''
+                            set -eu
+                            case "$VARIANT" in
+                              all)
+                                npm run pack:variant -- --variant=online --out-dir=artifacts
+                                npm run pack:variant -- --variant=offline --python="$PYTHON_BIN" --out-dir=artifacts
+                                ;;
+                              online)
+                                npm run pack:variant -- --variant=online --out-dir=artifacts
+                                ;;
+                              offline)
+                                npm run pack:variant -- --variant=offline --python="$PYTHON_BIN" --out-dir=artifacts
+                                ;;
+                              *)
+                                echo "Unsupported VARIANT=$VARIANT" >&2
+                                exit 1
+                                ;;
+                            esac
+                        '''
+                    }
+                }
+            }
+        }
+
+        stage('Artifact Gates') {
+            steps {
+                dir(env.AGENT_DIR) {
+                    sh 'npm run ci:verify-artifacts -- --variants="$SELECTED_VARIANTS"'
+                }
+            }
+        }
+
+        stage('Package Contract Checks') {
+            steps {
+                dir(env.AGENT_DIR) {
+                    sh '''
+                        set -eu
+                        SHENNONG_TEST_VARIANTS="$SELECTED_VARIANTS" npm run test:install-contract
+                    '''
+                }
+            }
+        }
+
+        stage('Real Install Flow') {
+            when {
+                expression { params.RUN_REAL_INSTALL_VALIDATION }
+            }
+            steps {
+                dir(env.AGENT_DIR) {
+                    sh '''
+                        set -eu
+
+                        if [ "$VARIANT" = all ] || [ "$VARIANT" = online ]; then
+                          online_tgz="$(node -p 'require("./artifacts/online-package-report.json").filename')"
+                          node scripts/verify-package-install.mjs \
+                            --variant=online \
+                            --artifact="artifacts/$online_tgz" \
+                            --python="$PYTHON_BIN" \
+                            --report=ci-reports/install-flow-online.json
+                        fi
+
+                        if [ "$VARIANT" = all ] || [ "$VARIANT" = offline ]; then
+                          offline_tgz="$(node -p 'require("./artifacts/offline-package-report.json").filename')"
+                          offline_command() {
+                            node scripts/verify-package-install.mjs \
+                              --variant=offline \
+                              --artifact="artifacts/$offline_tgz" \
+                              --python="$PYTHON_BIN" \
+                              --report=ci-reports/install-flow-offline.json
+                          }
+
+                          if unshare --net true >/dev/null 2>&1; then
+                            unshare --net sh -c \
+                              'ip link set lo up && \
+                               SHENNONG_NETWORK_ISOLATION=unshare exec node scripts/verify-package-install.mjs \
+                                --variant=offline \
+                                --artifact="$1" \
+                                --python="$2" \
+                                --report=ci-reports/install-flow-offline.json' \
+                              sh "artifacts/$offline_tgz" "$PYTHON_BIN"
+                          elif unshare --user --map-root-user --net true >/dev/null 2>&1; then
+                            unshare --user --map-root-user --net sh -c \
+                              'ip link set lo up && \
+                               SHENNONG_NETWORK_ISOLATION=user-netns exec node scripts/verify-package-install.mjs \
+                                --variant=offline \
+                                --artifact="$1" \
+                                --python="$2" \
+                                --report=ci-reports/install-flow-offline.json' \
+                              sh "artifacts/$offline_tgz" "$PYTHON_BIN"
+                          elif [ "$STRICT_OFFLINE_NETWORK_CHECK" = true ]; then
+                            echo 'Offline network isolation is unavailable; enable unshare/CAP_SYS_ADMIN on this agent.' >&2
+                            exit 1
+                          else
+                            echo 'WARNING: offline setup flags will be checked, but physical network isolation is skipped.' >&2
+                            SHENNONG_NETWORK_ISOLATION=not-enforced offline_command
+                          fi
+                        fi
+                    '''
+                }
+            }
+        }
+
+        stage('Publish to npm') {
+            when {
+                expression { params.PUBLISH }
+            }
+            steps {
+                sh '''
+                    set -eu
+                    origin_url="$(git remote get-url origin)"
+                    case "$origin_url" in
+                      https://gitcode.com/openeuler/witty-agents|https://gitcode.com/openeuler/witty-agents.git|\
+                      https://atomgit.com/openeuler/witty-agents|https://atomgit.com/openeuler/witty-agents.git|\
+                      git@gitcode.com:openeuler/witty-agents.git|git@atomgit.com:openeuler/witty-agents.git)
+                        ;;
+                      *)
+                        echo "Publishing is allowed only from the official repository, got: $origin_url" >&2
+                        exit 1
+                        ;;
+                    esac
+                    git fetch --no-tags origin master
+                    git merge-base --is-ancestor HEAD refs/remotes/origin/master || {
+                      echo 'Publishing is allowed only for a commit contained in origin/master.' >&2
+                      exit 1
+                    }
+                '''
+                dir(env.AGENT_DIR) {
+                    script {
+                        withCredentials([string(
+                            credentialsId: params.NPM_CREDENTIAL_ID,
+                            variable: 'NPM_TOKEN'
+                        )]) {
+                            sh '''
+                                set -eu
+                                set +x
+                                npmrc="$PWD/.npmrc.ci"
+                                trap 'rm -f "$npmrc"' EXIT
+                                NPMRC_PATH="$npmrc" node <<'NODE'
+const { writeFileSync } = require('node:fs')
+const registry = new URL(process.env.NPM_REGISTRY)
+const authKey = `//${registry.host}${registry.pathname.replace(/\/$/, '')}/:_authToken`
+writeFileSync(process.env.NPMRC_PATH, `registry=${registry.href}\n${authKey}=${process.env.NPM_TOKEN}\n`)
+NODE
+                                export NPM_CONFIG_USERCONFIG="$npmrc"
+                                npm whoami --registry "$NPM_REGISTRY" >/dev/null
+                                online_tgz="$(node -p 'require("./artifacts/online-package-report.json").filename')"
+                                offline_tgz="$(node -p 'require("./artifacts/offline-package-report.json").filename')"
+
+                                publish_or_verify() {
+                                  package_name="$1"
+                                  package_file="$2"
+                                  package_version="$(node -p 'require("./package.json").version')"
+                                  expected_integrity="$(node -e '
+                                    const fs = require("node:fs");
+                                    const crypto = require("node:crypto");
+                                    const digest = crypto.createHash("sha512")
+                                      .update(fs.readFileSync(process.argv[1]))
+                                      .digest("base64");
+                                    process.stdout.write(`sha512-${digest}`);
+                                  ' "$package_file")"
+                                  error_log="$(mktemp)"
+
+                                  if actual_integrity="$(npm view "$package_name@$package_version" dist.integrity \
+                                    --registry "$NPM_REGISTRY" 2>"$error_log")"; then
+                                    rm -f "$error_log"
+                                    test "$actual_integrity" = "$expected_integrity" || {
+                                      echo "$package_name@$package_version already exists with different content." >&2
+                                      exit 1
+                                    }
+                                    echo "$package_name@$package_version already matches this artifact; skipping."
+                                    return
+                                  fi
+
+                                  grep -q 'E404' "$error_log" || {
+                                    cat "$error_log" >&2
+                                    rm -f "$error_log"
+                                    exit 1
+                                  }
+                                  rm -f "$error_log"
+
+                                  npm publish "$package_file" \
+                                    --access public \
+                                    --ignore-scripts \
+                                    --tag "$NPM_DIST_TAG" \
+                                    --registry "$NPM_REGISTRY"
+
+                                  actual_integrity="$(npm view "$package_name@$package_version" dist.integrity \
+                                    --registry "$NPM_REGISTRY")"
+                                  test "$actual_integrity" = "$expected_integrity" || {
+                                    echo "$package_name@$package_version integrity verification failed." >&2
+                                    exit 1
+                                  }
+                                }
+
+                                publish_or_verify \
+                                  '@openeuler/agent-shennong-crash-online' \
+                                  "artifacts/$online_tgz"
+                                publish_or_verify \
+                                  '@openeuler/agent-shennong-crash-offline' \
+                                  "artifacts/$offline_tgz"
+
+                                PUBLISHED_VERSION="$(node -p 'require("./package.json").version')" \
+                                node -e '
+                                  const fs = require("node:fs");
+                                  fs.writeFileSync("artifacts/publish-summary.json", `${JSON.stringify({
+                                    status: "published",
+                                    version: process.env.PUBLISHED_VERSION,
+                                    registry: process.env.NPM_REGISTRY,
+                                    distTag: process.env.NPM_DIST_TAG,
+                                    packages: [
+                                      "@openeuler/agent-shennong-crash-online",
+                                      "@openeuler/agent-shennong-crash-offline",
+                                    ],
+                                    publishedAt: new Date().toISOString(),
+                                  }, null, 2)}\n`);
+                                '
+                            '''
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            archiveArtifacts(
+                artifacts: 'shennong-crash-agent/artifacts/**,shennong-crash-agent/ci-reports/*.json',
+                allowEmptyArchive: true,
+                fingerprint: true
+            )
+            sh 'chown -R 1000:1000 "$WORKSPACE" 2>/dev/null || true'
+        }
+    }
+}

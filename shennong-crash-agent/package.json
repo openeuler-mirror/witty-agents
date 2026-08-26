@@ -33,7 +33,9 @@
     "pack:variant": "node scripts/build-package.mjs",
     "pack:online": "node scripts/build-package.mjs --variant=online",
     "pack:offline": "node scripts/build-package.mjs --variant=offline",
-    "test:install-contract": "node tests/test-install-contract.mjs"
+    "test:install-contract": "node tests/test-install-contract.mjs",
+    "ci:prepare-ocr": "node scripts/prepare-ocr-models.mjs",
+    "ci:verify-artifacts": "node scripts/verify-ci-artifacts.mjs"
   },
   "dependencies": {
     "jsonc-parser": "^3.3.1"

@@ -303,6 +303,7 @@ async function exerciseExplicitSetup(installation, environment) {
 printf '%s\n' "$*" >> "$SETUP_PYTHON_LOG"
 if [ "$1" = "-c" ]; then
   case "$2" in
+    *platform.python_version*) printf '%s\n' '${pythonInfoJson}' ;;
     *sys.prefix*) exit 0 ;;
     *importlib.import_module*)
       if [ "$SETUP_FAIL_IMPORT" = "1" ]; then exit 42; fi
