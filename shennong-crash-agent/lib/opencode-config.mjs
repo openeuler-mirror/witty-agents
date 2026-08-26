@@ -6,12 +6,14 @@ import {
   mkdirSync,
   openSync,
   readFileSync,
+  realpathSync,
   renameSync,
   rmSync,
   writeFileSync,
 } from "node:fs"
 import { homedir } from "node:os"
 import { dirname, join, resolve } from "node:path"
+import { fileURLToPath, pathToFileURL } from "node:url"
 import { applyEdits, modify, parse, printParseErrorCode } from "jsonc-parser"
 
 const SCHEMA_URL = "https://opencode.ai/config.json"
@@ -28,6 +30,22 @@ function isShennongPackageSpec(spec) {
   for (const packageName of SHENNONG_PACKAGE_NAMES) {
     if (spec === packageName || spec.startsWith(`${packageName}@`)) {
       return true
+    }
+  }
+  if (spec.startsWith("file://")) {
+    try {
+      const pluginPath = fileURLToPath(spec).replaceAll("\\", "/")
+      return (
+        pluginPath.endsWith("/dist/index.js")
+        && (
+          pluginPath.includes("/shennong-crash-agent/")
+          || pluginPath.includes("/agent-shennong-crash/")
+          || pluginPath.includes("/agent-shennong-crash-online/")
+          || pluginPath.includes("/agent-shennong-crash-offline/")
+        )
+      )
+    } catch {
+      return false
     }
   }
   return false
@@ -49,6 +67,18 @@ function readPackageName(packageRoot) {
     throw new Error("package.json does not contain a valid package name")
   }
   return packageJson.name
+}
+
+function getLocalPluginSpec(packageRoot) {
+  const pluginPath = join(packageRoot, "dist", "index.js")
+  if (!existsSync(pluginPath)) {
+    throw new Error(`OpenCode plugin entry is missing: ${pluginPath}`)
+  }
+  const entry = lstatSync(pluginPath)
+  if (entry.isSymbolicLink() || !entry.isFile()) {
+    throw new Error(`refusing to register non-regular OpenCode plugin entry: ${pluginPath}`)
+  }
+  return pathToFileURL(realpathSync(pluginPath)).href
 }
 
 function parseConfig(raw, configPath) {
@@ -120,6 +150,7 @@ export function registerOpenCodePlugin(packageRoot) {
   }
 
   const packageName = readPackageName(packageRoot)
+  const pluginSpec = getLocalPluginSpec(packageRoot)
   const configPath = getConfigPath()
   let raw = `{
   "$schema": "${SCHEMA_URL}"
@@ -148,13 +179,13 @@ export function registerOpenCodePlugin(packageRoot) {
       plugins.push(plugin)
     }
   }
-  plugins.push(packageName)
+  plugins.push(pluginSpec)
 
   if (
     currentPlugins.length === plugins.length
     && currentPlugins.every((plugin, index) => plugin === plugins[index])
   ) {
-    return { changed: false, configPath, packageName }
+    return { changed: false, configPath, packageName, pluginSpec }
   }
 
   const eol = raw.includes("\r\n") ? "\r\n" : "\n"
@@ -164,5 +195,50 @@ export function registerOpenCodePlugin(packageRoot) {
   const updated = applyEdits(raw, edits)
   const backupPath = configExisted ? createConfigBackup(configPath, raw, mode) : null
   atomicWrite(configPath, updated, mode)
-  return { changed: true, configPath, packageName, backupPath }
+  return { changed: true, configPath, packageName, pluginSpec, backupPath }
+}
+
+export function removeOpenCodePlugin() {
+  if (process.env.SHENNONG_SKIP_CONFIG === "1") {
+    return { skipped: true, reason: "SHENNONG_SKIP_CONFIG=1" }
+  }
+
+  const configPath = getConfigPath()
+  if (!existsSync(configPath)) {
+    return { changed: false, configPath, removed: [] }
+  }
+
+  const file = lstatSync(configPath)
+  if (file.isSymbolicLink() || !file.isFile()) {
+    throw new Error(`refusing to modify non-regular OpenCode config: ${configPath}`)
+  }
+  const mode = file.mode & 0o777
+  const raw = readFileSync(configPath, "utf8")
+  const config = parseConfig(raw, configPath)
+  const currentPlugins = config.plugin || []
+  const removed = []
+  const plugins = []
+  for (const plugin of currentPlugins) {
+    if (typeof plugin !== "string") {
+      throw new Error(`OpenCode config field "plugin" must contain only strings: ${configPath}`)
+    }
+    if (isShennongPackageSpec(plugin)) {
+      removed.push(plugin)
+    } else {
+      plugins.push(plugin)
+    }
+  }
+
+  if (removed.length === 0) {
+    return { changed: false, configPath, removed }
+  }
+
+  const eol = raw.includes("\r\n") ? "\r\n" : "\n"
+  const edits = modify(raw, ["plugin"], plugins, {
+    formattingOptions: { insertSpaces: true, tabSize: 2, eol },
+  })
+  const updated = applyEdits(raw, edits)
+  const backupPath = createConfigBackup(configPath, raw, mode)
+  atomicWrite(configPath, updated, mode)
+  return { changed: true, configPath, removed, backupPath }
 }

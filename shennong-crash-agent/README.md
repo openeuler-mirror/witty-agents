@@ -92,10 +92,18 @@ npm exec --offline -- shennong-setup check
 npm exec --offline -- shennong-configure
 ```
 
-该命令把当前 online/offline 包名登记到 OpenCode `plugin` 数组，并移除旧的
-Shennong 包名。若配置文件已经存在且确实需要修改，会先在同目录生成
+该命令把当前 online/offline 安装包的本地 `dist/index.js` 文件 URL 登记到
+OpenCode `plugin` 数组，并移除旧的 Shennong 包名或本地入口。使用本地入口可以
+保证尚未发布的包和断网安装的 offline 包都加载本次已经执行 setup 的同一份文件。
+若配置文件已经存在且确实需要修改，会先在同目录生成
 `opencode.jsonc.shennong-backup-<时间戳>` 备份，再原子写入新配置。重复执行时
 配置内容不变，也不会重复生成备份。
+
+取消注册时只移除 Shennong，不覆盖用户后续增加的其他配置；修改前同样会备份：
+
+```bash
+npm exec --offline -- shennong-configure remove
+```
 
 全局 npm 安装后可直接执行：
 
@@ -121,16 +129,16 @@ npm run build
 `~/.config/opencode/opencode.jsonc`；如需项目级配置，可手动修改
 `.opencode/opencode.jsonc`，或用 `SHENNONG_OPENCODE_CONFIG` 显式指定路径。
 
-### npm 安装后：使用模块名
+### npm 安装后：使用本地文件 URL
 
 ```json
 {
-  "plugin": ["@openeuler/agent-shennong-crash-online"],
+  "plugin": ["file:///path/to/node_modules/@openeuler/agent-shennong-crash-online/dist/index.js"],
   "$schema": "https://opencode.ai/config.json"
 }
 ```
 
-### 方式三（源码目录）：使用文件 URL
+### 源码目录：使用文件 URL
 
 ```json
 {

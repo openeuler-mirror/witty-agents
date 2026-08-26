@@ -7,6 +7,7 @@ import {
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  realpathSync,
   readdirSync,
   rmSync,
   symlinkSync,
@@ -119,7 +120,13 @@ async function installVariant(variant, configPath, environment) {
       `offline: incomplete-content failure was unclear: ${check.stderr}`,
     )
   }
-  return { packageName: report.packageName, packageRoot, project, report }
+  return {
+    packageName: report.packageName,
+    packageRoot,
+    pluginSpec: pathToFileURL(realpathSync(pluginPath)).href,
+    project,
+    report,
+  }
 }
 
 function listConfigBackups(configPath) {
@@ -146,9 +153,10 @@ function exerciseConfigure(installation, configPath, environment) {
   assert(config.custom?.token === "keep-me", "configure: unrelated OpenCode config was changed")
   assert(config.plugin.includes("other-plugin"), "configure: unrelated OpenCode plugin was removed")
   assert(
-    config.plugin.filter((name) => name === installation.packageName).length === 1,
-    `configure: ${installation.packageName} is missing or duplicated`,
+    config.plugin.filter((name) => name === installation.pluginSpec).length === 1,
+    `configure: ${installation.pluginSpec} is missing or duplicated`,
   )
+  assert(!config.plugin.includes(installation.packageName), "configure: package name was registered instead of local entry")
 
   const backupsAfter = listConfigBackups(configPath)
   assert(
@@ -167,6 +175,34 @@ function exerciseConfigure(installation, configPath, environment) {
   assert(
     listConfigBackups(configPath).length === backupsAfter.length,
     "configure: repeated no-op run created an unnecessary backup",
+  )
+}
+
+function exerciseRemove(configPath, project, environment) {
+  const before = readFileSync(configPath, "utf8")
+  const backupsBefore = listConfigBackups(configPath)
+  const command = ["exec", "--offline", "--", "shennong-configure", "remove"]
+  execFileSync("npm", command, { cwd: project, stdio: "inherit", env: environment })
+
+  const after = readFileSync(configPath, "utf8")
+  const config = parse(after, [], { allowTrailingComma: true, disallowComments: false })
+  assert(after.includes("keep-this-comment"), "configure remove: OpenCode JSONC comment was removed")
+  assert(config.custom?.token === "keep-me", "configure remove: unrelated OpenCode config was changed")
+  assert(config.plugin.includes("other-plugin"), "configure remove: unrelated plugin was removed")
+  assert(
+    config.plugin.every((plugin) => !plugin.includes("shennong-crash") && !plugin.includes("agent-shennong-crash")),
+    "configure remove: a Shennong registration remains",
+  )
+  const backupsAfter = listConfigBackups(configPath)
+  assert(backupsAfter.length === backupsBefore.length + 1, "configure remove: backup was not created")
+  const createdBackup = backupsAfter.find((path) => !backupsBefore.includes(path))
+  assert(readFileSync(createdBackup, "utf8") === before, "configure remove: backup is not byte-identical")
+
+  execFileSync("npm", command, { cwd: project, stdio: "inherit", env: environment })
+  assert(readFileSync(configPath, "utf8") === after, "configure remove: repeated run changed config")
+  assert(
+    listConfigBackups(configPath).length === backupsAfter.length,
+    "configure remove: repeated no-op run created a backup",
   )
 }
 
@@ -331,7 +367,7 @@ try {
     npm_config_fund: "false",
   }
 
-  const configuredPackages = []
+  const configuredInstallations = []
   if (TEST_VARIANTS.includes("online")) {
     const online = await installVariant("online", configPath, environment)
     assert(readFileSync(pythonLog, "utf8") === "", "online npm install or --help invoked Python/pip")
@@ -339,7 +375,7 @@ try {
     assert(readFileSync(pythonLog, "utf8") === "", "setup used an implicit Python instead of --python")
     exerciseConfigure(online, configPath, environment)
     assert(readFileSync(pythonLog, "utf8") === "", "configure unexpectedly invoked Python/pip")
-    configuredPackages.push(online.packageName)
+    configuredInstallations.push(online)
   }
 
   if (TEST_VARIANTS.includes("offline")) {
@@ -350,18 +386,22 @@ try {
     }
     exerciseConfigure(offline, configPath, environment)
     assert(readFileSync(pythonLog, "utf8") === "", "offline configure unexpectedly invoked Python/pip")
-    configuredPackages.push(offline.packageName)
+    configuredInstallations.push(offline)
   }
 
   const finalConfig = parse(readFileSync(configPath, "utf8"), [], {
     allowTrailingComma: true,
     disallowComments: false,
   })
-  const finalPackage = configuredPackages.at(-1)
-  for (const packageName of configuredPackages.slice(0, -1)) {
-    assert(!finalConfig.plugin.includes(packageName), `configure did not replace previous package ${packageName}`)
+  const finalInstallation = configuredInstallations.at(-1)
+  for (const installation of configuredInstallations.slice(0, -1)) {
+    assert(!finalConfig.plugin.includes(installation.pluginSpec), `configure did not replace ${installation.pluginSpec}`)
   }
-  assert(finalConfig.plugin.filter((name) => name === finalPackage).length === 1, "final plugin registration is not unique")
+  assert(
+    finalConfig.plugin.filter((name) => name === finalInstallation.pluginSpec).length === 1,
+    "final local plugin registration is not unique",
+  )
+  exerciseRemove(configPath, finalInstallation.project, environment)
   console.log("install contract: PASS")
 } finally {
   rmSync(sandbox, { recursive: true, force: true })
