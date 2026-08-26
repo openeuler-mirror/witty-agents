@@ -1,0 +1,118 @@
+[
+  {
+    "rule_type": "experience",
+    "scope": "domain",
+    "dialect": "elasticsearch",
+    "description": "索引职责：person_info_es=普通人员主档；ticket_record_es_2026=购票(SFZ发站/ZDZ到站/LKXM姓名/LKZJHM证件)；checkin_record_es_2026=进站；crew_record_es_2026=运货；resign_record_es_2026=改签；return_record_es_2026=退票；zdry_info_es=重点人员标签。跨索引用证件号关联（ZJHM/zjhm/LKZJHM/SFZH/senderIdCard）。"
+  },
+  {
+    "rule_type": "experience",
+    "scope": "domain",
+    "dialect": "elasticsearch",
+    "table": "zdry_info_es",
+    "description": "限高/在逃/上访/邪教/涉疆/涉军/重点人员/涉恐/涉毒等标签必须查 zdry_info_es，过滤字段 personTypeName。禁止用 ticket_record_es_2026.isLimitHigh（几乎全为 null/false，不可用）。"
+  },
+  {
+    "rule_type": "experience",
+    "scope": "domain",
+    "dialect": "elasticsearch",
+    "table": "zdry_info_es",
+    "description": "zdry_info_es 字段：姓名 zdryxm、证件号 zjhm、性别 zdryxb(1男/2女)、类型 personTypeName、事由 gkyj、在逃编号 ztrybh。禁止误用 xm/sfzh/XM/ZJHM 等人员主档字段名。"
+  },
+  {
+    "rule_type": "experience",
+    "scope": "domain",
+    "dialect": "elasticsearch",
+    "description": "本库站点编码不统一：同一城市可能同时存在区号编码（如 029、0551）和汉字站名（如 长沙南、广州南），不同索引偏好不同。匹配城市时应对相关站名字段用 OR 组合多种别名，不要只写一种。"
+  },
+  {
+    "rule_type": "experience",
+    "scope": "domain",
+    "dialect": "elasticsearch",
+    "table": "ticket_record_es_2026",
+    "description": "购票索引 ticket_record_es_2026：发站字段 SFZ/fromStationName，到站 ZDZ/toStationName，旅客 LKXM/LKZJHM。部分线路用汉字站名（长沙南、广州南、北京西），部分用区号+方位（0551南、029北）。问「从A到B」需同时约束发站与到站。"
+  },
+  {
+    "rule_type": "experience",
+    "scope": "domain",
+    "dialect": "elasticsearch",
+    "table": "checkin_record_es_2026",
+    "description": "进站索引 checkin_record_es_2026：站名字段 TGKKMC/stationName/ZDZ/FZ，证件 SFZH。西安等多用区号 029；长沙在本库进站数据中少见 0731，勿照搬购票规则。"
+  },
+  {
+    "rule_type": "experience",
+    "scope": "domain",
+    "dialect": "elasticsearch",
+    "description": "运货/货运/寄件 → crew_record_es_2026（寄件人 senderName/senderIdCard，站点 fromStationName/loadStation/toStationName）。运货表无性别，需性别时关联 person_info_es（ZJHM=证件号，XB/gender）。"
+  },
+  {
+    "rule_type": "experience",
+    "scope": "domain",
+    "dialect": "elasticsearch",
+    "table": "person_info_es",
+    "description": "person_info_es 含姓名 XM、性别 XB(1男/2女)、证件 ZJHM、籍贯 JG、民族 MZ、地址 address，不含限高/在逃等标签。"
+  },
+  {
+    "rule_type": "experience",
+    "scope": "domain",
+    "dialect": "elasticsearch",
+    "description": "跨索引查限高/在逃：外层可用 SELECT * FROM zdry_info_es WHERE personTypeName=... AND zjhm IN (SELECT …)；需要主档性别/籍贯时再关联 person_info_es。不要只查 ticket；也不要用人员主档字段名（XM/SFZH）去查 zdry。"
+  },
+  {
+    "rule_type": "experience",
+    "scope": "domain",
+    "dialect": "elasticsearch",
+    "table": "zdry_info_es",
+    "description": "字段别名纠错（zdry_info_es）：不要用人员主档字段名。正确写法姓名=zdryxm（勿用 XM/xm）、证件=zjhm（勿用 sfzh/SFZH/idCard/ZJHM）、性别=zdryxb（勿用 XB/xbdm/xbxdm）。"
+  },
+  {
+    "rule_type": "experience",
+    "scope": "domain",
+    "dialect": "elasticsearch",
+    "table": "resign_record_es_2026",
+    "description": "改签索引 resign_record_es_2026：目的站/到站优先用 ZDZ（或数据中的到站编码如 028*），不要用 DTXL* 动态线路字段当作改签目的站。"
+  },
+  {
+    "rule_type": "experience",
+    "scope": "domain",
+    "dialect": "elasticsearch",
+    "table": "return_record_es_2026",
+    "description": "退票索引 return_record_es_2026：站名/发到站字段以 SFZ、ZDZ 及文档映射为准；跨表关联用旅客证件字段，勿与购票字段名混用。"
+  },
+  {
+    "rule_type": "mapping",
+    "scope": "domain",
+    "dialect": "elasticsearch",
+    "mapping_type": "field_alias",
+    "table": "zdry_info_es",
+    "col": "zjhm",
+    "description": "字段别名：在 zdry_info_es 中，口语「身份证/证件号/sfzh/idCard/ZJHM」对应列 zjhm。"
+  },
+  {
+    "rule_type": "mapping",
+    "scope": "domain",
+    "dialect": "elasticsearch",
+    "mapping_type": "field_alias",
+    "table": "zdry_info_es",
+    "col": "zdryxm",
+    "description": "字段别名：在 zdry_info_es 中，口语「姓名/XM/xm」对应列 zdryxm。"
+  },
+  {
+    "rule_type": "mapping",
+    "scope": "domain",
+    "dialect": "elasticsearch",
+    "mapping_type": "field_alias",
+    "table": "zdry_info_es",
+    "col": "zdryxb",
+    "description": "字段别名：在 zdry_info_es 中，口语「性别/XB/xbdm」对应列 zdryxb（1男/2女）。"
+  },
+  {
+    "rule_type": "mapping",
+    "scope": "domain",
+    "dialect": "elasticsearch",
+    "mapping_type": "field_alias",
+    "table": "ticket_record_es_2026",
+    "col": "LKZJHM",
+    "description": "字段别名：购票旅客证件号列为 LKZJHM；与 zdry.zjhm、person.ZJHM、进站 SFZH 跨表关联时注意列名不同。"
+  }
+]

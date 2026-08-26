@@ -1,0 +1,22 @@
+datasources:
+  local-es:
+    id: local-es
+    type: elasticsearch
+    version: 7.10.2
+    hosts:
+      - http://127.0.0.1:9200
+    username: ""
+    password: ""
+    verify_certs: false
+    default_index: "*"
+    query_mode: auto
+    readonly: true
+    max_size: 100
+    timeout_sec: 30
+    enabled: true
+    rules_kb_id: ""
+    rules_kb_name: nl2sql-rules-local-es
+  mock:
+    id: mock
+    type: mock
+    enabled: true
