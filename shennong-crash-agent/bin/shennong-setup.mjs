@@ -57,7 +57,7 @@ function usage() {
 Commands:
   install   Install Python dependencies into package-local .venvs (default)
   check     Check package variant and Python/wheel platform without changing files
-  register  Add this npm package to the OpenCode plugin configuration`)
+  register  Compatibility alias for shennong-configure`)
 }
 
 function parseArgs(argv) {

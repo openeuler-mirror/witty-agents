@@ -405,6 +405,7 @@ function writeStagePackageJson(stageDir, basePackage, variant) {
     scripts: {
       postinstall: "node postinstall.mjs",
       "shennong-setup": "node bin/shennong-setup.mjs",
+      "shennong-configure": "node bin/shennong-configure.mjs",
     },
     shennongVariant: variant,
     ...(variant === "offline"
@@ -468,6 +469,7 @@ function main() {
     ...requiredFiles,
     "package-content-manifest.json",
     "package-variant.json",
+    "bin/shennong-configure.mjs",
     "bin/shennong-setup.mjs",
     "lib/opencode-config.mjs",
     "postinstall.mjs",

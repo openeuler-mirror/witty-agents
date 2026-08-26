@@ -13,7 +13,7 @@ import {
   writeFileSync,
 } from "node:fs"
 import { tmpdir } from "node:os"
-import { dirname, join, resolve } from "node:path"
+import { basename, dirname, join, resolve } from "node:path"
 import { fileURLToPath, pathToFileURL } from "node:url"
 import { parse } from "jsonc-parser"
 
@@ -21,6 +21,14 @@ const TEST_DIR = dirname(fileURLToPath(import.meta.url))
 const PROJECT_ROOT = resolve(TEST_DIR, "..")
 const ARTIFACT_DIR = join(PROJECT_ROOT, "artifacts")
 const sandbox = mkdtempSync(join(tmpdir(), "shennong-install-contract-"))
+const TEST_VARIANTS = (process.env.SHENNONG_TEST_VARIANTS || "online,offline")
+  .split(",")
+  .map((variant) => variant.trim())
+  .filter(Boolean)
+
+if (TEST_VARIANTS.length === 0 || TEST_VARIANTS.some((variant) => !["online", "offline"].includes(variant))) {
+  throw new Error("SHENNONG_TEST_VARIANTS must contain online and/or offline")
+}
 
 function assert(condition, message) {
   if (!condition) {
@@ -51,6 +59,7 @@ async function installVariant(variant, configPath, environment) {
   const project = join(sandbox, `consumer-${variant}`)
   mkdirSync(project, { recursive: true })
   writeFileSync(join(project, "package.json"), `${JSON.stringify({ name: `consumer-${variant}`, private: true }, null, 2)}\n`)
+  const configBeforeInstall = readFileSync(configPath, "utf8")
   const installArgs = [
     "install",
     "--foreground-scripts",
@@ -62,6 +71,10 @@ async function installVariant(variant, configPath, environment) {
     tgz,
   ]
   execFileSync("npm", installArgs, { cwd: project, stdio: "inherit", env: environment })
+  assert(
+    readFileSync(configPath, "utf8") === configBeforeInstall,
+    `${variant}: npm install unexpectedly changed OpenCode configuration`,
+  )
 
   const packageRoot = join(project, "node_modules", ...report.packageName.split("/"))
   assert(existsSync(packageRoot), `${variant}: installed package directory is missing`)
@@ -85,23 +98,10 @@ async function installVariant(variant, configPath, environment) {
   await hooks.config(pluginConfig)
   assert(pluginConfig.agent?.shennong?.mode === "primary", `${variant}: Shennong primary agent was not registered`)
 
-  const raw = readFileSync(configPath, "utf8")
-  const config = parse(raw, [], { allowTrailingComma: true, disallowComments: false })
-  assert(raw.includes("keep-this-comment"), `${variant}: OpenCode JSONC comment was removed`)
-  assert(config.custom?.token === "keep-me", `${variant}: unrelated OpenCode config was changed`)
-  assert(config.plugin.includes("other-plugin"), `${variant}: unrelated OpenCode plugin was removed`)
-  assert(config.plugin.filter((name) => name === report.packageName).length === 1, `${variant}: scoped plugin entry is missing or duplicated`)
-
-  const beforeRepeat = raw
-  execFileSync("node", [join(packageRoot, "postinstall.mjs")], {
-    cwd: project,
-    stdio: "inherit",
-    env: environment,
-  })
-  assert(readFileSync(configPath, "utf8") === beforeRepeat, `${variant}: repeated registration is not byte-identical`)
-
   const setupBin = join(project, "node_modules", ".bin", "shennong-setup")
+  const configureBin = join(project, "node_modules", ".bin", "shennong-configure")
   assert(existsSync(setupBin), `${variant}: shennong-setup bin link is missing`)
+  assert(existsSync(configureBin), `${variant}: shennong-configure bin link is missing`)
   execFileSync("npm", ["exec", "--offline", "--", "shennong-setup", "--help"], {
     cwd: project,
     stdio: "ignore",
@@ -119,10 +119,70 @@ async function installVariant(variant, configPath, environment) {
       `offline: incomplete-content failure was unclear: ${check.stderr}`,
     )
   }
-  return { packageName: report.packageName, packageRoot, project }
+  return { packageName: report.packageName, packageRoot, project, report }
+}
+
+function listConfigBackups(configPath) {
+  const prefix = `${basename(configPath)}.shennong-backup-`
+  return readdirSync(dirname(configPath))
+    .filter((name) => name.startsWith(prefix))
+    .map((name) => join(dirname(configPath), name))
+    .sort()
+}
+
+function exerciseConfigure(installation, configPath, environment) {
+  const before = readFileSync(configPath, "utf8")
+  const backupsBefore = listConfigBackups(configPath)
+  const command = ["exec", "--offline", "--", "shennong-configure"]
+  execFileSync("npm", command, {
+    cwd: installation.project,
+    stdio: "inherit",
+    env: environment,
+  })
+
+  const after = readFileSync(configPath, "utf8")
+  const config = parse(after, [], { allowTrailingComma: true, disallowComments: false })
+  assert(after.includes("keep-this-comment"), "configure: OpenCode JSONC comment was removed")
+  assert(config.custom?.token === "keep-me", "configure: unrelated OpenCode config was changed")
+  assert(config.plugin.includes("other-plugin"), "configure: unrelated OpenCode plugin was removed")
+  assert(
+    config.plugin.filter((name) => name === installation.packageName).length === 1,
+    `configure: ${installation.packageName} is missing or duplicated`,
+  )
+
+  const backupsAfter = listConfigBackups(configPath)
+  assert(
+    backupsAfter.length === backupsBefore.length + 1,
+    "configure: changing an existing config did not create exactly one backup",
+  )
+  const createdBackup = backupsAfter.find((path) => !backupsBefore.includes(path))
+  assert(readFileSync(createdBackup, "utf8") === before, "configure: backup is not byte-identical to the previous config")
+
+  execFileSync("npm", command, {
+    cwd: installation.project,
+    stdio: "inherit",
+    env: environment,
+  })
+  assert(readFileSync(configPath, "utf8") === after, "configure: repeated run changed config bytes")
+  assert(
+    listConfigBackups(configPath).length === backupsAfter.length,
+    "configure: repeated no-op run created an unnecessary backup",
+  )
 }
 
 function exerciseExplicitSetup(installation, environment) {
+  const offline = installation.report.variant === "offline"
+  const pythonInfo = installation.report.wheelPlatform || {
+    python: "3.11.9",
+    implementation: "CPython",
+    system: "linux",
+    machine: "x86_64",
+    cache_tag: "cpython-311",
+    sysconfig_platform: "linux-x86_64",
+    soabi: "cpython-311-x86_64-linux-gnu",
+    libc: ["glibc", "2.28"],
+  }
+  const pythonInfoJson = JSON.stringify(pythonInfo)
   const setupLog = join(sandbox, "setup-python-calls.log")
   const setupPython = join(sandbox, "setup-python")
   writeFileSync(setupLog, "")
@@ -135,7 +195,7 @@ if [ "$1" = "-c" ]; then
       if [ "$SETUP_FAIL_IMPORT" = "1" ]; then exit 42; fi
       exit 0
       ;;
-    *) printf '%s\n' '{"python":"3.11.9","implementation":"CPython","system":"linux","machine":"x86_64","cache_tag":"cpython-311","sysconfig_platform":"linux-x86_64","soabi":"cpython-311-x86_64-linux-gnu","libc":["glibc","2.28"]}' ;;
+    *) printf '%s\n' '${pythonInfoJson}' ;;
   esac
 elif [ "$1" = "-m" ] && [ "$2" = "venv" ]; then
   mkdir -p "$3/bin"
@@ -161,12 +221,25 @@ exit 0
   assert(existsSync(join(venvRoot, "setup-complete.json")), "setup: completion marker is missing")
   const marker = JSON.parse(readFileSync(join(venvRoot, "setup-complete.json"), "utf8"))
   assert(/^[a-f0-9]{64}$/.test(marker.contentManifestSha256), "setup: content manifest digest is missing")
-  assert(marker.wheelManifestSha256 === null, "online setup: unexpected wheel manifest digest")
+  if (offline) {
+    assert(/^[a-f0-9]{64}$/.test(marker.wheelManifestSha256), "offline setup: wheel manifest digest is missing")
+  } else {
+    assert(marker.wheelManifestSha256 === null, "online setup: unexpected wheel manifest digest")
+  }
   const firstCalls = readFileSync(setupLog, "utf8")
   assert(firstCalls.includes("-m venv"), "setup: Python venv creation was not invoked")
   assert(!firstCalls.includes(".venvs.tmp-"), "setup: venv was created in a movable temporary path")
   assert(firstCalls.includes("-m pip install"), "setup: pip install was not invoked")
   assert(firstCalls.includes("-m pip check"), "setup: pip check was not invoked")
+  if (offline) {
+    const installCalls = firstCalls.split("\n").filter((line) => line.includes("-m pip install"))
+    assert(installCalls.length >= 3, "offline setup: expected pip install calls were not recorded")
+    for (const call of installCalls) {
+      assert(call.includes("--no-index"), `offline setup: pip install can reach an index: ${call}`)
+      assert(call.includes("--find-links"), `offline setup: bundled wheelhouse was not selected: ${call}`)
+      assert(!/https?:\/\//.test(call), `offline setup: pip install contains a remote URL: ${call}`)
+    }
+  }
   for (const moduleName of ["crash_matcher", "faiss", "paddleocr", "jsonschema"]) {
     assert(firstCalls.includes(`importlib.import_module(\"${moduleName}\")`), `setup: ${moduleName} import was not verified`)
   }
@@ -236,20 +309,37 @@ try {
     npm_config_fund: "false",
   }
 
-  const online = await installVariant("online", configPath, environment)
-  assert(readFileSync(pythonLog, "utf8") === "", "online npm install or --help invoked Python/pip")
-  exerciseExplicitSetup(online, environment)
-  assert(readFileSync(pythonLog, "utf8") === "", "setup used an implicit Python instead of --python")
+  const configuredPackages = []
+  if (TEST_VARIANTS.includes("online")) {
+    const online = await installVariant("online", configPath, environment)
+    assert(readFileSync(pythonLog, "utf8") === "", "online npm install or --help invoked Python/pip")
+    exerciseExplicitSetup(online, environment)
+    assert(readFileSync(pythonLog, "utf8") === "", "setup used an implicit Python instead of --python")
+    exerciseConfigure(online, configPath, environment)
+    assert(readFileSync(pythonLog, "utf8") === "", "configure unexpectedly invoked Python/pip")
+    configuredPackages.push(online.packageName)
+  }
 
-  const offline = await installVariant("offline", configPath, environment)
-  assert(readFileSync(pythonLog, "utf8") === "", "offline npm install or --help invoked Python/pip")
+  if (TEST_VARIANTS.includes("offline")) {
+    const offline = await installVariant("offline", configPath, environment)
+    assert(readFileSync(pythonLog, "utf8") === "", "offline npm install or --help invoked Python/pip")
+    if (offline.report.contentComplete && offline.report.pythonDependencyClosureVerified) {
+      exerciseExplicitSetup(offline, environment)
+    }
+    exerciseConfigure(offline, configPath, environment)
+    assert(readFileSync(pythonLog, "utf8") === "", "offline configure unexpectedly invoked Python/pip")
+    configuredPackages.push(offline.packageName)
+  }
 
   const finalConfig = parse(readFileSync(configPath, "utf8"), [], {
     allowTrailingComma: true,
     disallowComments: false,
   })
-  assert(!finalConfig.plugin.includes(online.packageName), "installing offline did not replace online plugin registration")
-  assert(finalConfig.plugin.filter((name) => name === offline.packageName).length === 1, "offline plugin registration is not unique")
+  const finalPackage = configuredPackages.at(-1)
+  for (const packageName of configuredPackages.slice(0, -1)) {
+    assert(!finalConfig.plugin.includes(packageName), `configure did not replace previous package ${packageName}`)
+  }
+  assert(finalConfig.plugin.filter((name) => name === finalPackage).length === 1, "final plugin registration is not unique")
   console.log("install contract: PASS")
 } finally {
   rmSync(sandbox, { recursive: true, force: true })

@@ -17,7 +17,8 @@
     "postinstall.mjs"
   ],
   "bin": {
-    "shennong-setup": "./bin/shennong-setup.mjs"
+    "shennong-setup": "./bin/shennong-setup.mjs",
+    "shennong-configure": "./bin/shennong-configure.mjs"
   },
   "publishConfig": {
     "access": "public"
@@ -32,6 +33,7 @@
     "pack:online": "node scripts/build-package.mjs --variant=online",
     "pack:offline": "node scripts/build-package.mjs --variant=offline",
     "shennong-setup": "node bin/shennong-setup.mjs",
+    "shennong-configure": "node bin/shennong-configure.mjs",
     "test:install-contract": "node tests/test-install-contract.mjs",
     "postinstall": "node postinstall.mjs"
   },

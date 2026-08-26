@@ -18,9 +18,10 @@
 
 ## 安装
 
-安装分为两步，npm 安装阶段不会创建 Python 虚拟环境，也不会执行 pip。
+安装分为三步：install → setup → configure。npm 安装阶段只落盘包文件，
+不会创建 Python 虚拟环境、执行 pip 或修改 OpenCode 配置。
 
-### 第一步：安装 npm 包并注册 OpenCode
+### 第一步：安装 npm 包
 
 在线包：
 
@@ -34,9 +35,7 @@ npm install @openeuler/agent-shennong-crash-online
 npm install @openeuler/agent-shennong-crash-offline
 ```
 
-`npm install` 会安装插件、Skill 等文件，并通过 `postinstall.mjs` 将当前包名
-加入 `~/.config/opencode/opencode.jsonc` 的 `plugin` 数组。它只修改这一项，
-保留其他字段及 `plugin` 数组外的注释。设置 `SHENNONG_SKIP_CONFIG=1` 可以跳过自动注册。
+`npm install` 只安装插件、Skill 和命令文件，不修改 Python 环境和 OpenCode 配置。
 
 ### 第二步：显式安装 Python 依赖
 
@@ -62,17 +61,34 @@ shennong-setup install
 每套环境执行 `pip check` 和核心模块导入；任一验证失败都不会写入完成标记，
 使用 `--force` 重装时还会恢复原有可用环境。
 
+安装成功后会写入 `.venvs/setup-complete.json`。重复执行相同命令时会重新执行
+`pip check` 和核心模块导入；全部通过后直接返回，不会再次创建环境或执行 pip install。
+
 可先只检查环境，不写入文件：
 
 ```bash
 npm exec --offline -- shennong-setup check
 ```
 
-如果安装时使用了 `npm install --ignore-scripts`，可补做 OpenCode 注册：
+### 第三步：登记 OpenCode 插件
 
 ```bash
-npm exec --offline -- shennong-setup register
+npm exec --offline -- shennong-configure
 ```
+
+该命令把当前 online/offline 包名登记到 OpenCode `plugin` 数组，并移除旧的
+Shennong 包名。若配置文件已经存在且确实需要修改，会先在同目录生成
+`opencode.jsonc.shennong-backup-<时间戳>` 备份，再原子写入新配置。重复执行时
+配置内容不变，也不会重复生成备份。
+
+全局 npm 安装后可直接执行：
+
+```bash
+shennong-configure
+```
+
+旧的 `shennong-setup register` 暂时保留为兼容别名，新流程统一使用
+`shennong-configure`。
 
 ### 直接引用源码目录（开发调试）
 
@@ -88,7 +104,7 @@ npm run build
 
 ## 注册到 OpenCode
 
-安装插件后，**必须**让 OpenCode 加载插件。自动注册默认写入
+安装插件后，**必须**执行 `shennong-configure` 让 OpenCode 加载插件。默认写入
 `~/.config/opencode/opencode.jsonc`；如需项目级配置，可手动修改
 `.opencode/opencode.jsonc`，或用 `SHENNONG_OPENCODE_CONFIG` 显式指定路径。
 
@@ -236,7 +252,9 @@ PaddleOCR 的 OpenCV 扩展依赖与项目现有 `opencv-python==4.9.0.80`
 
 ```
 shennong-crash-agent/
-├── bin/shennong-setup.mjs    # 显式安装 Python 依赖的命令
+├── bin/
+│   ├── shennong-setup.mjs       # 一键安装三套 Python 环境
+│   └── shennong-configure.mjs   # 备份并登记 OpenCode 插件
 ├── lib/opencode-config.mjs   # OpenCode JSONC 安全注册逻辑
 ├── skills/                   # 4 个核心 Skill / MCP
 │   ├── crash-feature-matcher/

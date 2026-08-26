@@ -89,6 +89,31 @@ function atomicWrite(configPath, content, mode) {
   }
 }
 
+function createConfigBackup(configPath, raw, mode) {
+  const timestamp = new Date().toISOString().replace(/[-:.]/g, "")
+  const basePath = `${configPath}.shennong-backup-${timestamp}`
+  for (let attempt = 0; attempt < 1000; attempt += 1) {
+    const backupPath = attempt === 0 ? basePath : `${basePath}-${attempt}`
+    let fileDescriptor = null
+    try {
+      fileDescriptor = openSync(backupPath, "wx", mode)
+      writeFileSync(fileDescriptor, raw, "utf8")
+      fsyncSync(fileDescriptor)
+      closeSync(fileDescriptor)
+      return backupPath
+    } catch (error) {
+      if (fileDescriptor !== null) {
+        closeSync(fileDescriptor)
+      }
+      if (error.code !== "EEXIST") {
+        rmSync(backupPath, { force: true })
+        throw error
+      }
+    }
+  }
+  throw new Error(`unable to create a unique OpenCode config backup for ${configPath}`)
+}
+
 export function registerOpenCodePlugin(packageRoot) {
   if (process.env.SHENNONG_SKIP_CONFIG === "1") {
     return { skipped: true, reason: "SHENNONG_SKIP_CONFIG=1" }
@@ -100,12 +125,14 @@ export function registerOpenCodePlugin(packageRoot) {
   "$schema": "${SCHEMA_URL}"
 }\n`
   let mode = 0o600
+  let configExisted = false
 
   if (existsSync(configPath)) {
     const file = lstatSync(configPath)
     if (file.isSymbolicLink() || !file.isFile()) {
       throw new Error(`refusing to modify non-regular OpenCode config: ${configPath}`)
     }
+    configExisted = true
     mode = file.mode & 0o777
     raw = readFileSync(configPath, "utf8")
   }
@@ -135,6 +162,7 @@ export function registerOpenCodePlugin(packageRoot) {
     formattingOptions: { insertSpaces: true, tabSize: 2, eol },
   })
   const updated = applyEdits(raw, edits)
+  const backupPath = configExisted ? createConfigBackup(configPath, raw, mode) : null
   atomicWrite(configPath, updated, mode)
-  return { changed: true, configPath, packageName }
+  return { changed: true, configPath, packageName, backupPath }
 }
