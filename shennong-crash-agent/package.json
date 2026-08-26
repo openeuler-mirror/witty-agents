@@ -13,8 +13,7 @@
     "dist",
     "skills",
     "bin",
-    "lib",
-    "postinstall.mjs"
+    "lib"
   ],
   "bin": {
     "shennong-setup": "./bin/shennong-setup.mjs",
@@ -32,19 +31,12 @@
     "pack:variant": "node scripts/build-package.mjs",
     "pack:online": "node scripts/build-package.mjs --variant=online",
     "pack:offline": "node scripts/build-package.mjs --variant=offline",
-    "shennong-setup": "node bin/shennong-setup.mjs",
-    "shennong-configure": "node bin/shennong-configure.mjs",
-    "test:install-contract": "node tests/test-install-contract.mjs",
-    "postinstall": "node postinstall.mjs"
+    "test:install-contract": "node tests/test-install-contract.mjs"
   },
   "dependencies": {
     "jsonc-parser": "^3.3.1"
   },
   "devDependencies": {
-    "@opencode-ai/plugin": "^1.1.19",
-    "@opencode-ai/sdk": "^1.1.19",
-    "tsup": "^8.5.1",
-    "typescript": "^5.7.0",
-    "@types/node": "^20.0.0"
+    "@opencode-ai/plugin": "^1.1.19"
   }
 }

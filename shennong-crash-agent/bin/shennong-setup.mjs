@@ -15,7 +15,6 @@ import {
 } from "node:fs"
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path"
 import { fileURLToPath } from "node:url"
-import { registerOpenCodePlugin } from "../lib/opencode-config.mjs"
 
 const BIN_DIR = dirname(fileURLToPath(import.meta.url))
 const PROJECT_ROOT = resolve(BIN_DIR, "..")
@@ -52,12 +51,10 @@ function usage() {
   console.log(`Usage:
   shennong-setup install [--python /path/to/python] [--force]
   shennong-setup check   [--python /path/to/python]
-  shennong-setup register
 
 Commands:
   install   Install Python dependencies into package-local .venvs (default)
-  check     Check package variant and Python/wheel platform without changing files
-  register  Compatibility alias for shennong-configure`)
+  check     Check package variant and Python/wheel platform without changing files`)
 }
 
 function parseArgs(argv) {
@@ -65,7 +62,7 @@ function parseArgs(argv) {
   let commandSeen = false
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index]
-    if (["install", "check", "register"].includes(arg) && !commandSeen) {
+    if (["install", "check"].includes(arg) && !commandSeen) {
       options.command = arg
       commandSeen = true
     } else if (arg === "--force") {
@@ -539,10 +536,7 @@ function install(options) {
 
 try {
   const options = parseArgs(process.argv.slice(2))
-  if (options.command === "register") {
-    const result = registerOpenCodePlugin(PROJECT_ROOT)
-    console.log(result.changed ? `Registered in ${result.configPath}` : "OpenCode registration already up to date.")
-  } else if (options.command === "check") {
+  if (options.command === "check") {
     checkSetup(options)
   } else {
     install(options)

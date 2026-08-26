@@ -118,6 +118,9 @@ function shouldCopy(source, variant) {
   if (rel.startsWith(join("skills", "witty-log-detection", "test"))) {
     return false
   }
+  if (rel === join("skills", "crash-feature-matcher", "scripts", "test_community_retrieval.py")) {
+    return false
+  }
   if (
     variant === "online" &&
     rel.startsWith(join("skills", "witty-log-detection", "src", "model", "ocr"))
@@ -128,7 +131,7 @@ function shouldCopy(source, variant) {
 }
 
 function copyPackageFiles(stageDir, variant) {
-  for (const item of ["dist", "skills", "bin", "lib", "README.md", "postinstall.mjs"]) {
+  for (const item of ["dist", "skills", "bin", "lib", "README.md"]) {
     const source = join(PROJECT_ROOT, item)
     if (!existsSync(source)) {
       throw new Error(`required package path is missing: ${source}`)
@@ -388,8 +391,13 @@ function writeContentManifest(stageDir, requiredFiles, lfsPointers) {
 }
 
 function writeStagePackageJson(stageDir, basePackage, variant) {
+  const {
+    scripts: _baseScripts,
+    devDependencies: _baseDevDependencies,
+    ...publishableBase
+  } = basePackage
   const packageJson = {
-    ...basePackage,
+    ...publishableBase,
     name: `${basePackage.name}-${variant}`,
     description: `${basePackage.description} (${variant} package)`,
     files: [
@@ -397,16 +405,10 @@ function writeStagePackageJson(stageDir, basePackage, variant) {
       "skills",
       "bin",
       "lib",
-      "postinstall.mjs",
       "package-variant.json",
       "package-content-manifest.json",
       ...(variant === "offline" ? ["python-wheels", "python-wheel-manifest.json"] : []),
     ],
-    scripts: {
-      postinstall: "node postinstall.mjs",
-      "shennong-setup": "node bin/shennong-setup.mjs",
-      "shennong-configure": "node bin/shennong-configure.mjs",
-    },
     shennongVariant: variant,
     ...(variant === "offline"
       ? { bundledDependencies: Object.keys(basePackage.dependencies || {}) }
@@ -472,7 +474,6 @@ function main() {
     "bin/shennong-configure.mjs",
     "bin/shennong-setup.mjs",
     "lib/opencode-config.mjs",
-    "postinstall.mjs",
     ...(options.variant === "offline" ? ["node_modules/jsonc-parser/package.json"] : []),
   ])
   validateNoRuntimeDatabases(npmResult)

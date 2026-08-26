@@ -87,9 +87,6 @@ Shennong 包名。若配置文件已经存在且确实需要修改，会先在�
 shennong-configure
 ```
 
-旧的 `shennong-setup register` 暂时保留为兼容别名，新流程统一使用
-`shennong-configure`。
-
 ### 直接引用源码目录（开发调试）
 
 ```bash
@@ -210,12 +207,8 @@ export SHENNONG_LLM_MODEL="your-model"
 - `crash-feature-matcher` MCP：stdio 类型，由 `skills/crash-feature-matcher/run_mcp.sh` 启动，依赖 `.venvs/crash-feature-matcher`。
 - `witty-log-detection` MCP：SSE 类型，默认地址 `http://localhost:12144/sse`，由 `skills/witty-log-detection/run_server.sh` 启动，依赖 `.venvs/witty-log-detection`。
 
-`npm install` 只安装 npm 文件并注册 OpenCode，不会创建 Python venv。需要
-Python 3.11 或 3.12；请在安装完成后显式执行：
-
-```bash
-npm exec --offline -- shennong-setup install
-```
+两个 MCP 所需的 Python 环境均由 `shennong-setup` 创建；`npm install` 本身不会
+创建 Python venv，也不会修改 OpenCode 配置。
 
 ## online / offline 变体打包
 
@@ -269,8 +262,7 @@ shennong-crash-agent/
 ├── scripts/
 │   ├── build-package.mjs     # online/offline 变体打包与检查
 │   └── validate-dist.mjs     # 预构建 dist 入口校验
-├── package.json
-└── postinstall.mjs
+└── package.json
 ```
 
 ## 版本
