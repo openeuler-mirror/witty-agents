@@ -157,6 +157,31 @@ function exerciseConfigure(installation, configPath, environment) {
     `configure: ${installation.pluginSpec} is missing or duplicated`,
   )
   assert(!config.plugin.includes(installation.packageName), "configure: package name was registered instead of local entry")
+  assert(after.includes("keep-mcp-comment"), "configure: unrelated MCP comment was removed")
+  assert(config.mcp?.["other-mcp"]?.enabled === false, "configure: unrelated MCP was changed")
+  assert(
+    JSON.stringify(config.mcp?.["crash-feature-matcher"]) === JSON.stringify({
+      type: "local",
+      command: [
+        "bash",
+        realpathSync(join(installation.packageRoot, "skills", "crash-feature-matcher", "run_mcp.sh")),
+      ],
+      enabled: true,
+      timeout: 30000,
+    }),
+    "configure: crash-feature-matcher MCP registration is incorrect",
+  )
+  assert(
+    JSON.stringify(config.mcp?.["witty-log-detection"]) === JSON.stringify({
+      type: "remote",
+      url: "http://127.0.0.1:12144/sse",
+      enabled: true,
+      timeout: 30000,
+    }),
+    "configure: witty-log-detection MCP registration is incorrect",
+  )
+  assert(!Object.hasOwn(config.mcp, "crash_feature_matcher"), "configure: legacy crash MCP remains")
+  assert(!Object.hasOwn(config.mcp, "witty_log_detection"), "configure: legacy witty MCP remains")
 
   const backupsAfter = listConfigBackups(configPath)
   assert(
@@ -189,6 +214,10 @@ function exerciseRemove(configPath, project, environment) {
   assert(after.includes("keep-this-comment"), "configure remove: OpenCode JSONC comment was removed")
   assert(config.custom?.token === "keep-me", "configure remove: unrelated OpenCode config was changed")
   assert(config.plugin.includes("other-plugin"), "configure remove: unrelated plugin was removed")
+  assert(after.includes("keep-mcp-comment"), "configure remove: unrelated MCP comment was removed")
+  assert(config.mcp?.["other-mcp"]?.enabled === false, "configure remove: unrelated MCP was changed")
+  assert(!Object.hasOwn(config.mcp || {}, "crash-feature-matcher"), "configure remove: crash MCP remains")
+  assert(!Object.hasOwn(config.mcp || {}, "witty-log-detection"), "configure remove: witty MCP remains")
   assert(
     config.plugin.every((plugin) => !plugin.includes("shennong-crash") && !plugin.includes("agent-shennong-crash")),
     "configure remove: a Shennong registration remains",
@@ -346,6 +375,12 @@ try {
   // keep-this-comment
   "$schema": "https://opencode.ai/config.json",
   "plugin": ["other-plugin", "shennong-crash-agent-online", "@openeuler/agent-shennong-crash-online@0.10.2",],
+  "mcp": {
+    // keep-mcp-comment
+    "other-mcp": { "type": "remote", "url": "https://example.invalid/mcp", "enabled": false, },
+    "crash_feature_matcher": { "type": "local", "command": ["false"], },
+    "witty_log_detection": { "type": "remote", "url": "http://127.0.0.1:9/sse", },
+  },
   "custom": { "token": "keep-me", },
 }\n`)
   writeFileSync(pythonLog, "")
@@ -401,6 +436,8 @@ try {
     finalConfig.plugin.filter((name) => name === finalInstallation.pluginSpec).length === 1,
     "final local plugin registration is not unique",
   )
+  assert(finalConfig.mcp?.["crash-feature-matcher"]?.type === "local", "final crash MCP is missing")
+  assert(finalConfig.mcp?.["witty-log-detection"]?.type === "remote", "final witty MCP is missing")
   exerciseRemove(configPath, finalInstallation.project, environment)
   console.log("install contract: PASS")
 } finally {

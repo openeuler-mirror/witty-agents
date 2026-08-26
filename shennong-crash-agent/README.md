@@ -86,7 +86,7 @@ npm exec --offline -- shennong-setup stop
 npm exec --offline -- shennong-setup check
 ```
 
-### 第三步：登记 OpenCode 插件
+### 第三步：登记 OpenCode 插件和 MCP
 
 ```bash
 npm exec --offline -- shennong-configure
@@ -95,6 +95,8 @@ npm exec --offline -- shennong-configure
 该命令把当前 online/offline 安装包的本地 `dist/index.js` 文件 URL 登记到
 OpenCode `plugin` 数组，并移除旧的 Shennong 包名或本地入口。使用本地入口可以
 保证尚未发布的包和断网安装的 offline 包都加载本次已经执行 setup 的同一份文件。
+同时会在 OpenCode `mcp` 段登记 `crash-feature-matcher` 本地 stdio MCP 和
+`witty-log-detection` SSE MCP，并保留用户已有的其他 MCP 配置。
 若配置文件已经存在且确实需要修改，会先在同目录生成
 `opencode.jsonc.shennong-backup-<时间戳>` 备份，再原子写入新配置。重复执行时
 配置内容不变，也不会重复生成备份。
@@ -189,7 +191,9 @@ opencode agent list
 
 ### 3. `crash-feature-matcher` 崩溃特征提取与检索 MCP
 
-插件安装后，`crash-feature-matcher` MCP 通过 `skills/crash-feature-matcher/mcp_config.json` **自动注册**为 stdio 本地 MCP Server，由 `skills/crash-feature-matcher/run_mcp.sh` 启动，依赖 `.venvs/crash-feature-matcher`。无需手动修改 `opencode.json`。
+插件安装后，执行 `shennong-configure` 会将 `crash-feature-matcher` 注册为 stdio
+本地 MCP Server，由 `skills/crash-feature-matcher/run_mcp.sh` 启动，依赖
+`.venvs/crash-feature-matcher`。无需用户手动修改 `opencode.json`。
 
 该 MCP 的**崩溃特征提取**（`analyze_crash`）无需额外配置即可运行。
 
@@ -226,7 +230,7 @@ export SHENNONG_LLM_MODEL="your-model"
 
 ### 内置 MCP 与 venv
 
-两个 MCP Server 均通过各自 `skills/*/mcp_config.json` 自动注册，无需手动修改 `opencode.json` 的 `mcp` 段：
+两个 MCP Server 均由 `shennong-configure` 自动写入 OpenCode `mcp` 段，无需用户手工登记：
 
 - `crash-feature-matcher` MCP：stdio 类型，由 `skills/crash-feature-matcher/run_mcp.sh` 启动，依赖 `.venvs/crash-feature-matcher`。
 - `witty-log-detection` MCP：SSE 类型，默认地址 `http://localhost:12144/sse`，执行 `shennong-setup install` 时自动启动，依赖 `.venvs/witty-log-detection`。

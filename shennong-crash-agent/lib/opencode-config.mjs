@@ -25,6 +25,12 @@ const SHENNONG_PACKAGE_NAMES = new Set([
   "@openeuler/agent-shennong-crash-online",
   "@openeuler/agent-shennong-crash-offline",
 ])
+const SHENNONG_MCP_NAMES = new Set([
+  "crash-feature-matcher",
+  "crash_feature_matcher",
+  "witty-log-detection",
+  "witty_log_detection",
+])
 
 function isShennongPackageSpec(spec) {
   for (const packageName of SHENNONG_PACKAGE_NAMES) {
@@ -81,6 +87,35 @@ function getLocalPluginSpec(packageRoot) {
   return pathToFileURL(realpathSync(pluginPath)).href
 }
 
+function getOpenCodeMcpConfig(packageRoot) {
+  const launcher = join(packageRoot, "skills", "crash-feature-matcher", "run_mcp.sh")
+  if (!existsSync(launcher)) {
+    throw new Error(`crash-feature-matcher MCP launcher is missing: ${launcher}`)
+  }
+  const entry = lstatSync(launcher)
+  if (entry.isSymbolicLink() || !entry.isFile()) {
+    throw new Error(`refusing to register non-regular MCP launcher: ${launcher}`)
+  }
+  return {
+    "crash-feature-matcher": {
+      type: "local",
+      command: ["bash", realpathSync(launcher)],
+      enabled: true,
+      timeout: 30000,
+    },
+    "witty-log-detection": {
+      type: "remote",
+      url: "http://127.0.0.1:12144/sse",
+      enabled: true,
+      timeout: 30000,
+    },
+  }
+}
+
+function sameJson(left, right) {
+  return JSON.stringify(left) === JSON.stringify(right)
+}
+
 function parseConfig(raw, configPath) {
   const errors = []
   const config = parse(raw, errors, { allowTrailingComma: true, disallowComments: false })
@@ -96,7 +131,17 @@ function parseConfig(raw, configPath) {
   if (config.plugin !== undefined && !Array.isArray(config.plugin)) {
     throw new Error(`OpenCode config field "plugin" must be an array: ${configPath}`)
   }
+  if (
+    config.mcp !== undefined
+    && (!config.mcp || typeof config.mcp !== "object" || Array.isArray(config.mcp))
+  ) {
+    throw new Error(`OpenCode config field "mcp" must be an object: ${configPath}`)
+  }
   return config
+}
+
+function applyModify(raw, path, value, formattingOptions) {
+  return applyEdits(raw, modify(raw, path, value, { formattingOptions }))
 }
 
 function atomicWrite(configPath, content, mode) {
@@ -151,6 +196,7 @@ export function registerOpenCodePlugin(packageRoot) {
 
   const packageName = readPackageName(packageRoot)
   const pluginSpec = getLocalPluginSpec(packageRoot)
+  const desiredMcp = getOpenCodeMcpConfig(packageRoot)
   const configPath = getConfigPath()
   let raw = `{
   "$schema": "${SCHEMA_URL}"
@@ -181,21 +227,49 @@ export function registerOpenCodePlugin(packageRoot) {
   }
   plugins.push(pluginSpec)
 
-  if (
+  const pluginChanged = !(
     currentPlugins.length === plugins.length
     && currentPlugins.every((plugin, index) => plugin === plugins[index])
-  ) {
-    return { changed: false, configPath, packageName, pluginSpec }
+  )
+  const currentMcp = config.mcp || {}
+  const removedMcpNames = [...SHENNONG_MCP_NAMES]
+    .filter((name) => !(name in desiredMcp) && Object.hasOwn(currentMcp, name))
+  const changedMcpNames = Object.entries(desiredMcp)
+    .filter(([name, value]) => !sameJson(currentMcp[name], value))
+    .map(([name]) => name)
+
+  if (!pluginChanged && removedMcpNames.length === 0 && changedMcpNames.length === 0) {
+    return {
+      changed: false,
+      configPath,
+      packageName,
+      pluginSpec,
+      mcpNames: Object.keys(desiredMcp),
+    }
   }
 
   const eol = raw.includes("\r\n") ? "\r\n" : "\n"
-  const edits = modify(raw, ["plugin"], plugins, {
-    formattingOptions: { insertSpaces: true, tabSize: 2, eol },
-  })
-  const updated = applyEdits(raw, edits)
+  const formattingOptions = { insertSpaces: true, tabSize: 2, eol }
+  let updated = raw
+  if (pluginChanged) {
+    updated = applyModify(updated, ["plugin"], plugins, formattingOptions)
+  }
+  for (const name of removedMcpNames) {
+    updated = applyModify(updated, ["mcp", name], undefined, formattingOptions)
+  }
+  for (const name of changedMcpNames) {
+    updated = applyModify(updated, ["mcp", name], desiredMcp[name], formattingOptions)
+  }
   const backupPath = configExisted ? createConfigBackup(configPath, raw, mode) : null
   atomicWrite(configPath, updated, mode)
-  return { changed: true, configPath, packageName, pluginSpec, backupPath }
+  return {
+    changed: true,
+    configPath,
+    packageName,
+    pluginSpec,
+    mcpNames: Object.keys(desiredMcp),
+    backupPath,
+  }
 }
 
 export function removeOpenCodePlugin() {
@@ -216,29 +290,36 @@ export function removeOpenCodePlugin() {
   const raw = readFileSync(configPath, "utf8")
   const config = parseConfig(raw, configPath)
   const currentPlugins = config.plugin || []
-  const removed = []
+  const removedPlugins = []
   const plugins = []
   for (const plugin of currentPlugins) {
     if (typeof plugin !== "string") {
       throw new Error(`OpenCode config field "plugin" must contain only strings: ${configPath}`)
     }
     if (isShennongPackageSpec(plugin)) {
-      removed.push(plugin)
+      removedPlugins.push(plugin)
     } else {
       plugins.push(plugin)
     }
   }
+  const currentMcp = config.mcp || {}
+  const removedMcpNames = [...SHENNONG_MCP_NAMES]
+    .filter((name) => Object.hasOwn(currentMcp, name))
 
-  if (removed.length === 0) {
-    return { changed: false, configPath, removed }
+  if (removedPlugins.length === 0 && removedMcpNames.length === 0) {
+    return { changed: false, configPath, removedPlugins, removedMcpNames }
   }
 
   const eol = raw.includes("\r\n") ? "\r\n" : "\n"
-  const edits = modify(raw, ["plugin"], plugins, {
-    formattingOptions: { insertSpaces: true, tabSize: 2, eol },
-  })
-  const updated = applyEdits(raw, edits)
+  const formattingOptions = { insertSpaces: true, tabSize: 2, eol }
+  let updated = raw
+  if (removedPlugins.length > 0) {
+    updated = applyModify(updated, ["plugin"], plugins, formattingOptions)
+  }
+  for (const name of removedMcpNames) {
+    updated = applyModify(updated, ["mcp", name], undefined, formattingOptions)
+  }
   const backupPath = createConfigBackup(configPath, raw, mode)
   atomicWrite(configPath, updated, mode)
-  return { changed: true, configPath, removed, backupPath }
+  return { changed: true, configPath, removedPlugins, removedMcpNames, backupPath }
 }

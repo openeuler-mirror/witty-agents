@@ -28,7 +28,7 @@ try {
     console.log(`[shennong-configure] OpenCode registration skipped: ${result.reason}`)
   } else if (action === "remove" && result.changed) {
     console.log(`[shennong-configure] Backup created: ${result.backupPath}`)
-    console.log(`[shennong-configure] Removed ${result.removed.length} Shennong registration(s) from ${result.configPath}`)
+    console.log(`[shennong-configure] Removed ${result.removedPlugins.length} plugin and ${result.removedMcpNames.length} MCP registration(s) from ${result.configPath}`)
   } else if (action === "remove") {
     console.log(`[shennong-configure] No Shennong registration found in ${result.configPath}`)
   } else if (result.changed) {
@@ -36,8 +36,10 @@ try {
       console.log(`[shennong-configure] Backup created: ${result.backupPath}`)
     }
     console.log(`[shennong-configure] Plugin ${result.packageName} registered as ${result.pluginSpec} in ${result.configPath}`)
+    console.log(`[shennong-configure] MCP servers registered: ${result.mcpNames.join(", ")}`)
   } else {
     console.log(`[shennong-configure] Plugin ${result.packageName} is already registered as ${result.pluginSpec} in ${result.configPath}`)
+    console.log(`[shennong-configure] MCP servers already registered: ${result.mcpNames.join(", ")}`)
   }
 } catch (error) {
   console.error(`[shennong-configure] ${error.message}`)
