@@ -1,0 +1,5 @@
+# 指向已部署的 rag-core；勿提交真实密钥
+base_url: "http://127.0.0.1:19988"
+access_key: "debug-access-key"
+default_kb_id: ""
+timeout_sec: 60

@@ -1,0 +1,25 @@
+app:
+  name: NL2SQL
+  host: 0.0.0.0
+  port: 8199
+  debug: true
+
+paths:
+  data_dir: data
+  audit_log: data/audit.log
+
+clarify:
+  enabled: true
+
+kg:
+  enabled: false   # 本期不做实现，仅占位
+
+safety:
+  readonly: true
+  max_size: 100
+  timeout_sec: 30
+
+pipeline:
+  max_query_attempts: 3   # LLM 生成 SQL 失败或 0 行时可重试次数（含首次）
+  retry_on_empty: true    # 执行成功但 0 行时是否带反馈重试
+  rules_top_k: 50         # rag-core 召回规则条数上限（最终送入生成的条数）
