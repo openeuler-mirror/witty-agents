@@ -473,6 +473,7 @@ function main() {
     "package-variant.json",
     "bin/shennong-configure.mjs",
     "bin/shennong-setup.mjs",
+    "lib/mcp-services.mjs",
     "lib/opencode-config.mjs",
     ...(options.variant === "offline" ? ["node_modules/jsonc-parser/package.json"] : []),
   ])

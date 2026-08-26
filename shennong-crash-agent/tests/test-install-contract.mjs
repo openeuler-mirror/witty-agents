@@ -201,11 +201,18 @@ elif [ "$1" = "-m" ] && [ "$2" = "venv" ]; then
   mkdir -p "$3/bin"
   cp "$0" "$3/bin/python"
   chmod 755 "$3/bin/python"
+elif [ "$1" = "src/server.py" ]; then
+  exec "$SHENNONG_FAKE_NODE" -e 'require("node:http").createServer((request, response) => { response.writeHead(200, {"content-type": "text/event-stream"}); response.write("event: ready\\ndata: ok\\n\\n") }).listen(12144, "127.0.0.1")' src/server.py
 fi
 exit 0
 `)
   chmodSync(setupPython, 0o755)
-  const setupEnvironment = { ...environment, SETUP_PYTHON_LOG: setupLog }
+  const setupEnvironment = {
+    ...environment,
+    SETUP_PYTHON_LOG: setupLog,
+    SHENNONG_FAKE_NODE: process.execPath,
+    SHENNONG_MCP_START_TIMEOUT_MS: "5000",
+  }
   const command = [
     "exec", "--offline", "--", "shennong-setup", "install", `--python=${setupPython}`,
   ]
@@ -258,6 +265,21 @@ exit 0
     secondCalls.split("-m pip check").length > firstCalls.split("-m pip check").length,
     "setup: idempotent rerun did not revalidate installed dependencies",
   )
+
+  const status = JSON.parse(execFileSync("npm", ["exec", "--offline", "--", "shennong-setup", "status"], {
+    cwd: installation.project,
+    encoding: "utf8",
+    env: setupEnvironment,
+  }))
+  assert(status.state === "running", `setup: witty-log-detection is not running: ${status.state}`)
+  assert(status.tracked === true, "setup: witty-log-detection PID is not tracked")
+
+  const stopped = JSON.parse(execFileSync("npm", ["exec", "--offline", "--", "shennong-setup", "stop"], {
+    cwd: installation.project,
+    encoding: "utf8",
+    env: setupEnvironment,
+  }))
+  assert(stopped.action === "stopped", `setup: MCP stop command did not stop the service: ${stopped.action}`)
 
   const markerPath = join(venvRoot, "setup-complete.json")
   const markerBeforeFailedForce = readFileSync(markerPath, "utf8")

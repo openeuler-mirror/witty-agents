@@ -19,6 +19,7 @@ opencv-python==4.9.0.80
 # Configuration & Validation
 PyYAML==6.0.2
 pydantic==2.11.7
+setuptools>=69,<81
 
 # mcp
 mcp==1.9.4

@@ -15,6 +15,7 @@ import {
 } from "node:fs"
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path"
 import { fileURLToPath } from "node:url"
+import { serviceStatus, startServices, stopServices } from "../lib/mcp-services.mjs"
 
 const BIN_DIR = dirname(fileURLToPath(import.meta.url))
 const PROJECT_ROOT = resolve(BIN_DIR, "..")
@@ -51,10 +52,16 @@ function usage() {
   console.log(`Usage:
   shennong-setup install [--python /path/to/python] [--force]
   shennong-setup check   [--python /path/to/python]
+  shennong-setup start
+  shennong-setup status
+  shennong-setup stop
 
 Commands:
-  install   Install Python dependencies into package-local .venvs (default)
-  check     Check package variant and Python/wheel platform without changing files`)
+  install   Install three Python environments and ensure MCP services are ready (default)
+  check     Check package variant and Python/wheel platform without changing files
+  start     Start the persistent witty-log-detection SSE MCP service
+  status    Show readiness for three components and the persistent MCP service
+  stop      Stop the package-managed witty-log-detection SSE MCP service`)
 }
 
 function parseArgs(argv) {
@@ -62,7 +69,7 @@ function parseArgs(argv) {
   let commandSeen = false
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index]
-    if (["install", "check"].includes(arg) && !commandSeen) {
+    if (["install", "check", "start", "status", "stop"].includes(arg) && !commandSeen) {
       options.command = arg
       commandSeen = true
     } else if (arg === "--force") {
@@ -444,13 +451,22 @@ function inspectExistingSetup(metadata, pythonInfo, fingerprints, offline) {
   }
 }
 
-function install(options) {
+async function ensureServices() {
+  const result = await startServices(PROJECT_ROOT)
+  console.log(`[shennong-setup] crash-feature-matcher stdio MCP: ready (started on demand by OpenCode)`)
+  console.log(`[shennong-setup] witty-log-detection SSE MCP: ${result.state} (${result.endpoint})`)
+  console.log(`[shennong-setup] crash-report-generator skill: ready`)
+  return result
+}
+
+async function install(options) {
   const { metadata, python } = checkSetup(options)
   const offline = metadata.variant === "offline"
   const fingerprints = setupFingerprints(metadata)
   const existing = inspectExistingSetup(metadata, python.info, fingerprints, offline)
   if (existing.ready && !options.force) {
     console.log("[shennong-setup] Python dependencies are already installed and verified.")
+    await ensureServices()
     return
   }
   if (existsSync(VENV_DIR) && !options.force) {
@@ -510,7 +526,9 @@ function install(options) {
       rmSync(backupDir, { recursive: true, force: true })
       backupCreated = false
     }
+    newSetupCreated = false
     console.log("[shennong-setup] Python dependencies installed successfully.")
+    await ensureServices()
   } catch (error) {
     if (newSetupCreated && existsSync(VENV_DIR)) {
       rmSync(VENV_DIR, { recursive: true, force: true })
@@ -538,8 +556,14 @@ try {
   const options = parseArgs(process.argv.slice(2))
   if (options.command === "check") {
     checkSetup(options)
+  } else if (options.command === "start") {
+    await ensureServices()
+  } else if (options.command === "status") {
+    console.log(JSON.stringify(await serviceStatus(PROJECT_ROOT), null, 2))
+  } else if (options.command === "stop") {
+    console.log(JSON.stringify(await stopServices(PROJECT_ROOT), null, 2))
   } else {
-    install(options)
+    await install(options)
   }
 } catch (error) {
   console.error(`[shennong-setup] ${error.message}`)

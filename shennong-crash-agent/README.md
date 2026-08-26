@@ -61,8 +61,24 @@ shennong-setup install
 每套环境执行 `pip check` 和核心模块导入；任一验证失败都不会写入完成标记，
 使用 `--force` 重装时还会恢复原有可用环境。
 
-安装成功后会写入 `.venvs/setup-complete.json`。重复执行相同命令时会重新执行
-`pip check` 和核心模块导入；全部通过后直接返回，不会再次创建环境或执行 pip install。
+安装成功后会写入 `.venvs/setup-complete.json`，并确保三个组件可用：
+
+- `witty-log-detection` 是 SSE MCP，setup 会启动服务并检查 `127.0.0.1:12144`；
+- `crash-feature-matcher` 是 stdio MCP，setup 校验其环境和启动入口，由 OpenCode 使用时按需拉起；
+- `crash-report-generator` 是 Skill，setup 校验其 Python 环境，不启动常驻进程。
+
+重复执行相同命令时会重新执行 `pip check`、核心模块导入和服务状态校验；全部
+通过后直接返回，不会再次创建环境、执行 pip install 或重复启动 SSE 服务。
+
+可单独查看、启动或停止 package 管理的 SSE 服务：
+
+```bash
+npm exec --offline -- shennong-setup status
+npm exec --offline -- shennong-setup start
+npm exec --offline -- shennong-setup stop
+```
+
+服务日志和 PID 记录保存在安装包目录的 `.runtime/` 下。
 
 可先只检查环境，不写入文件：
 
@@ -205,10 +221,10 @@ export SHENNONG_LLM_MODEL="your-model"
 两个 MCP Server 均通过各自 `skills/*/mcp_config.json` 自动注册，无需手动修改 `opencode.json` 的 `mcp` 段：
 
 - `crash-feature-matcher` MCP：stdio 类型，由 `skills/crash-feature-matcher/run_mcp.sh` 启动，依赖 `.venvs/crash-feature-matcher`。
-- `witty-log-detection` MCP：SSE 类型，默认地址 `http://localhost:12144/sse`，由 `skills/witty-log-detection/run_server.sh` 启动，依赖 `.venvs/witty-log-detection`。
+- `witty-log-detection` MCP：SSE 类型，默认地址 `http://localhost:12144/sse`，执行 `shennong-setup install` 时自动启动，依赖 `.venvs/witty-log-detection`。
 
 两个 MCP 所需的 Python 环境均由 `shennong-setup` 创建；`npm install` 本身不会
-创建 Python venv，也不会修改 OpenCode 配置。
+创建 Python venv、启动 MCP，也不会修改 OpenCode 配置。
 
 ## online / offline 变体打包
 
