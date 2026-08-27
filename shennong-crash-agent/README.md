@@ -80,6 +80,12 @@ shennong-setup install
 每套环境执行 `pip check` 和核心模块导入；任一验证失败都不会写入完成标记，
 使用 `--force` 重装时还会恢复原有可用环境。
 
+> 当前 `.venvs/` 位于已安装 npm 包内部，即
+> `node_modules/@openeuler/agent-shennong-crash-<variant>/.venvs/`。执行 npm 卸载、
+> 重装、升级或清理 `node_modules` 会同时移除这三套环境；重新安装包后必须再次执行
+> `shennong-setup install`。升级或卸载前建议先执行 `shennong-setup stop`，停止由
+> 当前安装目录管理的 SSE 服务。
+
 安装成功后会写入 `.venvs/setup-complete.json`，并确保三个组件可用：
 
 - `witty-log-detection` 是 SSE MCP，setup 会启动服务并检查 `127.0.0.1:12144`；
@@ -121,6 +127,15 @@ OpenCode `plugin` 数组，并移除旧的 Shennong 包名或本地入口。使�
 若配置文件已经存在且确实需要修改，会先在同目录生成
 `opencode.jsonc.shennong-backup-<时间戳>` 备份，再原子写入新配置。重复执行时
 配置内容不变，也不会重复生成备份。
+
+#### 完全离线使用 OpenCode 的前置条件
+
+offline 包保证 `npm install`、`shennong-setup install` 和
+`shennong-configure` 不需要访问公网，但不包含 OpenCode 本体、Provider 包或模型目录。
+OpenCode 首次启动可能访问 `models.dev` 并下载 Provider 包。因此，在进入完全断网环境前，
+需要先安装并启动一次 OpenCode，完成 Provider/模型配置和必要缓存；断网后再安装
+Shennong offline 包并执行上述三步。此要求属于 OpenCode 宿主初始化，不是 Python
+wheelhouse 缺失。
 
 取消注册时只移除 Shennong，不覆盖用户后续增加的其他配置；修改前同样会备份：
 
@@ -298,6 +313,10 @@ wheel 清单闭合、SHA256、Python ABI、操作系统、CPU 架构、SOABI 与
 PaddleOCR 的 OpenCV 扩展依赖与项目现有 `opencv-python==4.9.0.80`
 保持一致，避免 pip 在多个几十 MiB 的候选 wheel 之间反复回溯下载。
 
+OCR 模型文件使用 Git LFS 管理，根目录 `.gitattributes` 会将 `*.pdiparams` 交给
+LFS filter。构建离线包前必须先执行 `git lfs pull`，并确认仓库服务端已启用 LFS；
+构建脚本会拒绝残留的 LFS pointer，避免把只有百余字节的占位文本发布进 npm 包。
+
 ## 目录结构
 
 ```
@@ -386,3 +405,19 @@ shennong-crash-agent/
 - 崩溃特征提取（`analyze_crash`）仍可正常工作。
 - 若需要内部/社区案例检索，请配置 RAG 服务端点，详见上方“`crash-feature-matcher` 知识库 RAG 配置”。
 - 未配置 RAG 时，神农会跳过案例检索，改用日志检测与 vmcore 回退模式继续诊断。
+
+### 8. openEuler ARM64 导入 `paddleocr` 时崩溃
+
+在 `openEuler aarch64 + glibc 2.38 + CPython 3.11` 的部分环境中，已观察到
+`import paddleocr` 在 zlib `inflateReset2` 附近触发 `SIGSEGV`；同一环境单独导入
+`paddle` 和 `cv2` 正常。该问题同时影响 online/offline 依赖组合，不是离线包漏装，
+且由于 OCR 为懒加载，不影响不调用 OCR 的 MCP 工具。发布前应在目标架构上实测 OCR；
+未完成兼容性验证时，不应宣称该环境支持 OCR 功能。
+
+### 9. witty-log-detection 数据库保存在哪里
+
+当前 `SQL_LITE_DB_PATH` 和 `EMBEDDING_CACHE_DB_PATH` 默认仍为相对路径，尚未实现从
+只读种子数据库复制到用户缓存目录的工作副本机制。实际数据库位置取决于服务启动
+工作目录；请勿把运行生成的 `.db`、`.db-wal` 或 `.db-shm` 当作发布内容。打包脚本
+会主动拒绝这些运行期文件。后续若迁移到用户缓存目录，需要单独设计升级、并发和旧数据
+迁移策略，不能在 npm 安装阶段隐式修改。
