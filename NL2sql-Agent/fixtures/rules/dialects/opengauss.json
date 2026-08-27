@@ -1,0 +1,20 @@
+[
+  {
+    "rule_type": "experience",
+    "scope": "dialect",
+    "dialect": "opengauss",
+    "description": "OpenGauss/PostgreSQL 方言：SELECT 默认加 DISTINCT 去重，避免关联产生重复行；默认 LIMIT 100；只读禁止写操作。"
+  },
+  {
+    "rule_type": "experience",
+    "scope": "dialect",
+    "dialect": "opengauss",
+    "description": "OpenGauss 方言：标签类条件用 EXISTS 子查询，不要用 JOIN（避免重复行）；每个独立标签一个 EXISTS；多标签 AND 用多个 EXISTS 连接。"
+  },
+  {
+    "rule_type": "experience",
+    "scope": "dialect",
+    "dialect": "opengauss",
+    "description": "OpenGauss 方言：支持标准 JOIN / IN (SELECT) / EXISTS；日期字符串比较前按字段约定做 TO_DATE 等转换。"
+  }
+]

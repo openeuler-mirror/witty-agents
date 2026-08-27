@@ -79,7 +79,8 @@ class CrashIssue(BaseModel):
     hotpatch: str = Field(default="", description="热补丁名称")
     history_wiki: str = Field(default="", description="wiki链接")
 
-    match_score: float = Field(default=0.0, description="匹配分数 0-100")
+    match_score: float = Field(default=0.0, description="匹配分数 0-1 (normalized)")
+    match_level: str = Field(default="", description="匹配层级: L1=指纹精确命中, L2=RAG评分确认, L3=扩大召回")
     phenomenon: str = Field(default="", description="现象描述")
     source_url: str = Field(default="", description="来源链接")
 
@@ -122,8 +123,8 @@ class CrashCase(BaseModel):
     crash_log: str = Field(default="", description="崩溃日志片段")
     signature: str = Field(default="", description="签名")
 
-    match_score: float = Field(default=0.0, description="匹配分数")
-    match_method: str = Field(default="", description="匹配方法")
+    match_score: float = Field(default=0.0, description="匹配分数 0-1 (normalized)")
+    match_method: str = Field(default="", description="匹配方法: L1_fingerprint/L2_rag_scored")
 
     created_at: str = Field(default_factory=_utc_now, description="创建时间")
 

@@ -1,0 +1,106 @@
+[
+  {
+    "rule_type": "mapping",
+    "scope": "domain",
+    "dialect": "elasticsearch",
+    "mapping_type": "station_alias",
+    "table": "ticket_record_es_2026",
+    "description": "城市别名「西安」购票匹配：SFZ/fromStationName LIKE '%029%' OR LIKE '%西安%' OR LIKE '%西安北%'（本库进站/部分购票用区号；勿用 LIKE '%西%' 匹配方位后缀）。"
+  },
+  {
+    "rule_type": "mapping",
+    "scope": "domain",
+    "dialect": "elasticsearch",
+    "mapping_type": "station_alias",
+    "table": "checkin_record_es_2026",
+    "description": "城市别名「西安」进站匹配：TGKKMC/ZDZ/stationName LIKE '%029%'（勿用 '%西%'）。"
+  },
+  {
+    "rule_type": "mapping",
+    "scope": "domain",
+    "dialect": "elasticsearch",
+    "mapping_type": "station_alias",
+    "table": "ticket_record_es_2026",
+    "description": "城市别名「长沙」购票匹配：SFZ/fromStationName LIKE '%长沙%' OR LIKE '%长沙南%' OR LIKE '%长沙站%'。购票侧几乎不要只用区号 0731；若模型误用 0731 查 ticket，应改为汉字站名条件。"
+  },
+  {
+    "rule_type": "mapping",
+    "scope": "domain",
+    "dialect": "elasticsearch",
+    "mapping_type": "station_alias",
+    "table": "resign_record_es_2026",
+    "description": "城市别名「成都」改签目的站：ZDZ LIKE '%028%' OR LIKE '%成都%'；勿用 DTXL*。"
+  },
+  {
+    "rule_type": "mapping",
+    "scope": "domain",
+    "dialect": "elasticsearch",
+    "mapping_type": "station_alias",
+    "table": "checkin_record_es_2026",
+    "description": "城市别名「长沙」进站匹配：TGKKMC/ZDZ LIKE '%长沙%' OR '%0731%'（若存在）；优先汉字站名。"
+  },
+  {
+    "rule_type": "mapping",
+    "scope": "domain",
+    "dialect": "elasticsearch",
+    "mapping_type": "station_alias",
+    "table": "ticket_record_es_2026",
+    "description": "城市别名「合肥」购票匹配：ZDZ/toStationName LIKE '%0551%' OR LIKE '%合肥%' OR LIKE '%合肥南%'。"
+  },
+  {
+    "rule_type": "mapping",
+    "scope": "domain",
+    "dialect": "elasticsearch",
+    "mapping_type": "station_alias",
+    "table": "ticket_record_es_2026",
+    "description": "城市别名「成都」购票匹配：SFZ/ZDZ LIKE '%028%' OR LIKE '%成都%' OR LIKE '%成都东%' OR LIKE '%成都站%'。"
+  },
+  {
+    "rule_type": "mapping",
+    "scope": "domain",
+    "dialect": "elasticsearch",
+    "mapping_type": "station_alias",
+    "table": "ticket_record_es_2026",
+    "description": "城市别名「广州」购票匹配：SFZ/ZDZ/fromStationName/toStationName LIKE '%广州%' OR LIKE '%广州南%'。"
+  },
+  {
+    "rule_type": "mapping",
+    "scope": "domain",
+    "dialect": "elasticsearch",
+    "mapping_type": "station_alias",
+    "table": "ticket_record_es_2026",
+    "description": "城市别名「北京」购票匹配：SFZ/ZDZ LIKE '%北京%' OR LIKE '%北京西%' OR LIKE '%北京南%' OR LIKE '%010%'。"
+  },
+  {
+    "rule_type": "mapping",
+    "scope": "domain",
+    "dialect": "elasticsearch",
+    "mapping_type": "station_alias",
+    "table": "crew_record_es_2026",
+    "description": "城市别名「西安」运货匹配：fromStationName/loadStation/toStationName LIKE '%029%'。"
+  },
+  {
+    "rule_type": "mapping",
+    "scope": "domain",
+    "dialect": "elasticsearch",
+    "mapping_type": "station_alias",
+    "table": "crew_record_es_2026",
+    "description": "城市别名「长沙」运货匹配：fromStationName/loadStation LIKE '%长沙%' OR '%0731%'。"
+  },
+  {
+    "rule_type": "mapping",
+    "scope": "domain",
+    "dialect": "elasticsearch",
+    "mapping_type": "station_alias",
+    "table": "crew_record_es_2026",
+    "description": "城市别名「合肥」运货匹配：toStationName/loadStation LIKE '%0551%' OR '%合肥%'。"
+  },
+  {
+    "rule_type": "mapping",
+    "scope": "domain",
+    "dialect": "elasticsearch",
+    "mapping_type": "tag_alias",
+    "table": "zdry_info_es",
+    "description": "标签别名：限高→personTypeName='限高'；在逃→'在逃'；上访→'上访'；老赖/失信→视数据可能为'失信'或限高类标签，以 zdry personTypeName 为准。"
+  }
+]

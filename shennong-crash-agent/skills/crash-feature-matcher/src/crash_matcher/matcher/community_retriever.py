@@ -104,6 +104,8 @@ async def retrieve_community_cases(
         else:
             l2_confirmed = [c for c in linux_l1 + openeuler_l1 if _secondary_confirm(query_text, kernel_version, c, l2_threshold)]
         if l2_confirmed:
+            for c in l2_confirmed:
+                c.match_level = "L2"
             candidates = l2_confirmed
             stop_reason = "L2 社区案例二次确认命中"
         else:
