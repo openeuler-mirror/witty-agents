@@ -155,14 +155,14 @@ async def analyze_vmcore(
 
 @mcp.tool()
 async def query_knowledge(
-    bug_type: str = Field(default="", description="Bug 类型过滤"),
-    rip_function: str = Field(default="", description="RIP 函数名过滤"),
-    keyword: str = Field(default="", description="语义搜索关键词"),
-    limit: int = Field(default=5, description="返回数量"),
-    crash_features: dict = Field(default={}, description="可选: analyze_crash 返回的 crash_features, 用于填充 match_reason"),
-    host_features: dict = Field(default={}, description="可选: analyze_crash 返回的 host_features, 用于填充 match_reason"),
+    crash_features: dict = Field(description="REQUIRED: crash_features dict from analyze_crash result, used for L1 fingerprint detection and match scoring"),
+    host_features: dict = Field(description="REQUIRED: host_features dict from analyze_crash result, used for match scoring"),
+    bug_type: str = Field(default="", description="Bug type filter (e.g., panic, oops, soft_lockup)"),
+    rip_function: str = Field(default="", description="RIP function name filter"),
+    keyword: str = Field(default="", description="Semantic search keyword"),
+    limit: int = Field(default=5, description="Maximum number of results to return"),
 ) -> dict:
-    """查询已知宕机问题知识库。若传入 crash_features/host_features, 则对每条结果运行匹配引擎填充 match_reason。"""
+    """Query the crash knowledge base with automatic L1/L2/L3 match scoring. Returns issues with match_score (0-1 normalized), match_level (L1/L2/L3), and match_reason populated."""
     rag = _get_rag()
     if not rag:
         return {"error": "RAG knowledge base not configured"}
@@ -171,11 +171,21 @@ async def query_knowledge(
             issues = await rag.search_issues_by_rip_function(rip_function, bug_type, limit)
         else:
             issues = await rag.search_issues_semantic(keyword or bug_type or "", bug_type, limit)
-        if crash_features and host_features and issues:
+
+        if issues:
             feature = CrashFeatures(**crash_features)
             host = HostFeatures(**host_features)
+            feature_sig = compute_signature(feature)
             for issue in issues:
-                _compute_issue_match_score(feature, host, issue)
+                _compute_issue_match_score(feature, host, issue)  # sets issue.match_score (0-1) and match_reason
+                # Determine match_level based on matching engine results
+                if feature_sig and issue.fingerprints and feature_sig in issue.fingerprints:
+                    issue.match_level = "L1"
+                elif issue.match_score >= 0.6:
+                    issue.match_level = "L2"
+                elif issue.match_score > 0:
+                    issue.match_level = "L3"
+
         return {"total": len(issues), "issues": [i.model_dump() for i in issues]}
     finally:
         await rag.close()
