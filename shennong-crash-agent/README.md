@@ -37,6 +37,25 @@ npm install @openeuler/agent-shennong-crash-offline
 
 `npm install` 只安装插件、Skill 和命令文件，不修改 Python 环境和 OpenCode 配置。
 
+#### openEuler 系统运行库
+
+Python wheels 不包含操作系统动态库。openEuler 最小化环境在断网执行 setup 前，
+需要由系统镜像或管理员提前安装以下运行库：
+
+```bash
+sudo dnf install -y \
+  libglvnd-glx \
+  glib2 \
+  libXext \
+  libXrender \
+  libSM
+```
+
+其中 `libglvnd-glx` 提供 OpenCV/PaddleOCR 所需的 `libGL.so.1`。这些 RPM 是
+目标操作系统前置条件，不属于 Python wheelhouse；正式离线环境应将它们固化在
+基础镜像或系统安装介质中。已在 openEuler 24.03 LTS SP4 x86_64、CPython 3.11
+环境通过 `--network none` 安装和运行验证。
+
 ### 第二步：显式安装 Python 依赖
 
 项目本地安装后执行：
