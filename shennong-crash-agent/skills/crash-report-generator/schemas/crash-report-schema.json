@@ -93,6 +93,22 @@
           "items": { "type": "string" }
         },
         "call_trace_text": { "type": "string" },
+        "call_trace_summary": {
+          "type": "object",
+          "description": "调用路径的自动解读摘要，让用户不看原始栈也能理解'谁在什么上下文做了什么然后崩了'。",
+          "additionalProperties": false,
+          "properties": {
+            "summary": {
+              "type": "string",
+              "description": "1-2句话路径解读：从入口上下文到崩溃点，讲清'谁在什么情况下做什么→穿越哪些层次→在什么位置崩'。例如：'崩溃发生在软中断收包路径，mlx5网卡驱动poll完成后进入GRO聚合，穿越网络层到达TCP连接查找时因skb->sk为NULL触发空指针访问。'"
+            },
+            "key_observations": {
+              "type": "array",
+              "description": "2-5个关键观察点，每个是一句带语义标签的短句。例如：'⚠️ RIP偏移+0x0意味着函数入口第一条指令，入参skb相关指针为NULL'。",
+              "items": { "type": "string" }
+            }
+          }
+        },
         "kernel_version": { "type": "string" },
         "anomaly_features": {
           "type": "object",
@@ -103,33 +119,41 @@
     "root_cause_analysis": {
       "type": "object",
       "required": [
-        "simplified_root_cause",
-        "detailed_root_cause",
-        "solution",
-        "crash_chains",
-        "analysis_notes"
+        "conclusion",
+        "solution"
       ],
       "additionalProperties": false,
       "properties": {
-        "simplified_root_cause": {
+        "conclusion": {
           "type": "string",
-          "description": "简化的根因分析，通俗易懂，非专业人员也看得懂"
+          "description": "一句话结论：自然叙述现象+因果，形如「当前主机发生xxx，通过xxx信息表明，该故障由xxx导致/并非内核缺陷」。保持一句话，流畅自然。"
         },
-        "detailed_root_cause": {
-          "type": "string",
-          "description": "详细的根因分析，描述问题发生的情况和相关代码的具体联系"
+        "analysis": {
+          "type": "array",
+          "description": "深度分析思维链（可选，简单问题留空数组）。按推理顺序从上到下排列，每个块是一步推理（fact 是这步推出的结论，evidence 是原始证据，detail 是推理过程），最终汇聚指向根因。第一步应从调用栈/panic日志切入，调用链路本身就是推理链的起始证据。",
+          "items": {
+            "type": "object",
+            "required": ["fact", "detail"],
+            "additionalProperties": false,
+            "properties": {
+              "fact": {
+                "type": "string",
+                "description": "本步推理得出的中间结论（一句话，概括这一步推出了什么）。"
+              },
+              "evidence": {
+                "type": "string",
+                "description": "支撑本步结论的原始证据片段（可选）。用于嵌入关键调用栈帧、寄存器值、dmesg 日志行、反汇编、源码片段等原始数据；使用等宽格式，可多行，用换行分隔。没有独立原始证据的步骤可以省略此字段。"
+              },
+              "detail": {
+                "type": "string",
+                "description": "推理过程：解释如何从 evidence（或已有结论）推出 fact，以及这一步如何为下一步铺垫或最终指向根因。写成交代清楚'因为观察到什么，所以推出什么'的连贯段落。"
+              }
+            }
+          }
         },
         "solution": {
           "type": "string",
-          "description": "解决方案，具体可执行的修复步骤"
-        },
-        "crash_chains": {
-          "type": "array",
-          "items": { "type": "string" }
-        },
-        "analysis_notes": {
-          "type": "array",
-          "items": { "type": "string" }
+          "description": "解决方案（始终必填）。简单问题一句处置方式；复杂问题按证据强度分层：1) 有本地/社区案例匹配 → 采用案例 solution；2) 无匹配但 git skill 检索到 commit/issue → 参考社区 commit 给出修复建议；3) 均无 → 写「处置建议」（临时缓解、信息收集、下一步排查方向），不强行推测修复代码。"
         }
       }
     },
@@ -154,6 +178,7 @@
               "solution": { "type": "string" },
               "content": { "type": "string" },
               "match_score": { "type": "string", "enum": ["高", "中", "低"], "description": "匹配等级，由 match_score(0-1) 映射：高≥0.7 / 中0.4-0.69 / 低<0.4" },
+              "match_level": { "type": "string", "enum": ["L1", "L2", "L3"], "description": "匹配层级：L1=指纹精确命中（最强），L2=RAG语义检索+评分确认（中等），L3=扩大召回（弱匹配）" },
               "source_file": { "type": "string" },
               "score": { "type": "number", "minimum": 0, "maximum": 100 },
               "score_details": { "type": "object" },
@@ -178,6 +203,7 @@
               "solution": { "type": "string" },
               "hotpatch": { "type": "string" },
               "match_score": { "type": "string", "enum": ["高", "中", "低"], "description": "匹配等级，由 match_score(0-1) 映射：高≥0.7 / 中0.4-0.69 / 低<0.4" },
+              "match_level": { "type": "string", "enum": ["L1", "L2", "L3"], "description": "匹配层级：L1=指纹精确命中（最强），L2=RAG语义检索+评分确认（中等），L3=扩大召回（弱匹配）" },
               "knowledge_id": { "type": "string" },
               "history_wiki": { "type": "string" },
               "kernel_versions": { "type": "array", "items": { "type": "string" } },
@@ -196,57 +222,89 @@
     },
     "workflow_trace": {
       "type": "object",
-      "required": ["round_count", "round_history"],
+      "required": ["source", "step_count", "steps"],
       "additionalProperties": false,
       "properties": {
-        "round_count": { "type": "integer", "minimum": 1 },
-        "round_history": {
+        "source": {
+          "type": "string",
+          "enum": ["opencode_export", "manual"],
+          "description": "Data source of the trace. 'opencode_export' means extracted from opencode session export; 'manual' means LLM-summarized without export data."
+        },
+        "session_id": {
+          "type": "string",
+          "description": "opencode session ID when source=opencode_export, for traceability."
+        },
+        "total_duration_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Total diagnosis session duration in milliseconds."
+        },
+        "step_count": { "type": "integer", "minimum": 1 },
+        "steps": {
           "type": "array",
+          "description": "Key decision steps in the diagnosis process. Each step groups related tool calls under one decision point, recording what the agent thought, what it did, what it observed, and the judgment made.",
           "items": {
             "type": "object",
-            "required": [
-              "round",
-              "agent_name",
-              "stage",
-              "status",
-              "start_time",
-              "end_time",
-              "tool_calls"
-            ],
+            "required": ["step", "stage", "decision", "tools", "status", "start_time", "end_time"],
             "additionalProperties": false,
             "properties": {
-              "round": { "type": "integer", "minimum": 1 },
-              "agent_name": { "type": "string" },
-              "stage": { "type": "string" },
-              "status": {
+              "step": { "type": "integer", "minimum": 1 },
+              "stage": {
                 "type": "string",
-                "enum": ["success", "failed", "insufficient", "running", "pending"]
+                "enum": [
+                  "init",
+                  "baseline_collection",
+                  "crash_feature_extraction",
+                  "log_detection",
+                  "knowledge_retrieval",
+                  "root_cause_validation",
+                  "report_generation"
+                ],
+                "description": "Which diagnosis stage this step belongs to."
               },
-              "start_time": {
+              "decision": {
                 "type": "string",
-                "format": "date-time"
+                "description": "The key decision or thought at this point: what the agent decided to do and why. Concise, 1-3 sentences."
               },
-              "end_time": {
+              "observations": {
                 "type": "string",
-                "format": "date-time"
+                "description": "Key findings or results observed from the tool outputs in this step. What was learned that informs the next step."
               },
-              "reason": { "type": "string" },
-              "output": { "type": "string" },
-              "tool_calls": {
+              "judgment": {
+                "type": "string",
+                "description": "The conclusion or judgment made based on observations, and why this leads to the next step. Optional."
+              },
+              "tools": {
                 "type": "array",
+                "description": "Tools called in this decision step.",
                 "items": {
                   "type": "object",
-                  "required": ["tool_name", "input", "output", "start_time", "end_time"],
+                  "required": ["tool_name", "title", "status", "start_time"],
                   "additionalProperties": false,
                   "properties": {
                     "tool_name": { "type": "string" },
-                    "input": {},
-                    "output": { "type": "string" },
+                    "title": { "type": "string", "description": "Human-readable summary: command, file path, or action." },
+                    "status": {
+                      "type": "string",
+                      "enum": ["success", "failed", "timeout", "skipped"]
+                    },
+                    "exit_code": { "type": ["integer", "null"] },
+                    "duration_ms": { "type": ["integer", "null"], "minimum": 0 },
                     "start_time": { "type": "string", "format": "date-time" },
                     "end_time": { "type": "string", "format": "date-time" }
                   }
                 }
-              }
+              },
+              "status": {
+                "type": "string",
+                "enum": ["success", "failed", "partial", "skipped"]
+              },
+              "reason": {
+                "type": "string",
+                "description": "Failure reason if status is failed/partial/skipped."
+              },
+              "start_time": { "type": "string", "format": "date-time" },
+              "end_time": { "type": "string", "format": "date-time" }
             }
           }
         }

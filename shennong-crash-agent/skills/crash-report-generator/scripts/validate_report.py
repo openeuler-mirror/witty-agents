@@ -54,17 +54,20 @@ def validate_semantics(report: Any) -> list[str]:
         errors.append("report must be a JSON object")
         return errors
 
-    # workflow_trace round_count must match round_history length
+    # workflow_trace step_count must match steps length
     workflow_trace = report.get("workflow_trace")
     if isinstance(workflow_trace, dict):
-        round_count = workflow_trace.get("round_count")
-        round_history = workflow_trace.get("round_history", [])
-        if isinstance(round_count, int) and isinstance(round_history, list):
-            if round_count != len(round_history):
+        step_count = workflow_trace.get("step_count")
+        steps = workflow_trace.get("steps", [])
+        if isinstance(step_count, int) and isinstance(steps, list):
+            if step_count != len(steps):
                 errors.append(
-                    f"workflow_trace.round_count ({round_count}) does not match "
-                    f"len(round_history) ({len(round_history)})"
+                    f"workflow_trace.step_count ({step_count}) does not match "
+                    f"len(steps) ({len(steps)})"
                 )
+        source = workflow_trace.get("source")
+        if source not in ("opencode_export", "manual"):
+            errors.append(f"workflow_trace.source must be 'opencode_export' or 'manual', got '{source}'")
 
     # report_id format: HOSTNAME-YYYYMMDD-YYYYMMDD
     report_id = report.get("report_id")

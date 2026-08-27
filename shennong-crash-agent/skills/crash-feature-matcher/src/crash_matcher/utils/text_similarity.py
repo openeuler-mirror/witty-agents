@@ -10,15 +10,26 @@ logger = logging.getLogger(__name__)
 # Suppress noisy synonyms/jieba logs
 logging.getLogger("jieba").setLevel(logging.WARNING)
 
-# Synonyms import is optional; gracefully degrade if not available
-try:
-    import synonyms
+# Synonyms import is optional and SLOW (loads word vectors on first import).
+# Load lazily to keep MCP server startup fast; degrade gracefully if unavailable.
+_synonyms_module = None
+_synonyms_load_attempted = False
 
-    logging.getLogger("synonyms").setLevel(logging.WARNING)
-    _HAS_SYNONYMS = True
-except Exception:
-    _HAS_SYNONYMS = False
-    logger.warning("synonyms package not available, synonym expansion disabled")
+
+def _get_synonyms():
+    """Lazily import synonyms (loads word vectors on first call, ~15-20s)."""
+    global _synonyms_module, _synonyms_load_attempted
+    if not _synonyms_load_attempted:
+        _synonyms_load_attempted = True
+        try:
+            import synonyms
+
+            logging.getLogger("synonyms").setLevel(logging.WARNING)
+            _synonyms_module = synonyms
+        except Exception:
+            _synonyms_module = None
+            logger.warning("synonyms package not available, synonym expansion disabled")
+    return _synonyms_module
 
 
 # Stopwords shared across all tokenizers
@@ -78,7 +89,8 @@ def tokenize(text: str) -> list[str]:
 
 def _expand_with_synonyms(terms: set[str], top_n: int = 2, threshold: float = 0.8) -> set[str]:
     """Expand term set with high-quality synonyms for Chinese terms."""
-    if not _HAS_SYNONYMS or not terms:
+    synonyms = _get_synonyms()
+    if synonyms is None or not terms:
         return terms
     expanded = set(terms)
     for term in list(terms):

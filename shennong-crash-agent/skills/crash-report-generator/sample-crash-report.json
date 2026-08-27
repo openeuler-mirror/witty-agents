@@ -1,6 +1,8 @@
 {
   "report_id": "host1-20240712-20240713",
-  "parse_log_range": ["vmcore-dmesg"],
+  "parse_log_range": [
+    "vmcore-dmesg"
+  ],
   "host_base_info": {
     "host_name": "host1",
     "kernel_version": "5.10.0-180.12.0.50.oe2203",
@@ -8,7 +10,10 @@
     "machine_model": "x86_64",
     "cpu_num": 8,
     "memory_size": "64GB",
-    "modules": ["mlx5_core", "mlx5_ib"]
+    "modules": [
+      "mlx5_core",
+      "mlx5_ib"
+    ]
   },
   "crash_feature_info": {
     "crash_time": "2026-06-30T23:12:10+08:00",
@@ -19,17 +24,55 @@
     "rip": "0xffffffffc0a23456",
     "rip_function": "__inet_lookup_established",
     "rip_offset": "0x0",
-    "related_modules": ["mlx5_core"],
-    "call_trace_signature": ["__inet_lookup_established", "mlx5e_handle_rx_cqe"],
-    "call_trace_text": "#0 __inet_lookup_established\n#1 mlx5e_handle_rx_cqe",
+    "related_modules": [
+      "mlx5_core"
+    ],
+    "call_trace_signature": [
+      "__inet_lookup_established",
+      "tcp_v4_rcv",
+      "ip_protocol_deliver_rcu",
+      "ip_local_deliver_finish",
+      "mlx5e_handle_rx_cqe",
+      "mlx5e_poll_rx_cq",
+      "net_rx_action",
+      "__do_softirq"
+    ],
+    "call_trace_text": "BUG: unable to handle kernel NULL pointer dereference at 0000000000000018\nRIP: 0010:__inet_lookup_established+0x0/0x110\nCall Trace:\n <IRQ>\n __inet_lookup_established+0x0/0x110\n tcp_v4_rcv+0x80/0x1e0\n ip_protocol_deliver_rcu+0x54/0x130\n ip_local_deliver_finish+0x44/0x50\n mlx5e_handle_rx_cqe+0x89/0x180 [mlx5_core]\n mlx5e_poll_rx_cq+0x3f0/0x780 [mlx5_core]\n net_rx_action+0x13a/0x380\n __do_softirq+0xd3/0x2d9\n </IRQ>",
+    "call_trace_summary": {
+      "summary": "崩溃发生在软中断收包路径：mlx5 网卡驱动 poll 完成 CQE 处理后将数据包上送协议栈，穿越 IP 层到达 TCP 连接查找时，在 __inet_lookup_established 入口因访问空 sk 指针触发 GPF。",
+      "key_observations": [
+        "📍 崩溃点精确落在 __inet_lookup_established+0x0（函数入口第一条指令），fault 地址 0x18 是 sk 结构体成员偏移",
+        "🔄 整条路径处于 <IRQ> 软中断上下文，不可睡眠、不可持有可能睡眠的锁",
+        "🔗 调用路径清晰呈现子系统穿越：软中断 → mlx5 网卡驱动 → IP 层 → TCP 层",
+        "⚠️ mlx5e_handle_rx_cqe 与 GRO 聚合路径组合在高负载下存在 skb 生命周期竞态的已知模式"
+      ]
+    },
     "kernel_version": "5.10.0-180.12.0.50.oe2203"
   },
   "root_cause_analysis": {
-    "simplified_root_cause": "mlx5网卡驱动在高网络负载下处理GRO聚合时发生空指针访问，导致内核崩溃",
-    "detailed_root_cause": "mlx5_core驱动的mlx5e_handle_rx_cqe函数在处理接收队列完成事件时，将数据包送入GRO聚合路径，__inet_lookup_established在查找已建立连接时访问了空指针。问题根因是GRO聚合中存在竞态条件，skb在释放后被再次引用，rip位于__inet_lookup_established+0x0处确认了空指针解引用",
-    "solution": "应用上游修复补丁：在GRO聚合入口处增加skb空指针检查，或升级内核至包含该修复的版本",
-    "crash_chains": ["IRQ entry", "mlx5e_handle_rx_cqe", "GRO path", "__inet_lookup_established null deref"],
-    "analysis_notes": ["Confirmed by internal knowledge base"]
+    "conclusion": "当前主机在高网络负载下发生内核崩溃，通过调用栈定位到网卡驱动收包路径，存在内存释放后重用的并发竞态（推测）。",
+    "analysis": [
+      {
+        "fact": "崩溃发生在 mlx5 网卡收包路径的连接查找环节，是一次内核态 general protection fault",
+        "evidence": "BUG: unable to handle kernel NULL pointer dereference at 0000000000000018\nRIP: 0010:__inet_lookup_established+0x0/0x110\nCall Trace:\n __inet_lookup_established\n tcp_v4_rcv\n ip_protocol_deliver_rcu\n ip_local_deliver_finish\n mlx5e_handle_rx_cqe\n mlx5e_poll_rx_cq\n net_rx_action\n __do_softirq",
+        "detail": "从 dmesg 关键字段看：fault 地址为 0x18（一个典型的结构体成员偏移），RIP 精确落在 __inet_lookup_established+0x0，即函数入口第一条指令；调用栈自下而上是软中断 → mlx5 驱动 poll rx → 网络栈 → TCP 连接查找，说明崩溃发生在网卡驱动接收数据包的软中断处理中，进入 TCP 层查找 socket 时访问空指针。这回答了'在哪崩'——在收包路径上而非其他子系统。但函数入口偏移为 0 意味着空指针发生在入参（skb 相关）上，需要进一步追问为什么这里会拿到空/野指针。"
+      },
+      {
+        "fact": "mlx5e_handle_rx_cqe 与 GRO 聚合组合时存在 skb 被并发释放的竞态窗口",
+        "evidence": "loaded modules: mlx5_core, mlx5_ib\ncrash> struct sk_buff @ gro_list_head\n  next=0x0  (corrupted GRO list)\n  sk=0x0   (NULL socket pointer)",
+        "detail": "mlx5e_handle_rx_cqe 在完成一次 CQE 处理后会将 skb 交给 GRO 层聚合；napi_gro_receive 把 skb 挂到本次 NAPI 批次的 GRO 链表上，可能合并（释放旧 skb）也可能追加。在多 CPU 并发收包、GRO flush 与新包到达交错的高负载场景下，mlx5 驱动存在 CQE 处理完成后未持有 skb 引用就继续访问 skb->dev/skb->sk 的已知路径，导致 skb 被 GRO 合并释放后再被解引用。本案例 RIP 在 __inet_lookup_established 入口访问 sk 指针偏移 0x18 处报错，与 GRO 聚合路径上 skb 已被释放、skb->sk 为 NULL/野指针的典型症状完全吻合。"
+      },
+      {
+        "fact": "高网络收包负载显著放大了竞态的触发概率",
+        "detail": "故障时间点主机处于高带宽转发业务，mlx5 网卡多队列在多个 CPU 上持续满负荷收包，softirq 频繁调度，GRO flush/merge 次数剧增；skb 的申请-合并-释放速率远高于空闲时，竞态窗口被频繁打开。这解释了为什么是在这一时刻触发，而不是 bug 存在就一定崩溃。"
+      },
+      {
+        "fact": "内部知识库高匹配案例与本案例特征一致，可直接采用其结论与修复方案",
+        "evidence": "matched: issue-mlx5-gro-null-deref\nsource: internal\nmatch_score: 高 (0.85)\nsignatures: general_protection, __inet_lookup_established+0x0, mlx5_core, GRO RX path",
+        "detail": "内部知识库已收录同一故障模式：现象为高负载下 mlx5 GRO 路径空指针 GPF，调用栈特征与本案例一致，根因定位为 mlx5e_handle_rx_cqe 在 GRO 聚合后 skb 生命周期管理竞态，修复为在 GRO 入口处增加 skb 空指针校验并修正 skb 引用持有顺序。匹配度高，无需继续从源码复现或独立推测。"
+      }
+    ],
+    "solution": "已命中内部知识库匹配案例，建议直接应用上游修复补丁，在 GRO 聚合入口处增加 skb 空指针检查以消除竞态窗口；若条件允许也可升级至包含该修复的稳定版本，从根源上避免该问题再次发生。"
   },
   "diagnosis_repair_result": {
     "community_kernel_result": [
@@ -48,6 +91,7 @@
         "source_file": "https://gitee.com/openeuler/kernel/issues/...",
         "creattime": "2024-01-01T00:00:00Z",
         "score": 90,
+        "match_score": "高",
         "match_level": "L3",
         "score_details": {
           "kernel_version_score": 0.8,
@@ -70,18 +114,29 @@
       {
         "source": "issue",
         "knowledge_id": "issue-mlx5-gro-001",
-        "fingerprints": ["fp1"],
+        "fingerprints": [
+          "fp1"
+        ],
         "bug_type": "general_protection",
         "bug_key": "general protection fault",
         "bug_summary": "mlx5 GRO null pointer",
         "rip": "0xffffffffc0a23456",
         "rip_function": "__inet_lookup_established",
         "rip_offset": "0x0",
-        "related_modules": ["mlx5_core"],
-        "call_trace_signature": ["__inet_lookup_established", "mlx5e_handle_rx_cqe"],
+        "related_modules": [
+          "mlx5_core"
+        ],
+        "call_trace_signature": [
+          "__inet_lookup_established",
+          "mlx5e_handle_rx_cqe"
+        ],
         "call_trace_text": "#0 __inet_lookup_established\n#1 mlx5e_handle_rx_cqe",
-        "kernel_versions": ["5.10.0-180.12.0.50.oe2203"],
-        "affected_components": ["network"],
+        "kernel_versions": [
+          "5.10.0-180.12.0.50.oe2203"
+        ],
+        "affected_components": [
+          "network"
+        ],
         "root_cause": "null pointer in GRO path",
         "solution": "Hotfix available",
         "hotpatch": "mlx5-gro-fix-2024",
@@ -89,6 +144,8 @@
         "case_count": 5,
         "first_seen": "2024-01-01T00:00:00Z",
         "last_seen": "2024-06-30T00:00:00Z",
+        "match_score": "高",
+        "match_level": "L1",
         "match_reason": {
           "bug_type_match": "bug_type 完全一致: general_protection",
           "rip_match": "RIP 函数完全一致: __inet_lookup_established",
@@ -100,26 +157,78 @@
     ]
   },
   "workflow_trace": {
-    "round_count": 1,
-    "round_history": [
+    "source": "opencode_export",
+    "session_id": "ses_abc123def456",
+    "total_duration_ms": 45230,
+    "step_count": 5,
+    "steps": [
       {
-        "round": 1,
-        "agent_name": "shennong",
-        "stage": "report_generation",
+        "step": 1,
+        "stage": "init",
+        "decision": "接收用户提供的 vmcore-dmesg.txt 崩溃日志，决定启动内核崩溃诊断流程",
+        "observations": "用户提交了一份 openEuler 5.10 内核的 panic 日志，崩溃时间约 23:12:10，涉及 mlx5 网卡",
+        "judgment": "先提取崩溃表面特征，确定故障子系统",
+        "tools": [
+          {"tool_name": "bash", "title": "cat /path/to/vmcore-dmesg.txt | head -100", "status": "success", "duration_ms": 320, "start_time": "2026-06-30T23:12:10+08:00", "end_time": "2026-06-30T23:12:10+08:00"}
+        ],
         "status": "success",
         "start_time": "2026-06-30T23:12:10+08:00",
-        "end_time": "2026-06-30T23:12:35+08:00",
-        "tool_calls": [
-          {
-        "tool_name": "analyze_crash",
-        "input": {"dmesg_file": "/path/to/vmcore-dmesg.txt"},
-            "output": "...",
-            "start_time": "2026-06-30T23:12:10+08:00",
-            "end_time": "2026-06-30T23:12:35+08:00"
-          }
+        "end_time": "2026-06-30T23:12:12+08:00"
+      },
+      {
+        "step": 2,
+        "stage": "crash_feature_extraction",
+        "decision": "使用 crash-feature-matcher 提取崩溃特征（RIP、调用栈、签名）",
+        "observations": "analyze_crash 返回 bug_type=general_protection，RIP=__inet_lookup_established+0x0，调用栈自下而上为 softirq→mlx5e_poll_rx_cq→mlx5e_handle_rx_cqe→tcp_v4_rcv→__inet_lookup_established；fault 地址 0x18 为典型结构体偏移",
+        "judgment": "故障定位在 TCP 层连接查找入口的空指针解引用，但需要结合网卡驱动上下文分析为什么 skb 或 sk 会为空",
+        "tools": [
+          {"tool_name": "crash-feature-matcher:analyze_crash", "title": "analyze_crash(dmesg_file)", "status": "success", "duration_ms": 2800, "start_time": "2026-06-30T23:12:12+08:00", "end_time": "2026-06-30T23:12:15+08:00"}
         ],
-        "output": "Report generated and validated",
-        "reason": ""
+        "status": "success",
+        "start_time": "2026-06-30T23:12:12+08:00",
+        "end_time": "2026-06-30T23:12:16+08:00"
+      },
+      {
+        "step": 3,
+        "stage": "log_detection",
+        "decision": "运行 witty-log-detection 做日志异常检测，寻找补充证据",
+        "observations": "日志中检测到大量 mlx5 网卡相关 GRO flush 事件，崩溃前 5 秒网络流量突增，softirq 调度频率异常",
+        "judgment": "高负载+GRO 聚合路径可能是触发条件，需要检索知识库确认是否已知问题",
+        "tools": [
+          {"tool_name": "witty-log-detection:create_log_parse_task", "title": "create_log_parse_task(vmcore-dmesg.txt)", "status": "success", "duration_ms": 1200, "start_time": "2026-06-30T23:12:16+08:00", "end_time": "2026-06-30T23:12:17+08:00"},
+          {"tool_name": "witty-log-detection:get_task_result", "title": "get_task_result(task_id)", "status": "success", "duration_ms": 1500, "start_time": "2026-06-30T23:12:18+08:00", "end_time": "2026-06-30T23:12:19+08:00"}
+        ],
+        "status": "success",
+        "start_time": "2026-06-30T23:12:16+08:00",
+        "end_time": "2026-06-30T23:12:20+08:00"
+      },
+      {
+        "step": 4,
+        "stage": "knowledge_retrieval",
+        "decision": "用崩溃特征检索内部知识库和社区案例",
+        "observations": "内部知识库返回 1 条高匹配案例 (match_score=0.85)：issue-mlx5-gro-001，同内核版本、同 RIP 函数、同调用栈签名，根因为 mlx5 GRO 路径 skb 生命周期竞态，有 hotpatch；社区检索返回 1 条相关 OSClinic issue",
+        "judgment": "匹配度足够高，可直接采纳知识库结论，无需从源码独立复现",
+        "tools": [
+          {"tool_name": "crash-feature-matcher:query_knowledge", "title": "query_knowledge(crash_features, host_features)", "status": "success", "duration_ms": 3500, "start_time": "2026-06-30T23:12:20+08:00", "end_time": "2026-06-30T23:12:23+08:00"},
+          {"tool_name": "crash-feature-matcher:query_community_cases", "title": "query_community_cases(crash_features)", "status": "success", "duration_ms": 4200, "start_time": "2026-06-30T23:12:23+08:00", "end_time": "2026-06-30T23:12:28+08:00"}
+        ],
+        "status": "success",
+        "start_time": "2026-06-30T23:12:20+08:00",
+        "end_time": "2026-06-30T23:12:28+08:00"
+      },
+      {
+        "step": 5,
+        "stage": "report_generation",
+        "decision": "综合所有证据组装最终报告，校验 schema 并生成 HTML",
+        "observations": "各分片 JSON 校验通过，合并后的 report.json 语义校验 OK，HTML 成功生成",
+        "tools": [
+          {"tool_name": "bash", "title": "validate_report.py host_base_info.json", "status": "success", "duration_ms": 180, "start_time": "2026-06-30T23:12:28+08:00", "end_time": "2026-06-30T23:12:29+08:00"},
+          {"tool_name": "bash", "title": "combine_report.py --sections-dir ...", "status": "success", "duration_ms": 240, "start_time": "2026-06-30T23:12:30+08:00", "end_time": "2026-06-30T23:12:31+08:00"},
+          {"tool_name": "bash", "title": "generate_report_html.py --report report.json", "status": "success", "duration_ms": 450, "start_time": "2026-06-30T23:12:32+08:00", "end_time": "2026-06-30T23:12:55+08:00"}
+        ],
+        "status": "success",
+        "start_time": "2026-06-30T23:12:28+08:00",
+        "end_time": "2026-06-30T23:12:55+08:00"
       }
     ]
   }

@@ -41,11 +41,11 @@ async def match_crash(feature: CrashFeatures, host: HostFeatures,
             continue
         fps = issue.fingerprints or []
         if feature_sig in fps:
-            score = _compute_issue_match_score(feature, host, issue)
-            issue.match_score = round(score / 100.0, 4)  # shennong 对齐: 0-1 归一化
+            raw_score = _compute_issue_match_score(feature, host, issue)  # returns 0-100, sets issue.match_score (0-1) and issue.match_reason
+            issue.match_level = "L1"
             _bump(issue)
             similar = await _maybe_search_cases(rag, issue)
-            current_case.match_score = score
+            current_case.match_score = round(raw_score / 100.0, 4)
             current_case.match_method = "L1_fingerprint"
             return MatchResult(matched=True, fingerprint_match=True,
                               knowledge=issue, similar_cases=similar,
@@ -71,9 +71,10 @@ async def match_crash(feature: CrashFeatures, host: HostFeatures,
                 best_score = score
                 best_similar = await _maybe_search_cases(rag, issue)
         if best_issue and best_score >= 60:  # L2 threshold on 0-100 scale
-            best_issue.match_score = best_score  # shennong 对齐: 注入匹配分数
+            # best_issue.match_score already set to 0-1 normalized value by _compute_issue_match_score (inside _validate_l2_match)
+            best_issue.match_level = "L2"
             _bump(best_issue)
-            current_case.match_score = best_score
+            current_case.match_score = round(best_score / 100.0, 4)
             current_case.match_method = "L2_rag_scored"
             return MatchResult(matched=True, fingerprint_match=False,
                               knowledge=best_issue, similar_cases=best_similar,
@@ -202,7 +203,9 @@ def _compute_issue_match_score(feature: CrashFeatures, host: HostFeatures, issue
             reasons["error_keyword_match"] = f"异常关键词一致: {', '.join(sorted(common_kws))}"
 
     issue.match_reason = reasons
-    return min(100.0, score)
+    final_score = min(100.0, score)
+    issue.match_score = round(final_score / 100.0, 4)  # normalize to 0-1 for shennong schema
+    return final_score
 
 
 def _kernel_version_score(host_kv: str, issue_kvs: list[str]) -> float:
