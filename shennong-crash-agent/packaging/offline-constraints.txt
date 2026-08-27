@@ -1,0 +1,6 @@
+# PaddleOCR leaves these large dependencies open-ended. Keep all OpenCV
+# distributions on the same version already required by witty-log-detection so
+# pip does not download several incompatible 40-50 MB candidates while
+# resolving the offline wheelhouse.
+opencv-contrib-python==4.9.0.80
+opencv-python-headless==4.9.0.80

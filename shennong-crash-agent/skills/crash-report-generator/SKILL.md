@@ -105,10 +105,10 @@ The report should be built incrementally, section by section, saved to a local t
    - `crash_feature_info` 核心字段非空。
 3. 校验失败时打印详细错误并返回非零退出码；成功时输出 `OK`。
 
-如果尚未创建 crash-report-generator 的 venv，请先运行项目根目录的 `postinstall.mjs`：
+如果尚未创建 crash-report-generator 的 venv，请先显式运行 Python 依赖安装命令：
 
 ```bash
-node postinstall.mjs
+npm exec --offline -- shennong-setup install
 ```
 
 ## Rules

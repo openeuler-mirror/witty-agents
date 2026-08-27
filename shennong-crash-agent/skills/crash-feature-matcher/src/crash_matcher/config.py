@@ -18,6 +18,9 @@ def _overlay_env(data: dict) -> dict:
         "LINUX_COMMUNITY_KB_ID": ("rag", "linux_community_kb_id"),
         "OPENEULER_COMMUNITY_KB_ID": ("rag", "openeuler_community_kb_id"),
         "RAG_ACCESS_KEY": ("rag", "access_key"),
+        "SHENNONG_LLM_API_KEY": ("llm_scorer", "api_key"),
+        "SHENNONG_LLM_BASE_URL": ("llm_scorer", "base_url"),
+        "SHENNONG_LLM_MODEL": ("llm_scorer", "model"),
     }
     for env_key, (section, key) in env_map.items():
         value = os.environ.get(env_key)

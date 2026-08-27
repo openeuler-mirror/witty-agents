@@ -1,0 +1,32 @@
+# Knowledge, rules, prompts and schemas required by both package variants.
+skills/crash-feature-matcher/SKILL.md
+skills/crash-feature-matcher/mcp_config.json
+skills/crash-feature-matcher/run_mcp.sh
+skills/crash-feature-matcher/src/knowledge_base/seed_issues.json
+skills/crash-report-generator/SKILL.md
+skills/crash-report-generator/prompts/generate-report.md
+skills/crash-report-generator/schemas/crash-report-schema.json
+skills/gitcode/SKILL.md
+skills/vmcore-analysis/SKILL.md
+skills/vmcore-analysis/references/crash_commands.md
+skills/vmcore-analysis/references/hardware_analysis.md
+skills/vmcore-analysis/references/src_analysis_patterns.md
+skills/witty-log-detection/SKILL.md
+skills/witty-log-detection/mcp_config.json
+skills/witty-log-detection/run_server.sh
+skills/witty-log-detection/src/parser/log_features/bash_log_feature.yaml
+skills/witty-log-detection/src/parser/log_features/c_log_feature.yaml
+skills/witty-log-detection/src/parser/log_features/cpp_log_feature.yaml
+skills/witty-log-detection/src/parser/log_features/dmesg_log_feature.yaml
+skills/witty-log-detection/src/parser/log_features/ftrace_log_feature.yaml
+skills/witty-log-detection/src/parser/log_features/go_log_feature.yaml
+skills/witty-log-detection/src/parser/log_features/hdfs_log_feature.yaml
+skills/witty-log-detection/src/parser/log_features/java_log_feature.yaml
+skills/witty-log-detection/src/parser/log_features/js_log_feature.yaml
+skills/witty-log-detection/src/parser/log_features/kdump_log_feature.yaml
+skills/witty-log-detection/src/parser/log_features/python_log_feature.yaml
+skills/witty-log-detection/src/parser/log_features/unknown_log_feature.yaml
+# Framework adapter templates. DSH activation remains gated until /mcp exists.
+frameworks/dsh/package.json.template
+frameworks/dsh/cordis.patch.yml.template
+frameworks/dsh/shennong-persona.md
