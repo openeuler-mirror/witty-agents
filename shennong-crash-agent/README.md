@@ -90,6 +90,8 @@ npm exec --offline -- shennong-setup check
 
 ```bash
 npm exec --offline -- shennong-configure
+# 等价的显式写法
+npm exec --offline -- shennong-configure install --target=opencode
 ```
 
 该命令把当前 online/offline 安装包的本地 `dist/index.js` 文件 URL 登记到
@@ -104,7 +106,15 @@ OpenCode `plugin` 数组，并移除旧的 Shennong 包名或本地入口。使�
 取消注册时只移除 Shennong，不覆盖用户后续增加的其他配置；修改前同样会备份：
 
 ```bash
-npm exec --offline -- shennong-configure remove
+npm exec --offline -- shennong-configure remove --target=opencode
+```
+
+`shennong-configure` 已采用框架适配器结构。可通过下面的命令查看 DSH
+适配边界和模板状态，但在 `witty-log-detection` 提供 Streamable HTTP
+`/mcp` 之前，DSH 的 install/remove 会明确拒绝执行，不会写入半成品配置：
+
+```bash
+npm exec --offline -- shennong-configure status --target=dsh
 ```
 
 全局 npm 安装后可直接执行：
@@ -275,8 +285,22 @@ PaddleOCR 的 OpenCV 扩展依赖与项目现有 `opencv-python==4.9.0.80`
 shennong-crash-agent/
 ├── bin/
 │   ├── shennong-setup.mjs       # 一键安装三套 Python 环境
-│   └── shennong-configure.mjs   # 备份并登记 OpenCode 插件
-├── lib/opencode-config.mjs   # OpenCode JSONC 安全注册逻辑
+│   └── shennong-configure.mjs   # 统一的框架配置入口
+├── lib/
+│   ├── mcp-services.mjs         # MCP 服务生命周期管理
+│   ├── opencode-config.mjs      # 旧导入路径的兼容转发
+│   └── configure/
+│       ├── common.mjs           # 参数、适配器契约和能力检查
+│       ├── backup.mjs           # 通用备份和原子写入
+│       └── adapters/
+│           ├── index.mjs        # 框架适配器注册表
+│           ├── opencode.mjs     # OpenCode JSONC 安全注册逻辑
+│           └── dsh.mjs          # DSH 适配边界和状态检查
+├── frameworks/
+│   └── dsh/
+│       ├── package.json.template
+│       ├── cordis.patch.yml.template
+│       └── shennong-persona.md
 ├── skills/                   # 4 个核心 Skill / MCP
 │   ├── crash-feature-matcher/
 │   │   ├── mcp_config.json   # MCP 自动注册配置（stdio）

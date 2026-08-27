@@ -26,3 +26,7 @@ skills/witty-log-detection/src/parser/log_features/js_log_feature.yaml
 skills/witty-log-detection/src/parser/log_features/kdump_log_feature.yaml
 skills/witty-log-detection/src/parser/log_features/python_log_feature.yaml
 skills/witty-log-detection/src/parser/log_features/unknown_log_feature.yaml
+# Framework adapter templates. DSH activation remains gated until /mcp exists.
+frameworks/dsh/package.json.template
+frameworks/dsh/cordis.patch.yml.template
+frameworks/dsh/shennong-persona.md

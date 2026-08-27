@@ -1,0 +1,20 @@
+# Shennong DSH profile patch template.
+# This template is not installed yet. DSH registration stays gated until the
+# witty-log-detection service exposes and passes Streamable HTTP /mcp tests.
+- insert:
+    - id: mcp-shennong-crash-feature-matcher
+      name: '@deepseek-ai/dsh-mcp-client'
+      config:
+        serverName: crash-feature-matcher
+        transport: stdio
+        command: bash
+        args:
+          - '__CRASH_FEATURE_MATCHER_LAUNCHER__'
+        failOnStartupError: true
+    - id: mcp-shennong-witty-log-detection
+      name: '@deepseek-ai/dsh-mcp-client'
+      config:
+        serverName: witty-log-detection
+        transport: streamable-http
+        url: 'http://127.0.0.1:12144/mcp'
+        failOnStartupError: true

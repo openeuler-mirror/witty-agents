@@ -131,7 +131,7 @@ function shouldCopy(source, variant) {
 }
 
 function copyPackageFiles(stageDir, variant) {
-  for (const item of ["dist", "skills", "bin", "lib", "README.md"]) {
+  for (const item of ["dist", "skills", "bin", "lib", "frameworks", "README.md"]) {
     const source = join(PROJECT_ROOT, item)
     if (!existsSync(source)) {
       throw new Error(`required package path is missing: ${source}`)
@@ -246,7 +246,12 @@ import json, pathlib, re, sys, zipfile
 violations = []
 for wheel in pathlib.Path(sys.argv[1]).rglob("*.whl"):
     with zipfile.ZipFile(wheel) as archive:
-        metadata_files = [name for name in archive.namelist() if name.endswith(".dist-info/METADATA")]
+        # A wheel may vendor other distributions (for example setuptools),
+        # whose nested .dist-info directories are not the wheel's own metadata.
+        metadata_files = [
+            name for name in archive.namelist()
+            if name.endswith(".dist-info/METADATA") and name.count("/") == 1
+        ]
         if len(metadata_files) != 1:
             violations.append({"wheel": str(wheel), "requirement": "invalid METADATA count"})
             continue
@@ -270,7 +275,7 @@ function verifyWheelhouses(python, wheelRoot) {
     const args = [
       "-m", "pip", "install",
       "--isolated", "--no-cache-dir", "--disable-pip-version-check",
-      "--dry-run", "--ignore-installed", "--no-index",
+      "--break-system-packages", "--dry-run", "--ignore-installed", "--no-index",
       "--find-links", destination,
       "-r", requirements,
     ]
@@ -405,6 +410,7 @@ function writeStagePackageJson(stageDir, basePackage, variant) {
       "skills",
       "bin",
       "lib",
+      "frameworks",
       "package-variant.json",
       "package-content-manifest.json",
       ...(variant === "offline" ? ["python-wheels", "python-wheel-manifest.json"] : []),
@@ -475,6 +481,14 @@ function main() {
     "bin/shennong-setup.mjs",
     "lib/mcp-services.mjs",
     "lib/opencode-config.mjs",
+    "lib/configure/backup.mjs",
+    "lib/configure/common.mjs",
+    "lib/configure/adapters/index.mjs",
+    "lib/configure/adapters/opencode.mjs",
+    "lib/configure/adapters/dsh.mjs",
+    "frameworks/dsh/package.json.template",
+    "frameworks/dsh/cordis.patch.yml.template",
+    "frameworks/dsh/shennong-persona.md",
     ...(options.variant === "offline" ? ["node_modules/jsonc-parser/package.json"] : []),
   ])
   validateNoRuntimeDatabases(npmResult)

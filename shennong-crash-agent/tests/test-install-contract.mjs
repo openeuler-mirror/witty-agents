@@ -26,6 +26,7 @@ const TEST_VARIANTS = (process.env.SHENNONG_TEST_VARIANTS || "online,offline")
   .split(",")
   .map((variant) => variant.trim())
   .filter(Boolean)
+const CONFIGURE_ONLY = process.env.SHENNONG_TEST_CONFIGURE_ONLY === "1"
 
 if (TEST_VARIANTS.length === 0 || TEST_VARIANTS.some((variant) => !["online", "offline"].includes(variant))) {
   throw new Error("SHENNONG_TEST_VARIANTS must contain online and/or offline")
@@ -103,6 +104,18 @@ async function installVariant(variant, configPath, environment) {
   const configureBin = join(project, "node_modules", ".bin", "shennong-configure")
   assert(existsSync(setupBin), `${variant}: shennong-setup bin link is missing`)
   assert(existsSync(configureBin), `${variant}: shennong-configure bin link is missing`)
+  for (const path of [
+    "lib/configure/backup.mjs",
+    "lib/configure/common.mjs",
+    "lib/configure/adapters/index.mjs",
+    "lib/configure/adapters/opencode.mjs",
+    "lib/configure/adapters/dsh.mjs",
+    "frameworks/dsh/package.json.template",
+    "frameworks/dsh/cordis.patch.yml.template",
+    "frameworks/dsh/shennong-persona.md",
+  ]) {
+    assert(existsSync(join(packageRoot, path)), `${variant}: framework adapter file is missing: ${path}`)
+  }
   execFileSync("npm", ["exec", "--offline", "--", "shennong-setup", "--help"], {
     cwd: project,
     stdio: "ignore",
@@ -201,6 +214,40 @@ function exerciseConfigure(installation, configPath, environment) {
     listConfigBackups(configPath).length === backupsAfter.length,
     "configure: repeated no-op run created an unnecessary backup",
   )
+}
+
+function exerciseFrameworkAdapterBoundary(installation, configPath, environment) {
+  const before = readFileSync(configPath, "utf8")
+  const status = spawnSync(
+    "npm",
+    ["exec", "--offline", "--", "shennong-configure", "status", "--target", "dsh"],
+    {
+      cwd: installation.project,
+      encoding: "utf8",
+      env: environment,
+    },
+  )
+  assert(status.status === 0, `DSH adapter status failed: ${status.stderr}`)
+  assert(status.stdout.includes('"framework": "dsh"'), "DSH adapter status did not identify the framework")
+  assert(status.stdout.includes('"supported": false'), "DSH adapter did not report its gated state")
+  assert(status.stdout.includes('"templatesReady": true'), "DSH adapter templates are incomplete")
+  assert(readFileSync(configPath, "utf8") === before, "DSH status unexpectedly changed OpenCode configuration")
+
+  const install = spawnSync(
+    "npm",
+    ["exec", "--offline", "--", "shennong-configure", "install", "--target", "dsh"],
+    {
+      cwd: installation.project,
+      encoding: "utf8",
+      env: environment,
+    },
+  )
+  assert(install.status !== 0, "gated DSH install unexpectedly succeeded")
+  assert(
+    install.stderr.includes("Streamable HTTP /mcp"),
+    `gated DSH install failure did not explain the transport boundary: ${install.stderr}`,
+  )
+  assert(readFileSync(configPath, "utf8") === before, "gated DSH install changed OpenCode configuration")
 }
 
 function exerciseRemove(configPath, project, environment) {
@@ -406,9 +453,12 @@ try {
   if (TEST_VARIANTS.includes("online")) {
     const online = await installVariant("online", configPath, environment)
     assert(readFileSync(pythonLog, "utf8") === "", "online npm install or --help invoked Python/pip")
-    exerciseExplicitSetup(online, environment)
+    if (!CONFIGURE_ONLY) {
+      exerciseExplicitSetup(online, environment)
+    }
     assert(readFileSync(pythonLog, "utf8") === "", "setup used an implicit Python instead of --python")
     exerciseConfigure(online, configPath, environment)
+    exerciseFrameworkAdapterBoundary(online, configPath, environment)
     assert(readFileSync(pythonLog, "utf8") === "", "configure unexpectedly invoked Python/pip")
     configuredInstallations.push(online)
   }

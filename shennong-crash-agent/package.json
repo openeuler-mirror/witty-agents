@@ -13,7 +13,8 @@
     "dist",
     "skills",
     "bin",
-    "lib"
+    "lib",
+    "frameworks"
   ],
   "bin": {
     "shennong-setup": "./bin/shennong-setup.mjs",
