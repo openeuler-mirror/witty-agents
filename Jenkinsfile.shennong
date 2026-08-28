@@ -322,7 +322,10 @@ pipeline {
                                 NPMRC_PATH="$npmrc" node <<'NODE'
 const { writeFileSync } = require('node:fs')
 const registry = new URL(process.env.NPM_REGISTRY)
-const authKey = `//${registry.host}${registry.pathname.replace(/\/$/, '')}/:_authToken`
+const registryPath = registry.pathname.endsWith('/')
+  ? registry.pathname.slice(0, -1)
+  : registry.pathname
+const authKey = `//${registry.host}${registryPath}/:_authToken`
 writeFileSync(process.env.NPMRC_PATH, `registry=${registry.href}\n${authKey}=${process.env.NPM_TOKEN}\n`)
 NODE
                                 export NPM_CONFIG_USERCONFIG="$npmrc"
