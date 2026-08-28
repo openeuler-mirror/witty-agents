@@ -85,6 +85,7 @@ pipeline {
                     env.VARIANT = params.VARIANT ?: 'online'
                     env.PYTHON_BIN = params.PYTHON_BIN?.trim() ?: 'python3.11'
                     env.PYPI_INDEX_URL = params.PYPI_INDEX_URL?.trim() ?: 'https://pypi.org/simple'
+                    env.PIP_INDEX_URL = env.PYPI_INDEX_URL
                     env.OCR_MODEL_CACHE_DIR = params.OCR_MODEL_CACHE_DIR?.trim()
                         ?: '/home/shennong-jenkins/ocr-model-cache'
                     env.RUN_REAL_INSTALL_VALIDATION = String.valueOf(
