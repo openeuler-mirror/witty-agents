@@ -419,7 +419,7 @@ skill({
 \u5EFA\u8BAE\u7684\u81EA\u52A8\u6821\u9A8C\u547D\u4EE4\uFF1A
 
 \`\`\`bash
-.venvs/crash-report-generator/bin/python skills/crash-report-generator/scripts/validate_report.py --report report.json
+bash skills/crash-report-generator/run_python.sh skills/crash-report-generator/scripts/validate_report.py --report report.json
 \`\`\`
 
 ### \u57FA\u7840\u547D\u4EE4\u68C0\u6D4B

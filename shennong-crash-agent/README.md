@@ -73,20 +73,21 @@ npm exec --offline -- shennong-setup install
 shennong-setup install
 ```
 
-该命令才会在包目录的 `.venvs/` 下创建三个独立 Python 环境。在线包在此时
-联网下载 Python 依赖；离线包只读取随包携带的 wheelhouse，不访问 Python 包索引。
-当前依赖集合支持 Python 3.11 或 3.12，优先选择 3.11；Python 3.13 暂不放行。
+该命令才会在用户缓存目录 `~/.cache/witty-agents/<package>/venvs/` 下创建三个
+独立 Python 环境。在线包在此时联网下载 Python 依赖；离线包只读取随包携带的
+wheelhouse，不访问 Python 包索引。online 与 offline 包按包名分别缓存，
+互不干扰。当前依赖集合支持 Python 3.11 或 3.12，优先选择 3.11；Python 3.13 暂不放行。
 为避免全局 npm 目录权限问题，当前优先使用项目本地安装方式。安装完成前会对
 每套环境执行 `pip check` 和核心模块导入；任一验证失败都不会写入完成标记，
 使用 `--force` 重装时还会恢复原有可用环境。
 
-> 当前 `.venvs/` 位于已安装 npm 包内部，即
-> `node_modules/@openeuler/agent-shennong-crash-<variant>/.venvs/`。执行 npm 卸载、
-> 重装、升级或清理 `node_modules` 会同时移除这三套环境；重新安装包后必须再次执行
-> `shennong-setup install`。升级或卸载前建议先执行 `shennong-setup stop`，停止由
-> 当前安装目录管理的 SSE 服务。
+> Python 虚拟环境位于包外的用户缓存目录（`~/.cache/witty-agents/`，可用环境变量
+> `SHENNONG_VENV_CACHE` 覆盖），npm 卸载、重装、升级或清理 `node_modules`
+> 不会删除这三套环境。重装包后 `run_mcp.sh` / `run_server.sh` 等启动入口直接
+> 指向缓存中的环境，无需重新执行 `shennong-setup install`。升级或卸载前建议
+> 先执行 `shennong-setup stop`，停止由当前安装目录管理的 SSE 服务。
 
-安装成功后会写入 `.venvs/setup-complete.json`，并确保三个组件可用：
+安装成功后会写入 `<venvs>/setup-complete.json`，并确保三个组件可用：
 
 - `witty-log-detection` 是 SSE MCP，setup 会启动服务并检查 `127.0.0.1:12144`；
 - `crash-feature-matcher` 是 stdio MCP，setup 校验其环境和启动入口，由 OpenCode 使用时按需拉起；
@@ -317,9 +318,24 @@ OCR 模型文件使用 Git LFS 管理，根目录 `.gitattributes` 会将 `*.pdi
 LFS filter。构建离线包前必须先执行 `git lfs pull`，并确认仓库服务端已启用 LFS；
 构建脚本会拒绝残留的 LFS pointer，避免把只有百余字节的占位文本发布进 npm 包。
 
+### OCR 模型获取（online 包）
+
+online 包不携带本地 OCR 模型（仅保留源码），`shennong-setup install` 会从
+PaddleOCR 官方源自动下载以下三组推理模型并校验 sha256，存放于用户缓存目录
+`~/.cache/witty-agents/<package>/ocr-models/`（重装包不会丢失）：
+
+- `ch_PP-OCRv4_det_infer`（检测）
+- `ch_PP-OCRv4_rec_infer`（识别）
+- `ch_ppocr_mobile_v2.0_cls_infer`（方向分类）
+
+下载失败（如网络不可达）时 setup 会输出 WARNING 并继续完成安装，本地 OCR
+暂不可用；网络恢复后重跑 `shennong-setup install` 即可补齐（已下载且校验
+通过的模型自动跳过）。offline 包已内置上述模型，无需下载。OCR 需要 CPU
+支持 AVX-512。
+
 ## 目录结构
 
-```
+```text
 shennong-crash-agent/
 ├── bin/
 │   ├── shennong-setup.mjs       # 一键安装三套 Python 环境
@@ -347,12 +363,14 @@ shennong-crash-agent/
 │   ├── witty-log-detection/
 │   │   └── mcp_config.json   # MCP 自动注册配置（SSE）
 │   └── crash-report-generator/
-├── .venvs/                   # 三套 Python 依赖（不随包提供，由 shennong-setup 生成）
 ├── dist/index.js             # 已提交的预构建 OpenCode 插件入口
 ├── scripts/
 │   ├── build-package.mjs     # online/offline 变体打包与检查
 │   └── validate-dist.mjs     # 预构建 dist 入口校验
 └── package.json
+
+# Python 虚拟环境不在包内，由 shennong-setup 生成于
+# ~/.cache/witty-agents/<package>/venvs/（SHENNONG_VENV_CACHE 可覆盖）
 ```
 
 ## 版本
