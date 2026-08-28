@@ -21,7 +21,7 @@ pipeline {
     parameters {
         choice(
             name: 'VARIANT',
-            choices: ['all', 'online', 'offline'],
+            choices: ['online', 'offline', 'all'],
             description: 'Build and verify both packages, or only one package variant.'
         )
         string(

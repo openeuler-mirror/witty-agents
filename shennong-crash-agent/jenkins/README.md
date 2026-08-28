@@ -31,7 +31,7 @@ socket，仅获得断网验收所需的 `SYS_ADMIN`、`NET_ADMIN` 能力。ARM �
 
 | 参数 | 默认值 | 说明 |
 |---|---:|---|
-| `VARIANT` | `all` | `online`、`offline` 或两种都构建 |
+| `VARIANT` | `online` | `online`、`offline` 或两种都构建；首次联调默认只跑在线包 |
 | `PYTHON_BIN` | `python3.11` | 构建 wheels 和创建三套 venv 的 Python |
 | `PYPI_INDEX_URL` | PyPI 官方源 | online setup 和 offline wheel 构建使用的 Python 包索引 |
 | `OCR_MODEL_CACHE_DIR` | `/home/shennong-jenkins/ocr-model-cache` | Git LFS 不可用时使用的可信 OCR 模型缓存 |
