@@ -178,7 +178,8 @@ pipeline {
                 dir(env.AGENT_DIR) {
                     sh '''
                         set -eu
-                        git lfs install --local
+                        # Jenkins disables checkout hooks with core.hooksPath=/dev/null.
+                        # CI only needs to materialize LFS objects, not install hooks.
                         if ! git lfs pull; then
                           echo 'WARNING: git lfs pull failed; checking trusted OCR cache.' >&2
                         fi
