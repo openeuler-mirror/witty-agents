@@ -117,6 +117,11 @@ pipeline {
                         rm -rf artifacts ci-reports .package-stage
                         mkdir -p artifacts ci-reports
 
+                        # The controller checks out as uid 1000 while this isolated
+                        # build container runs as root for network namespace tests.
+                        git config --global --add safe.directory "$WORKSPACE"
+                        git rev-parse --show-toplevel >/dev/null
+
                         node -e 'const major=Number(process.versions.node.split(".")[0]); if (major < 20) throw new Error(`Node.js 20+ required, got ${process.version}`)'
                         npm_version="$(npm --version)"
                         npm_major="${npm_version%%.*}"
