@@ -13,7 +13,7 @@ import {
   writeFileSync,
 } from "node:fs"
 import { createHash } from "node:crypto"
-import { dirname, join, relative, resolve, sep } from "node:path"
+import { basename, dirname, join, relative, resolve, sep } from "node:path"
 import { fileURLToPath } from "node:url"
 import { validatePlugin } from "../lib/validate-plugin.mjs"
 
@@ -112,6 +112,7 @@ function shouldCopy(source, variant) {
     || source.endsWith(".db")
     || source.endsWith(".db-wal")
     || source.endsWith(".db-shm")
+    || basename(source).startsWith("._")
   ) {
     return false
   }
@@ -403,8 +404,12 @@ function writeStagePackageJson(stageDir, basePackage, variant) {
   } = basePackage
   const packageJson = {
     ...publishableBase,
-    name: `${basePackage.name}-${variant}`,
-    description: `${basePackage.description} (${variant} package)`,
+    name: variant === "online"
+      ? basePackage.name
+      : `${basePackage.name}-${variant}`,
+    description: variant === "online"
+      ? basePackage.description
+      : `${basePackage.description} (${variant} package)`,
     files: [
       "dist",
       "skills",
