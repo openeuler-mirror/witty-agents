@@ -5,6 +5,7 @@ skills/crash-feature-matcher/run_mcp.sh
 skills/crash-feature-matcher/src/knowledge_base/seed_issues.json
 skills/crash-report-generator/SKILL.md
 skills/crash-report-generator/prompts/generate-report.md
+skills/crash-report-generator/run_python.sh
 skills/crash-report-generator/schemas/crash-report-schema.json
 skills/gitcode/SKILL.md
 skills/vmcore-analysis/SKILL.md

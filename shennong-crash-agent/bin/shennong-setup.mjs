@@ -13,6 +13,7 @@ import {
   rmSync,
   writeFileSync,
 } from "node:fs"
+import { homedir } from "node:os"
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path"
 import { fileURLToPath } from "node:url"
 import { serviceStatus, startServices, stopServices } from "../lib/mcp-services.mjs"
@@ -22,7 +23,110 @@ const PROJECT_ROOT = resolve(BIN_DIR, "..")
 const VARIANT_FILE = join(PROJECT_ROOT, "package-variant.json")
 const CONTENT_MANIFEST_FILE = join(PROJECT_ROOT, "package-content-manifest.json")
 const WHEEL_MANIFEST_FILE = join(PROJECT_ROOT, "python-wheel-manifest.json")
-const VENV_DIR = join(PROJECT_ROOT, ".venvs")
+
+export function venvsDirForPackage(packageName) {
+  const key = String(packageName).replace(/^@/, "").replace(/\//g, "-")
+  const cacheRoot = process.env.SHENNONG_VENV_CACHE
+    ? resolve(process.env.SHENNONG_VENV_CACHE)
+    : join(homedir(), ".cache", "witty-agents")
+  return join(cacheRoot, key, "venvs")
+}
+
+export function ocrModelsDirForPackage(packageName) {
+  const key = String(packageName).replace(/^@/, "").replace(/\//g, "-")
+  const cacheRoot = process.env.SHENNONG_VENV_CACHE
+    ? resolve(process.env.SHENNONG_VENV_CACHE)
+    : join(homedir(), ".cache", "witty-agents")
+  return join(cacheRoot, key, "ocr-models")
+}
+
+// online 包不含 OCR 模型（体积考虑），setup 时从 PaddleOCR 官方源自动下载到用户缓存目录。
+// paramsSha256 与仓库 LFS 指针（git show HEAD:...inference.pdiparams）保持一致。
+// SHENNONG_OCR_MODELS_BASE_URL 可覆盖下载源（测试用本地源验证下载逻辑）。
+const OCR_MODELS = [
+  {
+    name: "ch_PP-OCRv4_det_infer",
+    path: "/PP-OCRv4/chinese/ch_PP-OCRv4_det_infer.tar",
+    paramsSha256:
+      "49ee815e30cff43cb1057d33bf0d94193e4d4f1ae28451cad15b40be830df915",
+  },
+  {
+    name: "ch_PP-OCRv4_rec_infer",
+    path: "/PP-OCRv4/chinese/ch_PP-OCRv4_rec_infer.tar",
+    paramsSha256:
+      "a6dbfa63e7ee161688523c954e9e293f77dc24044db81e836ff9c7f103fd191a",
+  },
+  {
+    name: "ch_ppocr_mobile_v2.0_cls_infer",
+    path: "/dygraph_v2.0/ch/ch_ppocr_mobile_v2.0_cls_infer.tar",
+    paramsSha256:
+      "d1efda1b80e174b4fcb168a035ac96c1af4938892bd86a55f300a6027105d08c",
+  },
+]
+
+function ocrModelVerified(modelDir, paramsSha256) {
+  for (const file of [
+    "inference.pdiparams",
+    "inference.pdiparams.info",
+    "inference.pdmodel",
+  ]) {
+    if (!existsSync(join(modelDir, file))) {
+      return false
+    }
+  }
+  return sha256(join(modelDir, "inference.pdiparams")) === paramsSha256
+}
+
+async function ensureOcrModels(metadata) {
+  if (metadata.variant !== "online") {
+    return
+  }
+  const root = ocrModelsDirForPackage(metadata.packageName)
+  for (const model of OCR_MODELS) {
+    const dest = join(root, model.name)
+    if (ocrModelVerified(dest, model.paramsSha256)) {
+      console.log(`[shennong-setup] OCR model already present: ${model.name}`)
+      continue
+    }
+    const tmp = `${dest}.download-${process.pid}-${Date.now()}`
+    try {
+      const baseUrl = (
+        process.env.SHENNONG_OCR_MODELS_BASE_URL ||
+        "https://paddleocr.bj.bcebos.com"
+      ).replace(/\/$/, "")
+      console.log(`[shennong-setup] Downloading OCR model: ${model.name}`)
+      const response = await fetch(`${baseUrl}${model.path}`)
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`)
+      }
+      mkdirSync(tmp, { recursive: true })
+      const tarPath = join(tmp, "model.tar")
+      writeFileSync(tarPath, Buffer.from(await response.arrayBuffer()))
+      execFileSync("tar", ["xf", tarPath, "-C", tmp], { cwd: tmp })
+      const extracted = join(tmp, model.name)
+      if (!ocrModelVerified(extracted, model.paramsSha256)) {
+        throw new Error("downloaded model failed sha256 verification")
+      }
+      mkdirSync(dirname(dest), { recursive: true })
+      rmSync(dest, { recursive: true, force: true })
+      renameSync(extracted, dest)
+      console.log(`[shennong-setup] OCR model downloaded: ${model.name}`)
+    } catch (error) {
+      console.warn(
+        `[shennong-setup] WARNING: failed to download OCR model ${model.name} ` +
+          `(${error.message}); local OCR will be unavailable. ` +
+          `Rerun 'shennong-setup install' when the network is reachable.`
+      )
+    } finally {
+      rmSync(tmp, { recursive: true, force: true })
+    }
+  }
+}
+
+const PACKAGE_NAME = JSON.parse(
+  readFileSync(join(PROJECT_ROOT, "package.json"), "utf8")
+).name
+const VENV_DIR = venvsDirForPackage(PACKAGE_NAME)
 
 const VENVS = [
   {
@@ -453,8 +557,19 @@ function inspectExistingSetup(metadata, pythonInfo, fingerprints, offline) {
 
 async function ensureServices() {
   const result = await startServices(PROJECT_ROOT)
-  console.log(`[shennong-setup] crash-feature-matcher stdio MCP: ready (started on demand by OpenCode)`)
-  console.log(`[shennong-setup] witty-log-detection SSE MCP: ${result.state} (${result.endpoint})`)
+  console.log(
+    `[shennong-setup] crash-feature-matcher stdio MCP: ready (started on demand by OpenCode)`
+  )
+  console.log(
+    `[shennong-setup] witty-log-detection SSE MCP: ${result.state} (${result.endpoint})`
+  )
+  if (result.state === "external") {
+    console.warn(
+      `[shennong-setup] WARNING: ${result.endpoint} is already occupied by an untracked process ` +
+        `(possibly a stale service from a previous installation) and will be reused as-is. ` +
+        `If MCP tools misbehave, stop that process and rerun 'shennong-setup install'.`
+    )
+  }
   console.log(`[shennong-setup] crash-report-generator skill: ready`)
   return result
 }
@@ -462,6 +577,7 @@ async function ensureServices() {
 async function install(options) {
   const { metadata, python } = checkSetup(options)
   const offline = metadata.variant === "offline"
+  await ensureOcrModels(metadata)
   const fingerprints = setupFingerprints(metadata)
   const existing = inspectExistingSetup(metadata, python.info, fingerprints, offline)
   if (existing.ready && !options.force) {
@@ -488,7 +604,7 @@ async function install(options) {
       renameSync(VENV_DIR, backupDir)
       backupCreated = true
     }
-    mkdirSync(VENV_DIR, { recursive: false })
+    mkdirSync(VENV_DIR, { recursive: true })
     newSetupCreated = true
 
     for (const venv of VENVS) {

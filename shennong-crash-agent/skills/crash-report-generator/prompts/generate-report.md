@@ -112,7 +112,7 @@ Do not generate the full report in one step. Instead, create a temporary directo
 10. **Combine** all sections into a single `DiagnoseReport` using:
 
     ```bash
-    .venvs/crash-report-generator/bin/python skills/crash-report-generator/scripts/combine_report.py \
+    bash skills/crash-report-generator/run_python.sh skills/crash-report-generator/scripts/combine_report.py \
         --sections-dir /tmp/shennong_report_YYYYMMDD_HHMMSS \
         --output report.json \
         --validate
@@ -123,7 +123,7 @@ Do not generate the full report in one step. Instead, create a temporary directo
 12. **Generate the standalone HTML report** — run `generate_report_html.py` to produce a self-contained `crash-report.html` that inlines `report.json` (no local HTTP server needed, open via file://):
 
     ```bash
-    .venvs/crash-report-generator/bin/python skills/crash-report-generator/scripts/generate_report_html.py \
+    bash skills/crash-report-generator/run_python.sh skills/crash-report-generator/scripts/generate_report_html.py \
         --report report.json \
         --output crash-report.html
     ```
@@ -148,10 +148,10 @@ report = {
 }
 json.dump(report, open('/tmp/wrapped.json', 'w'))
 "
-.venvs/crash-report-generator/bin/python skills/crash-report-generator/scripts/validate_report.py --report /tmp/wrapped.json
+bash skills/crash-report-generator/run_python.sh skills/crash-report-generator/scripts/validate_report.py --report /tmp/wrapped.json
 
 # Combine and validate final report
-.venvs/crash-report-generator/bin/python skills/crash-report-generator/scripts/combine_report.py \
+bash skills/crash-report-generator/run_python.sh skills/crash-report-generator/scripts/combine_report.py \
     --sections-dir /tmp/shennong_report_YYYYMMDD_HHMMSS \
     --output report.json \
     --validate

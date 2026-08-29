@@ -9,11 +9,23 @@ import {
   writeFileSync,
 } from "node:fs"
 import { get } from "node:http"
-import { join } from "node:path"
+import { homedir } from "node:os"
+import { join, resolve } from "node:path"
 
 const DEFAULT_HOST = "127.0.0.1"
 const DEFAULT_PORT = 12144
 const DEFAULT_START_TIMEOUT_MS = 60_000
+
+function venvsDirForProject(projectRoot) {
+  const packageName = JSON.parse(
+    readFileSync(join(projectRoot, "package.json"), "utf8")
+  ).name
+  const key = String(packageName).replace(/^@/, "").replace(/\//g, "-")
+  const cacheRoot = process.env.SHENNONG_VENV_CACHE
+    ? resolve(process.env.SHENNONG_VENV_CACHE)
+    : join(homedir(), ".cache", "witty-agents")
+  return join(cacheRoot, key, "venvs")
+}
 
 function delay(milliseconds) {
   return new Promise((resolve) => setTimeout(resolve, milliseconds))
@@ -98,11 +110,12 @@ function tailLog(logFile, maximumBytes = 4096) {
 }
 
 export function componentReadiness(projectRoot) {
-  const matcherPython = join(projectRoot, ".venvs", "crash-feature-matcher", "bin", "python")
+  const venvsDir = venvsDirForProject(projectRoot)
+  const matcherPython = join(venvsDir, "crash-feature-matcher", "bin", "python")
   const matcherLauncher = join(projectRoot, "skills", "crash-feature-matcher", "run_mcp.sh")
-  const logPython = join(projectRoot, ".venvs", "witty-log-detection", "bin", "python")
+  const logPython = join(venvsDir, "witty-log-detection", "bin", "python")
   const logLauncher = join(projectRoot, "skills", "witty-log-detection", "run_server.sh")
-  const reportPython = join(projectRoot, ".venvs", "crash-report-generator", "bin", "python")
+  const reportPython = join(venvsDir, "crash-report-generator", "bin", "python")
   return {
     crashFeatureMatcher: existsSync(matcherPython) && existsSync(matcherLauncher),
     wittyLogDetection: existsSync(logPython) && existsSync(logLauncher),

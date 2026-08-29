@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
-import { execFileSync, spawnSync } from "node:child_process"
+import { execFileSync, spawn, spawnSync } from "node:child_process"
+import { createHash } from "node:crypto"
 import {
   chmodSync,
   existsSync,
@@ -282,7 +283,7 @@ function exerciseRemove(configPath, project, environment) {
   )
 }
 
-function exerciseExplicitSetup(installation, environment) {
+async function exerciseExplicitSetup(installation, environment) {
   const offline = installation.report.variant === "offline"
   const pythonInfo = installation.report.wheelPlatform || {
     python: "3.11.9",
@@ -325,6 +326,58 @@ exit 0
     SHENNONG_FAKE_NODE: process.execPath,
     SHENNONG_MCP_START_TIMEOUT_MS: "5000",
   }
+
+  // online 包 setup 需要从网络下载 OCR 模型；用本地 HTTP server 提供仓库内的
+  // 真实模型文件，保持契约测试全程离线可运行。
+  let ocrServer = null
+  if (!offline) {
+    const modelSrc = join(PROJECT_ROOT, "skills", "witty-log-detection", "src", "model", "ocr")
+    const serveRoot = join(sandbox, "ocr-model-http-root")
+    for (const [relative, model] of [
+      ["PP-OCRv4/chinese/ch_PP-OCRv4_det_infer.tar", "ch_PP-OCRv4_det_infer"],
+      ["PP-OCRv4/chinese/ch_PP-OCRv4_rec_infer.tar", "ch_PP-OCRv4_rec_infer"],
+      ["dygraph_v2.0/ch/ch_ppocr_mobile_v2.0_cls_infer.tar", "ch_ppocr_mobile_v2.0_cls_infer"],
+    ]) {
+      const tarPath = join(serveRoot, ...relative.split("/"))
+      mkdirSync(dirname(tarPath), { recursive: true })
+      execFileSync("tar", ["cf", tarPath, "-C", modelSrc, model])
+    }
+    const serverScript = join(sandbox, "ocr-model-server.mjs")
+    writeFileSync(serverScript, `import { createReadStream, existsSync } from "node:fs";
+import { join, normalize } from "node:path";
+import { createServer } from "node:http";
+const root = process.argv[2];
+const server = createServer((request, response) => {
+  const path = join(root, normalize(request.url.replace(/^\\/+/, "")));
+  if (request.url.includes("..") || !existsSync(path)) {
+    response.writeHead(404);
+    response.end();
+    return;
+  }
+  response.writeHead(200, { "content-type": "application/x-tar" });
+  createReadStream(path).pipe(response);
+});
+server.listen(0, "127.0.0.1", () => {
+  process.stdout.write(String(server.address().port));
+});
+`
+    )
+    ocrServer = spawn(process.execPath, [serverScript, serveRoot], {
+      stdio: ["ignore", "pipe", "inherit"],
+    })
+    const port = await new Promise((resolvePort, rejectPort) => {
+      let output = ""
+      ocrServer.stdout.on("data", (chunk) => {
+        output += chunk
+        const parsed = Number.parseInt(output, 10)
+        if (Number.isInteger(parsed)) {
+          resolvePort(parsed)
+        }
+      })
+      ocrServer.on("exit", () => rejectPort(new Error("OCR model server exited early")))
+    })
+    setupEnvironment.SHENNONG_OCR_MODELS_BASE_URL = `http://127.0.0.1:${port}`
+  }
   const command = [
     "exec", "--offline", "--", "shennong-setup", "install", `--python=${setupPython}`,
   ]
@@ -333,7 +386,10 @@ exit 0
     stdio: "inherit",
     env: setupEnvironment,
   })
-  const venvRoot = join(installation.packageRoot, ".venvs")
+  const venvKey = installation.packageName
+    .replace(/^@/, "")
+    .replaceAll("/", "-")
+  const venvRoot = join(environment.HOME, ".cache", "witty-agents", venvKey, "venvs")
   for (const name of ["crash-feature-matcher", "witty-log-detection", "crash-report-generator"]) {
     assert(existsSync(join(venvRoot, name, "bin", "python")), `setup: missing venv ${name}`)
   }
@@ -345,9 +401,31 @@ exit 0
   } else {
     assert(marker.wheelManifestSha256 === null, "online setup: unexpected wheel manifest digest")
   }
+  const ocrModelsRoot = join(environment.HOME, ".cache", "witty-agents", venvKey, "ocr-models")
+  if (offline) {
+    assert(!existsSync(ocrModelsRoot), "offline setup: unexpectedly downloaded OCR models")
+  } else {
+    for (const [name, paramsSha256] of [
+      ["ch_PP-OCRv4_det_infer", "49ee815e30cff43cb1057d33bf0d94193e4d4f1ae28451cad15b40be830df915"],
+      ["ch_PP-OCRv4_rec_infer", "a6dbfa63e7ee161688523c954e9e293f77dc24044db81e836ff9c7f103fd191a"],
+      ["ch_ppocr_mobile_v2.0_cls_infer", "d1efda1b80e174b4fcb168a035ac96c1af4938892bd86a55f300a6027105d08c"],
+    ]) {
+      const params = join(ocrModelsRoot, name, "inference.pdiparams")
+      assert(existsSync(params), `online setup: OCR model missing: ${name}`)
+      assert(
+        createHash("sha256").update(readFileSync(params)).digest("hex") === paramsSha256,
+        `online setup: OCR model failed sha256 verification: ${name}`
+      )
+      assert(
+        readdirSync(join(ocrModelsRoot, name)).every((file) => !file.endsWith(".tar")),
+        `online setup: OCR model directory contains download residue: ${name}`
+      )
+    }
+  }
   const firstCalls = readFileSync(setupLog, "utf8")
   assert(firstCalls.includes("-m venv"), "setup: Python venv creation was not invoked")
-  assert(!firstCalls.includes(".venvs.tmp-"), "setup: venv was created in a movable temporary path")
+  assert(firstCalls.includes(venvRoot), "setup: venv was not created in the user cache directory")
+  assert(!firstCalls.includes(join(installation.packageRoot, ".venvs")), "setup: venv was created inside the package directory")
   assert(firstCalls.includes("-m pip install"), "setup: pip install was not invoked")
   assert(firstCalls.includes("-m pip check"), "setup: pip check was not invoked")
   if (offline) {
@@ -377,6 +455,12 @@ exit 0
     secondCalls.split("-m pip check").length > firstCalls.split("-m pip check").length,
     "setup: idempotent rerun did not revalidate installed dependencies",
   )
+  if (!offline) {
+    for (const name of ["ch_PP-OCRv4_det_infer", "ch_PP-OCRv4_rec_infer", "ch_ppocr_mobile_v2.0_cls_infer"]) {
+      assert(existsSync(join(ocrModelsRoot, name, "inference.pdiparams")), `online setup: idempotent rerun removed OCR model: ${name}`)
+    }
+    ocrServer.kill()
+  }
 
   const status = JSON.parse(execFileSync("npm", ["exec", "--offline", "--", "shennong-setup", "status"], {
     cwd: installation.project,
@@ -406,8 +490,12 @@ exit 0
     "setup: failed force reinstall did not restore the previous completion marker",
   )
   assert(
-    readdirSync(installation.packageRoot).every((name) => !name.startsWith(".venvs.backup-")),
+    readdirSync(dirname(venvRoot)).every((name) => !name.startsWith("venvs.backup-")),
     "setup: failed force reinstall left a backup directory after restoration",
+  )
+  assert(
+    readdirSync(installation.packageRoot).every((name) => !name.startsWith(".venvs")),
+    "setup: setup wrote venv state inside the package directory",
   )
 }
 
@@ -454,7 +542,7 @@ try {
     const online = await installVariant("online", configPath, environment)
     assert(readFileSync(pythonLog, "utf8") === "", "online npm install or --help invoked Python/pip")
     if (!CONFIGURE_ONLY) {
-      exerciseExplicitSetup(online, environment)
+      await exerciseExplicitSetup(online, environment)
     }
     assert(readFileSync(pythonLog, "utf8") === "", "setup used an implicit Python instead of --python")
     exerciseConfigure(online, configPath, environment)
@@ -467,7 +555,7 @@ try {
     const offline = await installVariant("offline", configPath, environment)
     assert(readFileSync(pythonLog, "utf8") === "", "offline npm install or --help invoked Python/pip")
     if (offline.report.contentComplete && offline.report.pythonDependencyClosureVerified) {
-      exerciseExplicitSetup(offline, environment)
+      await exerciseExplicitSetup(offline, environment)
     }
     exerciseConfigure(offline, configPath, environment)
     assert(readFileSync(pythonLog, "utf8") === "", "offline configure unexpectedly invoked Python/pip")

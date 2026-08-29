@@ -1,4 +1,5 @@
 # Copyright (c) Huawei Technologies Co., Ltd. 2023-2024. All rights reserved.
+import os
 import cv2
 import numpy as np
 import requests
@@ -9,22 +10,44 @@ from src.config.config import Config
 logger = logging.getLogger(__name__)
 
 
+def _resolve_ocr_model_dir(name):
+    candidates = [os.path.join('src', 'model', 'ocr', name)]
+    cache_root = os.environ.get('SHENNONG_OCR_MODELS_DIR')
+    if cache_root:
+        candidates.append(os.path.join(cache_root, name))
+    for candidate in candidates:
+        if os.path.isdir(candidate):
+            return candidate
+    return candidates[0]
+
+
 class OcrTool:
-    det_model_dir = 'src/model/ocr/ch_PP-OCRv4_det_infer'
-    rec_model_dir = 'src/model/ocr/ch_PP-OCRv4_rec_infer'
-    cls_model_dir = 'src/model/ocr/ch_ppocr_mobile_v2.0_cls_infer'
+    det_model_dir = _resolve_ocr_model_dir('ch_PP-OCRv4_det_infer')
+    rec_model_dir = _resolve_ocr_model_dir('ch_PP-OCRv4_rec_infer')
+    cls_model_dir = _resolve_ocr_model_dir('ch_ppocr_mobile_v2.0_cls_infer')
     # 优化 OCR 参数配置
     if InstructScanService.check_avx512_support() and Config().get_config().ocr_config.method == OcrMethodEnum.OFFLINE:
-        from paddleocr import PaddleOCR
-        model = PaddleOCR(
-            det_model_dir=det_model_dir,
-            rec_model_dir=rec_model_dir,
-            cls_model_dir=cls_model_dir,
-            use_angle_cls=True,
-            lang="ch",
-            show_log=False
-        )
+        missing_models = [d for d in (det_model_dir, rec_model_dir, cls_model_dir) if not os.path.isdir(d)]
+        if missing_models:
+            unavailable_reason = (
+                "[OCRTool] 本地 OCR 模型缺失: " + ", ".join(missing_models)
+                + "。请运行 'shennong-setup install' 联网自动下载（online 包），"
+                "或改用内置模型的 offline 包。详见 README「OCR 模型获取」。"
+            )
+            logger.error(unavailable_reason)
+            model = None
+        else:
+            from paddleocr import PaddleOCR
+            model = PaddleOCR(
+                det_model_dir=det_model_dir,
+                rec_model_dir=rec_model_dir,
+                cls_model_dir=cls_model_dir,
+                use_angle_cls=True,
+                lang="ch",
+                show_log=False
+            )
     else:
+        unavailable_reason = "[OCRTool] 当前机器不支持 AVX-512，无法进行OCR识别"
         model = None
 
     @staticmethod
@@ -36,7 +59,7 @@ class OcrTool:
                     image_path, open(image_path, 'rb'), 'image/jpeg')}).json()
                 return result.get("result", [])
             if OcrTool.model is None:
-                err = "[OCRTool] 当前机器不支持 AVX-512，无法进行OCR识别"
+                err = getattr(OcrTool, 'unavailable_reason', None) or "[OCRTool] OCR 模型不可用"
                 logging.error(err)
                 return None
             image = cv2.imread(image_path)
@@ -53,7 +76,7 @@ class OcrTool:
 
             # 尝试OCR识别
             if OcrTool.model is None:
-                err = "[OCRTool] 当前机器不支持 AVX-512，无法进行OCR识别"
+                err = getattr(OcrTool, 'unavailable_reason', None) or "[OCRTool] OCR 模型不可用"
                 logging.error(err)
                 return None
             ocr_result = OcrTool.model.ocr(image)

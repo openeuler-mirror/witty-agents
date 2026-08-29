@@ -57,7 +57,7 @@ The report should be built incrementally, section by section, saved to a local t
 9. **Combine sections** — use `scripts/combine_report.py` to assemble the final report:
 
    ```bash
-   .venvs/crash-report-generator/bin/python skills/crash-report-generator/scripts/combine_report.py \
+   bash skills/crash-report-generator/run_python.sh skills/crash-report-generator/scripts/combine_report.py \
        --sections-dir /tmp/shennong_report_YYYYMMDD_HHMMSS \
        --output report.json \
        --validate
@@ -68,7 +68,7 @@ The report should be built incrementally, section by section, saved to a local t
 11. **Generate the standalone HTML report** — run `scripts/generate_report_html.py` to produce a self-contained `crash-report.html` that inlines `report.json` (no local HTTP server needed, open via file://):
 
     ```bash
-    .venvs/crash-report-generator/bin/python skills/crash-report-generator/scripts/generate_report_html.py \
+    bash skills/crash-report-generator/run_python.sh skills/crash-report-generator/scripts/generate_report_html.py \
         --report report.json \
         --output crash-report.html
     ```
@@ -79,16 +79,16 @@ The report should be built incrementally, section by section, saved to a local t
 
 ```bash
 # 校验单个报告文件
-.venvs/crash-report-generator/bin/python skills/crash-report-generator/scripts/validate_report.py --report report.json
+bash skills/crash-report-generator/run_python.sh skills/crash-report-generator/scripts/validate_report.py --report report.json
 
 # 若希望把校验通过后的报告另存为文件
-.venvs/crash-report-generator/bin/python skills/crash-report-generator/scripts/validate_report.py --report report.json --output validated-report.json
+bash skills/crash-report-generator/run_python.sh skills/crash-report-generator/scripts/validate_report.py --report report.json --output validated-report.json
 
 # 仅校验，不执行语义检查（仅校验 JSON schema）
-.venvs/crash-report-generator/bin/python skills/crash-report-generator/scripts/validate_report.py --report report.json --no-semantics
+bash skills/crash-report-generator/run_python.sh skills/crash-report-generator/scripts/validate_report.py --report report.json --no-semantics
 
 # 合并分片并校验
-.venvs/crash-report-generator/bin/python skills/crash-report-generator/scripts/combine_report.py \
+bash skills/crash-report-generator/run_python.sh skills/crash-report-generator/scripts/combine_report.py \
     --sections-dir /tmp/shennong_report_YYYYMMDD_HHMMSS \
     --output report.json \
     --validate
