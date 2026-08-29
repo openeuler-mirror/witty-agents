@@ -1,0 +1,25 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "experience-skill-cli"
+version = "0.1.0"
+description = "经验管理与文档解析工具"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.110.0",
+    "uvicorn[standard]>=0.21.0",
+    "pydantic>=2.7.0",
+    "pyyaml>=6.0",
+]
+
+[project.scripts]
+experience-skill = "experience_skill_cli.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/experience_skill_cli"]
+
+[[tool.uv.index]]
+name = "tsinghua"
+url = "https://pypi.tuna.tsinghua.edu.cn/simple"
