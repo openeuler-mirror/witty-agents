@@ -3,13 +3,13 @@
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>NL2SQL</title>
-<link rel="stylesheet" href="/static/css/app.css?v=20260825b">
+<link rel="stylesheet" href="/static/css/app.css?v=20260901p">
 </head>
 <body>
 <div class="header">
   <div>
     <h1>NL2SQL</h1>
-    <div class="sub">自包含 Demo · Web :8199 · ES :9200 · rag-core :19988</div>
+    <div class="sub">Web :8199 · ES :9200 · rag-core :19988</div>
   </div>
   <div id="health-badge" class="badge">检查中…</div>
 </div>
@@ -25,7 +25,7 @@
     <div class="card qa-layout">
       <div class="qa-toolbar row">
         <div class="col"><label>数据源</label>
-          <select id="qa-ds"><option value="local-es">local-es</option><option value="mock">mock</option></select>
+          <select id="qa-ds"><option value="">加载中…</option></select>
         </div>
         <div class="col"><label>模式</label>
           <select id="qa-mode"><option value="auto">auto</option><option value="sql">sql</option><option value="dsl">dsl</option></select>
@@ -51,7 +51,7 @@
       <label class="muted" style="display:block;margin-top:8px">可选：直接执行查询（跳过澄清与 LLM）</label>
       <textarea id="qa-exec" rows="2" placeholder="SELECT ... 或 DSL JSON"></textarea>
       <div class="composer row" style="margin-top:10px">
-        <div class="col"><textarea id="qa-input" rows="2" placeholder="输入自然语言问题，例如：查询人员索引中性别为男的记录"></textarea></div>
+        <div class="col"><textarea id="qa-input" rows="2" placeholder="输入自然语言查询"></textarea></div>
         <button class="btn btn-primary" type="button" id="qa-send" onclick="sendQuery()">发送</button>
       </div>
     </div>
@@ -64,7 +64,7 @@
       <p class="muted">生成 domain / dialect / 别名类规则；不含海量字段 mapping。生成后可编辑、勾选，再增量导入现有 KB。</p>
       <div class="row">
         <div class="col"><label>数据源</label>
-          <select id="rules-ds"><option value="local-es">local-es</option></select>
+          <select id="rules-ds"><option value="">加载中…</option></select>
         </div>
         <div class="col"><label>附带 Schema 摘要</label>
           <select id="rules-schema-opt"><option value="1">是（推荐）</option><option value="0">否</option></select>
@@ -97,7 +97,7 @@
       <textarea id="cons-q" rows="3" placeholder="输入完整清晰的问句"></textarea>
       <div class="row" style="margin-top:10px">
         <div class="col"><label>数据源</label>
-          <select id="cons-ds"><option value="local-es">local-es</option></select>
+          <select id="cons-ds"><option value="">加载中…</option></select>
         </div>
         <div class="col"><label>模式</label>
           <select id="cons-mode"><option value="auto">auto</option><option value="sql">sql</option><option value="dsl">dsl</option></select>
@@ -150,6 +150,6 @@
     </div>
   </div>
 </div>
-<script src="/static/js/app.js?v=20260825b"></script>
+<script src="/static/js/app.js?v=20260901p"></script>
 </body>
 </html>

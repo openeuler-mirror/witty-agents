@@ -135,14 +135,18 @@ def _llm() -> LLMClient:
 
 
 def _es_cfg(ds: dict[str, Any]) -> dict[str, Any]:
+    """运行时设置仅补全缺省；不覆盖数据源已配置的 hosts。"""
     runtime = _load_runtime()
     cfg = dict(ds)
     if cfg.get("type") == "elasticsearch":
-        if runtime.get("es_hosts"):
+        if not cfg.get("hosts") and runtime.get("es_hosts"):
             cfg["hosts"] = runtime["es_hosts"]
-        cfg["username"] = runtime.get("es_username") or cfg.get("username") or ""
-        cfg["password"] = runtime.get("es_password") or cfg.get("password") or ""
-        cfg["default_index"] = runtime.get("es_default_index") or cfg.get("default_index") or "*"
+        if not (cfg.get("username") or "").strip():
+            cfg["username"] = runtime.get("es_username") or ""
+        if not (cfg.get("password") or "").strip():
+            cfg["password"] = runtime.get("es_password") or ""
+        if not cfg.get("default_index"):
+            cfg["default_index"] = runtime.get("es_default_index") or "*"
     return cfg
 
 

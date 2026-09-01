@@ -6,7 +6,7 @@
 |------|------|
 | `dialects/<engine>.json` | 引擎方言硬约束（`scope=dialect`），查询时**固定召回** |
 | `datasources/<database_id>/domain.json` | 该数据源业务常识（`scope=domain`），按问句语义召回 |
-| `datasources/<database_id>/station_aliases.json` | 城市/标签别名（多条 mapping，类似老 demo 的 mappings） |
+| `datasources/<database_id>/station_aliases.json` | 城市/标签别名（mapping） |
 
 ## 字段
 
