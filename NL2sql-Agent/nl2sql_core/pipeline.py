@@ -10,6 +10,9 @@ from nl2sql_core.config import LLMSettings, load_app_settings, load_datasources
 from nl2sql_core.engines.registry import get_engine
 from nl2sql_core.generate.query_generator import generate_query
 from nl2sql_core.generate.retry_feedback import build_retry_feedback, should_retry
+from nl2sql_core.ir.compile_sql import format_ir_for_display
+from nl2sql_core.ir.executor_es import execute_ir_on_es
+from nl2sql_core.ir.schema import QueryIR, parse_ir
 from nl2sql_core.kg import verify as kg_verify
 from nl2sql_core.llm.client import LLMClient
 from nl2sql_core.models import PipelineResult, PipelineStep, QueryResult
@@ -45,16 +48,17 @@ def _runtime_settings() -> dict[str, Any]:
 
 
 def _merge_es_config(cfg: dict[str, Any]) -> dict[str, Any]:
+    """运行时 ES 设置只补全缺省项，不覆盖 datasources.yaml 里已写的 hosts 等。"""
     runtime = _runtime_settings()
     out = dict(cfg)
     if out.get("type") != "elasticsearch":
         return out
-    if runtime.get("es_hosts"):
+    if not out.get("hosts") and runtime.get("es_hosts"):
         out["hosts"] = runtime["es_hosts"]
-    if "es_username" in runtime:
+    if not (out.get("username") or "").strip() and "es_username" in runtime:
         out["username"] = runtime.get("es_username") or ""
         out["password"] = runtime.get("es_password") or ""
-    if runtime.get("es_default_index"):
+    if not out.get("default_index") and runtime.get("es_default_index"):
         out["default_index"] = runtime["es_default_index"]
     return out
 
@@ -156,6 +160,8 @@ class NL2SQLPipeline:
 
         generated: str | dict[str, Any] | None = execute_query
         gen_mode = mode
+        current_ir: QueryIR | None = None
+        display_query: str | dict[str, Any] | None = None
         result: QueryResult | None = None
         last_exec_error: str | None = None
 
@@ -199,10 +205,21 @@ class NL2SQLPipeline:
                         llm=llm,
                         retry_feedback=retry_feedback,
                     )
+                    gen_mode = gen.get("mode") or gen_mode
+                    if mode != "auto" and mode:
+                        # 调用方强制 mode 时仍尊重 IR（ES）
+                        if gen_mode != "ir":
+                            gen_mode = mode
                     generated = gen["query"]
-                    if mode == "auto":
-                        gen_mode = gen.get("mode") or "auto"
-                    if gen.get("index") and isinstance(generated, dict):
+                    current_ir = gen.get("ir")
+                    if current_ir is None and gen_mode == "ir" and isinstance(generated, dict):
+                        current_ir = parse_ir(generated)
+                    if gen_mode == "ir" and current_ir is not None:
+                        display_query = format_ir_for_display(current_ir)
+                        generated = current_ir.model_dump(by_alias=True)
+                    else:
+                        display_query = generated
+                    if gen.get("index") and isinstance(generated, dict) and gen_mode != "ir":
                         generated.setdefault("index", gen["index"])
                     if gen.get("index"):
                         config = dict(config)
@@ -211,13 +228,14 @@ class NL2SQLPipeline:
                     steps[-1].message = gen.get("reason") or f"mode={gen_mode}"
                     steps[-1].detail = {
                         "attempt": attempt,
-                        "mode": gen.get("mode"),
+                        "mode": gen_mode,
                         "index": gen.get("index"),
                         "reason": gen.get("reason"),
                         "retry_feedback_used": bool(retry_feedback),
+                        "ir": current_ir.model_dump(by_alias=True) if current_ir else None,
                     }
                     await emit("step", step=steps[-1].model_dump())
-                    await emit("sql", query=generated, mode=gen_mode, index=gen.get("index"))
+                    await emit("sql", query=display_query, mode=gen_mode, index=gen.get("index"))
                 except Exception as e:
                     steps[-1].status = "error"
                     steps[-1].message = str(e)
@@ -228,7 +246,10 @@ class NL2SQLPipeline:
                 steps.append(PipelineStep(name="safety", status="running", message=f"只读检查（第 {attempt} 次）"))
                 await emit("step", step=steps[-1].model_dump())
                 try:
-                    if isinstance(generated, str) and gen_mode in ("auto", "sql"):
+                    if gen_mode == "ir":
+                        # IR 执行器只生成 SELECT；此处校验 from/semi_joins 标识符已在 parse 完成
+                        pass
+                    elif isinstance(generated, str) and gen_mode in ("auto", "sql"):
                         if not generated.strip().startswith("{"):
                             assert_readonly_sql(generated)
                     steps[-1].status = "done"
@@ -243,7 +264,7 @@ class NL2SQLPipeline:
                     if attempt < max_attempts:
                         retry_feedback = build_retry_feedback(
                             natural_query=natural_query,
-                            generated=generated or "",
+                            generated=display_query or generated or "",
                             error=str(e),
                             attempt=attempt,
                         )
@@ -252,7 +273,7 @@ class NL2SQLPipeline:
                     await emit("error", message=str(e))
                     return PipelineResult(
                         query=natural_query,
-                        generated_query=generated,
+                        generated_query=display_query or generated,
                         rules=rules,
                         steps=steps,
                         error=str(e),
@@ -263,15 +284,27 @@ class NL2SQLPipeline:
                 await emit("step", step=steps[-1].model_dump())
                 last_exec_error = None
                 try:
-                    exec_mode = gen_mode
-                    if isinstance(generated, dict):
-                        exec_mode = "dsl"
-                    elif isinstance(generated, str) and generated.strip().startswith("{"):
-                        exec_mode = "dsl"
-                    result = await engine.execute(generated, config, mode=exec_mode)
+                    if gen_mode == "ir":
+                        if current_ir is None:
+                            raise ValueError("IR 为空")
+                        if engine_type not in ("elasticsearch", "es"):
+                            raise ValueError(f"IR 执行目前仅支持 Elasticsearch，当前引擎={engine_type}")
+                        result = await execute_ir_on_es(current_ir, engine, config)
+                        steps[-1].detail = {
+                            "attempt": attempt,
+                            "row_count": result.row_count,
+                            "ir_steps": (result.raw or {}).get("steps") if isinstance(result.raw, dict) else None,
+                        }
+                    else:
+                        exec_mode = gen_mode
+                        if isinstance(generated, dict):
+                            exec_mode = "dsl"
+                        elif isinstance(generated, str) and generated.strip().startswith("{"):
+                            exec_mode = "dsl"
+                        result = await engine.execute(generated, config, mode=exec_mode)
+                        steps[-1].detail = {"attempt": attempt, "row_count": result.row_count}
                     steps[-1].status = "done"
                     steps[-1].message = f"返回 {result.row_count} 行，mode={result.mode}"
-                    steps[-1].detail = {"attempt": attempt, "row_count": result.row_count}
                     await emit("step", step=steps[-1].model_dump())
                 except Exception as e:
                     last_exec_error = str(e)
@@ -290,7 +323,7 @@ class NL2SQLPipeline:
                 ):
                     retry_feedback = build_retry_feedback(
                         natural_query=natural_query,
-                        generated=generated or "",
+                        generated=display_query or generated or "",
                         error=last_exec_error,
                         result=result,
                         attempt=attempt,
@@ -312,7 +345,7 @@ class NL2SQLPipeline:
                 await emit("error", message=last_exec_error)
                 return PipelineResult(
                     query=natural_query,
-                    generated_query=generated,
+                    generated_query=display_query or generated,
                     mode=gen_mode,
                     rules=rules,
                     steps=steps,
@@ -328,6 +361,7 @@ class NL2SQLPipeline:
                 error=err,
             )
         else:
+            display_query = generated
             steps.append(PipelineStep(name="generate", status="done", message="使用外部提供的查询"))
             await emit("step", step=steps[-1].model_dump())
             await emit("sql", query=generated, mode=gen_mode)
@@ -355,12 +389,17 @@ class NL2SQLPipeline:
             steps.append(PipelineStep(name="execute", status="running"))
             await emit("step", step=steps[-1].model_dump())
             try:
-                exec_mode = gen_mode
-                if isinstance(generated, dict):
-                    exec_mode = "dsl"
-                elif isinstance(generated, str) and generated.strip().startswith("{"):
-                    exec_mode = "dsl"
-                result = await engine.execute(generated, config, mode=exec_mode)
+                if gen_mode == "ir" and isinstance(generated, dict):
+                    current_ir = parse_ir(generated)
+                    display_query = format_ir_for_display(current_ir)
+                    result = await execute_ir_on_es(current_ir, engine, config)
+                else:
+                    exec_mode = gen_mode
+                    if isinstance(generated, dict):
+                        exec_mode = "dsl"
+                    elif isinstance(generated, str) and generated.strip().startswith("{"):
+                        exec_mode = "dsl"
+                    result = await engine.execute(generated, config, mode=exec_mode)
                 steps[-1].status = "done"
                 steps[-1].message = f"返回 {result.row_count} 行，mode={result.mode}"
                 await emit("step", step=steps[-1].model_dump())
@@ -371,7 +410,7 @@ class NL2SQLPipeline:
                 await emit("error", message=str(e))
                 return PipelineResult(
                     query=natural_query,
-                    generated_query=generated,
+                    generated_query=display_query or generated,
                     mode=gen_mode,
                     rules=rules,
                     steps=steps,
@@ -389,17 +428,18 @@ class NL2SQLPipeline:
             )
         )
         await emit("step", step=steps[-1].model_dump())
+        out_query = display_query if display_query is not None else generated
         out = PipelineResult(
             query=natural_query,
-            generated_query=generated,
-            mode=result.mode,
+            generated_query=out_query,
+            mode=result.mode or gen_mode,
             result=result,
             rules=rules,
             steps=steps,
         )
         await emit(
             "result",
-            generated_query=generated,
+            generated_query=out_query,
             mode=result.mode,
             result=result.model_dump(),
             error=None,

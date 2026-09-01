@@ -25,7 +25,10 @@ else
 fi
 
 echo "启动 Elasticsearch (compose) ..."
-"${DC[@]}" up -d
+if ! "${DC[@]}" up -d; then
+  echo "Docker 启动 ES 失败（常见于 aarch64 无对应镜像）。请自备 ES 7.x 监听 9200，并用 SKIP_ES=1 启动。" >&2
+  exit 1
+fi
 
 echo "等待 ES 就绪..."
 for i in $(seq 1 90); do

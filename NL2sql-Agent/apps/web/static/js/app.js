@@ -82,6 +82,48 @@ async function loadSettings() {
   document.getElementById("s-es-index").value = d.es_default_index || "*";
 }
 
+/** 从 configs/datasources.yaml（经 /api/datasources）填充下拉，客户新增库无需改前端枚举。 */
+async function loadDatasources() {
+  const ids = ["qa-ds", "rules-ds", "cons-ds"];
+  try {
+    const r = await fetch(API + "/api/datasources");
+    const d = await r.json();
+    const map = d.datasources || {};
+    const entries = Object.entries(map)
+      .filter(([, cfg]) => cfg && cfg.enabled !== false)
+      .sort(([a], [b]) => a.localeCompare(b));
+    if (!entries.length) {
+      ids.forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = '<option value="">无可用数据源</option>';
+      });
+      return;
+    }
+    const preferred =
+      localStorage.getItem("nl2sql_datasource") ||
+      (map["local-es"] && map["local-es"].enabled !== false ? "local-es" : entries[0][0]);
+    const opts = entries
+      .map(([id, cfg]) => {
+        const type = cfg.type || "?";
+        const label = id === preferred ? `${id}（${type}）` : `${id}（${type}）`;
+        return `<option value="${escapeHtml(id)}">${escapeHtml(label)}</option>`;
+      })
+      .join("");
+    ids.forEach((id) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.innerHTML = opts;
+      if (map[preferred]) el.value = preferred;
+      el.onchange = () => localStorage.setItem("nl2sql_datasource", el.value);
+    });
+  } catch (e) {
+    ids.forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = '<option value="">数据源加载失败</option>';
+    });
+  }
+}
+
 async function saveSettings() {
   const body = {
     llm_base_url: document.getElementById("s-llm-url").value.trim(),
@@ -106,13 +148,16 @@ async function saveSettings() {
 }
 
 async function testEs() {
+  const ds = document.getElementById("qa-ds")?.value || "local-es";
   const r = await fetch(API + "/api/datasources/test", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ datasource_id: "local-es" }),
+    body: JSON.stringify({ datasource_id: ds }),
   });
   const d = await r.json();
-  document.getElementById("es-test-msg").textContent = d.ok ? "连接成功" : ("失败: " + (d.error || ""));
+  document.getElementById("es-test-msg").textContent = d.ok
+    ? `连接成功（${ds}）`
+    : `失败（${ds}）: ` + (d.error || "");
 }
 
 function escapeHtml(s) {
@@ -619,4 +664,5 @@ async function runConsistency() {
 
 refreshHealth();
 loadSettings();
+loadDatasources();
 setInterval(refreshHealth, 15000);

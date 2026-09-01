@@ -4,32 +4,79 @@ import json
 import re
 from typing import Any
 
+from nl2sql_core.ir.schema import parse_ir
 from nl2sql_core.llm.client import LLMClient
+from nl2sql_core.rules.store import normalize_dialect
 
 
 # 引擎无关的输出格式约束；方言/业务一律来自 rag-core 召回（含固定注入的 scope=dialect）。
-SYSTEM = """你是 NL2SQL 助手。
+SYSTEM_BASE = """你是 NL2SQL 助手。
 
-根据「用户问题 + 召回规则 + Schema提示 + 目标方言」生成可执行查询。
-- 召回规则是权威来源：字段含义、索引/表选择、方言语法（DISTINCT/EXISTS/JOIN 等）只能使用规则中的信息。
-- 禁止编造规则未出现的字段/索引/语法；禁止忽略 scope=dialect 的方言硬约束。
+根据「用户问题 + 召回规则 + Schema提示 + 目标方言」生成可执行查询计划。
+- 召回规则是权威来源：字段含义、索引/表选择、方言语法只能使用规则中的信息。
+- 禁止编造规则未出现的字段/索引；禁止忽略 scope=dialect 的方言硬约束。
 - 不要依赖「某句自然语言对应某条固定 SQL」的记忆；按规则与 Schema 推理。
 
+通用约束：
+- 只读查询。
+- LIMIT 遵循召回规则；未说明时默认不超过 50。
+- 列名必须以 Schema/召回规则为准。
+- 默认返回全部字段（select 用 ["*"]），仅当用户明确只要某几列时才投影。
+"""
+
+SYSTEM_IR = """
+【本引擎请输出查询计划 IR（不要直接输出多表 SQL）】
+输出必须是严格 JSON，不要 Markdown：
+{
+  "mode": "ir",
+  "from": "主索引名",
+  "select": ["*"],
+  "where": [ {"field":"列名","op":"=|!=|>|>=|<|<=|like|in|between","value": ...} ],
+  "semi_joins": [
+    {
+      "index": "从表索引",
+      "local_key": "主表关联字段",
+      "foreign_key": "从表关联字段",
+      "where": [ {"field":"...","op":"=","value":"..."} ],
+      "where_op": "and",
+      "limit": 10000
+    }
+  ],
+  "limit": 50,
+  "reason": "简短说明（引用规则要点）"
+}
+
+IR 语义：
+- from = 结果主表（以召回 schema/domain 规则为准）。
+- where = 只作用于主表的条件。
+- semi_joins = 半连接：主表.local_key 必须出现在「从表 where 过滤后的 foreign_key 集合」中；
+  **多个 semi_joins 之间是 AND（交集）**。
+- 同一 semi_join 内多个 where：默认 and；若为「或」关系必须放在 **同一个** semi_join，并设 "where_op":"or"。
+- **严禁**把本应 OR 的条件拆成多个 semi_joins（那会变成错误的 AND 交集，结果常为空）。
+- between 的 value 必须是二元数组；in 的 value 必须是数组。
+- 跨索引关联一律用 semi_joins，禁止写 JOIN / EXISTS / IN (SELECT ...)。
+- 业务字段含义、别名、可忽略条件等一律以召回的 domain/schema 规则为准，不要臆造。
+"""
+
+SYSTEM_SQL = """
+【本引擎请直接输出 SQL 或 DSL】
 输出必须是严格 JSON，不要 Markdown：
 {
   "mode": "sql" 或 "dsl",
-  "index": "目标索引或表名（dsl 必填；sql 应与 FROM 一致）",
+  "index": "目标表/索引",
   "query": "SQL字符串 或 DSL对象",
-  "reason": "简短说明（引用用到的规则要点，尤其是 dialect）"
+  "reason": "简短说明"
 }
-
-通用约束：
 - 只读；SQL 只能是 SELECT。
-- size/LIMIT 遵循召回规则；未说明时默认不超过 50。
-- 若召回规则含 keyword/精确匹配提示，优先 term / 等值条件。
-- **默认返回全部字段**：单表查询优先 `SELECT *`（或等价全字段）；DSL 不要随意收窄 `_source`（省略 `_source` 即返回全部）。仅当用户明确只要某几列时才投影。
-- 列名必须以 Schema/召回规则为准，禁止用其他表的字段名冒充（否则会出现整列为空）。
+- 可使用该方言支持的 JOIN / EXISTS 等（以召回 dialect 规则为准）。
 """
+
+
+def _system_for_dialect(dialect: str) -> str:
+    d = normalize_dialect(dialect)
+    if d in ("elasticsearch", "es"):
+        return SYSTEM_BASE + SYSTEM_IR
+    return SYSTEM_BASE + SYSTEM_SQL
 
 
 def build_user_prompt(
@@ -69,11 +116,36 @@ async def generate_query(
             + retry_feedback.strip()
             + "\n"
         )
-    raw = await client.chat(SYSTEM, user)
+    system = _system_for_dialect(dialect)
+    raw = await client.chat(system, user)
     data = _parse_json(raw)
-    mode = (data.get("mode") or "dsl").lower()
+    mode = (data.get("mode") or "").lower().strip()
+    dial = normalize_dialect(dialect)
+
+    # ES：强制走 IR（若模型误输出 sql，尝试从常见结构挽救，否则报错重试）
+    if dial in ("elasticsearch", "es"):
+        if mode != "ir":
+            # 兼容：若看起来像 IR 字段
+            if "from" in data or "semi_joins" in data:
+                mode = "ir"
+            else:
+                raise ValueError(
+                    f"Elasticsearch 需要 mode=ir 的查询计划，但模型返回 mode={mode or '空'}。"
+                    "请只输出 IR JSON（from/where/semi_joins）。"
+                )
+        ir = parse_ir(data)
+        return {
+            "mode": "ir",
+            "query": ir.model_dump(by_alias=True),
+            "index": ir.from_index,
+            "reason": ir.reason or data.get("reason", ""),
+            "ir": ir,
+            "raw": raw,
+        }
+
+    mode = mode or "dsl"
     query = data.get("query")
-    index = data.get("index") or data.get("table") or ""
+    index = data.get("index") or data.get("table") or data.get("from") or ""
     if mode == "sql" and not isinstance(query, str):
         query = str(query)
     if mode == "dsl":
