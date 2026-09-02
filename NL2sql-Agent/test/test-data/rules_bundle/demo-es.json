@@ -1,0 +1,674 @@
+[
+  {
+    "id": "df2f7245-c6c5-4a20-b6c5-c751ad7834db",
+    "database_id": "demo-es",
+    "rule_type": "ddl",
+    "scope": "schema",
+    "dialect": "elasticsearch",
+    "table": "resident_population",
+    "ddl": "INDEX resident_population\n- id (keyword): 编号\n- idcardno (keyword): 身份证号（主键，关联键）\n- xm (text (+keyword)): 姓名\n- xb (keyword): 性别：男/女\n- mz (keyword): 民族\n- csrq (keyword): 出生日期 yyyy-mm-dd（比较前需按日期理解）\n- zz (text (+keyword)): 住址\n- sjlysd (keyword): 数据来源\n- ywrksj (keyword): 业务入库时间",
+    "description": "索引 resident_population 的字段结构摘要"
+  },
+  {
+    "id": "6e0a0a97-f32a-4747-a88d-dcdf8f1ffb67",
+    "database_id": "demo-es",
+    "rule_type": "mapping",
+    "scope": "schema",
+    "dialect": "elasticsearch",
+    "mapping_type": "correspondence",
+    "table": "resident_population",
+    "col": "id",
+    "description": "id 表示「编号」（类型 keyword）"
+  },
+  {
+    "id": "41394361-a3a5-46fb-86fc-000bd3967ce9",
+    "database_id": "demo-es",
+    "rule_type": "mapping",
+    "scope": "schema",
+    "dialect": "elasticsearch",
+    "mapping_type": "correspondence",
+    "table": "resident_population",
+    "col": "idcardno",
+    "description": "idcardno 表示「身份证号（主键，关联键）」（类型 keyword）"
+  },
+  {
+    "id": "fb168fe0-432a-459b-848d-cdcae88ee065",
+    "database_id": "demo-es",
+    "rule_type": "mapping",
+    "scope": "schema",
+    "dialect": "elasticsearch",
+    "mapping_type": "correspondence",
+    "table": "resident_population",
+    "col": "xm",
+    "description": "xm 表示「姓名」（类型 text (+keyword)）"
+  },
+  {
+    "id": "c611ea99-30d2-4f7b-bfa9-dc1cd808cbb5",
+    "database_id": "demo-es",
+    "rule_type": "mapping",
+    "scope": "schema",
+    "dialect": "elasticsearch",
+    "mapping_type": "correspondence",
+    "table": "resident_population",
+    "col": "xb",
+    "description": "xb 表示「性别：男/女」（类型 keyword）"
+  },
+  {
+    "id": "07de42c9-50cc-4f0e-adc9-d93019a02673",
+    "database_id": "demo-es",
+    "rule_type": "mapping",
+    "scope": "schema",
+    "dialect": "elasticsearch",
+    "mapping_type": "correspondence",
+    "table": "resident_population",
+    "col": "mz",
+    "description": "mz 表示「民族」（类型 keyword）"
+  },
+  {
+    "id": "5ae61af8-71b7-4659-ba02-9bfbb535c142",
+    "database_id": "demo-es",
+    "rule_type": "mapping",
+    "scope": "schema",
+    "dialect": "elasticsearch",
+    "mapping_type": "correspondence",
+    "table": "resident_population",
+    "col": "csrq",
+    "description": "csrq 表示「出生日期 yyyy-mm-dd（比较前需按日期理解）」（类型 keyword）"
+  },
+  {
+    "id": "a88372ff-335e-4081-b3ed-dee5adadb31b",
+    "database_id": "demo-es",
+    "rule_type": "mapping",
+    "scope": "schema",
+    "dialect": "elasticsearch",
+    "mapping_type": "correspondence",
+    "table": "resident_population",
+    "col": "zz",
+    "description": "zz 表示「住址」（类型 text (+keyword)）"
+  },
+  {
+    "id": "c5e18729-dd78-4651-a854-704b194c6426",
+    "database_id": "demo-es",
+    "rule_type": "mapping",
+    "scope": "schema",
+    "dialect": "elasticsearch",
+    "mapping_type": "correspondence",
+    "table": "resident_population",
+    "col": "sjlysd",
+    "description": "sjlysd 表示「数据来源」（类型 keyword）"
+  },
+  {
+    "id": "3fe222ed-f48f-4bf7-a946-8a82d41c0d99",
+    "database_id": "demo-es",
+    "rule_type": "mapping",
+    "scope": "schema",
+    "dialect": "elasticsearch",
+    "mapping_type": "correspondence",
+    "table": "resident_population",
+    "col": "ywrksj",
+    "description": "ywrksj 表示「业务入库时间」（类型 keyword）"
+  },
+  {
+    "id": "b3e69575-e73c-4dd3-b8da-b538e8528282",
+    "database_id": "demo-es",
+    "rule_type": "ddl",
+    "scope": "schema",
+    "dialect": "elasticsearch",
+    "table": "tag_person",
+    "ddl": "INDEX tag_person\n- idcardno (keyword): 身份证号 → resident_population.idcardno\n- tag_name (keyword): 标签（以库内原文为准）：信访人员/失信人员/党员/涉稳人员/刑满释放/重点关注",
+    "description": "索引 tag_person 的字段结构摘要"
+  },
+  {
+    "id": "54e28602-1aeb-4233-b7e9-af4279a73d50",
+    "database_id": "demo-es",
+    "rule_type": "mapping",
+    "scope": "schema",
+    "dialect": "elasticsearch",
+    "mapping_type": "correspondence",
+    "table": "tag_person",
+    "col": "idcardno",
+    "description": "idcardno 表示「身份证号 → resident_population.idcardno」（类型 keyword）"
+  },
+  {
+    "id": "41b8d948-7cd1-4ced-a3c6-72452e714447",
+    "database_id": "demo-es",
+    "rule_type": "mapping",
+    "scope": "schema",
+    "dialect": "elasticsearch",
+    "mapping_type": "correspondence",
+    "table": "tag_person",
+    "col": "tag_name",
+    "description": "tag_name 表示「标签（库内原文）：信访人员/失信人员/党员/涉稳人员/刑满释放/重点关注」（类型 keyword）。注意：标准值是「刑满释放」「重点关注」，没有「…人员」后缀。"
+  },
+  {
+    "id": "c8dc4a30-9cce-4603-8fd4-8c276032dbdd",
+    "database_id": "demo-es",
+    "rule_type": "ddl",
+    "scope": "schema",
+    "dialect": "elasticsearch",
+    "table": "ticket_sales",
+    "ddl": "INDEX ticket_sales\n- id_name (text (+keyword)): 旅客姓名\n- id_kind_new (keyword): 证件类型\n- id_no (keyword): 证件号 → resident_population.idcardno\n- train_date (keyword): 发车日期 yyyy-mm-dd\n- start_time (keyword): 发车时间\n- board_train_code (keyword): 车次 G/D/C/Z/T/K + 数字\n- from_station_name (keyword): 始发站（城市汉字名）\n- to_station_name (keyword): 终点站（城市汉字名）\n- coach_no (keyword): 车厢号\n- seat_no (keyword): 座位号\n- seat_type_code_new (keyword): 席别\n- ticket_no (keyword): 票号\n- ticket_type_new (keyword): 票种\n- office_no (keyword): 售票处\n- window_no (keyword): 窗口号\n- sale_time (keyword): 售票时间\n- ticket_price (keyword): 票价\n- sjlysd (keyword): 数据来源\n- ywrksj (keyword): 业务入库时间\n- dt (keyword): 分区 yyyyMMdd",
+    "description": "索引 ticket_sales 的字段结构摘要"
+  },
+  {
+    "id": "96de14a1-2719-4772-8e7c-11bfa4e7edce",
+    "database_id": "demo-es",
+    "rule_type": "mapping",
+    "scope": "schema",
+    "dialect": "elasticsearch",
+    "mapping_type": "correspondence",
+    "table": "ticket_sales",
+    "col": "id_name",
+    "description": "id_name 表示「旅客姓名」（类型 text (+keyword)）"
+  },
+  {
+    "id": "3f33ee6a-fffe-4c99-9295-08071a4e5b32",
+    "database_id": "demo-es",
+    "rule_type": "mapping",
+    "scope": "schema",
+    "dialect": "elasticsearch",
+    "mapping_type": "correspondence",
+    "table": "ticket_sales",
+    "col": "id_kind_new",
+    "description": "id_kind_new 表示「证件类型」（类型 keyword）"
+  },
+  {
+    "id": "86f926da-8694-4ae4-b0a8-b9f44595ab17",
+    "database_id": "demo-es",
+    "rule_type": "mapping",
+    "scope": "schema",
+    "dialect": "elasticsearch",
+    "mapping_type": "correspondence",
+    "table": "ticket_sales",
+    "col": "id_no",
+    "description": "id_no 表示「证件号 → resident_population.idcardno」（类型 keyword）"
+  },
+  {
+    "id": "83e2716e-964a-41ae-8fd1-276f67bad4d9",
+    "database_id": "demo-es",
+    "rule_type": "mapping",
+    "scope": "schema",
+    "dialect": "elasticsearch",
+    "mapping_type": "correspondence",
+    "table": "ticket_sales",
+    "col": "train_date",
+    "description": "train_date 表示「发车日期 yyyy-mm-dd」（类型 keyword）"
+  },
+  {
+    "id": "f64be394-358d-4560-a9c1-82c6eb3deb8c",
+    "database_id": "demo-es",
+    "rule_type": "mapping",
+    "scope": "schema",
+    "dialect": "elasticsearch",
+    "mapping_type": "correspondence",
+    "table": "ticket_sales",
+    "col": "start_time",
+    "description": "start_time 表示「发车时间」（类型 keyword）"
+  },
+  {
+    "id": "12c8a6ec-dd6c-4bc0-b89f-803c00d246b8",
+    "database_id": "demo-es",
+    "rule_type": "mapping",
+    "scope": "schema",
+    "dialect": "elasticsearch",
+    "mapping_type": "correspondence",
+    "table": "ticket_sales",
+    "col": "board_train_code",
+    "description": "board_train_code 表示「车次 G/D/C/Z/T/K + 数字」（类型 keyword）"
+  },
+  {
+    "id": "8408038e-83c9-4317-87f8-bf2d92ef0ad5",
+    "database_id": "demo-es",
+    "rule_type": "mapping",
+    "scope": "schema",
+    "dialect": "elasticsearch",
+    "mapping_type": "correspondence",
+    "table": "ticket_sales",
+    "col": "from_station_name",
+    "description": "from_station_name 表示「始发站（城市汉字名）」（类型 keyword）"
+  },
+  {
+    "id": "a5678270-e298-42df-afaa-bde02dc99906",
+    "database_id": "demo-es",
+    "rule_type": "mapping",
+    "scope": "schema",
+    "dialect": "elasticsearch",
+    "mapping_type": "correspondence",
+    "table": "ticket_sales",
+    "col": "to_station_name",
+    "description": "to_station_name 表示「终点站（城市汉字名）」（类型 keyword）"
+  },
+  {
+    "id": "93e615a2-d4c1-4945-833a-a0193caa81de",
+    "database_id": "demo-es",
+    "rule_type": "mapping",
+    "scope": "schema",
+    "dialect": "elasticsearch",
+    "mapping_type": "correspondence",
+    "table": "ticket_sales",
+    "col": "coach_no",
+    "description": "coach_no 表示「车厢号」（类型 keyword）"
+  },
+  {
+    "id": "41fba2e1-a8bf-4f3a-91fe-c4fbf2167559",
+    "database_id": "demo-es",
+    "rule_type": "mapping",
+    "scope": "schema",
+    "dialect": "elasticsearch",
+    "mapping_type": "correspondence",
+    "table": "ticket_sales",
+    "col": "seat_no",
+    "description": "seat_no 表示「座位号」（类型 keyword）"
+  },
+  {
+    "id": "59d46aeb-9d73-4bd1-b4f6-0961fa085cae",
+    "database_id": "demo-es",
+    "rule_type": "mapping",
+    "scope": "schema",
+    "dialect": "elasticsearch",
+    "mapping_type": "correspondence",
+    "table": "ticket_sales",
+    "col": "seat_type_code_new",
+    "description": "seat_type_code_new 表示「席别」（类型 keyword）"
+  },
+  {
+    "id": "66d06bd6-e502-45ff-ab06-36144734655a",
+    "database_id": "demo-es",
+    "rule_type": "mapping",
+    "scope": "schema",
+    "dialect": "elasticsearch",
+    "mapping_type": "correspondence",
+    "table": "ticket_sales",
+    "col": "ticket_no",
+    "description": "ticket_no 表示「票号」（类型 keyword）"
+  },
+  {
+    "id": "99337a4c-6c99-4236-acb3-40ad0fc6799e",
+    "database_id": "demo-es",
+    "rule_type": "mapping",
+    "scope": "schema",
+    "dialect": "elasticsearch",
+    "mapping_type": "correspondence",
+    "table": "ticket_sales",
+    "col": "ticket_type_new",
+    "description": "ticket_type_new 表示「票种」（类型 keyword）"
+  },
+  {
+    "id": "68f6eaf3-8466-4c50-a538-d54f09877265",
+    "database_id": "demo-es",
+    "rule_type": "mapping",
+    "scope": "schema",
+    "dialect": "elasticsearch",
+    "mapping_type": "correspondence",
+    "table": "ticket_sales",
+    "col": "office_no",
+    "description": "office_no 表示「售票处」（类型 keyword）"
+  },
+  {
+    "id": "408fd4f9-f742-4604-8a65-ec9c27473439",
+    "database_id": "demo-es",
+    "rule_type": "mapping",
+    "scope": "schema",
+    "dialect": "elasticsearch",
+    "mapping_type": "correspondence",
+    "table": "ticket_sales",
+    "col": "window_no",
+    "description": "window_no 表示「窗口号」（类型 keyword）"
+  },
+  {
+    "id": "1c3dd99d-89e3-4336-ae63-ea49da48f0af",
+    "database_id": "demo-es",
+    "rule_type": "mapping",
+    "scope": "schema",
+    "dialect": "elasticsearch",
+    "mapping_type": "correspondence",
+    "table": "ticket_sales",
+    "col": "sale_time",
+    "description": "sale_time 表示「售票时间」（类型 keyword）"
+  },
+  {
+    "id": "df1d2ab5-b3f7-4dfd-ba5e-2021d0673006",
+    "database_id": "demo-es",
+    "rule_type": "mapping",
+    "scope": "schema",
+    "dialect": "elasticsearch",
+    "mapping_type": "correspondence",
+    "table": "ticket_sales",
+    "col": "ticket_price",
+    "description": "ticket_price 表示「票价」（类型 keyword）"
+  },
+  {
+    "id": "f2c88a8c-0011-41b3-a965-17b5883776a9",
+    "database_id": "demo-es",
+    "rule_type": "mapping",
+    "scope": "schema",
+    "dialect": "elasticsearch",
+    "mapping_type": "correspondence",
+    "table": "ticket_sales",
+    "col": "sjlysd",
+    "description": "sjlysd 表示「数据来源」（类型 keyword）"
+  },
+  {
+    "id": "d040ec0a-38e8-43a1-a42a-5fac27912d0f",
+    "database_id": "demo-es",
+    "rule_type": "mapping",
+    "scope": "schema",
+    "dialect": "elasticsearch",
+    "mapping_type": "correspondence",
+    "table": "ticket_sales",
+    "col": "ywrksj",
+    "description": "ywrksj 表示「业务入库时间」（类型 keyword）"
+  },
+  {
+    "id": "38dac5fc-89f2-48e1-ac21-5c97ef59e601",
+    "database_id": "demo-es",
+    "rule_type": "mapping",
+    "scope": "schema",
+    "dialect": "elasticsearch",
+    "mapping_type": "correspondence",
+    "table": "ticket_sales",
+    "col": "dt",
+    "description": "dt 表示「分区 yyyyMMdd」（类型 keyword）"
+  },
+  {
+    "rule_type": "experience",
+    "scope": "dialect",
+    "dialect": "elasticsearch",
+    "description": "Elasticsearch SQL 方言：禁止 SELECT DISTINCT（引擎不支持会直接报错）；禁止 EXISTS、WITH、窗口函数；需要去重时用 GROUP BY 关键字段，或直接 SELECT + LIMIT，不要写 DISTINCT。",
+    "id": "5ce1399d-b6b9-4780-bbce-48bb2b4b9106",
+    "database_id": "demo-es"
+  },
+  {
+    "rule_type": "experience",
+    "scope": "dialect",
+    "dialect": "elasticsearch",
+    "description": "Elasticsearch SQL 方言：默认只读 SELECT；结果加 LIMIT（建议 ≤50）；优先 keyword/等值；优先走 ES SQL（_sql），复杂检索可用 Query DSL。",
+    "id": "55b07ce3-325c-4099-b8dc-ff0f28a9db4f",
+    "database_id": "demo-es"
+  },
+  {
+    "rule_type": "experience",
+    "scope": "dialect",
+    "dialect": "elasticsearch",
+    "description": "Elasticsearch SQL 方言：原生不支持 IN (SELECT …) 子查询与多表 JOIN；跨索引关联可写成 IN (SELECT …)，由执行层拆成两段；次数类在内层 GROUP BY 关联键 HAVING COUNT(*) > N。半连接时若外层已有 WHERE 过滤，优先把业务条件写在外层，避免内层 LIMIT 截断导致空交集。",
+    "id": "aac635d8-5dac-487b-98da-37adb32568d4",
+    "database_id": "demo-es"
+  },
+  {
+    "rule_type": "experience",
+    "scope": "dialect",
+    "dialect": "elasticsearch",
+    "description": "Elasticsearch SQL 方言：默认返回全部字段。单表列表/筛选查询优先写 SELECT * FROM <index> WHERE ... LIMIT N；不要擅自只选部分列。DSL 默认不要设置 _source（省略则返回全部 _source 字段）。",
+    "id": "f6143d15-757b-41af-971f-76d19fecbf7b",
+    "database_id": "demo-es"
+  },
+  {
+    "rule_type": "experience",
+    "scope": "dialect",
+    "dialect": "elasticsearch",
+    "description": "Elasticsearch SQL 方言：执行报错或 0 行时，根据召回的 domain/mapping 规则修正字段名，不要臆造索引中不存在的列。",
+    "id": "f72a667e-ae8b-4daf-a038-8144d125f69f",
+    "database_id": "demo-es"
+  },
+  {
+    "rule_type": "experience",
+    "scope": "domain",
+    "dialect": "elasticsearch",
+    "description": "索引职责：resident_population=人员主档；ticket_sales=火车购票；tag_person=人员标签。跨索引用证件号关联：ticket_sales.id_no = resident_population.idcardno；tag_person.idcardno = resident_population.idcardno。",
+    "id": "b1fd9d11-2fd2-4ee7-88cc-a78f86467efb",
+    "database_id": "demo-es"
+  },
+  {
+    "rule_type": "experience",
+    "scope": "domain",
+    "dialect": "elasticsearch",
+    "table": "resident_population",
+    "description": "人员主档字段：身份证号 idcardno、姓名 xm、性别 xb(男/女)、出生日期 csrq(yyyy-mm-dd 字符串)。年龄条件应对 csrq 做日期范围换算，基准日 2026-07-20。",
+    "id": "c3a7407a-9c59-4562-8eac-dece33b2d338",
+    "database_id": "demo-es"
+  },
+  {
+    "rule_type": "experience",
+    "scope": "domain",
+    "dialect": "elasticsearch",
+    "table": "ticket_sales",
+    "description": "购票索引：发站 from_station_name，到站 to_station_name，证件 id_no，车次 board_train_code，日期 train_date。问「去过/到/前往」→ to_station_name；问「从/出发/离开」→ from_station_name。",
+    "id": "91246c47-e41d-448c-a7ee-b05137a7011f",
+    "database_id": "demo-es"
+  },
+  {
+    "rule_type": "experience",
+    "scope": "domain",
+    "dialect": "elasticsearch",
+    "table": "tag_person",
+    "description": "标签索引 tag_person：字段 tag_name。库内标准标签原文仅有：信访人员、失信人员、党员、涉稳人员、刑满释放、重点关注。过滤时必须用上述原文（keyword 精确匹配），不要编造其它表，也不要把「重点关注」写成「重点关注人员」、把「刑满释放」写成「刑满释放人员」。",
+    "id": "fd2ba53e-04e0-4949-a7e1-446eac15354c",
+    "database_id": "demo-es"
+  },
+  {
+    "rule_type": "experience",
+    "scope": "domain",
+    "dialect": "elasticsearch",
+    "description": "标签别名（右侧必须是库内 tag_name 原文）：上访/信访→信访人员；老赖/失信→失信人员；维稳/涉稳→涉稳人员；前科/有前科/刑满释放人员→刑满释放；重点关注/重点关注人员→重点关注。",
+    "id": "d26927b8-7dc1-4cda-b10c-45e2562cdb55",
+    "database_id": "demo-es"
+  },
+  {
+    "rule_type": "experience",
+    "scope": "domain",
+    "dialect": "elasticsearch",
+    "table": "ticket_sales",
+    "description": "交通方式：坐火车/火车 → board_train_code 匹配 G/D/C/Z/T/K 前缀；坐高铁 → G%；坐动车 → D%。坐飞机/航班/乘机、坐大巴/客车/长途：本库无对应数据，忽略交通方式，只保留城市等有效条件。",
+    "id": "c8e51c0d-eecc-4f28-8439-4afe5f05ad83",
+    "database_id": "demo-es"
+  },
+  {
+    "rule_type": "experience",
+    "scope": "domain",
+    "dialect": "elasticsearch",
+    "description": "酒店/宾馆/住宿/入住/住过：本库无住宿数据，忽略该条件，但必须保留标签、年龄、城市等其它有效条件，禁止退化成全表查询。",
+    "id": "b755600b-f896-4d60-b762-7ff4765f78d9",
+    "database_id": "demo-es"
+  },
+  {
+    "rule_type": "experience",
+    "scope": "domain",
+    "dialect": "elasticsearch",
+    "description": "省份名不能直接查询，须展开为省内城市列表，对 from_station_name 或 to_station_name 使用 IN/OR。数据中只有具体城市汉字站名，没有省份字段。",
+    "id": "1fd24fac-011a-42db-8179-bf45a978c4e2",
+    "database_id": "demo-es"
+  },
+  {
+    "rule_type": "experience",
+    "scope": "domain",
+    "dialect": "elasticsearch",
+    "table": "ticket_sales",
+    "description": "时间窗口（基准 2026-07-20）：最近7天 train_date BETWEEN '2026-07-13' AND '2026-07-20'；近30天 BETWEEN '2026-06-20' AND '2026-07-20'；最近三个月 BETWEEN '2026-04-20' AND '2026-07-20'；最近一年 BETWEEN '2025-07-20' AND '2026-07-20'；2025年 train_date LIKE '2025-%'。",
+    "id": "a830cc59-9001-45d6-93e2-5a2121606ccc",
+    "database_id": "demo-es"
+  },
+  {
+    "rule_type": "experience",
+    "scope": "domain",
+    "dialect": "elasticsearch",
+    "description": "年龄换算（基准 2026-07-20）：30-50岁 → csrq 对应 1976-07-20 至 1996-07-20；30岁以上 → csrq < 1996-07-20；50岁以下 → csrq > 1976-07-20；不到30岁 → csrq > 1996-07-20。",
+    "id": "346e2098-3717-428a-bc93-8bb7b84cb16b",
+    "database_id": "demo-es"
+  },
+  {
+    "rule_type": "experience",
+    "scope": "domain",
+    "dialect": "elasticsearch",
+    "description": "组合逻辑：A且B/既A又B → AND；A或B → OR。双标签「既X又Y」应对 tag_person 分别过滤后取交集（证件号一致）。",
+    "id": "00ac6fed-2b5f-4c7a-8f18-9c1231a9d4ff",
+    "database_id": "demo-es"
+  },
+  {
+    "rule_type": "experience",
+    "scope": "domain",
+    "dialect": "elasticsearch",
+    "description": "本 demo 库仅用于 NL2SQL 功能/一致性测试，索引名必须与 JSON 文件名一致：resident_population、ticket_sales、tag_person。",
+    "id": "06bd0376-6f30-4892-868f-24a48cf77663",
+    "database_id": "demo-es"
+  },
+  {
+    "rule_type": "mapping",
+    "scope": "domain",
+    "dialect": "elasticsearch",
+    "mapping_type": "tag_alias",
+    "table": "tag_person",
+    "description": "标签别名「上访」「信访」→ tag_name='信访人员'",
+    "id": "4b065ed9-918f-45a9-b2e3-8ef0084b584f",
+    "database_id": "demo-es"
+  },
+  {
+    "rule_type": "mapping",
+    "scope": "domain",
+    "dialect": "elasticsearch",
+    "mapping_type": "tag_alias",
+    "table": "tag_person",
+    "description": "标签别名「老赖」「失信」→ tag_name='失信人员'",
+    "id": "46dddff0-5fb6-442b-886d-8cfb00e94df4",
+    "database_id": "demo-es"
+  },
+  {
+    "rule_type": "mapping",
+    "scope": "domain",
+    "dialect": "elasticsearch",
+    "mapping_type": "tag_alias",
+    "table": "tag_person",
+    "description": "标签别名「维稳」「涉稳」→ tag_name='涉稳人员'",
+    "id": "8bb47e7d-0f1b-46ca-a447-f2ac0db56b4d",
+    "database_id": "demo-es"
+  },
+  {
+    "rule_type": "mapping",
+    "scope": "domain",
+    "dialect": "elasticsearch",
+    "mapping_type": "tag_alias",
+    "table": "tag_person",
+    "description": "标签别名「前科」「有前科」「刑满释放人员」→ tag_name='刑满释放'（库内无「刑满释放人员」）",
+    "id": "0d50a078-b8e9-4f95-b4d3-710586c3cfa4",
+    "database_id": "demo-es"
+  },
+  {
+    "rule_type": "mapping",
+    "scope": "domain",
+    "dialect": "elasticsearch",
+    "mapping_type": "tag_alias",
+    "table": "tag_person",
+    "description": "标签别名「重点关注」「重点关注人员」→ tag_name='重点关注'（库内无「重点关注人员」）",
+    "id": "a1c8e3f2-7b4d-4e91-9c2a-6f0d5e8b1a34",
+    "database_id": "demo-es"
+  },
+  {
+    "rule_type": "mapping",
+    "scope": "domain",
+    "dialect": "elasticsearch",
+    "mapping_type": "station_alias",
+    "table": "ticket_sales",
+    "description": "城市「北京」匹配 to_station_name='北京' 或 from_station_name='北京'（按问句方向选择字段）",
+    "id": "70c25c03-4771-493f-813d-fd0ee72f0546",
+    "database_id": "demo-es"
+  },
+  {
+    "rule_type": "mapping",
+    "scope": "domain",
+    "dialect": "elasticsearch",
+    "mapping_type": "station_alias",
+    "table": "ticket_sales",
+    "description": "省份「陕西」展开为 from/to_station_name IN ('西安','宝鸡','咸阳','渭南','铜川','汉中','榆林','安康','商洛','延安')",
+    "id": "5831513e-875b-4625-946e-15d2d96bcdc5",
+    "database_id": "demo-es"
+  },
+  {
+    "rule_type": "mapping",
+    "scope": "domain",
+    "dialect": "elasticsearch",
+    "mapping_type": "station_alias",
+    "table": "ticket_sales",
+    "description": "省份「江苏」展开为 IN ('南京','苏州','无锡','常州','徐州','南通','扬州','盐城','淮安','连云港','镇江','泰州','宿迁')",
+    "id": "2faa5480-288f-4adc-b2cf-5375ea80346c",
+    "database_id": "demo-es"
+  },
+  {
+    "rule_type": "mapping",
+    "scope": "domain",
+    "dialect": "elasticsearch",
+    "mapping_type": "station_alias",
+    "table": "ticket_sales",
+    "description": "省份「广东」展开为 IN ('广州','深圳','珠海','佛山','东莞','中山','惠州','汕头','湛江','江门','肇庆','茂名','梅州','清远')",
+    "id": "02c1f2f1-3ea5-4e2e-9583-de4008ecc9e4",
+    "database_id": "demo-es"
+  },
+  {
+    "rule_type": "mapping",
+    "scope": "domain",
+    "dialect": "elasticsearch",
+    "mapping_type": "station_alias",
+    "table": "ticket_sales",
+    "description": "省份「浙江」展开为 IN ('杭州','宁波','温州','嘉兴','湖州','绍兴','金华','衢州','舟山','台州','丽水')",
+    "id": "0f15ee7e-27d4-4434-ad2e-a50b675677fb",
+    "database_id": "demo-es"
+  },
+  {
+    "rule_type": "mapping",
+    "scope": "domain",
+    "dialect": "elasticsearch",
+    "mapping_type": "station_alias",
+    "table": "ticket_sales",
+    "description": "省份「四川」展开为 IN ('成都','绵阳','德阳','乐山','南充','泸州','宜宾','达州','自贡','内江','广安','遂宁')",
+    "id": "ba78832f-bb37-4a1d-87ee-ef69ad477ee3",
+    "database_id": "demo-es"
+  },
+  {
+    "rule_type": "mapping",
+    "scope": "domain",
+    "dialect": "elasticsearch",
+    "mapping_type": "station_alias",
+    "table": "ticket_sales",
+    "description": "省份「河南」展开为 IN ('郑州','洛阳','开封','新乡','安阳','焦作','许昌','平顶山','南阳','信阳','周口','商丘')",
+    "id": "424f4403-9a11-4df8-b0df-cf556d1924f3",
+    "database_id": "demo-es"
+  },
+  {
+    "rule_type": "mapping",
+    "scope": "domain",
+    "dialect": "elasticsearch",
+    "mapping_type": "station_alias",
+    "table": "ticket_sales",
+    "description": "省份「山东」展开为 IN ('济南','青岛','烟台','潍坊','临沂','淄博','威海','东营','济宁','泰安','德州','聊城')",
+    "id": "158444a8-4c36-4395-bcd6-3b38a7ac6f15",
+    "database_id": "demo-es"
+  },
+  {
+    "rule_type": "mapping",
+    "scope": "domain",
+    "dialect": "elasticsearch",
+    "mapping_type": "station_alias",
+    "table": "ticket_sales",
+    "description": "省份「河北」展开为 IN ('石家庄','唐山','保定','邯郸','秦皇岛','邢台','张家口','承德','沧州','廊坊','衡水')",
+    "id": "1246cb3d-25f8-4b2b-9613-5f0a554b5eeb",
+    "database_id": "demo-es"
+  },
+  {
+    "rule_type": "mapping",
+    "scope": "domain",
+    "dialect": "elasticsearch",
+    "mapping_type": "station_alias",
+    "table": "ticket_sales",
+    "description": "省份「湖南」展开为 IN ('长沙','株洲','湘潭','衡阳','邵阳','岳阳','常德','益阳','郴州','永州','娄底','怀化')",
+    "id": "83dadfcd-7f74-4b6e-8edd-48981fb22505",
+    "database_id": "demo-es"
+  },
+  {
+    "rule_type": "mapping",
+    "scope": "domain",
+    "dialect": "elasticsearch",
+    "mapping_type": "station_alias",
+    "table": "ticket_sales",
+    "description": "省份「湖北」展开为 IN ('武汉','襄阳','宜昌','荆州','黄石','十堰','孝感','荆门','鄂州','黄冈','咸宁','随州')",
+    "id": "60bb403d-0569-416d-949f-87fbc43179f6",
+    "database_id": "demo-es"
+  }
+]

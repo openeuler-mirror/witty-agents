@@ -1,0 +1,20 @@
+# demo-es 数据源片段（合并进 NL2SQL configs/datasources.yaml）
+
+datasources:
+  demo-es:
+    id: demo-es
+    type: elasticsearch
+    version: "7.10"
+    hosts:
+      - http://127.0.0.1:9200
+    username: ""
+    password: ""
+    verify_certs: false
+    default_index: "*"
+    query_mode: auto
+    readonly: true
+    max_size: 100
+    timeout_sec: 30
+    enabled: true
+    rules_kb_id: ""   # sync 规则后填入 rag-core 返回的 kb_id
+    rules_kb_name: nl2sql-rules-demo-es
