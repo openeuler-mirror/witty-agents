@@ -1,0 +1,36 @@
+# 每张「业务基表」目标行数（五表相同）。试跑 100000；全量 20000000
+rows_per_table: 100000
+
+shard_size: 100000
+batch_size: 10000
+seed: 42
+output_dir: ./out
+
+# 随机热点：带热门标签 + 去过京/沪等
+hotspot_fraction: 0.02
+
+# 额外「评测热点」人数比例：按常见 query 的 (标签×OD) 强制灌数，提高旧三表规则下命中率
+# 最终仍计入五表行数配额（从普通票/标签额度里划出）
+query_hotspot_fraction: 0.05
+
+es:
+  hosts:
+    - http://127.0.0.1:9200
+  bulk_size: 2000
+  recreate: true
+  timeout_sec: 120
+
+# ---------------------------------------------------------------------------
+# 五张业务基表（各 N 行）+ 一张规则兼容视图
+#
+# 基表：
+#   1) resident_population  人员（含住址字段，兼容旧规则）
+#   2) person_residence     住址明细（与人员 1:1，同字段冗余一份）
+#   3) ticket_trip          行程
+#   4) ticket_order         售票明细（与行程 1:1）
+#   5) tag_person           标签
+#
+# 兼容视图（不计入「五表」，行数 = ticket_trip = N）：
+#   ticket_sales = trip ⋈ order（字段与旧 demo / 现有规则一致）
+#   这样不改规则也能查 ticket_sales / resident_population.zz / tag_person
+# ---------------------------------------------------------------------------
