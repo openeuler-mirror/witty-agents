@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "agents": [
+    {
+      "id": "shennong-crash",
+      "enabled": true,
+      "configPath": "shennong-crash-agent/ci/agent.json",
+      "changedPathPrefixes": [
+        "shennong-crash-agent/"
+      ]
+    },
+    {
+      "id": "nl2sql",
+      "enabled": false,
+      "directory": "NL2sql-Agent",
+      "changedPathPrefixes": [
+        "NL2sql-Agent/"
+      ],
+      "reason": "NL2SQL 尚未补齐标准 npm 包、setup/configure 和安装契约，完成后再启用"
+    },
+    {
+      "id": "openeuler-ops",
+      "enabled": false,
+      "directory": "openeuler-ops-agent",
+      "changedPathPrefixes": [
+        "openeuler-ops-agent/"
+      ],
+      "reason": "openEuler Ops Agent 尚未迁移到统一的无副作用安装和 CI driver 契约"
+    },
+    {
+      "id": "xlite-perf-optimizer",
+      "enabled": false,
+      "directory": "xlite-perf-optimizer-bundle",
+      "changedPathPrefixes": [
+        "xlite-perf-optimizer-bundle/"
+      ],
+      "reason": "XLite Perf Optimizer 尚未补齐统一的变体、报告和真实安装验证契约"
+    }
+  ]
+}

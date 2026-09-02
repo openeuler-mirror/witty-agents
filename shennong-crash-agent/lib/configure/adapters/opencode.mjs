@@ -13,6 +13,9 @@ const SHENNONG_PACKAGE_NAMES = new Set([
   "@openeuler/agent-shennong-crash",
   "@openeuler/agent-shennong-crash-online",
   "@openeuler/agent-shennong-crash-offline",
+  "openeuler-agent-shennong-crash",
+  "openeuler-agent-shennong-crash-online",
+  "openeuler-agent-shennong-crash-offline",
 ])
 const SHENNONG_MCP_NAMES = new Set([
   "crash-feature-matcher",
@@ -37,6 +40,9 @@ function isShennongPackageSpec(spec) {
           || pluginPath.includes("/agent-shennong-crash/")
           || pluginPath.includes("/agent-shennong-crash-online/")
           || pluginPath.includes("/agent-shennong-crash-offline/")
+          || pluginPath.includes("/openeuler-agent-shennong-crash/")
+          || pluginPath.includes("/openeuler-agent-shennong-crash-online/")
+          || pluginPath.includes("/openeuler-agent-shennong-crash-offline/")
         )
       )
     } catch {

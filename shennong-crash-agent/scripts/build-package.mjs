@@ -43,6 +43,7 @@ const COMPONENTS = [
 function parseArgs(argv) {
   const options = {
     variant: null,
+    packageStyle: process.env.PACKAGE_STYLE || "organization",
     outputDir: DEFAULT_OUTPUT_DIR,
     python: process.env.PYTHON_BIN || null,
   }
@@ -53,6 +54,10 @@ function parseArgs(argv) {
       options.variant = arg.slice("--variant=".length)
     } else if (arg === "--variant") {
       options.variant = argv[++index]
+    } else if (arg.startsWith("--package-style=")) {
+      options.packageStyle = arg.slice("--package-style=".length)
+    } else if (arg === "--package-style") {
+      options.packageStyle = argv[++index]
     } else if (arg.startsWith("--out-dir=")) {
       options.outputDir = resolve(PROJECT_ROOT, arg.slice("--out-dir=".length))
     } else if (arg === "--out-dir") {
@@ -68,6 +73,9 @@ function parseArgs(argv) {
 
   if (!['online', 'offline'].includes(options.variant)) {
     throw new Error("--variant must be online or offline")
+  }
+  if (!["organization", "plain"].includes(options.packageStyle)) {
+    throw new Error("--package-style must be organization or plain")
   }
   return options
 }
@@ -396,20 +404,33 @@ function writeContentManifest(stageDir, requiredFiles, lfsPointers) {
   return manifest
 }
 
-function writeStagePackageJson(stageDir, basePackage, variant) {
+function resolvePackageBaseName(basePackage, packageStyle) {
+  const names = basePackage.wittyAgentDistribution?.packageNames
+  const packageName = names?.[packageStyle]
+  if (!packageName || typeof packageName !== "string") {
+    throw new Error(`package name for style ${packageStyle} is not configured`)
+  }
+  if (packageStyle === "organization" && !packageName.startsWith("@")) {
+    throw new Error(`organization package name must be scoped: ${packageName}`)
+  }
+  if (packageStyle === "plain" && packageName.startsWith("@")) {
+    throw new Error(`plain package name must be unscoped: ${packageName}`)
+  }
+  return packageName
+}
+
+function writeStagePackageJson(stageDir, basePackage, variant, packageStyle) {
   const {
     scripts: _baseScripts,
     devDependencies: _baseDevDependencies,
+    wittyAgentDistribution: _distribution,
     ...publishableBase
   } = basePackage
+  const packageBaseName = resolvePackageBaseName(basePackage, packageStyle)
   const packageJson = {
     ...publishableBase,
-    name: variant === "online"
-      ? basePackage.name
-      : `${basePackage.name}-${variant}`,
-    description: variant === "online"
-      ? basePackage.description
-      : `${basePackage.description} (${variant} package)`,
+    name: `${packageBaseName}-${variant}`,
+    description: `${basePackage.description} (${variant} package)`,
     files: [
       "dist",
       "skills",
@@ -422,6 +443,7 @@ function writeStagePackageJson(stageDir, basePackage, variant) {
       ...(variant === "offline" ? ["python-wheels", "python-wheel-manifest.json"] : []),
     ],
     shennongVariant: variant,
+    wittyPackageStyle: packageStyle,
     ...(variant === "offline"
       ? { bundledDependencies: Object.keys(basePackage.dependencies || {}) }
       : {}),
@@ -452,7 +474,7 @@ function main() {
   }
   const basePackage = JSON.parse(readFileSync(join(PROJECT_ROOT, "package.json"), "utf8"))
   const requiredFiles = readRequiredPackageFiles()
-  const stageDir = join(PROJECT_ROOT, ".package-stage", options.variant)
+  const stageDir = join(PROJECT_ROOT, ".package-stage", options.packageStyle, options.variant)
   rmSync(stageDir, { recursive: true, force: true })
   mkdirSync(stageDir, { recursive: true })
 
@@ -469,6 +491,7 @@ function main() {
 
   const variantMetadata = {
     variant: options.variant,
+    packageStyle: options.packageStyle,
     pythonDependencies: options.variant === "offline" ? "bundled-wheels" : "download-on-install",
     wheelPlatform: pythonWheelManifest?.platform || null,
     contentComplete: contentManifest.contentComplete,
@@ -476,7 +499,7 @@ function main() {
     lfsPointerWarnings: contentManifest.lfsPointerWarnings,
   }
   writeFileSync(join(stageDir, "package-variant.json"), `${JSON.stringify(variantMetadata, null, 2)}\n`)
-  writeStagePackageJson(stageDir, basePackage, options.variant)
+  writeStagePackageJson(stageDir, basePackage, options.variant, options.packageStyle)
 
   const { npm: npmResult, tgzPath } = packStage(stageDir, options.outputDir)
   validatePackedFiles(npmResult, [
@@ -505,6 +528,7 @@ function main() {
 
   const report = {
     variant: options.variant,
+    packageStyle: options.packageStyle,
     packageName: npmResult.name,
     version: npmResult.version,
     filename: npmResult.filename,

@@ -17,12 +17,17 @@ const VALID_VARIANTS = new Set(["online", "offline"])
 
 function parseArgs(argv) {
   let variants = process.env.SELECTED_VARIANTS || "online,offline"
+  let packageStyle = process.env.PACKAGE_STYLE || "organization"
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index]
     if (arg.startsWith("--variants=")) {
       variants = arg.slice("--variants=".length)
     } else if (arg === "--variants") {
       variants = argv[++index]
+    } else if (arg.startsWith("--package-style=")) {
+      packageStyle = arg.slice("--package-style=".length)
+    } else if (arg === "--package-style") {
+      packageStyle = argv[++index]
     } else {
       throw new Error(`unknown argument: ${arg}`)
     }
@@ -31,7 +36,10 @@ function parseArgs(argv) {
   if (selected.length === 0 || selected.some((item) => !VALID_VARIANTS.has(item))) {
     throw new Error("--variants must contain online and/or offline")
   }
-  return selected
+  if (!["organization", "plain"].includes(packageStyle)) {
+    throw new Error("--package-style must be organization or plain")
+  }
+  return { variants: selected, packageStyle }
 }
 
 function assert(condition, message) {
@@ -44,15 +52,22 @@ function sha256(path) {
   return createHash("sha256").update(readFileSync(path)).digest("hex")
 }
 
-function verifyVariant(variant, basePackage) {
+function resolveExpectedPackageName(basePackage, variant, packageStyle) {
+  const baseName = basePackage.wittyAgentDistribution?.packageNames?.[packageStyle]
+  assert(typeof baseName === "string" && baseName.length > 0, `package style is not configured: ${packageStyle}`)
+  return `${baseName}-${variant}`
+}
+
+function verifyVariant(variant, basePackage, packageStyle) {
   const reportPath = join(ARTIFACT_DIR, `${variant}-package-report.json`)
   assert(existsSync(reportPath), `${variant}: package report is missing`)
   const report = JSON.parse(readFileSync(reportPath, "utf8"))
   const tgzPath = join(ARTIFACT_DIR, report.filename || "")
 
   assert(report.variant === variant, `${variant}: report variant mismatch`)
+  assert(report.packageStyle === packageStyle, `${variant}: report package style mismatch`)
   assert(
-    report.packageName === `${basePackage.name}-${variant}`,
+    report.packageName === resolveExpectedPackageName(basePackage, variant, packageStyle),
     `${variant}: package name mismatch: ${report.packageName}`,
   )
   assert(report.version === basePackage.version, `${variant}: package version mismatch`)
@@ -89,6 +104,7 @@ function verifyVariant(variant, basePackage) {
 
   return {
     variant,
+    packageStyle,
     packageName: report.packageName,
     version: report.version,
     filename: report.filename,
@@ -101,15 +117,16 @@ function verifyVariant(variant, basePackage) {
 }
 
 function main() {
-  const variants = parseArgs(process.argv.slice(2))
+  const { variants, packageStyle } = parseArgs(process.argv.slice(2))
   const basePackage = JSON.parse(readFileSync(join(PROJECT_ROOT, "package.json"), "utf8"))
-  const packages = variants.map((variant) => verifyVariant(variant, basePackage))
+  const packages = variants.map((variant) => verifyVariant(variant, basePackage, packageStyle))
   const summary = {
     status: "passed",
     sourceCommit: process.env.GIT_COMMIT || null,
     buildNumber: process.env.BUILD_NUMBER || null,
     generatedAt: new Date().toISOString(),
     variants,
+    packageStyle,
     packages,
   }
   writeFileSync(join(ARTIFACT_DIR, "ci-summary.json"), `${JSON.stringify(summary, null, 2)}\n`)

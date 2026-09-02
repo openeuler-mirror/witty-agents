@@ -1,5 +1,8 @@
 # Shennong npm Jenkins Pipeline
 
+> 本文件记录旧版 Shennong 专用 Pipeline。新的仓库级统一入口为仓库根目录
+> `Jenkinsfile`，配置和手工联调步骤见 `ci/README.md`。旧入口暂时保留用于回滚。
+
 Jenkins 使用仓库根目录的 `Jenkinsfile.shennong`。任务应配置为 **Pipeline script
 from SCM**，Script Path 填写：
 
