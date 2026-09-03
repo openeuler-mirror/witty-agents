@@ -131,7 +131,7 @@ def _parse_calltrace_text(logs: list[str], start: int) -> str:
             lines.append(line)
             continue
         if in_trace:
-            if not re.search(r"\+0x[0-9a-fA-F]+", line) and not any(
+            if "+0x" not in line and not any(
                 t in line for t in ("<IRQ>", "<NMI>", "<TASK>")
             ):
                 break
@@ -260,11 +260,16 @@ def parse_dmesg(text: str) -> tuple[CrashFeatures, HostFeatures, bool]:
         at_match = re.search(r'at [^ ]+\s+([a-zA-Z_][a-zA-Z0-9_]+)\+0x', feature.bug or '')
         if at_match:
             rip = at_match.group(1)
-        # 或者从 bug_key 第一个函数名匹配
-        elif not rip:
-            func_match = re.match(r'^[a-zA-Z_][a-zA-Z0-9_]+\+0x[0-9a-fA-F]+', bug_key or '')
-            if func_match:
-                rip = func_match.group(0)
+        else:
+            # KASAN/UAF 报告行: "BUG: KASAN: use-after-free in <函数>+0x..."
+            kasan_match = re.search(r' in\s+([a-zA-Z_][a-zA-Z0-9_]+)\+0x', feature.bug or '')
+            if kasan_match:
+                rip = kasan_match.group(1)
+            else:
+                # 或者从 bug_key 第一个函数名匹配
+                func_match = re.match(r'^[a-zA-Z_][a-zA-Z0-9_]+\+0x[0-9a-fA-F]+', bug_key or '')
+                if func_match:
+                    rip = func_match.group(0)
         if rip:
             # 归一化 rip：去掉函数体大小后缀 /0x...
             if '/0x' in rip:

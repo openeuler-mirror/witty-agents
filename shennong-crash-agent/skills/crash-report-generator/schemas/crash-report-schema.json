@@ -179,6 +179,11 @@
               "content": { "type": "string" },
               "match_score": { "type": "string", "enum": ["高", "中", "低"], "description": "匹配等级，由 match_score(0-1) 映射：高≥0.7 / 中0.4-0.69 / 低<0.4" },
               "match_level": { "type": "string", "enum": ["L1", "L2", "L3"], "description": "匹配层级：L1=指纹精确命中（最强），L2=RAG语义检索+评分确认（中等），L3=扩大召回（弱匹配）" },
+              "verdict": { "type": "string", "enum": ["confirmed", "same_area", "not_relevant", "unverified"], "description": "上游一手证据(diff/commit/issue原文)代码级校验结论：confirmed=补丁直接修复崩溃函数；same_area=同子系统但根因不同；not_relevant=与崩溃路径无关；unverified=原文获取失败未验证" },
+              "evidence": {
+                "type": "object",
+                "description": "上游一手证据：verdict_label、reasons(校验论据)、commit_message(commit原文)、issue_title/issue_body_excerpt(issue原文)、touched_files/touched_functions(补丁改动范围)、additions/deletions、source_kind(commit/issue)、html_url、fetched"
+              },
               "source_file": { "type": "string" },
               "score": { "type": "number", "minimum": 0, "maximum": 100 },
               "score_details": { "type": "object" },

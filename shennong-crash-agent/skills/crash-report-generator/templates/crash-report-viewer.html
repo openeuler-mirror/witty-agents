@@ -355,10 +355,11 @@
   .match-section .sec-label:first-child { margin-top:0; }
   .match-section .host-grid { margin-bottom:4px; }
   .match-section .modules-chips { margin-bottom:4px; }
-  .match-cases { display:flex; gap:12px; flex-wrap:wrap; }
+  .match-cases { display:flex; flex-direction:column; gap:12px; }
   .match-cases.collapsed .match-case:not(:first-child) { display:none; }
   .match-case {
-    flex:1; min-width:280px; background:var(--code-bg); border:1px solid var(--code-border);
+    width:100%; flex:0 0 auto; min-width:0;
+    background:var(--code-bg); border:1px solid var(--code-border);
     border-radius:10px; padding:14px 16px; position:relative; overflow:hidden;
   }
   .match-case .mc-score {
@@ -376,6 +377,33 @@
   .match-case .mc-level.L1 { background:#dcfce7; color:#15803d; border:1px solid #86efac; }
   .match-case .mc-level.L2 { background:#dbeafe; color:#1d4ed8; border:1px solid #93c5fd; }
   .match-case .mc-level.L3 { background:#fef3c7; color:#b45309; border:1px solid #fcd34d; }
+  .match-case .mc-verdict {
+    display:inline-block; font-size:11px; font-weight:700; padding:2px 9px; border-radius:10px;
+    margin-bottom:8px; margin-left:6px; font-family:-apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;
+  }
+  .match-case .mc-verdict.confirmed { background:#dcfce7; color:#15803d; border:1px solid #86efac; }
+  .match-case .mc-verdict.same_area { background:#fef3c7; color:#b45309; border:1px solid #fcd34d; }
+  .match-case .mc-verdict.not_relevant { background:#f1f5f9; color:#94a3b8; border:1px solid #e2e8f0; }
+  .match-case .mc-verdict.unverified { background:#fff; color:#94a3b8; border:1px dashed #cbd5e1; }
+  .match-case.excluded { opacity:.6; }
+  .mc-evidence { margin-top:10px; border:1px solid var(--code-border); border-radius:8px; background:var(--code-bg); }
+  .mc-evidence summary {
+    cursor:pointer; padding:7px 10px; font-size:11px; font-weight:600; color:var(--muted);
+    list-style:none; user-select:none;
+  }
+  .mc-evidence summary::-webkit-details-marker { display:none; }
+  .mc-evidence summary::before { content:"🔎 "; }
+  .mc-evidence[open] summary::before { content:"🔍 "; }
+  .mc-evidence .mc-ev-body { padding:0 10px 10px; }
+  .mc-evidence .mc-quote {
+    font-size:12px; color:var(--text); background:#fff; border-left:3px solid var(--accent);
+    padding:6px 10px; margin:4px 0 6px; white-space:pre-wrap; font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+    line-height:1.55; max-height:200px; overflow:auto; border-radius:0 6px 6px 0;
+  }
+  .mc-evidence .mc-files { display:flex; flex-wrap:wrap; gap:4px; margin:4px 0; }
+  .mc-evidence .mc-file { font-size:10px; font-family:ui-monospace,Menlo,monospace; background:#eef2ff; color:#4338ca; border-radius:5px; padding:2px 7px; }
+  .mc-evidence .mc-fns { display:flex; flex-wrap:wrap; gap:4px; margin:4px 0; }
+  .mc-evidence .mc-fn { font-size:10px; font-family:ui-monospace,Menlo,monospace; background:#dcfce7; color:#15803d; border:1px solid #86efac; border-radius:5px; padding:2px 7px; }
   .match-level-legend {
     display:flex; gap:10px; flex-wrap:wrap; margin-bottom:12px; padding:8px 12px;
     background:#f8fafc; border-radius:8px; font-size:11px; color:#64748b; line-height:1.5;
@@ -391,15 +419,16 @@
   .match-case .mc-reason-list { margin:4px 0 0; padding:0; list-style:none; }
   .match-case .mc-reason-list li {
     font-size:12px; line-height:1.6; color:#475569; padding:3px 0 3px 16px; position:relative;
+    overflow-wrap:break-word; word-break:break-word;
   }
   .match-case .mc-reason-list li::before {
     content:"✓"; position:absolute; left:0; top:3px; color:#22c55e; font-weight:700; font-size:11px;
   }
   .match-case .mc-reason-list li.miss::before { content:"✗"; color:#ef4444; }
   .match-case .mc-reason-list li.warn::before { content:"⚠"; color:#f59e0b; }
-  .match-case .mc-id { font-size:11px; color:var(--muted); margin-bottom:4px; font-family:monospace; }
+  .match-case .mc-id { font-size:11px; color:var(--muted); margin-bottom:4px; font-family:monospace; overflow-wrap:break-word; word-break:break-all; }
   .match-case .mc-label { font-size:11px; color:var(--muted); font-weight:600; margin:8px 0 4px; }
-  .match-case .mc-text { font-size:13px; color:var(--text); line-height:1.6; }
+  .match-case .mc-text { font-size:13px; color:var(--text); line-height:1.6; overflow-wrap:break-word; word-break:break-word; }
   .match-case .mc-chips { display:flex; flex-wrap:wrap; gap:4px; margin-top:4px; }
   .match-case .mc-chip { font-size:10px; background:var(--accent-soft); color:var(--accent); border-radius:5px; padding:2px 7px; font-family:monospace; font-weight:500; }
   .match-expand { text-align:center; margin-top:10px; }
@@ -542,6 +571,15 @@ function classifySubsystem(fn){
   return {key:'other',label:'其他',icon:'•',cls:'ss-other',toCls:'to-other'};
 }
 
+// Middle-truncate long function names: kernel functions often share a prefix
+// (e.g. ip_local_deliver vs ip_local_deliver_finish), so tail truncation hides
+// the distinguishing suffix. Keep head+tail; full name is shown on hover.
+function shortFn(fn){
+  const MAX=12;
+  if(!fn || fn.length<=MAX) return fn;
+  return fn.slice(0,7)+'…'+fn.slice(-4); // 7+1+4 = 12
+}
+
 function nodeHTML(fn,i,n,opts){
   const {ripOffset='', isSegStart=false, segLabel='', crashNote='', isCrash=false, isEntry=false, isThunkFn=false, ssCls='', ssKey='other'} = opts;
   let badge='';
@@ -562,7 +600,7 @@ function nodeHTML(fn,i,n,opts){
   const tipText=isCrash?`${fn}${ripOffset||''} · 崩溃点${crashNote?' · '+crashNote:''}`:(isEntry?`${fn} · 调用入口`:fn);
   return `<div class="${classes.join(' ')}" title="${esc(tipText)}" data-fn="${esc(fn)}" data-ss="${ssKey}">`+
     `${segLabelHtml}<span class="tip">${esc(tipText)}</span>`+
-    `<div class="node-body"><span class="fname">${esc(fn)}</span><span class="badge">${badge}</span></div>`+
+    `<div class="node-body"><span class="fname">${esc(shortFn(fn))}</span><span class="badge">${badge}</span></div>`+
     `${crashNoteHtml}</div>`;
 }
 
@@ -647,9 +685,13 @@ function snakeSegment(order, from, to, n, opts){
         const trail=ROW_LEN-1-lastCol;
         if(trail>0) parts.push(`<div style="flex:0 0 ${trail*UNIT}px"></div>`);
       } else {
-        const trail=ROW_LEN-1-firstCol;
-        if(trail>0) parts.push(`<div style="flex:0 0 ${trail*UNIT}px"></div>`);
-        if(lastCol>0) parts.unshift(`<div style="flex:0 0 ${lastCol*UNIT}px"></div>`);
+        // row-reverse: DOM start = visual right, DOM end = visual left.
+        // Data col c renders at visual col (ROW_LEN-1-c), so:
+        //   visual right gap = firstCol cols            -> DOM start (unshift)
+        //   visual left gap  = (ROW_LEN-1-lastCol) cols -> DOM end (push)
+        const leftGap=ROW_LEN-1-lastCol;
+        if(leftGap>0) parts.push(`<div style="flex:0 0 ${leftGap*UNIT}px"></div>`);
+        if(firstCol>0) parts.unshift(`<div style="flex:0 0 ${firstCol*UNIT}px"></div>`);
       }
     }
     // Determine if this row has any seg-start node or crash node
@@ -769,7 +811,12 @@ function renderTrace(core){
   folded?renderFolded():renderAll();
 }
 
-function renderProse(id,val){document.getElementById(id).innerHTML=val?`<div class="prose">${esc(val)}</div>`:`<div class="empty-line">无</div>`;}
+const linkify=s=>esc(s).replace(/https?:\/\/[^\s<]+/g,m=>{
+  const url=m.replace(/[)\].,，。；;！!？?'"’”）】]+$/,'');
+  const tail=m.slice(url.length);
+  return `<a href="${url}" target="_blank" rel="noopener" style="color:#2563eb;text-decoration:underline;word-break:break-all">${url}</a>${tail}`;
+});
+function renderProse(id,val){document.getElementById(id).innerHTML=val?`<div class="prose">${linkify(val)}</div>`:`<div class="empty-line">无</div>`;}
 function renderRootCause(core){
   const blocks=[];
   if(core.conclusion){
@@ -862,11 +909,23 @@ function renderCrashMatch(report){
     allCases.forEach((c,i)=>{
       const fp=c.fingerprints||[];
       const level=c.match_level||'';
-      h+=`<div class="match-case">`;
+      const verdict=c.verdict||'';
+      h+=`<div class="match-case${verdict==='not_relevant'?' excluded':''}">`;
       // Score badge + Level badge
       h+=`<span class="mc-score ${scoreCls[c.match_score]||'low'}">${esc(c.match_score||'—')}匹配</span>`;
       if(level){
         h+=`<span class="mc-level ${level}" title="${esc(levelDesc[level]||'')}">${level}</span>`;
+      }
+      // Verdict badge (community cases with first-hand evidence check)
+      if(verdict){
+        const verdictMeta={
+          confirmed:['✓ 补丁已确认','commit/issue 一手证据确认：补丁直接修复崩溃函数或其调用路径'],
+          same_area:['同域不同因','补丁与崩溃同子系统，但修改的是不同函数/根因，不能直接采用'],
+          not_relevant:['✗ 已排除','一手证据显示补丁与崩溃路径无关，已从修复依据中排除'],
+          unverified:['证据待验证','未能获取上游原文（网络/权限），相关性未经代码级确认'],
+        };
+        const vM=verdictMeta[verdict]||[verdict,''];
+        h+=`<span class="mc-verdict ${verdict}" title="${esc(vM[1])}">${vM[0]}</span>`;
       }
       h+=`<div class="mc-id">${esc(c.source)} · ${esc(c.knowledge_id||c.id||'')}</div>`;
       // Case summary
@@ -981,6 +1040,43 @@ function renderCrashMatch(report){
       if(c.root_cause) h+=`<div class="mc-label">案例根因</div><div class="mc-text">${esc(c.root_cause)}</div>`;
       if(c.solution) h+=`<div class="mc-label">案例解决方案</div><div class="mc-text">${esc(c.solution)}</div>`;
       if(c.hotpatch) h+=`<div class="mc-label">热补丁</div><div class="mc-text">${esc(c.hotpatch)}</div>`;
+      // First-hand upstream evidence (commit message / issue body / touched files)
+      const ev=c.evidence||null;
+      if(ev && (ev.fetched || (Array.isArray(ev.reasons)&&ev.reasons.length))){
+        const kind=ev.source_kind==='issue'?'issue 原文':'commit 原文';
+        const stats=(ev.additions||ev.deletions)?` · +${ev.additions||0}/-${ev.deletions||0}`:'';
+        h+=`<details class="mc-evidence"><summary>上游一手证据 · ${esc(kind)}${stats}</summary><div class="mc-ev-body">`;
+        if(Array.isArray(ev.reasons) && ev.reasons.length){
+          h+=`<ul class="mc-reason-list">${ev.reasons.map(r=>`<li>${esc(r)}</li>`).join('')}</ul>`;
+        }
+        const files=ev.touched_files||[];
+        if(files.length){
+          h+=`<div class="mc-label">补丁改动文件</div><div class="mc-files">${files.map(f=>`<span class="mc-file">${esc(f)}</span>`).join('')}</div>`;
+        }
+        const fns=ev.touched_functions||[];
+        if(fns.length){
+          h+=`<div class="mc-label">补丁修改函数</div><div class="mc-fns">${fns.map(f=>`<span class="mc-fn">${esc(f)}()</span>`).join('')}</div>`;
+        }
+        if(ev.commit_message){
+          h+=`<div class="mc-label">commit message</div><div class="mc-quote">${esc(ev.commit_message)}</div>`;
+        }
+        if(ev.issue_title){
+          h+=`<div class="mc-label">issue 标题</div><div class="mc-text">${esc(ev.issue_title)}${ev.issue_state?` <span class="mc-chip">${esc(ev.issue_state)}</span>`:''}</div>`;
+        }
+        if(ev.issue_body_excerpt){
+          h+=`<div class="mc-label">issue 原文摘要</div><div class="mc-quote">${esc(ev.issue_body_excerpt)}</div>`;
+        }
+        if(ev.html_url){
+          h+=`<div style="margin-top:6px"><a href="${esc(ev.html_url)}" target="_blank" style="font-size:11px">查看上游原文 ↗</a></div>`;
+        }
+        const related=ev.related_commits||[];
+        if(related.length){
+          h+=`<div class="mc-label">同一补丁的其他来源（上游/回合）</div><div class="mc-text" style="font-size:11px">`
+            +related.map(r=>`<a href="${esc(r.url)}" target="_blank" style="margin-right:10px; white-space:nowrap">${esc(r.source||'upstream')} ${esc((r.sha||'').slice(0,12))} ↗</a>`).join('')
+            +`</div>`;
+        }
+        h+=`</div></details>`;
+      }
       h+='</div>';
     });
     h+='</div>';

@@ -41,8 +41,25 @@ enable_llm_query_generation = false
 logical_expression_strategy = "semantic_only"
 
 [community.commit_analysis]
-enabled = false
+enabled = true
 max_commits_to_analyze = 5
+confirmed_boost = 1.15
+irrelevant_penalty = 0.5
+
+# 在线兜底：社区 KB 未配置或检索为空时，经 REST commits API 轻量检索
+# 上游内核补丁（禁止 git clone）；候选必须通过 commit diff 一手证据核验
+[community.online_fallback]
+enabled = true
+repo = "openeuler/kernel"
+source = "gitcode"          # gitcode | gitee
+max_pages = 5
+max_candidates = 8
+baseline_score = 50.0
+source_label = "openEuler社区"
+# LLM 为 confirmed 的上游补丁生成中文 现象/根因/方案 摘要（失败时保留英文原文）
+summarize_confirmed = true
+# 在线核验为 confirmed 的补丁自动沉淀到社区 KB（按 commit sha 去重）
+persist_confirmed = true
 
 [llm_scorer]
 enabled = true

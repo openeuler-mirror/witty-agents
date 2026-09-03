@@ -21,6 +21,8 @@ IGNORE_FUNCS = frozenset({
     "local_apic_timer_interrupt", "smp_apic_timer_interrupt",
     "apic_timer_interrupt", "__pv_queued_spin_lock_slowpath",
     "queued_spin_lock_slowpath",
+    # KASAN 报告机制自身栈帧，非真实崩溃路径，应过滤以保留真正崩溃调用链
+    "dump_stack_lvl", "print_address_description", "print_report", "kasan_report",
 })
 
 # 从 dmesg/vmcore-dmesg 的调用栈中提取函数名
@@ -31,12 +33,15 @@ CALLTRACE_LINE_PATTERN_3 = re.compile(r".*#[0-9]+ \[[0-9a-f]+\] (\S+) at")
 CRASH_BT_PATTERN = re.compile(r"#\d+\s+\[[0-9a-f]+\]\s+(\S+)\+")
 # 通用模式: 匹配 func+0xNNN/0xMMM 格式 (不需要时间戳括号)
 GENERIC_FUNC_PATTERN = re.compile(r"\b([a-zA-Z_][\w.-]*)\+0x[0-9a-fA-F]+/0x[0-9a-fA-F]+")
+# 容错模式: 匹配偏移量被省略的函数帧 (如 "func+0x...")
+LOOSE_FUNC_PATTERN = re.compile(r"\b([a-zA-Z_][\w.-]*)\+0x")
 
 
 def extract_function_name(line: str) -> str:
     """从一行调用栈中提取函数名"""
     for pat in [CALLTRACE_LINE_PATTERN_1, CALLTRACE_LINE_PATTERN_2,
-                 CALLTRACE_LINE_PATTERN_3, CRASH_BT_PATTERN, GENERIC_FUNC_PATTERN]:
+                 CALLTRACE_LINE_PATTERN_3, CRASH_BT_PATTERN, GENERIC_FUNC_PATTERN,
+                 LOOSE_FUNC_PATTERN]:
         m = pat.search(line)  # 用 search (通用模式可能不是行首)
         if m:
             name = m.group(1).split(".")[0]
@@ -68,8 +73,8 @@ def parse_calltrace_functions(text: str) -> list[str]:
                 funcs.append(name)
                 continue
 
-            # 如果遇到不再像调用栈的行，停止
-            if not re.search(r"\+0x[0-9a-fA-F]+", stripped):
+            # 如果遇到不再像调用栈的行 (含 +0x 才算栈帧), 停止
+            if "+0x" not in stripped:
                 in_calltrace = False
 
     return funcs

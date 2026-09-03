@@ -232,9 +232,77 @@ class RAGClient:
         data["source"] = "case"
         return await self._create_json(self.cases_kb_id, data)
 
-    async def _create_json(self, kb_id: str, content: dict) -> str:
+    async def create_community_case(self, case: CommunityCase, kb_id: str = "") -> str:
+        """Persist a verified community case (e.g. an online-fallback confirmed
+        upstream fix) into a community KB so later analyses hit it via semantic
+        RAG retrieval. Targets the openEuler community KB by default.
+
+        Returns the RAG json_id, or "" when skipped/failed.
+        """
+        target_kb = kb_id or self.openeuler_kb_id
+        if not target_kb:
+            return ""
+        data = case.model_dump()
+        data["source"] = case.source or "openEuler社区"
+        data.setdefault("type", "commit")
+        # stable dedup key: full commit sha (stashed in evidence, else from URL)
+        sha = str((case.evidence or {}).get("commit_sha") or "")
+        if not sha:
+            from ..git_commit_fetcher import _parse_commit_url
+            parsed = _parse_commit_url(case.source_file or "")
+            if parsed:
+                sha = parsed[3]
+        if sha:
+            data["commit_sha"] = sha
+        name = f"commit:{sha[:12]}" if sha else (case.title[:40] or "community_case")
+        return await self._create_json(target_kb, data, name=name)
+
+    async def community_commit_exists(self, sha: str, kb_id: str = "") -> bool:
+        """Dedup check: whether a commit with this sha is already persisted in
+        the community KB. First matches the structured ``commit_sha`` field
+        (docs written by this skill); then falls back to legacy docs that only
+        carry the sha inside their ``source_file`` URL."""
+        target_kb = kb_id or self.openeuler_kb_id
+        if not target_kb or not sha:
+            return False
+        sha12 = sha[:12]
+        cfg = SearchConfig(
+            kb_id=target_kb,
+            query=sha,
+            top_k=5,
+            logical_expression=LogicalExpression(operator="and", expressions=[
+                Expression(field="commit_sha", type="string", operator="eq", value=sha),
+            ]),
+            semantic_keys=[["title"], ["content"]],
+            ratio=0.3,
+        )
+        try:
+            items = await self.search_configs([cfg])
+        except Exception as e:
+            logger.warning(f"社区案例去重查询失败: {e}")
+            return False
+        if any(isinstance(it, dict) and str(it.get("commit_sha", "")).startswith(sha12)
+               for it in items):
+            return True
+        # legacy docs (seed/imported) have no commit_sha field: look for the
+        # sha inside their source_file URL
+        legacy_cfg = SearchConfig(
+            kb_id=target_kb,
+            query=sha12,
+            top_k=5,
+            semantic_keys=[["source_file"], ["title"]],
+            ratio=0.3,
+        )
+        try:
+            legacy = await self.search_configs([legacy_cfg])
+        except Exception:
+            legacy = []
+        return any(isinstance(it, dict) and sha12 in str(it.get("source_file", ""))
+                   for it in legacy)
+
+    async def _create_json(self, kb_id: str, content: dict, name: str = "") -> str:
         url = f"/json/{kb_id}"
-        payload = {"name": content.get("knowledge_id", content.get("case_id", "unknown")), "content": content, "is_imediate": True}
+        payload = {"name": name or content.get("knowledge_id", content.get("case_id", "unknown")), "content": content, "is_imediate": True}
         try:
             resp = await self.client.post(url, json=payload)
             resp.raise_for_status()
