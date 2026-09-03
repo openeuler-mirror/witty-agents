@@ -50,7 +50,7 @@ PUBLISH=false`，同时把新参数登记到 Job。第一次结束后再进入 *
 | `PACKAGE_STYLE` | `organization` | `organization` 为 `@openeuler/*`，`plain` 为普通 npm 包 |
 | `TARGET_ARCH` | `native` | 使用当前原生节点；离线包不允许跨架构冒充 |
 | `PYTHON_BIN` | `python3.11` | 支持 Python 3.11/3.12 |
-| `PYPI_INDEX_URL` | PyPI 官方源 | online setup 和 offline wheel 构建使用的索引 |
+| `PYPI_INDEX_URL` | 华为云 PyPI 镜像 | online setup 和 offline wheel 构建使用的索引；必要时可切回官方源 |
 | `OCR_MODEL_CACHE_DIR` | `/home/shennong-jenkins/ocr-model-cache` | LFS 服务不可用时的可信 OCR 缓存 |
 | `RUN_REAL_INSTALL_VALIDATION` | `true` | 运行完整安装、setup、configure、remove 和卸载 |
 | `STRICT_OFFLINE_NETWORK_CHECK` | `true` | offline 必须进入断网 namespace |

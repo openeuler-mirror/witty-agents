@@ -118,7 +118,7 @@ function build(options) {
       "--out-dir=artifacts",
     ]
     if (variant === "offline") args.push(`--python=${python}`)
-    run("npm", args, { env: { PIP_INDEX_URL: process.env.PYPI_INDEX_URL || process.env.PIP_INDEX_URL || "https://pypi.org/simple" } })
+    run("npm", args, { env: { PIP_INDEX_URL: process.env.PYPI_INDEX_URL || process.env.PIP_INDEX_URL || "https://mirrors.huaweicloud.com/repository/pypi/simple" } })
   }
 }
 
@@ -131,7 +131,7 @@ function verifyInstall(variant, options) {
     `--python=${process.env.PYTHON_BIN || "python3.11"}`,
     `--report=${join(REPORT_DIR, `install-flow-${variant}.json`)}`,
   ]
-  const installEnv = { PIP_INDEX_URL: process.env.PYPI_INDEX_URL || process.env.PIP_INDEX_URL || "https://pypi.org/simple" }
+  const installEnv = { PIP_INDEX_URL: process.env.PYPI_INDEX_URL || process.env.PIP_INDEX_URL || "https://mirrors.huaweicloud.com/repository/pypi/simple" }
   if (variant === "online") {
     run(process.execPath, args, { env: { ...installEnv, SHENNONG_NETWORK_ISOLATION: "none" } })
     return

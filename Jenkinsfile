@@ -46,7 +46,7 @@ pipeline {
         )
         string(
             name: 'PYPI_INDEX_URL',
-            defaultValue: 'https://pypi.org/simple',
+            defaultValue: 'https://mirrors.huaweicloud.com/repository/pypi/simple',
             description: 'Python index used while constructing online environments and offline wheels.'
         )
         string(
@@ -102,7 +102,7 @@ pipeline {
                     env.PACKAGE_STYLE = params.PACKAGE_STYLE ?: 'organization'
                     env.TARGET_ARCH = params.TARGET_ARCH ?: 'native'
                     env.PYTHON_BIN = params.PYTHON_BIN?.trim() ?: 'python3.11'
-                    env.PYPI_INDEX_URL = params.PYPI_INDEX_URL?.trim() ?: 'https://pypi.org/simple'
+                    env.PYPI_INDEX_URL = params.PYPI_INDEX_URL?.trim() ?: 'https://mirrors.huaweicloud.com/repository/pypi/simple'
                     env.PIP_INDEX_URL = env.PYPI_INDEX_URL
                     env.OCR_MODEL_CACHE_DIR = params.OCR_MODEL_CACHE_DIR?.trim() ?: '/home/shennong-jenkins/ocr-model-cache'
                     env.RUN_REAL_INSTALL_VALIDATION = String.valueOf(params.RUN_REAL_INSTALL_VALIDATION == null ? true : params.RUN_REAL_INSTALL_VALIDATION)
