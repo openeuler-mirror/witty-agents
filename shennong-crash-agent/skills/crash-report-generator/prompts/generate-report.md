@@ -13,7 +13,7 @@
    - `community_kernel_result` = `query_community_cases` 返回的精确条目（必须传入 `crash_features`）。
    - `community_meetings` = 社区会议纪要条目（`kind="meeting"`，含 url/excerpt/how/patch_ref/patch_url/verdict 等）。
    - `online_result` = `query_upstream_online` 构造的条目（仅调用过才填；否则空数组）。两类：
-     - **commit/issue 条目**（`commits[*]`）：逐字节复制原生 JSON，补 `"kind": "commit"`（issue/PR 时 `"issue"`）与 `"url"`。不得臆造/覆盖 `verdict`、`evidence`。
+      - **commit/issue 条目**（`commits[*]`）：逐字节复制原生 JSON，补 `"kind": "commit"`（issue/PR 时 `"issue"`）与 `"url"`。不得臆造/覆盖 `verdict`、`evidence`。**补 `relevance` 相关度**（`强相关`=补丁直接修复崩溃函数/路径 confirmed；`部分相关`=同子系统不同触发点 same_area；`弱相关`=与崩溃路径无关或原文获取失败 not_relevant/unverified）。
      - **mail 条目**（`patch_mails[*]`）：产出 `{ "kind":"mail", "title", "url", "author", "list", "date", "anchor", "kernel_version", "verdict", "excerpt", "how", "patch_ref", "patch_url", "lead" }`，字段结构与社区会议纪要/Bugzilla 卡片一致（见下方「社区案例条目细化」）。不要只倒原文，要把社区交流主线与分析方法论浓缩进 `how`，原文摘录放 `excerpt`。
    - 只把 `match_score`（0-1 浮点）换算成展示标签：高 ≥ 0.7 / 中 0.4–0.69 / 低 < 0.4（不要用原始 `score`，那是 0-100）。
    - `match_level`（L1/L2/L3）与 `verdict`（confirmed/same_area/not_relevant/unverified）由匹配工具计算，原样复制，不得覆盖。
@@ -50,6 +50,7 @@
 - `kind`：`mail`（社区邮件）/ `meeting`（会议纪要）/ `bugzilla`（Bugzilla/Issue），决定归入「社区邮件 / 会议纪要 / Bugzilla」三个子分组之一。
 - `title` / `url` / `author` / `list`（邮件列表/仓库名）/ `date` / `kernel_version`：来源元信息；`url` 为**原文网址**，必填。
 - `verdict`：`confirmed` / `same_area` / `not_relevant` / `unverified`，由匹配工具计算，原样复制，不得覆盖。
+- `relevance`：**相关度**（`强相关`/`部分相关`/`弱相关` 三选一），由 `verdict` 映射：`confirmed`→强相关、`same_area`→部分相关、`not_relevant`/`unverified`→弱相关。
 - `excerpt`：**关键片段原文**（报告中折叠展示）。只摘录与崩溃直接相关的段落、去掉无关噪声；原文为空/噪声或与崩溃无关时直接丢弃，不要凑数。
 - `how`：**关键信息如何指向补丁**——说明这段摘录/讨论是如何推导出下方「关联 commit」的，即"为什么这条资料值得采信、它如何支撑本次根因"。
 - `patch_ref` / `patch_url`：**关联 commit**（短号 + 完整链接），指向真正修复崩溃路径的补丁。

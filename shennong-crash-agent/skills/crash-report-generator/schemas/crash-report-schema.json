@@ -669,9 +669,18 @@
                 "type": "object",
                 "additionalProperties": false,
                 "properties": {
-                  "verdict": {
-                    "type": "string"
-                  },
+              "verdict": {
+                "type": "string"
+              },
+              "relevance": {
+                "type": "string",
+                "enum": [
+                  "强相关",
+                  "部分相关",
+                  "弱相关"
+                ],
+                "description": "该上游 commit/issue/邮件与本次崩溃的相关度：强相关=补丁直接修复崩溃函数/路径(confirmed)；部分相关=同子系统不同触发点(same_area)；弱相关=与崩溃路径无关或原文获取失败(not_relevant/unverified)。"
+              },
                   "text": {
                     "type": "string"
                   }
