@@ -17,7 +17,7 @@ rip_fuzzy_offset = 8
 score_threshold = 80      # 兼容字段，当前由 l1_threshold 接管
 top_k_final = 3
 l1_top_k = 10             # L1 每社区召回数。评估表明 5 过低会截断正确案例；10 在当前 API 速率限制下较均衡，可上调至 15 若使用更高配额
-l3_top_k = 10             # L3 每社区召回数，与 L1 保持一致以扩大召回面
+l3_top_k = 15             # L3 每社区召回数，必须 > l1_top_k 才是真正"扩大召回"（L3 是 L1 召回集合的超集）
 scoring_mode = "llm"      # keyword | llm | hybrid
 
 # 分模式阈值：keyword 过严，需降低；llm 可保持较高
@@ -60,6 +60,9 @@ source_label = "openEuler社区"
 summarize_confirmed = true
 # 在线核验为 confirmed 的补丁自动沉淀到社区 KB（按 commit sha 去重）
 persist_confirmed = true
+# 邮件列表检索（openEuler hyperkitty 档案）：补充 patch 讨论与分析思路
+mail_search_enabled = true
+mail_archive_base = "https://mailweb.openeuler.org"
 
 [llm_scorer]
 enabled = true

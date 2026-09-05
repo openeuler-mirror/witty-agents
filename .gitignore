@@ -1,5 +1,6 @@
 .venvs/
 __pycache__/
+tmp/
 shennong-crash-agent/skills/crash-feature-matcher/src/crash_matcher/__pycache__/
 shennong-crash-agent/.package-stage/
 shennong-crash-agent/artifacts/

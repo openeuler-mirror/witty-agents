@@ -43,8 +43,143 @@ detect_vmlinux() {
   return 0
 }
 
-# 检测 vmcore-dmesg.txt 是否存在（通常与 vmcore 同级）
-# 始终返回 0，输出路径或空字符串
+# 从 vmcore / vmcore-dmesg 提取内核版本（如 5.10.0-60.18.0.50.oe2203）
+# 成功时输出版本串并返回 0，失败返回 1
+extract_kernel_version() {
+  local vmcore_path="$1"
+  local dmesg_path="${2:-}"
+  local kver=""
+
+  # 1. crash --osrelease（仅需 vmcore，最可靠）
+  if command -v crash >/dev/null 2>&1 && [[ -f "$vmcore_path" ]]; then
+    kver="$(crash --osrelease "$vmcore_path" 2>/dev/null | head -1 || true)"
+    kver="$(echo "$kver" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+-[^ ]+' | head -1 || true)"
+    [[ -n "$kver" ]] && { echo "$kver"; return 0; }
+  fi
+
+  # 2. vmcore-dmesg.txt 的 "Linux version" 行
+  if [[ -n "$dmesg_path" && -f "$dmesg_path" ]]; then
+    kver="$(grep -m1 -oE 'Linux version [0-9]+\.[0-9]+\.[0-9]+-[^ ]+' "$dmesg_path" | awk '{print $3}')"
+    [[ -n "$kver" ]] && { echo "$kver"; return 0; }
+  fi
+
+  # 3. vmcore 目录名中的版本串
+  kver="$(basename "$(dirname "$vmcore_path")" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+-[^/]+' | head -1 || true)"
+  [[ -n "$kver" ]] && { echo "$kver"; return 0; }
+
+  return 1
+}
+
+# 按内核版本从 openEuler debuginfo 源自动下载 vmlinux（kernel-debuginfo 包解压）
+# 缓存目录：${VMLINUX_CACHE_DIR:-$HOME/.cache/vmcore-analysis}/<kver>-<arch>/vmlinux
+# 成功时输出 vmlinux 路径并返回 0；失败返回 1（过程信息走 stderr，stdout 仅输出路径）
+download_vmlinux() {
+  local kver="$1"
+  local arch="${VMCORE_ARCH:-$(uname -m)}"
+  local cache_root="${VMLINUX_CACHE_DIR:-$HOME/.cache/vmcore-analysis}"
+  local cache_dir="${cache_root}/${kver}-${arch}"
+  local vmlinux_cached="${cache_dir}/vmlinux"
+
+  # 缓存命中直接复用
+  if [[ -f "$vmlinux_cached" && -s "$vmlinux_cached" ]]; then
+    echo "[vmlinux-cache] 命中缓存: ${vmlinux_cached}" >&2
+    echo "$vmlinux_cached"
+    return 0
+  fi
+
+  # 依赖检查
+  local missing=""
+  for cmd in curl rpm2cpio cpio; do
+    command -v "$cmd" >/dev/null 2>&1 || missing="${missing} ${cmd}"
+  done
+  if [[ -n "$missing" ]]; then
+    echo "[vmlinux-download] 缺少依赖命令:${missing}，跳过自动下载" >&2
+    return 1
+  fi
+
+  local pkg="kernel-debuginfo-${kver}.${arch}.rpm"
+
+  # 候选 repo：按版本串中的 oe 标记缩小范围，否则全量尝试
+  local -a repos=()
+  case "$kver" in
+    *oe2203*) repos=(openEuler-22.03-LTS-SP4 openEuler-22.03-LTS-SP3 openEuler-22.03-LTS-SP2 openEuler-22.03-LTS-SP1 openEuler-22.03-LTS) ;;
+    *oe2403*) repos=(openEuler-24.03-LTS-SP3 openEuler-24.03-LTS-SP2 openEuler-24.03-LTS-SP1 openEuler-24.03-LTS) ;;
+    *oe2003*) repos=(openEuler-20.03-LTS-SP4 openEuler-20.03-LTS-SP3 openEuler-20.03-LTS-SP2 openEuler-20.03-LTS-SP1 openEuler-20.03-LTS) ;;
+    *) repos=(openEuler-24.03-LTS-SP3 openEuler-24.03-LTS-SP2 openEuler-24.03-LTS-SP1 openEuler-24.03-LTS \
+              openEuler-22.03-LTS-SP4 openEuler-22.03-LTS-SP3 openEuler-22.03-LTS-SP2 openEuler-22.03-LTS-SP1 openEuler-22.03-LTS \
+              openEuler-20.03-LTS-SP4 openEuler-20.03-LTS-SP3 openEuler-20.03-LTS-SP2 openEuler-20.03-LTS-SP1 openEuler-20.03-LTS) ;;
+  esac
+
+  local base_url="${VMLINUX_REPO_BASE:-https://repo.openeuler.org}"
+  local url="" downloaded_rpm=""
+  for repo in "${repos[@]}"; do
+    url="${base_url}/${repo}/debuginfo/${arch}/Packages/${pkg}"
+    echo "[vmlinux-download] 探测: ${url}" >&2
+    # 注意：repo.openeuler.org 会 302 到 CDN，必须 -L 跟随，最终 404 才算未命中
+    if curl -sfIL --max-time 20 "$url" >/dev/null 2>&1; then
+      echo "[vmlinux-download] 命中，开始下载（包较大，请耐心等待）..." >&2
+      local tmp_dir
+      tmp_dir="$(mktemp -d)"
+      if curl -fSL --max-time 600 -o "${tmp_dir}/${pkg}" "$url" >&2 2>&1 \
+        && [[ "$(head -c4 "${tmp_dir}/${pkg}" | od -An -tx1 | tr -d ' \n')" == "edabeedb" ]]; then
+        # RPM 魔数校验通过，仅解压 vmlinux 目标路径
+        (cd "$tmp_dir" && rpm2cpio "$pkg" | cpio -idm --quiet "./usr/lib/debug/lib/modules/${kver}/vmlinux" 2>/dev/null)
+        local extracted="${tmp_dir}/usr/lib/debug/lib/modules/${kver}/vmlinux"
+        if [[ -f "$extracted" && -s "$extracted" ]]; then
+          mkdir -p "$cache_dir"
+          mv "$extracted" "$vmlinux_cached"
+          rm -rf "$tmp_dir"
+          echo "[vmlinux-download] 成功，已缓存: ${vmlinux_cached}" >&2
+          echo "$vmlinux_cached"
+          return 0
+        fi
+        echo "[vmlinux-download] 包内未找到 ./usr/lib/debug/lib/modules/${kver}/vmlinux" >&2
+      else
+        echo "[vmlinux-download] 下载失败: ${url}" >&2
+      fi
+      rm -rf "$tmp_dir"
+    fi
+  done
+
+  echo "[vmlinux-download] 所有候选源均未命中 ${pkg}" >&2
+  return 1
+}
+
+# 一体化 vmlinux 获取：本地检测 → 自动下载
+# 与 detect_vmlinux 约定一致：始终返回 0，输出路径；调用方判断路径是否存在
+ensure_vmlinux() {
+  local vmcore_path="$1"
+  local vmlinux_path="$2"
+  local dmesg_path="${3:-}"
+
+  local found
+  found="$(detect_vmlinux "$vmcore_path" "$vmlinux_path")"
+  if [[ -f "$found" && -s "$found" ]]; then
+    echo "$found"
+    return 0
+  fi
+
+  # 本地未找到，按内核版本自动下载
+  local kver=""
+  kver="$(extract_kernel_version "$vmcore_path" "$dmesg_path")" || true
+  if [[ -n "$kver" ]]; then
+    echo "[ensure_vmlinux] 本地未找到 vmlinux，尝试按内核版本 ${kver} 自动下载..." >&2
+    local dl=""
+    dl="$(download_vmlinux "$kver")" || true
+    if [[ -n "$dl" && -f "$dl" && -s "$dl" ]]; then
+      echo "$dl"
+      return 0
+    fi
+  else
+    echo "[ensure_vmlinux] 无法提取内核版本，跳过自动下载" >&2
+  fi
+
+  echo "$vmlinux_path"
+  return 0
+}
+
+# 从 vmcore / vmcore-dmesg 提取内核版本（如 5.10.0-60.18.0.50.oe2203）
+# 成功时输出版本串并返回 0，失败返回 1
 detect_vmcore_dmesg() {
   local vmcore_path="$1"
   local vmcore_dir
@@ -80,13 +215,14 @@ print_env_status() {
 # 当缺少 vmlinux 时输出清晰的提示
 print_vmlinux_missing_guide() {
   echo ""
-  echo "⚠️  缺少 vmlinux（带调试信息的内核符号文件），无法使用 crash 工具进行完整分析。"
+  echo "⚠️  缺少 vmlinux（带调试信息的内核符号文件），且自动下载未成功，无法使用 crash 工具进行完整分析。"
   echo ""
-  echo "建议获取方式："
-  echo "  1. 在崩溃机器上安装对应版本的 kernel-debuginfo 包："
-  echo "       yum install kernel-debuginfo-$(cat /proc/version | awk '{print $3}')"
+  echo "手动获取方式："
+  echo "  1. 下载对应版本的 kernel-debuginfo 包并解压出 vmlinux："
+  echo "       https://repo.openeuler.org/<release>/debuginfo/<arch>/Packages/kernel-debuginfo-<kernel-version>.<arch>.rpm"
+  echo "       rpm2cpio kernel-debuginfo-<kernel-version>.<arch>.rpm | cpio -idm './usr/lib/debug/lib/modules/*/vmlinux'"
   echo "  2. 或将 vmlinux 文件放到 vmcore 同级目录："
-  echo "       cp /usr/lib/debug/lib/modules/<kernel-version>/vmlinux $(dirname "$1")/"
+  echo "       cp /path/to/vmlinux $(dirname "$1")/"
   echo ""
   echo "当前将使用 vmcore-dmesg.txt 进行日志级关键字匹配，分析结果可能不完整。"
   echo ""

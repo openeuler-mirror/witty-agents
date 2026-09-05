@@ -248,6 +248,72 @@ async def search_commits(
     return results
 
 
+# ------------------------------------------------------------
+# Mailing-list archive search (openEuler hyperkitty)
+# ------------------------------------------------------------
+
+_MAIL_TITLE_RE = re.compile(
+    r'<span class="thread-title">\s*<a[^>]*href="([^"]+)"[^>]*>(.*?)</a>\s*</span>',
+    re.DOTALL,
+)
+_MAIL_SNIPPET_RE = re.compile(
+    r'<span class="expander collapsed[^"]*"[^>]*>(.*?)</span>', re.DOTALL)
+
+
+async def search_mail_archives(
+    query: str,
+    limit: int = 5,
+    base_url: str = "https://mailweb.openeuler.org",
+) -> list[dict]:
+    """Search the openEuler mailing-list archives (hyperkitty) for patch
+    discussions / analysis threads related to ``query``.
+
+    lore.kernel.org is bot-gated and not directly scrapeable; the openEuler
+    hyperkitty archive (kernel@openeuler.org etc.) is publicly searchable and
+    carries the actual patch postings with stable-inclusion metadata.
+
+    Returns a list of ``{title, url, author, snippet}`` (newest first, at most
+    ``limit`` entries). Empty list on any failure.
+    """
+    query = (query or "").strip()
+    if not query:
+        return []
+    url = f"{base_url}/hyperkitty/search?q={urllib.parse.quote(query)}"
+    results: list[dict] = []
+    try:
+        async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as client:
+            resp = await _http_get(client, url, accept="text")
+            if not resp:
+                return []
+            page = resp.text
+    except Exception:
+        logger.debug("mail archive search failed: %s", url, exc_info=True)
+        return []
+
+    titles = list(_MAIL_TITLE_RE.finditer(page))
+    snippets = list(_MAIL_SNIPPET_RE.finditer(page))
+    for i, m in enumerate(titles[:limit]):
+        href, title = m.group(1), _strip_html(m.group(2)).strip()
+        if href.startswith("/"):
+            href = base_url + href
+        snippet = ""
+        if i < len(snippets):
+            snippet = _strip_html(snippets[i].group(1))[:600]
+        # author sits in a "by <name>" line right after the title span
+        tail = page[m.end():m.end() + 400]
+        am = re.search(r"by\s+([^<\n]+)", tail)
+        author = am.group(1).strip() if am else ""
+        ml = re.search(r"/archives/list/([^/]+)/", href)
+        results.append({
+            "title": title,
+            "url": href,
+            "author": author,
+            "list": ml.group(1) if ml else "",
+            "snippet": snippet,
+        })
+    return results
+
+
 async def fetch_community_evidence(source_file: str, case_type: str = "") -> dict:
     """Unified entry: fetch first-hand evidence for a community case.
 

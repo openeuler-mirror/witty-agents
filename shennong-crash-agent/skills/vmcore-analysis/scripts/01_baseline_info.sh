@@ -17,10 +17,11 @@ source "${SCRIPT_DIR}/common.sh"
 VMCORE="${1:-/var/crash/vmcore}"
 VMLINUX_DEFAULT="/usr/lib/debug/lib/modules/$(uname -r)/vmlinux"
 VMLINUX_INPUT="${2:-$VMLINUX_DEFAULT}"
-VMLINUX="$(detect_vmlinux "$VMCORE" "$VMLINUX_INPUT")"
 SRC_DIR="${3:-}"
 
 DMESG_PATH="$(detect_vmcore_dmesg "$VMCORE")"
+# 本地查找 → 按内核版本自动下载 vmlinux（三级获取）
+VMLINUX="$(ensure_vmlinux "$VMCORE" "$VMLINUX_INPUT" "$DMESG_PATH")"
 
 if [[ "${1:-}" == "--help" ]] || [[ "${1:-}" == "-h" ]]; then
   echo "用途：VMcore 基础信息收集与快速定性（所有分析的第一步）"
@@ -29,7 +30,9 @@ if [[ "${1:-}" == "--help" ]] || [[ "${1:-}" == "-h" ]]; then
   echo "  若未提供 vmlinux，脚本会尝试："
   echo "    1. 在 vmcore 同级目录查找 vmlinux"
   echo "    2. 根据 vmcore 目录名中的内核版本查找系统调试目录"
-  echo "    3. 若仍未找到，则尝试使用 vmcore-dmesg.txt 进行日志级关键字匹配"
+  echo "    3. 按 vmcore 内核版本从 openEuler debuginfo 源自动下载"
+  echo "       kernel-debuginfo 并解压 vmlinux（缓存于 ~/.cache/vmcore-analysis/）"
+  echo "    4. 若仍未找到，则尝试使用 vmcore-dmesg.txt 进行日志级关键字匹配"
   echo ""
   echo "  src_dir: 可选，内核/驱动源码根目录"
   echo "           若提供，输出将包含源码路径的分析建议"

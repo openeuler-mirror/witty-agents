@@ -37,6 +37,12 @@ def _get_thresholds(cfg):
     return cfg.keyword_l1_threshold, cfg.keyword_l2_threshold
 
 
+def _case_key(case) -> str:
+    """案例稳定唯一键：优先 RAG json_id，回退原始链接/ID/标题。"""
+    return getattr(case, "json_id", "") or getattr(case, "source_file", "") \
+        or getattr(case, "id", "") or (getattr(case, "title", "") or "")
+
+
 async def retrieve_community_cases(
     query_text: str,
     kernel_version: str = "",
@@ -113,32 +119,78 @@ async def retrieve_community_cases(
             candidates = l2_confirmed
             stop_reason = "L2 社区案例二次确认命中"
         else:
-            # L3: 扩大召回, 各社区 top_k
-            linux_l3 = await rag.search_linux_community_cases(
+            # L3: 扩大召回, 各社区 top_k（l3_top_k > l1_top_k，真正扩大召回面）
+            linux_l3_raw = await rag.search_linux_community_cases(
                 "", kernel_version, top_k=cfg.l3_top_k, queries=queries
             )
-            openeuler_l3 = await rag.search_openeuler_community_cases(
+            openeuler_l3_raw = await rag.search_openeuler_community_cases(
                 "", kernel_version, top_k=cfg.l3_top_k, queries=queries
             )
-            for c in linux_l3:
-                c.match_level = "L3"
-            for c in openeuler_l3:
-                c.match_level = "L3"
+
+            # 复用 L1 阶段已评分的同一案例对象：L3 召回集合是 L1 的超集，
+            # 对相同案例二次调用 LLM 打分存在非确定性波动（弱案例可能被第二
+            # 遍打成高分），因此只对 L3 新增召回的案例打分。
+            l1_scored: dict = {}
+            for c in linux_l1 + openeuler_l1:
+                l1_scored[_case_key(c)] = c
+
+            def _split_reused(raw_cases):
+                fresh, reused = [], []
+                for c in raw_cases:
+                    prev = l1_scored.get(_case_key(c))
+                    if prev is not None:
+                        reused.append(prev)
+                    else:
+                        c.match_level = "L3"
+                        fresh.append(c)
+                return fresh, reused
+
+            linux_fresh, linux_reused = _split_reused(linux_l3_raw)
+            oe_fresh, oe_reused = _split_reused(openeuler_l3_raw)
 
             if cfg.scoring_mode == "llm" and scorer:
-                linux_l3 = await scorer.score_cases(query_text, linux_l3)
-                openeuler_l3 = await scorer.score_cases(query_text, openeuler_l3)
+                if linux_fresh:
+                    linux_fresh = await scorer.score_cases(query_text, linux_fresh)
+                if oe_fresh:
+                    oe_fresh = await scorer.score_cases(query_text, oe_fresh)
             else:
-                for c in linux_l3:
+                for c in linux_fresh:
                     c.score, c.score_details = _score_case(query_text, kernel_version, c)
-                for c in openeuler_l3:
+                for c in oe_fresh:
                     c.score, c.score_details = _score_case(query_text, kernel_version, c)
 
             # L3 本地 kernel_version 过滤 (empty OR >=)
-            linux_l3 = _filter_by_kernel_version(linux_l3, kernel_version)
-            openeuler_l3 = _filter_by_kernel_version(openeuler_l3, kernel_version)
-            candidates = linux_l3 + openeuler_l3
-            stop_reason = "L3 Linux社区 + openEuler社区 扩大召回"
+            linux_fresh = _filter_by_kernel_version(linux_fresh, kernel_version)
+            oe_fresh = _filter_by_kernel_version(oe_fresh, kernel_version)
+            linux_reused = _filter_by_kernel_version(linux_reused, kernel_version)
+            oe_reused = _filter_by_kernel_version(oe_reused, kernel_version)
+
+            l3_all = linux_fresh + oe_fresh + linux_reused + oe_reused
+
+            # L3 是"扩大召回候选池"而非弱匹配定论：新增案例中达到 L2 确认
+            # 标准的（多为召回排序波动导致 L1/L2 漏检）提升为 L2；其余保持
+            # L3（弱匹配，需人工核验），避免弱匹配出身却携带高匹配分数。
+            def _l3_promoted(c):
+                if cfg.scoring_mode == "llm":
+                    return c.score >= l2_threshold
+                return _secondary_confirm(query_text, kernel_version, c, l2_threshold)
+
+            promoted = [c for c in l3_all if _l3_promoted(c)]
+            promoted_ids = {id(c) for c in promoted}
+            for c in promoted:
+                c.match_level = "L2"
+            for c in l3_all:
+                if id(c) not in promoted_ids:
+                    c.match_level = "L3"
+
+            candidates = l3_all
+            if promoted:
+                stop_reason = (
+                    f"L3 扩大召回中 {len(promoted)} 个新案例达到 L2 确认标准"
+                    f"（分数≥{l2_threshold}），提升为 L2；其余为 L3 弱匹配待人工核验"
+                )
+            else:
+                stop_reason = "L3 Linux社区 + openEuler社区 扩大召回（弱匹配，需人工核验）"
 
     candidates.sort(key=lambda x: x.score, reverse=True)
     final_cases = candidates[:cfg.top_k_final]
@@ -159,6 +211,10 @@ async def retrieve_community_cases(
         final_cases = await _hybrid_score(query_text, kernel_version, final_cases, scorer)
         candidates[:cfg.top_k_final] = final_cases
         candidates.sort(key=lambda x: x.score, reverse=True)
+        # hybrid 融合 LLM 分后，L3 案例若达到 L2 阈值同样提升（弱匹配出身不携带高分）
+        for c in final_cases:
+            if c.match_level == "L3" and c.score >= l2_threshold:
+                c.match_level = "L2"
 
     # Build match_reason for each final case
     for case in final_cases:
@@ -192,6 +248,9 @@ async def retrieve_community_cases(
                 case.match_reason["commit_relevance"] = relevance.get("reason", "")
                 if verdict == "confirmed":
                     case.score = min(100.0, case.score * boost)
+                    # 一手 diff 证据确认的案例不再是弱匹配：L3 出身提升为 L2
+                    if case.match_level == "L3":
+                        case.match_level = "L2"
                 elif verdict == "not_relevant":
                     case.score *= penalty
                 # same_area / unverified: keep RAG score
@@ -462,6 +521,87 @@ async def _online_fallback_cases(crash_features: Optional[dict], cfg) -> list[Co
             ",".join(all_keywords) or "-",
         )
     return cases
+
+
+async def retrieve_upstream_online(
+    crash_features: Optional[dict],
+    cfg,
+    query_text: str = "",
+    max_mails: int = 5,
+) -> dict:
+    """Explicit online retrieval when local KBs (internal/community/history)
+    yield no high-confidence match.
+
+    Combines two first-hand sources:
+      1. upstream fix commits (REST commits API + first-hand diff verdict),
+      2. mailing-list patch/discussion threads (openEuler hyperkitty archive),
+         which supply analysis rationale and stable-inclusion context.
+
+    Unlike ``query_community_cases`` this entry does NOT require RAG to be
+    configured, so it doubles as the retrieval path for unconfigured setups.
+    """
+    fb = cfg.online_fallback or {}
+    result: dict = {"commits": [], "patch_mails": [], "stop_reason": ""}
+    if not fb.get("enabled", True):
+        result["stop_reason"] = "online_fallback disabled"
+        return result
+
+    crash = crash_features or {}
+    cases = await _online_fallback_cases(crash, cfg)
+
+    # First-hand diff verification for commit candidates (same standard as the
+    # in-RAG flow): only confirmed/same_area survive.
+    commit_cfg = cfg.commit_analysis or {}
+    if cases and commit_cfg.get("enabled", True):
+        from ..git_commit_fetcher import analyze_commit_relevance
+
+        async def _verify(case: CommunityCase):
+            try:
+                return case, await analyze_commit_relevance(case, query_text, crash_features)
+            except Exception:
+                logger.debug("upstream online verification failed for %s",
+                             case.source_file, exc_info=True)
+                return case, None
+
+        results = await asyncio.gather(*[_verify(c) for c in cases])
+        boost = commit_cfg.get("confirmed_boost", 1.15)
+        verified: list[CommunityCase] = []
+        for case, relevance in results:
+            if not relevance:
+                continue
+            case.verdict = relevance.get("verdict", "unverified")
+            case.match_reason = _build_community_match_reason(query_text, "", case)
+            case.match_reason["commit_relevance"] = relevance.get("reason", "")
+            if case.verdict == "confirmed":
+                case.score = min(100.0, case.score * boost + 25.0)
+            if case.verdict in ("confirmed", "same_area"):
+                verified.append(case)
+        verified.sort(key=lambda x: x.score, reverse=True)
+        result["commits"] = verified
+
+    # Mailing-list threads: search by crash function + bug keywords so patch
+    # discussions (analysis rationale, stable-inclusion notes) are available
+    # even when the fix commit itself is not found.
+    mails: list[dict] = []
+    if fb.get("mail_search_enabled", True):
+        try:
+            from ..git_commit_fetcher import search_mail_archives
+            rip = (crash.get("rip_function") or "").strip()
+            bug_key = (crash.get("bug_key") or crash.get("bug_type") or "").strip()
+            mail_query = " ".join(t for t in [rip, bug_key] if t) or query_text
+            mail_base = fb.get("mail_archive_base", "https://mailweb.openeuler.org")
+            mails = await search_mail_archives(mail_query, limit=max_mails, base_url=mail_base)
+        except Exception:
+            logger.debug("mail archive search failed", exc_info=True)
+    result["patch_mails"] = mails
+
+    parts = []
+    if result["commits"]:
+        parts.append(f"在线检索上游补丁 {len(result['commits'])} 条（已一手 diff 验证）")
+    if mails:
+        parts.append(f"邮件列表讨论 {len(mails)} 条")
+    result["stop_reason"] = "；".join(parts) if parts else "在线检索无命中"
+    return result
 
 
 _CJK_RE = re.compile(r"[\u4e00-\u9fff]")
