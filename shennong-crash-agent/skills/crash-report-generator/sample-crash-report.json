@@ -54,27 +54,32 @@
     {
      "file": "vmcore-dmesg.txt",
      "lines": "2642",
-     "line": "Unable to handle kernel NULL pointer dereference at virtual address 0000000000000040"
+     "line": "Unable to handle kernel NULL pointer dereference at virtual address 0000000000000040",
+     "relevance": "强相关"
     },
     {
      "file": "vmcore-dmesg.txt",
      "lines": "2643-2649",
-     "line": "Mem abort / ESR 0x96000005 (DABT) · 访问 [0x40] 为空页"
+     "line": "Mem abort / ESR 0x96000005 (DABT) · 访问 [0x40] 为空页",
+     "relevance": "强相关"
     },
     {
      "file": "vmcore-dmesg.txt",
      "lines": "2653",
-     "line": "Internal error: Oops: 96000005 [#1] SMP"
+     "line": "Internal error: Oops: 96000005 [#1] SMP",
+     "relevance": "强相关"
     },
     {
      "file": "vmcore-dmesg.txt",
      "lines": "2660-2661",
-     "line": "pc: set_next_entity+0x20/0x6f8 · lr: pick_next_task_fair+0x2e8/0x548"
+     "line": "pc: set_next_entity+0x20/0x6f8 · lr: pick_next_task_fair+0x2e8/0x548",
+     "relevance": "强相关"
     },
     {
      "file": "vmcore-dmesg.txt",
      "lines": "2687",
-     "line": "Code: aa0103f4 aa0003f3 aa1e03e0 d503201f (b9404280)"
+     "line": "Code: aa0103f4 aa0003f3 aa1e03e0 d503201f (b9404280)",
+     "relevance": "强相关"
     }
    ],
    "repeated": [
@@ -90,7 +95,8 @@
      "examples": [
       "[12170.62] NOHZ: local_softirq_pending 80",
       "[10623.31] NOHZ: local_softirq_pending 08"
-     ]
+     ],
+     "relevance": "弱相关"
     }
    ],
    "other": [
@@ -107,7 +113,8 @@
       "[3750411.45] hrtimer: interrupt took 100811 ns",
       "[4579103.99] Installing knfsd (copyright ...)",
       "[4579107.98] NFSD: starting 90-second grace period"
-     ]
+     ],
+     "relevance": "弱相关"
     }
    ]
   }
@@ -151,7 +158,9 @@
     "③ 只移植防御性小补丁，禁止移植上游 1911.1/00528 大重构系列（sched_class 原型不兼容）；",
     "④ 编译无告警 + 长时（数天~数周）压力回归，观察 dmesg 无新 Oops。"
    ],
-   "detail": "三层拆解：直接原因=NULL 解引用；触发条件=调度窗口返回空 se（nr_running 下溢/竞态，需 crash 复核 cfs_rq->nr_running==0xffffffff）；防御缺失=4.19 无判空。防御补丁治标，深层下溢需另行定位。上游对照见补充信息 commit 链接。"
+   "detail": "三层拆解：直接原因=NULL 解引用；触发条件=调度窗口返回空 se（nr_running 下溢/竞态，需 crash 复核 cfs_rq->nr_running==0xffffffff）；防御缺失=4.19 无判空。防御补丁治标，深层下溢需另行定位。上游对照见补充信息 commit 链接。",
+   "rollback": "本补丁仅新增空值判空分支，不改变调度语义；若合入后出现调度异常或性能回归，可回退：① 保留合入前内核包/ vmlinux 备份；② 卸载热补丁或重启回滚到原内核；③ 还原未改动的 sysctl/启动参数，无新增配置需要清理。",
+   "verification": "合入后验证：① 编译无告警；② 长时（数天~数周）压力回归，覆盖睡眠/唤醒/负载均衡路径，观察 dmesg 无新 Oops；③ 用 crash 复核触发路径不再出现空指针崩溃；④ 监控同机型同内核 panic 建簇统计，连续观察周期内无复发后再批量部署。"
   },
   "temporary_workaround": {
    "type": "config",

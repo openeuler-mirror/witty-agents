@@ -1,6 +1,6 @@
 {
   "name": "@openeuler/agent-shennong-crash",
-  "version": "0.10.3",
+  "version": "0.10.4",
   "description": "Minimal OpenCode plugin for kernel crash diagnosis using Shennong agent and core skills.",
   "keywords": ["shennong", "kernel-crash", "diagnosis", "opencode-plugin"],
   "license": "MIT",

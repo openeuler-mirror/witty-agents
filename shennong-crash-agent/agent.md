@@ -19,8 +19,8 @@
 
 - 一份符合 `DiagnoseReport` 结构的标准化 JSON 诊断报告，最终渲染为自包含的 `crash-report.html`（可直接 file:// 打开）。
 - 报告由七个章节构成：
-  1. **执行摘要**：`结论`（问题是什么 → 要做什么 → 为什么，通俗、书面、少术语）+ `标准解决方案`（`standard_solution` 结构化对象：补丁/升级/配置命令 + 修复依据 + 补丁 diff + 合入步骤）+ `临时规避方案`（`temporary_workaround`：无方案写「无」；有方案给 shell/改配置/换机等可执行步骤 + 风险 + 回退）；
-  2. **崩溃详情**：RIP / 签名 / 模块等基础字段 + `日志特征`（`log_features`：相关报错、重复可疑日志、其它异常，每条标注来源文件与行号）；
+   1. **执行摘要**：`结论`（问题是什么 → 要做什么 → 为什么，通俗、书面、少术语）+ `标准解决方案`（`standard_solution` 结构化对象：补丁/升级/配置命令 + 修复依据 + 补丁 diff + 合入步骤 + 完整说明 `detail` + 回退方案 `rollback` + 验证方案 `verification`）+ `临时规避方案`（`temporary_workaround`：无方案写「无」；有方案给 shell/改配置/换机等可执行步骤 + 风险 + 回退）；
+   2. **崩溃详情**：RIP / 签名 / 模块等基础字段 + `日志特征`（`log_features`：相关报错、重复可疑日志、其它异常，每条标注来源文件与行号，并标注相关性等级 `relevance`＝强相关/一般相关/弱相关）；
   3. **事件时序图**：`event_scene`（对象泳道：进程/内核/硬件，携带具体名称、PID、CPU 序号）+ 全局变量列（随事件变化的取值）+ 用户态/内核态/硬件区分；
   4. **根因分析**（`root_cause_analysis`，分三部分）：①崩溃特征分析（含函数栈与寄存器）；②崩溃链路分析（`propagation_chain` 逐跳：栈帧 ↔ 源码 目录/文件/行号/函数，实参/寄存器 ↔ 源码形参，异常参数标红）；③相关案例分析（内部案例 + 社区案例 + 上游 commit + 源码对照 → 结论）；
   5. **知识库匹配**（`diagnosis_repair_result`）：内部知识库 / 社区邮件·会议纪要·Bugzilla / 上游 commit 三组，每条附原文网址、关联 commit、关键片段（解释 + 原文）；
@@ -76,6 +76,7 @@
   - **rag_core 语义检索**：调用 MCP 工具 `query_community_cases`，参数如 `{"query_text": "...", "kernel_version": "..."}`，取 **Top 3-4**（依赖 RAG 配置，返回 L1/L2/L3 社区案例与一手 evidence / verdict）。
   - **本地源文件 grep**：社区邮件、会议纪要、上游 commit 在本机均保留一份本地副本（目录由环境变量 `SHENNONG_COMMUNITY_DIR` 指定，默认 `/data/shennong/community/`，子目录 `mails/`、`meetings/`、`commits/`）。当 RAG 未配置或语义检索无高置信命中时，用 `rg`/`grep` 以 `rip_function`、`bug_key`、调用栈顶层函数、模块名、内核版本等关键词在本地源文件中检索，摘取「关键片段 + 原文网址 + commit 号」作为社区案例，与 RAG 结果合并去重后进入根因佐证。
 - **历史案例溯源**：调用 MCP 工具 \`query_cases\`，参数如 \`{"knowledge_id": "...", "limit": 5}\`。
+- **同局点/同簇历史报告溯源（RAG 未配置时的重要补充）**：当 \`query_knowledge\` 因 RAG 未配置而不可用时，在报告输出目录（或 \`reports/\` 目录）查找**同主机/同内核/同机型/同局点**的既有诊断报告（\`report_*.json\` / \`crash-report_*.html\`），把崩溃点不同但同属同一子系统/防御缺口的案例作为**内部同簇案例**填入 \`internal_kernel_result\`（\`verdict\` 如实标 \`same_area\`，\`match_level\` 标 L2/L3，不得标 \`confirmed\`），并附 \`history.cases\` 记录各次崩溃点；这些是真实历史报告，不是臆造案例。
 - **在线社区检索（本地不达标自动触发）**：当本地三类检索（\`query_knowledge\` / \`query_cases\` / \`query_community_cases\`）未命中或相关性不足（无 \`match_score\` ≥ 0.7 的"高"匹配、无 confirmed verdict）时，调用 MCP 工具 \`query_upstream_online\` 在线爬取上游社区一手信息作为补充证据：
   - commit / bugfix / patch diff（含修复前后源码上下文对照），用于修复方法获取与修复状态验证（当前内核是否已包含修复）；
   - 社区邮件列表讨论，用于补充问题分析思路与背景。
@@ -127,11 +128,11 @@
 5. \`diagnosis_repair_result.json\`：**脚本/工具直接生成**。\`internal_kernel_result\` 与 \`community_kernel_result\` 分别取自 \`query_knowledge\` / \`query_cases\` / \`query_community_cases\` 返回数组的原始 JSON，禁止改写； （唯一例外：仅 \`match_score\` 字段转换为匹配等级 高/中/低——\`match_score\`(0-1): 高≥0.7 / 中0.4-0.69 / 低<0.4。）
 6. \`root_cause_analysis.json\`：**LLM 基于上下文总结生成**。在已有多源证据（基线、崩溃特征、内部/社区案例、日志检测、源码分析、在线 commit/patch/邮件）基础上，产出与 report.html 第 1/3/4 章一致的字段：
    - \`conclusion\`：一句自然中文、叙事化、通俗、书面、少术语（「发生了什么→为什么→与业务/硬件是否有关」），**禁止**函数名/寄存器/标志常量/十六进制/地址等实现细节；
-   - \`standard_solution\`：结构化对象（type/claim_tag/short「要做什么·为什么·怎么做」/basis/fixed_in/patch_list/method_steps/detail），主述区通俗、书面、少术语；\`short\` **必须分「要做什么·为什么·怎么做」三句**，不用函数名/寄存器/十六进制；\`type\` 四选一 patch/config/upgrade/none，\`patch_list[].mode\` 三选一 full/part/pick，\`patch_list[].diff\` **必须给可直接合入的具体补丁示例（diff 格式含 +/- 行），禁止留空**，\`type=patch\` 时必须至少一条 patch_list；
+   - \`standard_solution\`：结构化对象（type/claim_tag/short「要做什么·为什么·怎么做」/basis/fixed_in/patch_list/method_steps/detail/rollback/verification），主述区通俗、书面、少术语；\`short\` **必须分「要做什么·为什么·怎么做」三句**，不用函数名/寄存器/十六进制；\`type\` 四选一 patch/config/upgrade/none，\`patch_list[].mode\` 三选一 full/part/pick，\`patch_list[].diff\` **必须给可直接合入的具体补丁示例（diff 格式含 +/- 行），禁止留空**，\`type=patch\` 时必须至少一条 patch_list；\`detail\` 写完整说明（通俗、书面、少术语），\`rollback\`（**必填**）写补丁/配置失败或回归时的回退步骤与还原命令，\`verification\`（**必填**）写验证方案（编译无告警、压力回归、观察 dmesg 无新 Oops、监控同类 panic 建簇等）；
    - \`temporary_workaround\`：结构化对象（type/summary/steps/risk/detail）；无方案 type=none 且 summary 写「无」，有方案 steps 给 shell/改配置/换机等可执行命令；
    - \`event_scene\`：事件时序图，三类泳道（进程/内核/硬件，**每类可有多个对象**）；\`participants\` 的 \`type\` 三选一 process/kernel/hardware，\`name\`/\`tip\` 带进程 PID/名称、内核序号、硬件类型供 hover；\`anchor\` 用 ISO 8601 带毫秒（如 2026-07-08T06:20:00.000）；\`events\` 每条 \`m\` 四选一 user/sys/kern/hw（区分用户态/内核态/硬件）、\`from\`/\`to\` 用 participant id 表示泳道箭头（指向自身 from=to，画弯折回环箭头）、\`kind\` 枚举 call/irq/softirq/hw/mutex/alloc/race/free/global/crash、\`dt_ms\` 相对 anchor 递增且不全 0；
-   - \`propagation_chain\`：崩溃链路逐跳（from/to/type/src_dir/file/line/stack/fn_ctx/crash/source_url/detail/evidence/params），params 中异常参数 bad=true 标红；
-   - \`reasoning_flow\`：三部分根因，\`stage\` 必须用枚举 \`stack\`/\`hypothesis\`（①崩溃特征分析含函数栈）、\`path_analysis\`（②崩溃链路分析）、\`internal\`/\`community\`/\`commit\`/\`source_compare\`/\`conclusion\`（③相关案例分析），refs 用 anchor 跳第 5 章案例卡；
+   - \`propagation_chain\`：崩溃链路逐跳（from/to/type/src_dir/file/line/stack/fn_ctx/crash/source_url/detail/evidence/params），params 中异常参数 bad=true 标红；**每一跳都应给 source_url（在线源码/commit/patch 链接）**；
+   - \`reasoning_flow\`：三部分根因，\`stage\` 必须用枚举 \`stack\`/\`hypothesis\`（①崩溃特征分析含函数栈，**两步都要有**）、\`path_analysis\`（②崩溃链路分析，\`path_mini\` 填完整传播链数组）、\`internal\`/\`community\`/\`commit\`/\`source_compare\`/\`conclusion\`（③相关案例分析，**执行了对应检索就必须有对应 stage，未命中也要保留该 stage 并如实写「未检索到…」，最后以 conclusion 收尾**），refs 用 anchor 跳第 5 章案例卡；
    - \`deep\`：根因结论详细（lead/mechanism/evidence/confidence/scope）。
    当知识库检索（query_knowledge/query_cases/query_community_cases）均无匹配案例时，**必须**调用 git skill 查询相关 commit/issue 作为根因参考（查询过程记入 root_cause_validation 阶段的 tool_calls）；若 git skill 也无相关结果，则标注「推测」。
 7. \`workflow_trace.json\`：**基于 opencode 真实会话数据 + LLM 语义摘要**。先运行 \`scripts/extract_workflow.py\` 提取当前会话的真实时间线（opencode export 获取工具调用、时间戳、耗时、状态、reasoning），再读 timeline.json 把连续相关 turns 聚合为 5-8 个关键决策 steps，每个 step 写 decision/observations/judgment/tools/status/reason/start_time/end_time；tools 必须从 timeline 原样复制（tool_name/title/status/duration_ms/timestamps），禁止编造工具、状态或时间戳。若脚本失败则 source=manual 并注明。

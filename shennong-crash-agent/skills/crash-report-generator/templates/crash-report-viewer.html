@@ -675,6 +675,10 @@ details.sol-supp.warn > summary { background:#f6ead2; color:#8a5200; }
 .lf-count.bad { background:#fde8e8; color:#b91c1c; }
 .lf-count.mid { background:#fef3c7; color:#92400e; }
 .lf-count.info { background:#e8eefb; color:#1d4ed8; }
+.lf-rel { font-size:10.5px; font-weight:700; padding:1px 8px; border-radius:999px; white-space:nowrap; }
+.lf-rel.high { background:#fde8e8; color:#b91c1c; }
+.lf-rel.mid  { background:#fef3c7; color:#92400e; }
+.lf-rel.low  { background:#f3f4f6; color:#64748b; }
 .lf-scope { font-size:11px; color:var(--text-muted); font-family:Consolas,monospace; }
 .lf-body { margin-top:8px; }
 .lf-item { font-size:12px; font-family:Consolas,"SFMono-Regular",Menlo,monospace; line-height:1.6; background:#fff; border:1px solid #eef1f5; border-left:3px solid var(--border); border-radius:0 6px 6px 0; padding:6px 10px; margin-bottom:5px; color:#334155; white-space:pre-wrap; word-break:break-all; max-height:150px; overflow:auto; }
@@ -1201,6 +1205,8 @@ function renderExecSummary(report){
       sup+=`</div></div>`;
     }
     if(ss.detail) sup+=`<details class="picker"><summary>完整说明 / 回退与验证</summary><div class="picker-body"><div class="sol-full">${rich(ss.detail)}</div></div></details>`;
+    if(ss.rollback) sup+=`<details class="picker"><summary>回退方案</summary><div class="picker-body"><div class="sol-full">${rich(ss.rollback)}</div></div></details>`;
+    if(ss.verification) sup+=`<details class="picker"><summary>验证方案</summary><div class="picker-body"><div class="sol-full">${rich(ss.verification)}</div></div></details>`;
     if(sup) h+=`<details class="picker sol-supp" style="margin-top:10px"><summary>补充信息（修复依据 / 版本判定 / 补丁 diff / 合入步骤）</summary><div class="picker-body sol-supp-body">${sup}</div></details>`;
     h+=`</div>`;
   }
@@ -1236,6 +1242,10 @@ const LF_ICONS={err:'✕',rep:'⟳',other:'!'};
 function logFeaturesHtml(lf){
   if(!lf) return '';
   const refTag=r=>r&&(r.file||r.lines)?`<span class="lf-ref">${esc(r.file||'')}${r.lines?` · L${esc(String(r.lines))}`:''}</span>`:'';
+  const relBadge=r=>{
+    const m={强相关:['high','强相关'],一般相关:['mid','一般相关'],弱相关:['low','弱相关']}[r];
+    return m?`<span class="lf-rel ${m[0]}">${m[1]}</span>`:'';
+  };
   const cat=(icoClr,ico,name,countTxt,ref,inner)=>`<details class="lf-cat"><summary>`+
     `<span class="lf-ico" style="background:${icoClr}">${ico}</span>`+
     `<span class="lf-row-name">${name}</span>${countTxt||''}${ref||''}`+
@@ -1247,7 +1257,7 @@ function logFeaturesHtml(lf){
   if(errs.length){
     const inner=errs.map(e=>{
       const loc=e.file||e.lines?`<span class="loc">[${esc(e.file||'')}${e.lines?` L${esc(String(e.lines))}`:''}]</span>`:'';
-      return item(loc+esc(e.t?`[${e.t}] `:'')+esc(e.line));
+      return item(relBadge(e.relevance||'强相关')+' '+loc+esc(e.t?`[${e.t}] `:'')+esc(e.line));
     }).join('');
     h+=cat('#c03a2e',LF_ICONS.err,'相关报错信息',`<span class="lf-count bad">${errs.length} 条</span>`,refTag(lf.related_ref),inner);
   }
@@ -1260,7 +1270,7 @@ function logFeaturesHtml(lf){
       inner+=`<div class="lf-examples">`+ex.map(l=>`<div class="lf-line">${esc(l)}</div>`).join('')+`</div>`;
     }
     h+=cat('#b26a00',LF_ICONS.rep,esc(r.title||('强相关可疑日志组 '+(i+1))),
-      `<span class="lf-count bad">重复 ${esc(String(r.count))} 次</span>${r.window?`<span class="lf-scope">窗口 ${esc(r.window)}</span>`:''}`,
+      `${relBadge(r.relevance)}<span class="lf-count bad">重复 ${esc(String(r.count))} 次</span>${r.window?`<span class="lf-scope">窗口 ${esc(r.window)}</span>`:''}`,
       refTag(r.ref||(r.file?{file:r.file,lines:r.lines}:null)), inner);
   });
 
@@ -1270,7 +1280,7 @@ function logFeaturesHtml(lf){
     let inner=(o.note?`<p class="lf-note">${rich(o.note)}</p>`:'');
     if(lines.length) inner+=`<div class="lf-examples">${lines.map(l=>`<div class="lf-line">${esc(l)}</div>`).join('')}</div>`;
     h+=cat('#2f5bd8',LF_ICONS.other,esc(o.name||('其他关联异常 '+(i+1))),
-      `${o.count?`<span class="lf-count mid">${esc(String(o.count))}</span>`:''}${o.span?`<span class="lf-scope">${esc(o.span)}</span>`:''}`,
+      `${relBadge(o.relevance)}${o.count?`<span class="lf-count mid">${esc(String(o.count))}</span>`:''}${o.span?`<span class="lf-scope">${esc(o.span)}</span>`:''}`,
       refTag(o.ref||(o.file?{file:o.file,lines:o.lines}:null)), inner);
   });
 
