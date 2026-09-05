@@ -132,7 +132,7 @@ function shouldCopy(source, variant) {
 }
 
 function copyPackageFiles(stageDir, variant) {
-  for (const item of ["dist", "skills", "bin", "lib", "frameworks", "README.md"]) {
+  for (const item of ["dist", "skills", "bin", "lib", "frameworks", "README.md", "agent.md"]) {
     const source = join(PROJECT_ROOT, item)
     if (!existsSync(source)) {
       throw new Error(`required package path is missing: ${source}`)
@@ -416,6 +416,7 @@ function writeStagePackageJson(stageDir, basePackage, variant) {
       "bin",
       "lib",
       "frameworks",
+      "agent.md",
       "package-variant.json",
       "package-content-manifest.json",
       ...(variant === "offline" ? ["python-wheels", "python-wheel-manifest.json"] : []),

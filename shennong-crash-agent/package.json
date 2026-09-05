@@ -14,7 +14,8 @@
     "skills",
     "bin",
     "lib",
-    "frameworks"
+    "frameworks",
+    "agent.md"
   ],
   "bin": {
     "shennong-setup": "./bin/shennong-setup.mjs",
