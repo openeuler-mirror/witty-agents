@@ -126,10 +126,10 @@
 4. \`crash_feature_info.json\`：**脚本/工具直接生成**。严格取自 \`analyze_crash\` 返回的 \`crash_features\`，保存为 JSON 文件，禁止 LLM 重新总结；
 5. \`diagnosis_repair_result.json\`：**脚本/工具直接生成**。\`internal_kernel_result\` 与 \`community_kernel_result\` 分别取自 \`query_knowledge\` / \`query_cases\` / \`query_community_cases\` 返回数组的原始 JSON，禁止改写； （唯一例外：仅 \`match_score\` 字段转换为匹配等级 高/中/低——\`match_score\`(0-1): 高≥0.7 / 中0.4-0.69 / 低<0.4。）
 6. \`root_cause_analysis.json\`：**LLM 基于上下文总结生成**。在已有多源证据（基线、崩溃特征、内部/社区案例、日志检测、源码分析、在线 commit/patch/邮件）基础上，产出与 report.html 第 1/3/4 章一致的字段：
-   - \`conclusion\`：一句自然中文、高度抽象（场景+缺陷大类+推测/确认），不含函数名/寄存器/地址等实现细节；
-   - \`standard_solution\`：结构化对象（type/claim_tag/short「要做什么·为什么·怎么做」/basis/fixed_in/patch_list/method_steps/detail），主述区通俗、书面、少术语；\`type\` 四选一 patch/config/upgrade/none，\`patch_list[].mode\` 三选一 full/part/pick，\`patch_list[].diff\` **必须给可直接合入的具体补丁示例（diff 格式含 +/- 行），禁止留空**，\`type=patch\` 时必须至少一条 patch_list；
+   - \`conclusion\`：一句自然中文、叙事化、通俗、书面、少术语（「发生了什么→为什么→与业务/硬件是否有关」），**禁止**函数名/寄存器/标志常量/十六进制/地址等实现细节；
+   - \`standard_solution\`：结构化对象（type/claim_tag/short「要做什么·为什么·怎么做」/basis/fixed_in/patch_list/method_steps/detail），主述区通俗、书面、少术语；\`short\` **必须分「要做什么·为什么·怎么做」三句**，不用函数名/寄存器/十六进制；\`type\` 四选一 patch/config/upgrade/none，\`patch_list[].mode\` 三选一 full/part/pick，\`patch_list[].diff\` **必须给可直接合入的具体补丁示例（diff 格式含 +/- 行），禁止留空**，\`type=patch\` 时必须至少一条 patch_list；
    - \`temporary_workaround\`：结构化对象（type/summary/steps/risk/detail）；无方案 type=none 且 summary 写「无」，有方案 steps 给 shell/改配置/换机等可执行命令；
-   - \`event_scene\`：事件时序图（participants 对象泳道、gvars/ginit 全局变量列、anchor、events 含 用户态/内核态/硬件 与 dt_ms）；
+   - \`event_scene\`：事件时序图，三泳道（进程/内核/硬件）；\`participants\` 的 \`type\` 三选一 process/kernel/hardware；\`anchor\` 用 ISO 8601 带毫秒（如 2026-07-08T06:20:00.000）；\`events\` 每条 \`m\` 四选一 user/sys/kern/hw（区分用户态/内核态/硬件）、\`from\`/\`to\` 用 participant id 表示泳道箭头、\`kind\` 枚举 call/irq/softirq/hw/mutex/alloc/race/free/global/crash、\`dt_ms\` 相对 anchor 递增且不全 0；
    - \`propagation_chain\`：崩溃链路逐跳（from/to/type/src_dir/file/line/stack/fn_ctx/crash/source_url/detail/evidence/params），params 中异常参数 bad=true 标红；
    - \`reasoning_flow\`：三部分根因，\`stage\` 必须用枚举 \`stack\`/\`hypothesis\`（①崩溃特征分析含函数栈）、\`path_analysis\`（②崩溃链路分析）、\`internal\`/\`community\`/\`commit\`/\`source_compare\`/\`conclusion\`（③相关案例分析），refs 用 anchor 跳第 5 章案例卡；
    - \`deep\`：根因结论详细（lead/mechanism/evidence/confidence/scope）。
