@@ -789,6 +789,8 @@ details.lf-more[open] summary::before { content:"▾ "; }
 .card .c-score { display:inline-block; font-size:10.5px; font-weight:700; padding:1px 8px; border-radius:999px; margin-left:5px; }
 .c-score.high { background:#dcfce7; color:#166534; } .c-score.mid { background:#fef3c7; color:#92400e; } .c-score.low { background:#f1f5f9; color:#64748b; }
 .c-score.weak { background:#fef3c7; color:#b45309; border:1px dashed #f59e0b; }
+.c-rel { display:inline-block; font-size:10.5px; font-weight:700; padding:1px 8px; border-radius:999px; margin-left:5px; }
+.c-rel.high { background:#dcfce7; color:#166534; } .c-rel.mid { background:#fef3c7; color:#92400e; } .c-rel.low { background:#f1f5f9; color:#64748b; }
 .c-level { display:inline-block; font-size:9.5px; font-weight:800; padding:1px 7px; border-radius:999px; margin-left:5px; }
 .c-level.L1 { background:#dcfce7; color:#15803d; } .c-level.L2 { background:#dbeafe; color:#1d4ed8; } .c-level.L3 { background:#fef3c7; color:#b45309; }
 .c-verdict { display:inline-block; font-size:10px; font-weight:800; padding:1px 8px; border-radius:999px; margin-left:5px; }
@@ -1607,8 +1609,11 @@ function renderRootCause(report){
   PARTS.forEach(P=>{
     const steps=buckets[P.key];
     if(!steps.length) return;
+    const isChain=P.key==='chain';
+    const count=isChain && pc.length ? pc.length : steps.length;
+    const unit=isChain ? '步' : '个环节';
     h+=`<details class="rf-part" style="border:1px solid ${P.color}44;border-left:4px solid ${P.color};background:${P.color}0a;border-radius:8px;margin:14px 0 6px">`;
-    h+=`<summary style="padding:12px 16px"><span class="rf-part-no" style="background:${P.color}">${P.no}</span><span style="font-size:15px;font-weight:700;color:#1c2733">${esc(P.title)}</span><span class="mg-count" style="margin-left:8px">${steps.length} 个环节</span></summary>`;
+    h+=`<summary style="padding:12px 16px"><span class="rf-part-no" style="background:${P.color}">${P.no}</span><span style="font-size:15px;font-weight:700;color:#1c2733">${esc(P.title)}</span><span class="mg-count" style="margin-left:8px">${count} ${unit}</span></summary>`;
     h+=`<div class="rf-part-body"><div class="rf-part-desc">${esc(P.desc)}</div>`;
     h+=`<div class="rf-chain">${steps.map((s,i)=>rfStep(s,i+1)).join('')}</div>`;
     h+=`</div></details>`;
@@ -1621,6 +1626,8 @@ function renderRootCause(report){
 /* ================= 5 知识库匹配 ================= */
 const C_KIND={internal:['内部知识库','internal'],mail:['社区邮件','mail'],meeting:['社区会议纪要','meeting'],bugzilla:['社区 Bugzilla / Issue','bugzilla'],commit:['上游 commit · 修复补丁','commit']};
 function kscore(v){ const m={高:['high','高匹配'],中:['mid','中匹配'],低:['low','低匹配']}; const r=m[v]; return r?`<span class="c-score ${r[0]}">${r[1]}</span>`:''; }
+function relBadge(r){ const m={强相关:['high','强相关'],部分相关:['mid','部分相关'],一般相关:['mid','一般相关'],弱相关:['low','弱相关']}; const v=m[r]; return v?`<span class="c-rel ${v[0]}">${v[1]}</span>`:''; }
+function relOfVerdict(v){ return {confirmed:'强相关',same_area:'部分相关',not_relevant:'弱相关',unverified:'弱相关'}[v]||''; }
 function dimName(d){ const m={feature_data:'特征数据',kernel_version:'内核版本',execution_context:'运行上下文',timeline:'时间轴',mechanism:'故障机制',fix_scope:'修复闭环'}; return m[d]||d||'维度'; }
 function corrobTable(arr){
   if(!Array.isArray(arr)||!arr.length) return '';
@@ -1679,6 +1686,7 @@ function commCard(c){
   let h=`<div class="card" id="${aid}">`;
   h+=`<span class="c-kind ${ck[1]}">${ck[0]}</span>${c.score?kscore(c.score):''}`;
   if(c.verdict){ const v=c.verdict; h+=`<span class="c-verdict ${esc(v)}">${v==='confirmed'?'已确认':v==='same_area'?'同域不同因':v==='not_relevant'?'已排除':'待核验'}</span>`; }
+  const rel0=c.relevance||relOfVerdict(c.verdict); if(rel0) h+=relBadge(rel0);
   const title=c.title||c.subject||'';
   h+=`<div class="c-title">${title}</div>`;
   const meta=[];
@@ -1710,7 +1718,7 @@ function commitCard(c){
   const aid=c.anchor||('kb-card-'+c.__i);
   let h=`<div class="card" id="${aid}">`;
   h+=`<span class="c-kind commit">上游 commit · 修复补丁</span>`;
-  if(c.verdict){ const v=c.verdict==='confirmed'; h+=`<span class="c-verdict ${v?'confirmed':'same_area'}">${v?'已确认修复':'部分相关'}</span>`; }
+  const rel=c.relevance||relOfVerdict(c.verdict); if(rel) h+=relBadge(rel);
   h+=`<div class="c-title">${esc(c.title||c.subject||'')}</div>`;
   const sha=c.sha||shaOf(c.url||c.evidence?.html_url);
   const meta=[sha?'commit '+sha:'', c.author?c.author:'', c.date?c.date:'', c.kernel_version?('内核 '+c.kernel_version):''].filter(Boolean);
