@@ -66,6 +66,10 @@ Do not generate the full report in one step. Instead, create a temporary directo
 
    - **根因三部分呈现（与 report.html 第 4 章一致）**：①崩溃特征分析（含函数栈与寄存器）；②崩溃链路分析（`propagation_chain` 逐跳：栈帧 ↔ 源码 目录/文件/行号/函数，实参/寄存器 ↔ 源码形参，异常参数标红，精确行号需 vmlinux 调试信息否则注明 `dis -rl` 边界）；③相关案例分析（内部案例 → 社区邮件/会议纪要/Bugzilla → 上游 commit → 当前内核对应位置源码逐行对照 → 结论）。
    - **执行摘要结构**：`standard_solution`（结构化对象：type + 简短的「要做什么/为什么/怎么做」+ basis 修复依据 + fixed_in 版本判定 + patch_list 补丁 diff + method_steps 合入步骤 + detail）与 `temporary_workaround`（结构化对象：summary + steps + risk + detail）。二者主述区要求通俗、书面、少术语（问题是什么 → 要做什么 → 为什么），专业细节收进可展开的补充信息。
+   - **字段演进与映射（重要）**：报告渲染器以「三部分根因 + 结构化执行摘要」为主，字段对应关系如下——
+     - 执行摘要主述：`standard_solution`（标准解决方案，结构化，含 `type`/`short`/`basis`/`fixed_in`/`patch_list`/`method_steps`/`detail`）与 `temporary_workaround`（临时规避，结构化，含 `summary`/`steps`/`risk`/`detail`）。
+     - 根因三部分：`reasoning_flow`（①崩溃特征分析含函数栈 ②崩溃链路分析 ③相关案例分析）+ `deep`（根因结论：lead/mechanism/evidence/confidence/scope）。
+     - 兼容旧字段（可选保留，schema 仍接受）：`solution`（字符串）、`workaround`（字符串）、`analysis`（7 阶段思维链）。旧 7 阶段与三部分的映射：`phenomenon`+`log_location` → ①崩溃特征分析；`source_analysis`+`propagation` → ②崩溃链路分析；`root_cause`+`kb_corroboration`+`fix_verification` → ③相关案例分析。
    - **Execution order (critical to avoid fragmented analysis)**: You MUST run the following tools **FIRST**:
      a. **Knowledge retrieval**: `query_knowledge` (with `crash_features`/`host_features`) and `query_community_cases` (with `crash_features`), wait for their results including `match_level`, `verdict` and `evidence`.
      b. **Structure analysis chain**: `crash-feature-matcher:build_analysis_chain` with `crash_features` (from `analyze_crash` result). This returns:
@@ -128,7 +132,7 @@ Do not generate the full report in one step. Instead, create a temporary directo
        - Step 6 (stage=kb_corroboration) fact: (knowledge-base matches / community verdict / mail-thread corroboration, or speculation marker)
        - Step 7 (stage=fix_verification) fact: (是否已修复的版本判定 + 修复方法)
      The chain as a whole must make the `conclusion` sentence feel inevitable — someone reading only the chain should arrive at the same conclusion without extra explanation.
-   - `solution` (always required, **标准解决方案为主**): the definitive fix. For **simple** cases, one short sentence on how to handle it. For **complex** cases, tier by evidence strength:
+   - `solution` (兼容字段，可选；若填写按如下分层规则；新报告优先写 `standard_solution` 结构化对象): the definitive fix. For **simple** cases, one short sentence on how to handle it. For **complex** cases, tier by evidence strength:
      - `verdict_summary.top_verdict == "confirmed"` → adopt `verdict_summary.confirmed[0]`'s patch as the fix reference, annotated with its `html_url` and `touched_functions` ("上游已在 commit <sha> 修复，建议回合补丁/安装热补丁/升级至包含该补丁的内核版本");
      - Internal L1/L2 match → adopt the matched case's `solution` (hotpatch/commit/升级目标版本);
      - Online `query_upstream_online` confirmed commits → reference the upstream fix commit with link and state the backport/upgrade target;
