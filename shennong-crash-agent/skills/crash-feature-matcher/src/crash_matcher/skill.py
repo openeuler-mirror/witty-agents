@@ -395,7 +395,8 @@ async def build_analysis_chain(
     """构建深度分析链：事件时间线 + 崩溃传播链 + 源码线索。
 
     为 LLM 的 analysis[] 提供结构化输入，支撑"先分析后判定"的推理过程。
-    输出供 stage=propagation/source_analysis 的 analysis 步骤使用。
+    输出为数据字段（event_timeline / propagation_chain / source_clues），供根因推理使用；
+    注意这些是数据字段，不是 reasoning_flow 的 stage 取值（stage 用 stack/hypothesis/path_analysis/internal/community/commit/source_compare/conclusion）。
     """
     try:
         return _build_analysis_chain(crash_features)

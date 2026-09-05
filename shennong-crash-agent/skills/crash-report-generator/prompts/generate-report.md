@@ -73,14 +73,23 @@
      - `other`（数组：name/count/span/ref/note/lines[]）——其它关联异常特征。
 6. **`root_cause_analysis.json`**（LLM 综合多源证据总结），字段与 report.html 第 1/3/4 章一致：
    - **`conclusion`**（一句自然中文，高度抽象）：概括场景、缺陷大类、结论（推测 or 确认）。剔除实现细节——不出现函数名、寄存器名、标志常量、机制内部细节、地址/偏移。当社区 `verdict=confirmed` 时去掉"推测"、以"（社区补丁已确认）"收尾；否则以"（推测）"结尾。
-   - **`standard_solution`**（结构化对象）：`type`（patch/config/upgrade/none）、`claim_tag`、`short`（「要做什么/为什么/怎么做」，通俗、书面、少术语）、`basis`（修复依据，数组 `{kind,title,url,text}`，来自社区邮件/会议纪要/上游 bugfix）、`fixed_in`（修复版本判定）、`patch_list`（数组 `{sha,mode,subject,why,files[],diff}`）、`method_steps`（合入步骤）、`detail`。专业细节收进可展开的补充信息。
+   - **`standard_solution`**（结构化对象）：`type`（patch/config/upgrade/none，**四选一**）、`claim_tag`、`short`（「要做什么/为什么/怎么做」，通俗、书面、少术语）、`basis`（修复依据，数组 `{kind,title,url,text}`，来自社区邮件/会议纪要/上游 bugfix）、`fixed_in`（修复版本判定）、`patch_list`（数组 `{sha,mode,subject,why,files[],diff}`）、`method_steps`（合入步骤）、`detail`。专业细节收进可展开的补充信息。
+     - `patch_list[].mode` **三选一**：`full`（整体合入）、`part`（局部合入/最小改动）、`pick`（取其思路改造/自研移植）。
+     - `patch_list[].diff` **必须给出可直接合入的具体补丁示例**（diff 格式，含文件与 `+/-` 行）。自研/移植补丁也要给适配本内核的示意补丁代码，**禁止留空**；确实只能参考上游思路时 `mode=pick`，`diff` 仍须写「适配本内核的示意补丁」而非空串。
+     - `type=patch` 时**必须**至少一条 `patch_list`。
    - **`temporary_workaround`**（结构化对象）：`type`（`config`=命令行/配置规避、`none`=无有效临时规避方案）、`summary`、`steps`（命令/操作）、`risk`、`detail`。**无有效方案时** `type` 取 `none`、`summary` 写「无」、`steps` 置空。有方案时 `steps` 必须给出**可直接执行**的命令/操作，优先考虑：① 内核/系统配置（`sysctl` / `echo > /proc/sys/...` / 内核启动参数）；② 服务与资源控制（`systemctl set-property <svc> TasksMax=<n>`、`taskset`/`numactl` 绑核、`cgroup` 限流）；③ 换机/分散部署/流量切走（同局点避免同业务集中）；④ 关闭触发特性（`modprobe.blacklist` / 特性开关降级）；⑤ 压概率（降低并发、延长周期、避开触发路径）。`risk` 说明无法根治的原因与回退方式。
    - **`event_scene`**（事件时序图）：`participants`（对象泳道，具体到进程名+PID、CPU 序号、硬件名）、`gvars`/`ginit`（全局变量列：k 变量名、v 值）、`anchor`（时刻锚点，可选）、`events`（每条带 `m` 用户态/内核态/硬件、`from`/`to`、`kind`、`title`、`val`、`full`、`g` 全局变量变化、`dt_ms` 相对崩溃的毫秒偏移）。
    - **`propagation_chain`**（崩溃链路逐跳）：每跳 `{from,to,type,src_dir,file,line,stack,fn_ctx,crash,source_url,detail,evidence,params[]}`。**必须**给出栈帧 ↔ 源码（目录/文件/行号/函数）、关键参数 `params`（`{io,reg,n,formal,v,bad,note}`，异常参数 `bad=true` 标红）。精确行号需 vmlinux 调试信息或本地源码树，`dis -rl` 无法给出行号时注明边界。最后一跳必须写明崩溃爆发的直接原因（含二进制↔源码行对照）。
-   - **`reasoning_flow`**（三部分根因，每步 `{stage,stage_name,color,title,short,text,evidence,ev_plain,path_mini,refs[],branch}`）：
+   - **`reasoning_flow`**（三部分根因，每步 `{stage,stage_name,color,title,short,text,evidence,ev_plain,path_mini,refs[],branch}`）。`stage` **必须**用以下枚举，否则报告第 4 章三部分会渲染不完整：
+     | `stage` | 归属部分 |
+     |---|---|
+     | `stack` / `hypothesis` | ① 崩溃特征分析（含函数栈）|
+     | `path_analysis` | ② 崩溃链路分析 |
+     | `internal` / `community` / `commit` / `source_compare` / `conclusion` | ③ 相关案例分析 |
      1. **崩溃特征分析（含函数栈）**：`stage` 用 `stack`/`hypothesis`——从调用栈、寄存器还原"在哪条路径、以什么方式崩"。
      2. **崩溃链路分析**：`stage=path_analysis`，`path_mini` 引用 `propagation_chain` 呈现逐跳。
      3. **相关案例分析**：`stage` 用 `internal`/`community`/`commit`/`source_compare`/`conclusion`——内部案例 → 社区邮件/会议纪要/Bugzilla → 上游 commit → 当前内核对应位置源码逐行对照 → 结论。每步 `refs` 用 `anchor`（`kb-internal`/`kb-mail`/`kb-meeting`/`kb-bugzilla`/`kb-commit`）跳转到第 5 章对应卡片。**未命中的分类直接跳过，不虚构对应案例与 anchor。**
+     （注：`build_analysis_chain` 工具返回的 `propagation_chain`/`source_clues` 是**数据字段**，不是 `stage` 取值；`stage` 仍用上表枚举。）
    - **`deep`**（根因结论详细）：`lead`（一句话根因）、`mechanism`（触发链条）、`evidence`（证据要点数组）、`confidence`（置信度）、`scope`（触发面）。
 7. **`diagnosis_repair_result.json`**（脚本/工具生成）：复用第 6 步开头的匹配工具响应，逐字节复制；社区案例走双通道（rag_core / 本地 grep+find，取 Top 3-4）。**未命中的分类写空数组 `[]`，严禁编造/幻想条目**（内部案例、社区邮件、会议纪要、Bugzilla、上游 commit 各自独立：有命中才填，没有就空）。
 8. **`workflow_trace.json`**（基于真实会话数据，非记忆）：
