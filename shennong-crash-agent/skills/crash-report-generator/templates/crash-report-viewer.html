@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>内核崩溃综合分析报告</title>
 <style>
+
   :root {
     --primary: #1a56db;
     --primary-dark: #1e429f;
@@ -525,28 +526,13 @@
   .corrob-row.partial .corrob-state { color:#c25700; }
   .corrob-row.mismatch .corrob-state { color:#dc2626; }
 
-  .corrob-role { display:inline-block; font-size:9px; font-weight:700; padding:1px 6px; border-radius:999px; margin-left:5px; vertical-align:middle; }
-  .corrob-role.fatal { background:#fee2e2; color:#b91c1c; border:1px solid #fca5a5; }
-  .corrob-role.support { background:#f1f5f9; color:#64748b; border:1px solid #e2e8f0; }
-  .corrob-role.apply { background:#f0fdf4; color:#15803d; border:1px solid #86efac; }
-
-  /* 适用性判断链 */
+  /* 适用条件（采用前提） */
   .mc-applicability {
     background:#f0f9ff; border:1px solid #bae6fd; border-left:3px solid #0ea5e9;
-    border-radius:0 6px 6px 0; padding:10px 13px; font-size:12.5px; line-height:1.7;
+    border-radius:0 6px 6px 0; padding:9px 12px; font-size:12.5px; line-height:1.7;
     color:#0c4a6e; margin-top:8px;
   }
   .mc-applicability b { color:#0369a1; }
-  .ap-head { display:flex; align-items:center; gap:8px; margin-bottom:7px; }
-  .ap-title { font-weight:700; color:#0c4a6e; font-size:13px; }
-  .ap-verdict { font-size:11px; font-weight:700; padding:2px 9px; border-radius:999px; white-space:nowrap; }
-  .ap-verdict.v-direct_adopt { background:#dcfce7; color:#15803d; border:1px solid #86efac; }
-  .ap-verdict.v-adapt { background:#fef3c7; color:#b45309; border:1px solid #fcd34d; }
-  .ap-verdict.v-borrow { background:#dbeafe; color:#1d4ed8; border:1px solid #93c5fd; }
-  .ap-verdict.v-not_applicable { background:#f1f5f9; color:#475569; border:1px solid #cbd5e1; }
-  .ap-method { margin-bottom:6px; }
-  .ap-steps { margin:2px 0 0; padding-left:20px; }
-  .ap-steps li { margin-bottom:3px; }
 
   /* 分析阶段边界提示 */
   .rc-stage-hint { font-size:11px; color:var(--text-muted); margin-left:6px; font-weight:400; }
@@ -617,1040 +603,1273 @@
     body { background: #fff; }
     section { box-shadow: none; break-inside: avoid; }
   }
+
+/* ================= v2 追加样式 ================= */
+/* —— 执行摘要 · 方案卡 —— */
+.sol { border-radius:10px; padding:16px 20px; margin:14px 0; }
+.sol-head { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:6px; }
+.sol-title { font-size:15.5px; font-weight:700; display:flex; align-items:center; gap:8px; }
+.sol-type { font-size:10.5px; font-weight:700; padding:2px 9px; border-radius:999px; }
+.sol-type.patch { background:#e0f2fe; color:#075985; border:1px solid #7dd3fc; }
+.sol-type.config { background:#fef3c7; color:#92400e; border:1px solid #fcd34d; }
+.sol-type.upgrade { background:#ede9fe; color:#5b21b6; border:1px solid #c4b5fd; }
+.sol-type.none { background:#f3f4f6; color:#475569; border:1px solid #d1d5db; }
+.sol-type.ok { background:#dcfce7; color:#15803d; border:1px solid #86efac; }
+.sol-lead { font-size:13.5px; line-height:1.8; color:#1e293b; }
+.sol-lead .hl { color:#b91c1c; font-weight:600; }
+.sol-lead .okc { color:#15803d; font-weight:600; }
+.sol-block { margin-top:10px; }
+.sol-block-t { font-size:12px; font-weight:700; color:var(--text-muted); margin:0 0 6px; letter-spacing:.3px; }
+.basis-list { display:flex; flex-direction:column; gap:6px; }
+.basis-item { display:flex; gap:9px; align-items:flex-start; font-size:12.5px; background:#f8fafc; border:1px solid var(--border); border-radius:7px; padding:7px 10px; }
+.basis-kind { flex-shrink:0; font-size:10.5px; font-weight:700; padding:1px 8px; border-radius:999px; white-space:nowrap; margin-top:1px; }
+.basis-kind.mail { background:#fef3e8; color:#b45309; }
+.basis-kind.meeting { background:#f0ecfc; color:#6d28d9; }
+.basis-kind.bugzilla { background:#e8eefb; color:#1d4ed8; }
+.basis-kind.commit { background:#dcfce7; color:#166534; }
+.basis-kind.bugfix { background:#fee2e2; color:#b91c1c; }
+.basis-txt { line-height:1.6; color:#334155; }
+.basis-txt a { color:#2563eb; text-decoration:none; border-bottom:1px dotted #93c5fd; word-break:break-all; }
+.fixed-in { font-size:12.5px; margin-top:8px; padding:8px 12px; background:#f0fdf6; border-left:3px solid #34d399; border-radius:0 6px 6px 0; color:#065f46; line-height:1.7; }
+.patch-card { border:1px solid var(--border); border-radius:9px; margin-top:8px; background:#fcfcfd; overflow:hidden; }
+.patch-card > .pc-top { padding:10px 14px; display:flex; gap:10px; align-items:center; flex-wrap:wrap; background:#f8fafc; border-bottom:1px solid #eef1f5; }
+.patch-sha { font-family:Consolas,monospace; font-size:12px; background:#eef2ff; color:#3730a3; padding:2px 8px; border-radius:4px; }
+.patch-subject { font-weight:700; font-size:13.5px; color:#1e293b; flex:1; min-width:180px; }
+.patch-mode { font-size:10.5px; font-weight:700; padding:2px 9px; border-radius:999px; }
+.patch-mode.full { background:#dcfce7; color:#166534; }
+.patch-mode.part { background:#fef3c8; color:#92400e; }
+.patch-mode.pick { background:#e0e7ff; color:#4338ca; }
+.patch-body { padding:2px 14px 12px; }
+.patch-files { display:flex; flex-wrap:wrap; gap:5px; margin:8px 0; }
+.patch-file { font-size:10.5px; font-family:ui-monospace,Menlo,monospace; background:#eef2ff; color:#4338ca; border-radius:5px; padding:2px 7px; }
+.patch-diff { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:11.8px; line-height:1.55; background:#0f172a; color:#e2e8f0; border-radius:8px; padding:11px 13px; overflow:auto; max-height:300px; margin:6px 0 0; white-space:pre; }
+.patch-why { font-size:12.5px; color:#475569; margin-top:7px; line-height:1.7; }
+details.picker { border:none; box-shadow:none; background:transparent; margin:0; }
+details.picker > summary { padding:7px 2px 3px; font-size:12px; color:var(--primary-dark); cursor:pointer; list-style:none; user-select:none; font-weight:600; display:flex; align-items:center; gap:6px; }
+details.picker > summary::-webkit-details-marker { display:none; }
+details.picker > summary::before { content:"▸"; font-size:11px; transition:transform .15s; display:inline-block; }
+details.picker[open] > summary::before { transform:rotate(90deg); }
+details.picker .picker-body { padding:6px 0 2px; }
+.sol-step { font-size:12.5px; color:#334155; line-height:1.7; }
+.sol-step b { color:#b45309; }
+.sol-full { background:#f8fafc; border-left:3px solid #94a3b8; border-radius:0 6px 6px 0; padding:10px 13px; font-size:13px; line-height:1.85; color:#334155; margin-top:4px; white-space:pre-wrap; word-break:break-word; }
+.callout .callout-foot { margin-top:8px; font-size:12.5px; color:var(--text-muted); }
+
+/* 标准解决方案：简短主述 + 补充信息（收起，内部滚动） */
+details.sol-supp { margin-top:12px; background:#f0fdf6; border:1px solid #bbf7d0; border-radius:10px; overflow:hidden; }
+details.sol-supp > summary { padding:10px 14px; font-size:13px; font-weight:700; color:#047857; background:#ecfdf5; cursor:pointer; user-select:none; list-style:none; display:flex; align-items:center; gap:8px; }
+details.sol-supp > summary::-webkit-details-marker { display:none; }
+details.sol-supp > summary::before { content:"▸"; font-size:12px; display:inline-block; transition:transform .15s; }
+details.sol-supp[open] > summary::before { transform:rotate(90deg); }
+.sol-supp-body { max-height:440px; overflow:auto; padding:8px 16px 12px; }
+details.sol-supp.warn { background:#fbf4e6; border:1px solid #ecd9b8; }
+details.sol-supp.warn > summary { background:#f6ead2; color:#8a5200; }
+
+/* —— 崩溃详情 · 日志特征分组（一类一行） —— */
+.lf { margin-top:6px; display:flex; flex-direction:column; gap:12px; }
+.lf-row { border:1px solid var(--border); border-radius:9px; background:#fcfcfd; padding:12px 14px; }
+.lf-row-head { display:flex; align-items:center; gap:9px; flex-wrap:wrap; }
+.lf-ico { width:24px; height:24px; border-radius:7px; display:flex; align-items:center; justify-content:center; color:#fff; font-size:12px; font-weight:700; flex-shrink:0; }
+.lf-row-name { font-size:13.5px; font-weight:700; color:#1e293b; }
+.lf-count { font-size:10.5px; font-weight:700; padding:1px 9px; border-radius:999px; }
+.lf-count.bad { background:#fde8e8; color:#b91c1c; }
+.lf-count.mid { background:#fef3c7; color:#92400e; }
+.lf-count.info { background:#e8eefb; color:#1d4ed8; }
+.lf-scope { font-size:11px; color:var(--text-muted); font-family:Consolas,monospace; }
+.lf-body { margin-top:8px; }
+.lf-item { font-size:12px; font-family:Consolas,"SFMono-Regular",Menlo,monospace; line-height:1.6; background:#fff; border:1px solid #eef1f5; border-left:3px solid var(--border); border-radius:0 6px 6px 0; padding:6px 10px; margin-bottom:5px; color:#334155; white-space:pre-wrap; word-break:break-all; max-height:150px; overflow:auto; }
+.lf-row p.lf-note { font-size:12px; color:var(--text-muted); margin:6px 0 0; }
+details.lf-more { border:none; box-shadow:none; margin:6px 0 0; background:transparent; }
+details.lf-more summary { padding:4px 2px; font-size:11.5px; cursor:pointer; color:var(--primary-dark); font-weight:600; user-select:none; list-style:none; }
+details.lf-more summary::-webkit-details-marker { display:none; }
+details.lf-more summary::before { content:"▸ "; }
+details.lf-more[open] summary::before { content:"▾ "; }
+.lf-line { font-size:11.3px; font-family:Consolas,Menlo,monospace; line-height:1.55; color:#64748b; white-space:pre-wrap; word-break:break-all; padding:3px 0; border-bottom:1px dashed #f0f2f5; }
+.lf-line:last-child { border-bottom:none; }
+
+/* —— 事件时序图 · 对象泳道 —— */
+.sec-sub { font-size:12px; color:var(--text-muted); margin:-6px 0 14px; line-height:1.7; }
+.tf-wrap { position:relative; margin:10px 0 6px; border:1px solid var(--border); border-radius:10px; background:linear-gradient(180deg,#fafbfc,#fff); }
+.tf-scroll { overflow:auto; max-height:640px; }
+.tf-inner { position:relative; min-width:860px; padding:6px 8px 10px; }
+.tf-rail { position:relative; height:52px; border-bottom:1px solid #eef1f5; margin-bottom:4px; }
+.tf-lane-head { position:absolute; top:0; display:flex; align-items:center; gap:7px; transform:translateX(-50%); flex-direction:column; justify-content:center; height:48px; }
+.tf-head-type { font-size:9px; font-weight:800; letter-spacing:1px; color:#64748b; padding:1px 6px; border-radius:999px; border:1px solid #d1d5db; background:#fff; }
+.tf-head-name { font-size:11.5px; font-weight:700; color:#1e293b; text-align:center; line-height:1.25; max-width:170px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.tf-vlines { position:absolute; top:56px; bottom:0; left:0; right:0; pointer-events:none; }
+.tf-row { position:relative; padding:7px 0 5px; }
+.tf-row .tf-lane-mark { position:absolute; top:0; bottom:0; width:1px; }
+.tf-time { position:absolute; left:-6px; top:8px; transform:translateX(-100%); font-size:10.5px; font-family:Consolas,monospace; color:#64748b; text-align:right; white-space:nowrap; }
+.tf-time small { display:block; color:#a8b0bd; font-size:9px; }
+.tf-arrow { position:absolute; top:17px; height:0; border-top:2px solid #7b8aa5; z-index:1; }
+.tf-arrow::before, .tf-arrow::after { content:""; position:absolute; border:4px solid transparent; }
+.tf-arrow.to-right::after { right:-2px; top:-5px; border-left-color:#7b8aa5; border-left-width:5px; }
+.tf-arrow.to-left::before { left:-2px; top:-5px; border-right-color:#7b8aa5; border-right-width:5px; }
+.tf-arrow.crash { border-top-color:#dc2626; }
+.tf-arrow.crash.to-right::after { border-left-color:#dc2626; }
+.tf-arrow.crash.to-left::before { border-right-color:#dc2626; }
+.tf-msg { position:absolute; top:1px; z-index:2; background:#fff; border:1px solid #d8dee9; border-radius:8px; box-shadow:0 1px 3px rgba(15,23,42,.06); overflow:hidden; }
+.tf-msg-head { display:flex; align-items:center; gap:6px; padding:5px 9px 3px; font-size:12px; }
+.tf-msg-head .tf-kind { font-size:9.5px; font-weight:800; padding:1px 6px; border-radius:999px; color:#fff; white-space:nowrap; }
+.tf-msg-title { font-weight:700; color:#1e293b; line-height:1.35; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; flex:1; }
+.tf-msg-txt { padding:0 9px 5px; font-size:11.8px; color:#475569; line-height:1.55; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+.tf-msg.is-open .tf-msg-txt { -webkit-line-clamp:unset; max-height:56px; overflow:auto; }
+.tf-msg-val { padding:3px 9px; background:#f6f8fb; font-family:Consolas,Menlo,monospace; font-size:10.8px; color:#334155; border-top:1px dashed #e6eaf0; white-space:pre-wrap; word-break:break-all; }
+.tf-msg-foot { display:flex; align-items:center; justify-content:space-between; padding:3px 8px; background:#fafbfc; border-top:1px solid #eef1f5; }
+.tf-src { font-size:10px; font-weight:700; color:#94a3b8; }
+.tf-exp { font-size:10.5px; color:var(--primary); cursor:pointer; font-weight:600; user-select:none; border:none; background:none; font-family:inherit; }
+.tf-exp:hover { text-decoration:underline; }
+.tf-msg.crash { border-color:#f3b4b4; background:#fdf5f5; }
+.tf-msg.self { left:50%; transform:translateX(-50%); }
+.tf-selfpin { position:absolute; top:3px; transform:translateX(-50%); width:1.5px; background:#d8dee9; }
+.tf-note { font-size:11px; color:var(--text-muted); margin:4px 2px 0; line-height:1.6; }
+.kind-meta { font-size:10px; font-weight:700; padding:1px 6px; border-radius:4px; white-space:nowrap; }
+
+/* —— 根因分析 · 推理流 —— */
+.rf-conclusion { margin-bottom:14px; }
+.rf-stage { padding:4px 0 8px 34px; }
+.rf-chain { position:relative; }
+.rf-step { display:flex; gap:14px; padding:0 0 6px; position:relative; }
+.rf-step:last-child { padding-bottom:0; }
+.rf-step-dot { flex-shrink:0; width:26px; display:flex; justify-content:center; padding-top:3px; position:relative; }
+.rf-step-dot-inner { width:24px; height:24px; border-radius:50%; color:#fff; font-size:10.5px; font-weight:800; display:flex; align-items:center; justify-content:center; z-index:1; box-shadow:0 0 0 3px #fff; }
+.rf-step-dot::after { content:''; position:absolute; top:27px; bottom:-6px; left:50%; width:2px; background:#e2e8f0; transform:translateX(-50%); z-index:0; }
+.rf-step:last-child .rf-step-dot::after { display:none; }
+.rf-step-card { flex:1; min-width:0; background:#fff; border:1px solid var(--border); border-radius:9px; padding:12px 16px; margin-bottom:12px; }
+.rf-step-card.is-final { background:#f0fdf6; border:1px solid #6ee7b7; border-left-width:3px; }
+.rf-step-card.is-path { background:#fbfcff; }
+.rf-tag { font-size:10px; font-weight:800; letter-spacing:.5px; padding:1px 8px; border-radius:999px; display:inline-block; margin-bottom:6px; }
+.rf-title { font-size:14.5px; font-weight:700; color:#1e293b; line-height:1.5; }
+.rf-title .rf-no { font-family:Consolas,monospace; color:#94a3b8; font-weight:600; margin-right:4px; }
+.rf-text { margin-top:5px; font-size:13px; line-height:1.85; color:#475569; white-space:pre-wrap; word-break:break-word; }
+.rf-evidence { margin-top:8px; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:11.5px; line-height:1.7; background:#1e293b; color:#cbd5e1; border-radius:8px; padding:10px 12px; white-space:pre; overflow:auto; max-height:240px; }
+.rf-evidence.plain { background:#f1f5f9; color:#334155; }
+.rf-refs { display:flex; flex-wrap:wrap; gap:6px; margin-top:9px; }
+.rf-ref { font-size:11px; font-weight:700; padding:2px 9px; border-radius:999px; cursor:pointer; border:1px solid; }
+.rf-ref:hover { filter:brightness(.97); }
+.rf-ref .lnk { text-decoration:none; color:inherit; }
+.rf-branch { display:flex; align-items:flex-start; gap:7px; margin-top:9px; font-size:12px; line-height:1.6; padding:6px 11px; border-radius:0 7px 7px 0; }
+.rf-branch b { font-size:10.5px; letter-spacing:.4px; }
+.rf-branch.stop { background:#fdf2f2; border-left:3px solid var(--danger); color:#991b1b; }
+.rf-branch.go { background:#f0fdf6; border-left:3px solid var(--success); color:#065f46; }
+.rf-flow-legend { display:flex; gap:14px; flex-wrap:wrap; margin:2px 0 12px; font-size:11.5px; color:var(--text-muted); }
+.rf-flow-legend .it { display:inline-flex; align-items:center; gap:5px; }
+
+/* 推理流中的崩溃路径小链 */
+.rf-path { display:flex; flex-direction:column; gap:0; margin-top:8px; }
+.rf-path .pn { display:flex; align-items:center; gap:7px; font-size:12px; padding:3px 0; }
+.rf-path .pn .pno { width:17px; height:17px; border-radius:50%; background:#e0e7ff; color:#4338ca; font-size:9.5px; font-weight:800; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.rf-path .pn .fn { font-family:Consolas,Menlo,monospace; font-weight:700; color:#334155; }
+.rf-path .pn .rel { font-size:10px; padding:0 6px; border-radius:999px; }
+.rf-path .pn .at { font-size:10.5px; color:#94a3b8; font-family:Consolas,monospace; }
+.rf-path .pn.crash { background:#fdf5f5; border:1px solid #f3b4b4; border-radius:6px; padding:3px 7px; }
+.rf-path .pn.crash .fn { color:#b91c1c; }
+
+/* —— 知识库匹配 · 分组（内部/社区邮件·会议·bugzilla/commit） —— */
+.kb-section-title { font-size:15px; font-weight:700; margin:4px 0 10px; color:#1e293b; }
+.kbg { margin:0 0 6px; }
+.kbg-head { display:flex; align-items:center; gap:9px; margin:14px 0 4px; }
+.kbg-dot { width:11px; height:11px; border-radius:3px; }
+.kbg-name { font-size:14px; font-weight:700; }
+.kbg-desc { font-size:12.5px; color:var(--text-muted); margin:0 0 8px; line-height:1.6; }
+.kbg .cards { display:flex; flex-direction:column; gap:12px; }
+.kbg .cards.collapsed .card:not(:first-child){ display:none; }
+.card { border:1px solid var(--border); border-radius:10px; padding:13px 15px; background:#fff; }
+.card.in-weak { border-color:#fcd34d; background:#fffdf5; }
+.card .c-kind { display:inline-block; font-size:10px; font-weight:800; padding:1px 8px; border-radius:999px; margin-bottom:7px; letter-spacing:.4px; }
+.c-kind.internal { background:#e8eefb; color:#1d4ed8; }
+.c-kind.mail { background:#fef3e8; color:#b45309; }
+.c-kind.meeting { background:#f0ecfc; color:#6d28d9; }
+.c-kind.bugzilla { background:#ecfdf5; color:#047857; }
+.c-kind.commit { background:#dcfce7; color:#166534; }
+.card .c-score { display:inline-block; font-size:10.5px; font-weight:700; padding:1px 8px; border-radius:999px; margin-left:5px; }
+.c-score.high { background:#dcfce7; color:#166534; } .c-score.mid { background:#fef3c7; color:#92400e; } .c-score.low { background:#f1f5f9; color:#64748b; }
+.c-score.weak { background:#fef3c7; color:#b45309; border:1px dashed #f59e0b; }
+.c-level { display:inline-block; font-size:9.5px; font-weight:800; padding:1px 7px; border-radius:999px; margin-left:5px; }
+.c-level.L1 { background:#dcfce7; color:#15803d; } .c-level.L2 { background:#dbeafe; color:#1d4ed8; } .c-level.L3 { background:#fef3c7; color:#b45309; }
+.c-verdict { display:inline-block; font-size:10px; font-weight:800; padding:1px 8px; border-radius:999px; margin-left:5px; }
+.c-verdict.confirmed { background:#dcfce7; color:#15803d; } .c-verdict.same_area { background:#fef3c7; color:#b45309; }
+.c-verdict.not_relevant { background:#f1f5f9; color:#94a3b8; } .c-verdict.unverified { background:#fff; color:#94a3b8; border:1px dashed #cbd5e1; }
+.card .c-title { font-size:14px; font-weight:700; line-height:1.55; color:#1e293b; margin-bottom:4px; word-break:break-word; }
+.card .c-title a { color:inherit; text-decoration:none; border-bottom:1px dotted #cbd5e1; }
+.card .c-meta { font-size:11.5px; color:var(--text-muted); margin-bottom:7px; font-family:Consolas,monospace; }
+.card .c-snippet { font-size:12.5px; color:#334155; background:#f8fafc; border-left:3px solid #cbd5e1; border-radius:0 6px 6px 0; padding:8px 11px; line-height:1.7; margin:6px 0; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
+.card.is-open .c-snippet { -webkit-line-clamp:unset; }
+.card .c-more { display:inline; font-size:11px; color:var(--primary); cursor:pointer; font-weight:600; }
+.card .c-derive { margin-top:8px; font-size:12.5px; line-height:1.7; padding:8px 12px; border-radius:0 7px 7px 0; background:#f0f9ff; border-left:3px solid #0ea5e9; color:#0c4a6e; }
+.card .c-derive b { color:#0369a1; }
+.card .c-derive .chain { font-weight:600; }
+.card .c-link { font-size:11.5px; font-weight:600; color:var(--primary-dark); text-decoration:none; margin-top:6px; display:inline-block; }
+.card .c-link:hover { text-decoration:underline; }
+.c-ev { margin-top:7px; }
+.kb-expand { text-align:center; margin:8px 0 4px; }
+  .kb-expand button { padding:5px 15px; border-radius:8px; border:1px dashed #94a3b8; background:transparent; color:#64748b; font-size:12px; cursor:pointer; font-family:inherit; }
+  .kb-expand button:hover { background:#f1f5f9; }
+
+/* ================= 整体主题统一（去卡通化） ================= */
+:root{
+  --primary:#2f5bd8; --primary-deep:#1e3f9e;
+  --danger:#c03a2e; --warning:#b26a00; --success:#12805c;
+  --text:#1c2733; --text-2:#52637b; --muted:#8494ab;
+  --bg:#f5f7fa; --line:#dde3ec; --line-2:#eef1f6;
+  --tint-blue:#eef3ff; --tint-green:#eaf7f1; --tint-amber:#fbf4e6; --tint-red:#fbeeec; --tint-grey:#f4f6f9;
+}
+body{ background:var(--bg); color:var(--text); }
+section, details, .card, .patch-card, .mc-evidence, .lf-row, .tf-wrap{ box-shadow:none; }
+section{ border-radius:8px; }
+.report-header{ background:linear-gradient(135deg,#1b2f63,#2f5bd8); box-shadow:0 2px 10px rgba(27,47,99,.18); border-radius:8px; }
+h2{ color:#223a6b; border-bottom:1px solid var(--line-2); }
+h2 .num{ background:var(--primary); border-radius:6px; }
+.callout{ border-radius:6px; border-left-width:3px; }
+.callout-danger{ background:var(--tint-red); border-color:var(--danger); }
+.callout-warning{ background:var(--tint-amber); border-color:var(--warning); }
+.callout-success{ background:var(--tint-green); border-color:var(--success); }
+.callout-info{ background:var(--tint-blue); border-color:var(--primary); }
+.callout .title{ color:var(--text); }
+.badge, .sol-type, .patch-mode, .lf-count, .basis-kind, .c-kind, .c-level, .c-verdict, .c-score, .rf-tag, .tf-kind, .kind-meta, .patch-sha{ border-radius:5px; }
+pre{ border-radius:6px; }
+.sec-sub, .tf-note, .kbg-desc{ color:var(--muted); }
+.mg-count, .mc-id{ color:var(--muted); }
+.kb-expand button, .match-expand button{ border-color:#b9c4d4; color:#52637b; }
+code{ background:#eef1f6; color:#8a2d2d; }
+a.kb-ref, a.path, .pc-src-link{ color:var(--primary); }
+.mc-kind.mail, .basis-kind.mail{ background:var(--tint-amber); color:#8a5200; }
+
+/* 悬浮提示（hover 显示详细信息） */
+#tip{ position:fixed; z-index:9999; max-width:420px; background:#0f1b30; color:#e6ecf5;
+  border:1px solid #26334d; border-radius:6px; padding:8px 11px; font-size:12px; line-height:1.65;
+  box-shadow:0 6px 20px rgba(15,27,48,.28); pointer-events:none; display:none; }
+#tip .tip-t{ font-weight:700; color:#fff; margin-bottom:3px; }
+#tip .tip-m{ color:#aab8d0; font-size:11px; margin-bottom:4px; }
+#tip .tip-b{ max-height:220px; overflow:auto; white-space:pre-wrap; word-break:break-word; }
+[data-tip]{ cursor:help; }
+
+/* ================= 事件时序图 v2（简洁行泳道 + 全局变量侧栏） ================= */
+.tl-sec-note{ font-size:12.5px; color:var(--muted); margin:-4px 0 10px; line-height:1.7; }
+.tlx{ border:1px solid var(--line); border-radius:8px; background:#fff; }
+.tlx-scroll{ overflow:auto; max-height:620px; }
+.tlx-inner{ display:flex; align-items:stretch; min-width:1180px; }
+.tlx-gbox{ flex:0 0 236px; border-right:1px solid var(--line); background:#fbfcfe; position:relative; }
+.tlx-ghead{ position:sticky; top:0; z-index:5; background:#eef3ff; padding:8px 10px; font-size:12px; font-weight:700; color:#223a6b; border-bottom:1px solid var(--line); }
+.tlx-grow{ height:116px; border-bottom:1px dashed var(--line-2); padding:10px 10px 6px; box-sizing:border-box; overflow:hidden; }
+.tlx-grow:last-child{ border-bottom:none; }
+.tlx-gempty{ color:#c3ccd9; font-size:11px; padding-top:4px; }
+.tlx-gvar{ font-size:10.5px; font-weight:700; color:#223a6b; font-family:Consolas,monospace; margin-bottom:2px; display:flex; align-items:center; gap:5px; }
+.tlx-gvar .dot{ width:6px;height:6px;border-radius:50%; }
+.tlx-gchg{ font-family:Consolas,monospace; font-size:11px; line-height:1.6; color:#334155; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.tlx-gchg .old{ color:#94a3b8; text-decoration:line-through; }
+.tlx-gchg .new{ color:#12805c; font-weight:700; }
+.tlx-gchg.down .new{ color:#c03a2e; }
+.tlx-gtag{ font-size:9px; color:var(--muted); }
+.tlx-seq{ flex:1; position:relative; min-width:880px; }
+.tlx-lanes{ position:absolute; inset:0; pointer-events:none; }
+.tlx-lane-line{ position:absolute; top:0; bottom:0; width:0; border-left:1px dashed #d7deea; }
+.tlx-head{ position:relative; height:66px; border-bottom:1px solid var(--line); display:flex; }
+.tlx-hcell{ flex:1; display:flex; align-items:center; justify-content:center; text-align:center; gap:6px; min-width:0; }
+.tlx-hkind{ font-size:9px; font-weight:800; letter-spacing:.6px; padding:1px 6px; border-radius:4px; }
+.tlx-hname{ font-size:12px; font-weight:700; color:#1c2733; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:170px; }
+.tlx-head.has4 .tlx-hcell:nth-child(2),.tlx-head.has4 .tlx-hcell:nth-child(3),.tlx-head.has4 .tlx-hcell:nth-child(4){ justify-content:center; }
+.tlx-row{ position:relative; height:116px; box-sizing:border-box; border-bottom:1px dashed var(--line-2); }
+.tlx-row:last-child{ border-bottom:none; }
+.tlx-time{ position:absolute; left:6px; top:4px; font-size:10px; font-family:Consolas,monospace; color:var(--muted); white-space:nowrap; }
+.tlx-time small{ display:block; font-size:8.5px; color:#a9b6c8; }
+.tlx-arrow{ position:absolute; height:0; border-top:2px solid #9aa8bd; z-index:1; }
+.tlx-arrow.r{ border-top-color:#5b7bb0; } .tlx-arrow.r::after{ content:""; position:absolute; right:-2px; top:-5px; border:5px solid transparent; border-left-color:#5b7bb0; }
+.tlx-arrow.l{ border-top-color:#5b7bb0; } .tlx-arrow.l::before{ content:""; position:absolute; left:-2px; top:-5px; border:5px solid transparent; border-right-color:#5b7bb0; }
+.tlx-arrow.bad{ border-top-color:#c03a2e; } .tlx-arrow.bad.r::after{ border-left-color:#c03a2e; } .tlx-arrow.bad.l::before{ border-right-color:#c03a2e; }
+.tlx-selfarrow{ position:absolute; width:0; border-left:2px solid #9aa8bd; }
+.tlx-selfarrow::after{ content:""; position:absolute; left:-5px; bottom:-2px; border:5px solid transparent; border-top-color:#9aa8bd; }
+.tlx-selfarrow.bad{ border-left-color:#c03a2e; } .tlx-selfarrow.bad::after{ border-top-color:#c03a2e; }
+.tlx-sloop{ position:absolute; pointer-events:none; z-index:1; }
+.tlx-card{ position:absolute; top:12px; z-index:2; background:#fff; border:1px solid var(--line); border-left-width:3px; border-radius:5px; box-shadow:0 1px 2px rgba(28,39,51,.05); overflow:hidden; }
+.tlx-card .k-tag{ display:inline-block; font-size:8.5px; font-weight:800; padding:0 5px; border-radius:3px; margin-right:4px; letter-spacing:.3px; color:#fff; vertical-align:1px; }
+.tlx-card .tlx-mtag{ display:inline-block; font-size:8.5px; font-weight:800; padding:0 5px; border-radius:3px; margin-right:4px; color:#fff; vertical-align:1px; }
+.tlx-hmode{ display:inline-block; font-size:8.5px; font-weight:700; padding:1px 6px; border-radius:4px; vertical-align:1px; }
+.tlx-card .t-title{ font-size:11.5px; color:#1c2733; line-height:1.45; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.tlx-card .t-val{ font-family:Consolas,monospace; font-size:10px; color:#52637b; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.tlx-card.crash{ border-color:#e4aaa6; border-left-color:#c03a2e; background:#fdf7f6; }
+.tlx-card.crash .t-title{ color:#9b2c26; font-weight:700; }
+.tlx-legend{ display:flex; gap:14px; flex-wrap:wrap; margin:8px 2px 2px; font-size:11px; color:var(--muted); }
+.tlx-legend .lg{ display:inline-flex; align-items:center; gap:5px; }
+  .tlx-legend .sq{ width:10px;height:10px;border-radius:2px; display:inline-block; }
+  .tlx-foot{ font-size:11px; color:var(--muted); margin:8px 2px 0; line-height:1.6; }
+
+/* 事件时间线 v3（单列、清爽） */
+.ev2{ margin-top:4px; }
+.ev2-head{ display:flex; gap:12px; font-size:11px; color:var(--muted); font-weight:600; padding:0 10px 6px; }
+.ev2-head .ev2-c-time{ flex:0 0 118px; }
+.ev2-list{ display:flex; flex-direction:column; gap:8px; }
+.ev2-row{ display:flex; gap:12px; align-items:flex-start; border:1px solid var(--line); border-left-width:4px; border-radius:6px; padding:8px 12px; background:#fff; }
+.ev2-row.is-crash{ border-color:#e6b0ab; border-left-width:4px; background:#fdf6f5; }
+.ev2-time{ flex:0 0 118px; font-size:12px; font-weight:700; color:#334155; line-height:1.4; }
+.ev2-time small{ display:block; font-size:9.5px; color:var(--muted); font-weight:400; }
+.ev2-body{ flex:1; min-width:0; }
+.ev2-h{ display:flex; flex-wrap:wrap; align-items:center; gap:6px; }
+.ev2-m, .ev2-k{ font-size:9.5px; font-weight:800; color:#fff; padding:1px 7px; border-radius:4px; letter-spacing:.3px; }
+.ev2-title{ font-size:13px; font-weight:600; color:#1c2733; line-height:1.5; }
+.ev2-row.is-crash .ev2-title{ color:#9b2c26; }
+.ev2-obj{ margin-top:3px; font-size:11.5px; color:#52637b; }
+.ev2-chips{ display:flex; flex-wrap:wrap; gap:5px; margin-top:5px; }
+.ev2-chip{ font-family:Consolas,monospace; font-size:10.5px; background:#f4f6f9; border:1px solid var(--line); border-radius:4px; padding:1px 7px; color:#334155; }
+.ev2-chip.bad{ background:#fbeeec; border-color:#e4aaa6; color:#9b2c26; font-weight:700; }
+.ev2-src{ margin-top:4px; font-size:10px; color:var(--muted); font-family:Consolas,monospace; }
+
+/* 日志特征：来源标注 */
+.lf-ref{ display:inline-block; font-size:10px; font-family:Consolas,monospace; color:#52637b; background:#f4f6f9; border:1px solid var(--line); border-radius:4px; padding:1px 6px; margin-left:6px; }
+.lf-item .loc{ color:#8494ab; margin-right:4px; font-style:normal; }
+
+/* 日志特征整体/分类收起 + 滚动 */
+details.lf-all{ background:#fff; border:1px solid var(--line); border-radius:8px; padding:0; }
+details.lf-all > summary{ list-style:none; cursor:pointer; font-size:13.5px; font-weight:700; color:#1c2733; padding:10px 14px; background:#f8fafc; border-radius:8px; user-select:none; }
+details.lf-all > summary::-webkit-details-marker{ display:none; }
+details.lf-all > summary::before{ content:"▸ "; color:var(--primary); }
+details.lf-all[open] > summary::before{ content:"▾ "; }
+.lf-all-body{ padding:12px 14px 14px; }
+details.lf-cat{ margin-bottom:10px; border:1px solid var(--line); border-radius:7px; background:#fff; }
+details.lf-cat:last-child{ margin-bottom:0; }
+details.lf-cat > summary{ list-style:none; cursor:pointer; display:flex; align-items:center; flex-wrap:wrap; gap:9px; padding:8px 11px; border-radius:7px; background:#fcfcfd; user-select:none; }
+details.lf-cat > summary::-webkit-details-marker{ display:none; }
+details.lf-cat > summary::before{ content:"▸ "; color:var(--primary); }
+details.lf-cat[open] > summary{ background:#f8fafc; border-bottom:1px solid var(--line-2); }
+details.lf-cat[open] > summary::before{ content:"▾ "; }
+.lf-cat-body{ max-height:260px; overflow:auto; padding:8px 12px 10px; }
+.lf-examples{ margin-top:4px; }
+.lf-examples .lf-line{ padding:3px 2px; }
+
+/* 推理步骤：标题+一句简介，详情收起（滚动） */
+details.rf-detail{ border:none; box-shadow:none; background:transparent; margin-top:8px; }
+details.rf-detail > summary{ list-style:none; cursor:pointer; font-size:11.5px; font-weight:700; color:#2f5bd8; display:inline-block; user-select:none; padding:2px 9px; background:#eef3ff; border:1px solid #cfdcf7; border-radius:5px; }
+details.rf-detail > summary::-webkit-details-marker{ display:none; }
+details.rf-detail[open] > summary{ background:#e2ecff; }
+.rf-detail-body{ margin-top:6px; max-height:320px; overflow:auto; border:1px solid var(--line); border-radius:6px; background:#fcfdff; }
+details.rf-detail .rf-evid{ margin:0; border:none; border-radius:0; }
+details.rf-detail .rf-path{ margin:10px 8px; }
+.rf-detail-body .sol-full{ margin:8px; border:none; background:#f4f6f9; }
+.rf-text{ margin-top:2px; font-size:13px; }
+.rf-step-card{ border-radius:7px; }
+.rf-ref{ font-size:11px; }
+  .rf-tag{ font-size:9.5px; }
+
+/* 知识库匹配整块收起 */
+details.kb-wrap{ border:1px solid var(--line); border-radius:8px; background:#fff; margin:0 0 24px; box-shadow:none; overflow:hidden; }
+details.kb-wrap > summary{ padding:16px 24px; cursor:pointer; user-select:none; list-style:none; display:flex; align-items:center; gap:10px; font-size:17px; font-weight:700; color:#223a6b; background:#fff; border-bottom:1px solid transparent; }
+details.kb-wrap > summary::-webkit-details-marker{ display:none; }
+details.kb-wrap > summary::before{ content:"▸"; font-size:13px; color:var(--primary); transition:transform .15s; }
+details.kb-wrap[open] > summary::before{ transform:rotate(90deg); }
+details.kb-wrap > summary:hover{ background:#f8fafc; }
+details.kb-wrap[open] > summary{ border-bottom:1px solid var(--line-2); }
+details.kb-wrap .num{ display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; border-radius:6px; background:var(--primary); color:#fff; font-size:13px; flex-shrink:0; }
+details.kb-wrap .detail-body{ padding:18px 24px 6px; }
+/* 根因分析：三大分区收起、内部滚动 */
+details.rf-part{ box-shadow:none; overflow:hidden; }
+details.rf-part > summary{ list-style:none; cursor:pointer; user-select:none; display:flex; align-items:center; gap:8px; }
+details.rf-part > summary::-webkit-details-marker{ display:none; }
+details.rf-part > summary::before{ content:"▸ "; font-size:12px; color:var(--primary); }
+details.rf-part[open] > summary::before{ content:"▾ "; }
+.rf-part-no{ display:inline-flex; align-items:center; justify-content:center; width:24px; height:24px; border-radius:6px; color:#fff; font-size:12px; }
+.rf-part-body{ max-height:600px; overflow:auto; padding:0 16px 14px; border-top:1px solid var(--line-2); }
+.rf-part-desc{ margin:10px 0 6px; font-size:12px; color:var(--muted); line-height:1.7; }
+
+.wf-src { font-size:11px; color:#334155; background:#eef2f7; display:inline-block; padding:2px 9px; border-radius:4px; margin:2px 0 6px; }
+/* 社区/commit 卡片：原文网址 + 关键片段（收起滚动） */
+.c-orig{ margin:6px 0 2px; font-size:11px; color:#52637b; word-break:break-all; }
+.c-orig a{ color:#2f5bd8; text-decoration:none; border-bottom:1px dotted #93b4e6; font-family:Consolas,monospace; }
+.c-orig a:hover{ text-decoration:underline; }
+.c-lead{ font-size:12.5px; color:#334155; line-height:1.7; margin:6px 0 2px; }
+details.c-key{ border:1px solid var(--line); border-radius:6px; background:#fff; margin-top:7px; box-shadow:none; }
+details.c-key > summary{ list-style:none; cursor:pointer; font-size:11.5px; font-weight:700; color:#334155; padding:6px 10px; background:#f8fafc; user-select:none; }
+details.c-key > summary::-webkit-details-marker{ display:none; }
+details.c-key > summary::before{ content:"▸ "; color:var(--primary); }
+details.c-key[open] > summary::before{ content:"▾ "; }
+.ck-expl{ margin-bottom:6px; color:#334155; font-family:inherit; font-size:11.5px; line-height:1.7; }
+.ck-orig{ color:#334155; }
+.ck-orig span{ display:block; padding-left:4px; color:#4b5563; }
+.c-key-body{ max-height:240px; overflow:auto; padding:8px 12px; font-size:11.5px; line-height:1.75; color:#334155; white-space:pre-wrap; word-break:break-word; font-family:Consolas,"SFMono-Regular",Menlo,monospace; }
+.c-key-body.mono{ white-space:pre; }
+
+.wf-cross { font-size:12px; color:#1d4ed8; background:#eff6ff; border-left:3px solid #93c5fd; padding:6px 10px; border-radius:0 6px 6px 0; margin:4px 0 6px; }
+
+/* 内部知识库卡片：统一行式排版 */
+.in-badges{ margin-bottom:6px; }
+.in-rows{ margin-top:4px; }
+.in-row{ display:flex; align-items:flex-start; gap:8px; margin-top:7px; font-size:12.5px; line-height:1.65; }
+.in-k{ flex:0 0 96px; color:var(--muted); font-weight:600; padding-top:1px; }
+.in-v{ flex:1; min-width:0; color:#334155; word-break:break-word; }
+.in-row .mc-chips{ display:flex; flex-wrap:wrap; }
+.card .in-row code, .in-v code{ background:#eef2f7; padding:1px 5px; border-radius:4px; font-size:11.5px; }
+.card .c-title{ margin-top:2px; }
+
+/* 崩溃路径逐跳（folder/file/fn/line + 关键参数，异常参数标红） */
+.pp-wrap{ margin-top:6px; }
+.pp{ border:1px solid var(--line); border-left:3px solid #5b7bb0; border-radius:6px; background:#fbfcfe; padding:8px 10px; margin-bottom:6px; }
+.pp.pp-crash{ border-color:#e4aaa6; border-left-color:#c03a2e; background:#fdf6f5; }
+.pp-top{ display:flex; align-items:center; flex-wrap:wrap; gap:6px; }
+.pp-i{ width:18px; height:18px; border-radius:50%; background:#5b7bb0; color:#fff; font-size:10px; font-weight:800; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.pp.pp-crash .pp-i{ background:#c03a2e; }
+.pp-fn{ font-family:Consolas,monospace; font-size:12px; font-weight:700; color:#1c2733; }
+.pp-arr{ color:#8494ab; }
+.pp-stack{ font-family:Consolas,monospace; font-size:10px; color:#8494ab; background:#f4f6f9; border:1px solid var(--line); border-radius:4px; padding:1px 6px; }
+.pp-rel{ font-size:10px; padding:1px 7px; border-radius:4px; background:#eef2f7; color:#52637b; font-weight:600; }
+.pp-rel.rel-bad{ background:#fbeeec; color:#9b2c26; }
+.pp-map{ margin:5px 0 2px 24px; font-size:11px; color:#334155; line-height:1.7; }
+.pp-map code{ font-size:10.5px; background:#e8effd; color:#1e3f9e; padding:1px 5px; border-radius:4px; font-family:Consolas,monospace; }
+.pp-reg{ font-size:10px; color:#7a5bd8; background:transparent; padding:0; }
+.pcp .pp-reg{ background:transparent; padding:0; }
+.pp-loc{ margin:5px 0 2px 24px; font-size:11.5px; color:#52637b; }
+.pp-loc code{ font-size:11px; color:#334155; background:#eef2f7; padding:1px 6px; border-radius:4px; }
+.pp-loc a{ color:#2f5bd8; text-decoration:none; border-bottom:1px dotted #93b4e6; }
+.pp-loc .pp-locfn{ color:#8494ab; font-family:Consolas,monospace; }
+.pp-params{ margin:4px 0 2px 24px; display:flex; flex-wrap:wrap; align-items:center; gap:5px; }
+.pp-param-t{ font-size:10.5px; color:#8494ab; font-weight:600; }
+.pcp{ font-size:11px; font-family:Consolas,monospace; background:#f4f6f9; border:1px solid var(--line); border-radius:4px; padding:2px 7px; color:#334155; }
+.pcp b{ font-weight:700; }
+.pcp.bad{ background:#fbeeec; border-color:#e4aaa6; color:#9b2c26; font-weight:700; box-shadow:inset 0 0 0 1px #f5c6c1; }
+details.pp-detail{ border:none; box-shadow:none; background:transparent; margin:4px 0 0 24px; }
+details.pp-detail summary{ list-style:none; cursor:pointer; font-size:11px; font-weight:600; color:#2f5bd8; user-select:none; }
+details.pp-detail summary::-webkit-details-marker{ display:none; }
+details.pp-detail summary::before{ content:"▸ "; }
+details.pp-detail[open] summary::before{ content:"▾ "; }
+.pp-foot{ margin:6px 0 0; font-size:11px; color:#52637b; }
+.pp-foot .pcp.bad{ padding:0 5px; }
+
 </style>
 </head>
 <body>
 <div class="container" id="app">
 
-  <!-- Header -->
-  <div class="report-header" id="report-header">
+    <div class="report-header" id="report-header">
     <span class="tag">KERNEL CRASH · 综合分析报告</span>
     <h1 id="header-title">加载中...</h1>
     <div class="subtitle" id="header-subtitle"></div>
     <div class="meta-grid" id="header-meta-grid"></div>
   </div>
 
-  <!-- Executive Summary -->
   <section id="exec-summary-section">
     <h2><span class="num">1</span>执行摘要</h2>
     <div id="exec-summary-body"></div>
   </section>
 
-  <!-- Event Timeline -->
-  <section id="event-timeline-section" style="display:none;">
-    <h2><span class="num">2</span>事件时序图</h2>
-    <div id="event-timeline-body"></div>
-  </section>
-
-  <!-- Crash Detail -->
-  <section id="crash-detail-section">
-    <h2><span class="num" id="crash-detail-num">2</span>崩溃详情</h2>
+    <section id="crash-detail-section">
+    <h2><span class="num">2</span>崩溃详情</h2>
     <div id="crash-detail-body"></div>
   </section>
 
-  <!-- Crash Path (调用栈 + 崩溃扩散链 + 源码线索 整合) -->
-  <section id="crash-path-section">
-    <h2><span class="num" id="crash-path-num">4</span>崩溃路径分析</h2>
-    <div id="crash-path-body"></div>
+    <section id="event-timeline-section">
+    <h2><span class="num">3</span>事件时序图</h2>
+    <div id="event-timeline-body"></div>
   </section>
 
-  <!-- Root Cause Analysis -->
-  <section id="rootcause-section">
-    <h2><span class="num" id="rootcause-num">5</span>根因分析</h2>
+    <section id="rootcause-section">
+    <h2><span class="num">4</span>根因分析</h2>
     <div id="rootcause-body"></div>
   </section>
 
-  <!-- Knowledge Base Matches -->
-  <details id="crash-match-details">
-    <summary>知识库匹配</summary>
-    <div class="detail-body" id="crash-match-body"></div>
+    <details id="kb-wrap" class="kb-wrap">
+    <summary><span class="num">5</span>知识库匹配 <span id="kb-count" class="mg-count" style="margin-left:2px"></span></summary>
+    <div class="detail-body" style="padding:16px 24px 4px"><div id="kb-body"></div></div>
   </details>
 
-  <!-- Workflow Trace -->
-  <details id="workflow-details">
+    <details id="workflow-details" style="margin-top:24px;">
     <summary>诊断工作流追踪</summary>
     <div class="detail-body" id="workflow-body"></div>
   </details>
 
   <div class="footer" id="footer-text"></div>
-
 </div>
+
 <script>
 const FULL_URL='report.json';
 const EMBED_FULL = /*__FULL_DATA__*/null;
-const esc=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-function fetchJSON(url){return fetch(url).then(r=>{if(!r.ok)throw new Error(url+' HTTP '+r.status);return r.json();});}
 
-const linkify=s=>esc(s).replace(/https?:\/\/[^\s<]+/g,m=>{
-  const url=m.replace(/[)\].,，。；;！!？?'"'"'”）】]+$/,'');
-  const tail=m.slice(url.length);
-  return `<a href="${url}" target="_blank" rel="noopener" style="color:#2563eb;text-decoration:underline;word-break:break-all">${url}</a>${tail}`;
-});
+/* ================= 基础工具 ================= */
+const esc = s => String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+function linkify(s){
+  return esc(s).replace(/https?:\/\/[^\s<]+/g, m=>{
+    const url=m.replace(/[)\].,，。；;！!？?'"'"'”）】]+$/,'');
+    const tail=m.slice(url.length);
+    return `<a href="${url}" target="_blank" rel="noopener" style="color:#2563eb;text-decoration:underline;word-break:break-all">${url}</a>${tail}`;
+  });
+}
 
-// ===== 知识库引用跳转（案例 / commit 提及 → 滚动到对应匹配卡片） =====
-let KB_REF_MAP = {};
-let KB_REF_REGEX = null;
-const GENERIC_KB_TOKENS = ['匹配案例','知识库案例','知识库匹配','社区案例','案例','commit','补丁'];
-function escapeRe(s){ return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); }
-function extractSha(v){
-  if(v==null) return '';
-  const m = String(v).match(/[0-9a-f]{7,40}/i);
-  return m ? m[0] : '';
-}
-function orderedKBGroups(report){
-  const diag = (report && report.diagnosis_repair_result) || {};
-  const inr = diag.internal_kernel_result || [];
-  const com = diag.community_kernel_result || [];
-  const onl = diag.online_result || [];
-  const scoreOrder = {高:0,中:1,低:2};
-  const byScore = (a,b) => (scoreOrder[a.match_score]??9) - (scoreOrder[b.match_score]??9);
-  let idx = 0;
-  const pack = arr => arr.map(c => ({c, idx: idx++}));
-  return {
-    internal: pack([...inr].sort(byScore)),
-    community: pack([...com].sort(byScore)),
-    online: pack([...onl])
-  };
-}
+/* KB 锚点跳转（跨章节引用） */
+let KB_REF_MAP={}, KB_REF_REGEX=null;
+const GENERIC_TOKENS=['内部知识库','内部案例','社区邮件','会议纪要','bugzilla','社区案例','上游 commit','匹配案例','知识库案例','commit','补丁'];
+function escRe(s){ return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); }
+function shaOf(v){ if(v==null)return ''; const m=String(v).match(/[0-9a-f]{7,40}/i); return m?m[0]:''; }
 function buildKBRefMap(report){
-  const map = {};
-  const add = (anchor, vals) => {
-    vals.forEach(v => {
-      const s = String(v==null?'':v).trim();
-      if(s.length >= 4){
-        const k = s.toLowerCase();
-        if(!(k in map)) map[k] = anchor;
-      }
+  const map={}, add=(a,vals)=>vals.forEach(v=>{const s=String(v==null?'':v).trim(); if(s.length>=4){const k=s.toLowerCase(); if(!(k in map)) map[k]=a;}});
+  const diag=report.diagnosis_repair_result||{};
+  const hlp=(arr,kind)=>{
+    (arr||[]).forEach((c,i)=>{
+      const aid=c.anchor||('kb-'+(c.id||kind||'x'));
+      add(aid,[c.knowledge_id,c.id,c.title,c.subject,c.bug_summary,shaOf(c.url),shaOf(c.source_file)]);
     });
   };
-  const g = orderedKBGroups(report);
-  [...g.internal, ...g.community].forEach(({c, idx}) => {
-    add('kb-case-' + idx, [c.knowledge_id, c.id, c.kb_id, c.json_id, c.title]);
-  });
-  g.online.forEach(({c, idx}) => {
-    add('kb-case-' + idx, [c.title, extractSha(c.url), extractSha(c.evidence && c.evidence.html_url), extractSha((c.evidence && c.evidence.sha) || c.source_file)]);
-  });
-  KB_REF_MAP = map;
-  const tokens = [...Object.keys(map), ...GENERIC_KB_TOKENS].sort((a,b) => b.length - a.length);
-  const uniq = [...new Set(tokens)];
-  KB_REF_REGEX = uniq.length ? new RegExp('(' + uniq.map(escapeRe).join('|') + ')', 'gi') : null;
+  hlp(diag.internal_kernel_result,'internal');
+  hlp((diag.online_result||[]).filter(c=>c.kind==='mail'),'mail');
+  hlp(diag.community_meetings,'meeting');
+  hlp(diag.community_kernel_result,'bugzilla');
+  hlp((diag.online_result||[]).filter(c=>c.kind==='commit'),'commit');
+  KB_REF_MAP=map;
+  const tokens=[...Object.keys(map),...GENERIC_TOKENS].sort((a,b)=>b.length-a.length);
+  KB_REF_REGEX = tokens.length ? new RegExp('('+[...new Set(tokens)].map(escRe).join('|')+')','gi') : null;
   return map;
 }
-function gotoKB(anchor){
-  const details = document.getElementById('crash-match-details');
-  if(details && !details.open) details.open = true;
-  const el = document.getElementById(anchor) || document.getElementById('crash-match-body');
-  if(el) el.scrollIntoView({behavior:'smooth', block:'center'});
+function gotoKB(id){
+  const w=document.getElementById('kb-wrap'); if(w && !w.open) w.open=true;
+  const el=document.getElementById(id)||document.getElementById('kb-body');
+  if(el){ setTimeout(()=>el.scrollIntoView({behavior:'smooth',block:'center'}),40); }
+  return false;
 }
-function rich(text){
-  const html = linkify(text);
-  if(!KB_REF_REGEX) return html;
-  return html.split(/(<a\b[^>]*>.*?<\/a>)/gs).map(seg => {
+function rich(s){
+  let html=linkify(s); if(!KB_REF_REGEX) return html;
+  return html.split(/(<a\b[^>]*>.*?<\/a>)/gs).map(seg=>{
     if(/^<a\b/.test(seg)) return seg;
-    return seg.replace(KB_REF_REGEX, function(m){
-      const anchor = KB_REF_MAP[m.toLowerCase()] || 'crash-match-body';
-      return `<a class="kb-ref" href="#${anchor}" onclick="gotoKB('${anchor}');return false;">${m}</a>`;
+    return seg.replace(KB_REF_REGEX, m=>{
+      const a=KB_REF_MAP[m.toLowerCase()];
+      return a?`<a class="kb-ref" href="#${a}" onclick="return gotoKB('${a}')">${m}</a>`:m;
     });
   }).join('');
 }
-function renderProse(id,val,fallback){
-  document.getElementById(id).innerHTML=val?`<div class="prose">${linkify(val)}</div>`:(fallback||'<div class="empty-line">无</div>');
+function fmtTime(t){
+  if(!t) return '时间未知';
+  const d=new Date(t);
+  if(!isNaN(d.getTime())) return d.toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
+  return String(t);
 }
 
-// ===== Header =====
-function renderHeader(report){
-  const cf=report.crash_feature_info||{};
-  const hb=report.host_base_info||{};
-  const title=report.report_id||cf.bug_type||'内核崩溃分析报告';
-  document.getElementById('header-title').textContent=title;
-  const subParts=[];
-  if(hb.machine_model) subParts.push(hb.machine_model);
-  if(hb.cpu_model) subParts.push(hb.cpu_model);
-  if(hb.kernel_version) subParts.push('内核 '+hb.kernel_version);
-  document.getElementById('header-subtitle').textContent=subParts.join(' · ');
-  const metaItems=[
-    ['主机名', hb.host_name],
-    ['内核版本', hb.kernel_version],
-    ['崩溃时间', cf.crash_time],
-    ['崩溃类型', cf.bug_type],
-    ['CPU', (hb.cpu_num||'')+' 核 · '+(hb.cpu_model||'')],
-    ['内存', hb.memory_size],
-  ];
-  document.getElementById('header-meta-grid').innerHTML=metaItems.map(([k,v])=>
-    `<div class="meta-item"><div class="k">${esc(k)}</div><div class="v">${esc(v)}</div></div>`
-  ).join('');
-}
-
-// ===== Executive Summary =====
+/* ================= 1 执行摘要 ================= */
+const SOL_TYPE = {
+  patch:{label:'需合入补丁', cls:'patch', verdict:'未修复 · 建议合入上游补丁'},
+  config:{label:'配置/命令行修复', cls:'config', verdict:'无需补丁 · 调整配置修复'},
+  upgrade:{label:'建议升级内核', cls:'upgrade', verdict:'未修复 · 建议升级内核'},
+  none:{label:'无需处理', cls:'none', verdict:'当前内核已修复 · 无需处理'},
+};
+const BASIS_KIND = {mail:'社区邮件', meeting:'会议纪要', bugzilla:'Bugzilla/Issue', commit:'上游 commit', bugfix:'上游 bugfix 描述'};
 function renderExecSummary(report){
   const ra=report.root_cause_analysis||{};
   let h='';
-  if(ra.conclusion){
-    h+=`<div class="callout callout-danger"><div class="title">结论</div>${rich(ra.conclusion)}</div>`;
+  if(ra.conclusion) h+=`<div class="callout callout-danger"><div class="title">结论</div>${rich(ra.conclusion)}</div>`;
+
+  const ss=ra.standard_solution||null;
+  if(ss){
+    const t=SOL_TYPE[ss.type]||SOL_TYPE.patch;
+    h+=`<div class="callout callout-success sol"><div class="sol-head">`;
+    h+=`<span class="sol-title">标准解决方案</span><span class="sol-type ${t.cls}">${t.label}</span>`;
+    if(ss.claim_tag) h+=`<span style="font-size:11px;color:var(--text-muted)">${esc(ss.claim_tag)}</span>`;
+    h+=`</div>`;
+
+    /* —— 简短的解决动作（合入补丁；若为纯配置修复则附执行命令） —— */
+    const brief=ss.short||ss.summary_short||ss.claim||'';
+    if(brief) h+=`<div class="sol-lead">${rich(brief)}</div>`;
+    if(ss.type==='config' && ss.commands && ss.commands.length){
+      h+=`<div class="sol-block"><div class="sol-block-t">执行命令 / 配置</div>`;
+      h+=`<pre class="patch-diff" style="background:#0f172a;max-height:180px;overflow:auto;">${esc(ss.commands.join('\n'))}</pre>`;
+      h+=`</div>`;
+    }
+
+    /* —— 补充信息（收起 + 滚动） —— */
+    let sup='';
+    if(ss.basis && ss.basis.length){
+      sup+=`<div class="sol-block"><div class="sol-block-t">修复依据（社区邮件 / 会议纪要 / bugfix）</div><div class="basis-list">`;
+      ss.basis.forEach(b=>{
+        const k=BASIS_KIND[b.kind]||b.kind;
+        sup+=`<div class="basis-item"><span class="basis-kind ${esc(b.kind||'bugfix')}">${esc(k)}</span>`;
+        sup+=`<span class="basis-txt">${b.text?rich(b.text)+' ':''}${b.title?esc(b.title):''}${b.url?` <a href="${esc(b.url)}" target="_blank" rel="noopener">原文 ↗</a>`:''}</span></div>`;
+      });
+      sup+=`</div></div>`;
+    }
+    if(ss.fixed_in) sup+=`<div class="fixed-in"><b>修复版本判定：</b>${rich(ss.fixed_in)}</div>`;
+    if(ss.patch_list && ss.patch_list.length){
+      sup+=`<div class="sol-block"><div class="sol-block-t">建议合入补丁（${ss.patch_list.length} 个）</div>`;
+      ss.patch_list.forEach(p=>{
+        const mode={full:['整体合入','full'],part:['局部合入(最小改动)','part'],pick:['取其思路改造','pick']}[p.mode]||[p.mode,'full'];
+        sup+=`<div class="patch-card"><div class="pc-top">`;
+        sup+=`<span class="patch-sha">${esc(p.sha)}</span><span class="patch-subject">${esc(p.subject)}</span><span class="patch-mode ${mode[1]}">${mode[0]}</span>`;
+        sup+=`</div><div class="patch-body">`;
+        if(p.why) sup+=`<div class="patch-why">${rich(p.why)}</div>`;
+        if(p.files && p.files.length) sup+=`<div class="patch-files">${p.files.map(f=>`<span class="patch-file">${esc(f)}</span>`).join('')}</div>`;
+        if(p.diff) sup+=`<details class="picker"><summary>查看补丁差异（diff）</summary><div class="picker-body"><pre class="patch-diff">${esc(p.diff)}</pre></div></details>`;
+        sup+=`</div></div>`;
+      });
+      sup+=`</div>`;
+    }
+    if(ss.method_steps && ss.method_steps.length){
+      sup+=`<div class="sol-block"><div class="sol-block-t">合入方案（步骤）</div><div class="basis-list">`;
+      ss.method_steps.forEach(s=>sup+=`<div class="basis-item"><span class="basis-txt">${rich(s)}</span></div>`);
+      sup+=`</div></div>`;
+    }
+    if(ss.detail) sup+=`<details class="picker"><summary>完整说明 / 回退与验证</summary><div class="picker-body"><div class="sol-full">${rich(ss.detail)}</div></div></details>`;
+    if(sup) h+=`<details class="picker sol-supp" style="margin-top:10px"><summary>补充信息（修复依据 / 版本判定 / 补丁 diff / 合入步骤）</summary><div class="picker-body sol-supp-body">${sup}</div></details>`;
+    h+=`</div>`;
   }
-  if(ra.solution){
-    h+=`<div class="callout callout-success"><div class="title">标准解决方案</div>${rich(ra.solution)}</div>`;
-  }
-  if(ra.workaround){
-    h+=`<div class="callout callout-warning"><div class="title">临时规避方案</div>${rich(ra.workaround)}</div>`;
+
+  const w=ra.temporary_workaround||null;
+  if(w){
+    h+=`<div class="callout callout-warning sol"><div class="sol-head">`;
+    h+=`<span class="sol-title">临时规避方案</span><span class="sol-type config">${w.type==='config'?'命令行/配置规避':'操作规避'}</span>`;
+    h+=`</div>`;
+    h+=`<div class="sol-lead">${rich(w.summary)}</div>`;
+    /* 步骤 / 风险 / 回退统一收起，需要时展开（滚动） */
+    let wr='';
+    if(w.steps && w.steps.length){
+      wr+=`<div class="sol-block"><div class="sol-block-t">操作步骤</div>`;
+      if(w.type==='config'){
+        wr+=`<pre class="patch-diff" style="background:#0f172a;max-height:220px;overflow:auto;">${esc(w.steps.join('\n'))}</pre>`;
+      } else {
+        wr+=`<ol style="margin:4px 0 0 22px;font-size:13px;line-height:1.8">${w.steps.map(s=>`<li>${rich(s)}</li>`).join('')}</ol>`;
+      }
+      wr+=`</div>`;
+    }
+    if(w.risk) wr+=`<div class="callout-foot" style="margin-top:6px"><b>风险与注意：</b>${rich(w.risk)}</div>`;
+    if(w.detail) wr+=`<div class="sol-full" style="margin-top:6px">${rich(w.detail)}</div>`;
+    if(wr) h+=`<details class="picker sol-supp warn" style="margin-top:10px"><summary>操作步骤 / 风险与回退方法</summary><div class="picker-body sol-supp-body">${wr}</div></details>`;
+    h+=`</div>`;
   }
   if(!h) h='<div class="empty-line">无</div>';
   document.getElementById('exec-summary-body').innerHTML=h;
 }
 
-// ===== Event Timeline (事件时序，UML 时序图 SVG) =====
-const SEQ_PALETTE = [
-  {m:'#1e429f', fill:'#e8eefb'}, {m:'#057a55', fill:'#e6f7f0'},
-  {m:'#c25700', fill:'#fef3e8'}, {m:'#6d28d9', fill:'#f0ecfc'},
-  {m:'#b91c1c', fill:'#fde8e8'}, {m:'#0e7490', fill:'#e5f6f8'},
-];
+/* ================= 2 崩溃详情（含日志特征分组） ================= */
+const LF_ICONS={err:'✕',rep:'⟳',other:'!'};
+function logFeaturesHtml(lf){
+  if(!lf) return '';
+  const refTag=r=>r&&(r.file||r.lines)?`<span class="lf-ref">${esc(r.file||'')}${r.lines?` · L${esc(String(r.lines))}`:''}</span>`:'';
+  const cat=(icoClr,ico,name,countTxt,ref,inner)=>`<details class="lf-cat"><summary>`+
+    `<span class="lf-ico" style="background:${icoClr}">${ico}</span>`+
+    `<span class="lf-row-name">${name}</span>${countTxt||''}${ref||''}`+
+    `</summary><div class="lf-cat-body">${inner}</div></details>`;
+  const item=txt=>`<div class="lf-item">${txt}</div>`;
+  let h='<div class="lf">';
 
-function fmtSeqTime(t){
-  if(!t || t==='unknown') return '时间未知';
-  try{
-    const d=new Date(t);
-    if(!isNaN(d.getTime())){
-      return d.toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
-    }
-  }catch(e){}
-  return t;
-}
-
-function _wrapSeqLines(text, maxChars){
-  const t=String(text||'');
-  const lines=[]; let cur='';
-  for(const ch of t){
-    cur+=ch;
-    const w=[...cur].reduce((sum,c)=>sum+(c.charCodeAt(0)<128?0.55:1),0);
-    if(w>=maxChars){ lines.push(cur); cur=''; }
+  const errs=Array.isArray(lf.related_errors)?lf.related_errors:[];
+  if(errs.length){
+    const inner=errs.map(e=>{
+      const loc=e.file||e.lines?`<span class="loc">[${esc(e.file||'')}${e.lines?` L${esc(String(e.lines))}`:''}]</span>`:'';
+      return item(loc+esc(e.t?`[${e.t}] `:'')+esc(e.line));
+    }).join('');
+    h+=cat('#c03a2e',LF_ICONS.err,'相关报错信息',`<span class="lf-count bad">${errs.length} 条</span>`,refTag(lf.related_ref),inner);
   }
-  if(cur) lines.push(cur);
-  return lines.slice(0,4);
-}
 
-function seqCard(cx, cy, w, time, event, isCrash){
-  const padX=11, padY=8, lineH=16;
-  const maxChars=Math.max(8, Math.floor((w-padX*2)/12));
-  const lines=_wrapSeqLines(event, maxChars);
-  const h=padY*2+14+lines.length*lineH;
-  const x=cx-w/2, y=cy-h/2;
-  let out=`<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${w}" height="${h}" rx="7" fill="${isCrash?'#fdf5f5':'#ffffff'}" stroke="${isCrash?'#f3b4b4':'#d5dbe6'}" stroke-width="${isCrash?1.6:1.1}"/>`;
-  out+=`<text x="${(x+padX).toFixed(1)}" y="${(y+padY+9).toFixed(1)}" font-size="10.5" fill="#94a3b8" font-family="Consolas, monospace">${esc(time)}</text>`;
-  lines.forEach((ln,li)=>{
-    out+=`<text x="${(x+padX).toFixed(1)}" y="${(y+padY+24+li*lineH).toFixed(1)}" font-size="12" fill="${isCrash?'#b91c1c':'#334155'}" font-family="PingFang SC, Microsoft YaHei, sans-serif">${esc(ln)}</text>`;
-  });
-  return out;
-}
-
-function renderEventTimeline(report){
-  const ra=report.root_cause_analysis||{};
-  const events=ra.event_chain||[];
-  const el=document.getElementById('event-timeline-section');
-  const body=document.getElementById('event-timeline-body');
-  if(!events.length){ el.style.display='none'; return; }
-  el.style.display='';
-
-  // 参与者(泳道)：按事件首次出现顺序
-  const actors=[];
-  events.forEach(ev=>{
-    if(ev.actor && !actors.includes(ev.actor)) actors.push(ev.actor);
-    if(ev.to_actor && !actors.includes(ev.to_actor)) actors.push(ev.to_actor);
-  });
-  if(!actors.length) actors.push('系统日志观测');
-  const n=actors.length;
-  const margin=90, spacing=210;
-  const width=Math.max(760, margin*2+Math.max(1,n-1)*spacing);
-  const headH=46, rowH=92, bottomPad=22;
-  const height=headH+events.length*rowH+bottomPad;
-  const px=i => n===1 ? width/2 : margin+i*((width-margin*2)/(n-1));
-  const lane=i => SEQ_PALETTE[i%SEQ_PALETTE.length];
-
-  let s='';
-  s+=`<div class="seq-wrap"><svg class="seq-svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">`;
-  s+=`<defs>
-    <marker id="seq-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#64748b"/></marker>
-    <marker id="seq-arrow-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#dc2626"/></marker>
-  </defs>`;
-
-  // 生命线
-  actors.forEach((a,i)=>{
-    s+=`<line x1="${px(i)}" y1="${headH-2}" x2="${px(i)}" y2="${height-bottomPad}" stroke="#cbd5e1" stroke-width="1.5" stroke-dasharray="6,5"/>`;
-  });
-  // 参与者头部
-  actors.forEach((a,i)=>{
-    const c=lane(i), w=Math.min(150, spacing-24);
-    s+=`<rect x="${(px(i)-w/2).toFixed(1)}" y="8" width="${w}" height="32" rx="6" fill="${c.fill}" stroke="${c.m}" stroke-width="1.5"/>`;
-    s+=`<text x="${px(i)}" y="29" text-anchor="middle" font-size="13" font-weight="700" fill="${c.m}" font-family="PingFang SC, Microsoft YaHei, sans-serif">${esc(a)}</text>`;
-  });
-
-  // 事件
-  events.forEach((ev,i)=>{
-    const isCrash=i===events.length-1;
-    const y=headH+i*rowH+40;
-    const ai=Math.max(0, actors.indexOf(ev.actor));
-    const ax=px(ai);
-    const c=lane(ai);
-    const tLabel=fmtSeqTime(ev.time);
-    // 激活条
-    s+=`<rect x="${(ax-5).toFixed(1)}" y="${y-17}" width="10" height="34" rx="3" fill="${isCrash?'#dc2626':c.m}"/>`;
-    if(ev.to_actor && actors.includes(ev.to_actor)){
-      const bx=px(actors.indexOf(ev.to_actor));
-      const dir=bx>ax?1:-1;
-      s+=`<line x1="${(ax+dir*7).toFixed(1)}" y1="${y}" x2="${(bx-dir*7).toFixed(1)}" y2="${y}" stroke="${isCrash?'#dc2626':'#64748b'}" stroke-width="1.6" marker-end="${isCrash?'url(#seq-arrow-red)':'url(#seq-arrow)'}"/>`;
-      s+=seqCard((ax+bx)/2, y-10, Math.abs(bx-ax)-26, tLabel, ev.event, isCrash);
-    } else {
-      const cardW=Math.min(196, spacing-28);
-      const putLeft=(n>1 && ai===n-1);
-      const cx=putLeft ? ax-cardW/2-16 : ax+cardW/2+16;
-      const x1=putLeft?ax-7:ax+7, x2=putLeft?cx+cardW/2:cx-cardW/2;
-      s+=`<line x1="${x1.toFixed(1)}" y1="${y}" x2="${x2.toFixed(1)}" y2="${y}" stroke="#cbd5e1" stroke-width="1.2" stroke-dasharray="3,3"/>`;
-      s+=seqCard(cx, y, cardW, tLabel, ev.event, isCrash);
+  const reps=Array.isArray(lf.repeated)?lf.repeated:[];
+  reps.forEach((r,i)=>{
+    const ex=Array.isArray(r.examples)?r.examples:[];
+    let inner=(r.note?`<p class="lf-note">${rich(r.note)}</p>`:'');
+    if(ex.length){
+      inner+=`<div class="lf-examples">`+ex.map(l=>`<div class="lf-line">${esc(l)}</div>`).join('')+`</div>`;
     }
+    h+=cat('#b26a00',LF_ICONS.rep,esc(r.title||('强相关可疑日志组 '+(i+1))),
+      `<span class="lf-count bad">重复 ${esc(String(r.count))} 次</span>${r.window?`<span class="lf-scope">窗口 ${esc(r.window)}</span>`:''}`,
+      refTag(r.ref||(r.file?{file:r.file,lines:r.lines}:null)), inner);
   });
-  s+='</svg></div>';
-  s+=`<div class="seq-legend">
-    <span class="lg"><span class="sw"></span>跨组件消息/调用</span>
-    <span class="lg"><span class="sw dashed"></span>生命线（时间向下）</span>
-    <span class="lg"><span class="dbox"></span>组件事件</span>
-    <span class="lg"><span class="dbox red"></span>崩溃爆发</span>
-  </div>`;
-  body.innerHTML=s;
-}
 
-// ===== Crash Detail =====
+  const others=Array.isArray(lf.other)?lf.other:[];
+  others.forEach((o,i)=>{
+    const lines=Array.isArray(o.lines)?o.lines:[];
+    let inner=(o.note?`<p class="lf-note">${rich(o.note)}</p>`:'');
+    if(lines.length) inner+=`<div class="lf-examples">${lines.map(l=>`<div class="lf-line">${esc(l)}</div>`).join('')}</div>`;
+    h+=cat('#2f5bd8',LF_ICONS.other,esc(o.name||('其他关联异常 '+(i+1))),
+      `${o.count?`<span class="lf-count mid">${esc(String(o.count))}</span>`:''}${o.span?`<span class="lf-scope">${esc(o.span)}</span>`:''}`,
+      refTag(o.ref||(o.file?{file:o.file,lines:o.lines}:null)), inner);
+  });
+
+  h+='</div>';
+  return h;
+}
 function renderCrashDetail(report){
   const cf=report.crash_feature_info||{};
-  const rows=[
-    ['RIP', cf.rip],
-    ['RIP 函数', cf.rip_function],
-    ['RIP 偏移', cf.rip_offset],
-    ['崩溃类型', cf.bug_type],
-    ['Bug Key', cf.bug_key],
-    ['签名', cf.signature],
-    ['崩溃摘要', cf.bug_summary],
-  ];
+  const rows=[['RIP',cf.rip],['RIP 函数',cf.rip_function],['RIP 偏移',cf.rip_offset],['崩溃类型',cf.bug_type],['Bug Key',cf.bug_key],['签名',cf.signature],['崩溃摘要',cf.bug_summary]];
   let h='<table><tr><th>字段</th><th>值</th></tr>';
-  rows.forEach(([k,v])=>{
-    if(v!=null && v!=='') h+=`<tr><td class="nowrap">${esc(k)}</td><td class="mono">${esc(String(v))}</td></tr>`;
-  });
+  rows.forEach(([k,v])=>{ if(v!=null && v!=='') h+=`<tr><td class="nowrap">${esc(k)}</td><td class="mono">${esc(String(v))}</td></tr>`; });
   const rm=cf.related_modules||[];
   if(rm.length) h+=`<tr><td class="nowrap">关联模块</td><td><div class="modules-chips">${rm.map(m=>`<span class="chip">${esc(m)}</span>`).join('')}</div></td></tr>`;
   h+='</table>';
-
-  // Anomaly features (collapsible)
-  const an=cf.anomaly_features||{};
-  if(Object.keys(an).length){
-    h+='<details style="margin-top:12px;border:1px solid var(--border);"><summary>异常特征</summary><div class="detail-body">'+renderAnomaly(an)+'</div></details>';
-  }
+  const lf=logFeaturesHtml(cf.log_features);
+  if(lf) h+=`<details class="lf-all" style="margin-top:14px"><summary>日志特征（报错 / 重复日志 / 其它 · 含来源文件行号）</summary><div class="lf-all-body">${lf}</div></details>`;
   document.getElementById('crash-detail-body').innerHTML=h;
 }
 
-function renderAnomaly(an){
-  let a='<div class="anomaly-grid">';
-  if(an.error_keywords&&an.error_keywords.length) a+=`<div class="anomaly-item"><span class="anomaly-label">错误关键词</span><div class="modules-chips">${an.error_keywords.map(k=>`<span class="chip chip-warn">${esc(k)}</span>`).join('')}</div></div>`;
-  if(an.repeated_errors&&an.repeated_errors.length) a+=`<div class="anomaly-item"><span class="anomaly-label">重复错误</span><div class="anomaly-list">${an.repeated_errors.map(e=>`<div class="anomaly-row">${esc(e)}</div>`).join('')}</div></div>`;
-  if(an.register_values&&Object.keys(an.register_values).length) a+=`<div class="anomaly-item"><span class="anomaly-label">寄存器值</span><div class="kv-grid">${Object.entries(an.register_values).map(([k,v])=>`<div class="kv"><span class="k">${esc(k)}</span><span class="v">${esc(v)}</span></div>`).join('')}</div></div>`;
-  if(an.pre_crash_events&&an.pre_crash_events.length) a+=`<div class="anomaly-item"><span class="anomaly-label">崩溃前事件</span><div class="anomaly-list">${an.pre_crash_events.map(e=>`<div class="anomaly-row">${esc(e)}</div>`).join('')}</div></div>`;
-  if(an.dump_stack_context) a+=`<div class="anomaly-item"><span class="anomaly-label">Dump Stack 上下文</span><pre class="anomaly-code" style="background:#1e293b;color:#e2e8f0;border-radius:8px;padding:12px 14px;">${esc(an.dump_stack_context)}</pre></div>`;
-  if(an.cpu_context) a+=`<div class="anomaly-item"><span class="anomaly-label">CPU 上下文</span><pre class="anomaly-code" style="background:#1e293b;color:#e2e8f0;border-radius:8px;padding:12px 14px;">${esc(an.cpu_context)}</pre></div>`;
-  a+='</div>';
-  return a;
-}
-
-// ===== Crash Path (调用栈 + 崩溃扩散链 + 源码线索 整合) =====
-function stripLeadingEmoji(s){
-  return String(s||'').replace(/^\s*[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\u{FE0F}\u{200D}]+\s*/u,'');
-}
-
-function renderCrashPath(report){
-  const cf=report.crash_feature_info||{};
-  const ra=report.root_cause_analysis||{};
-  const traceText=cf.call_trace_text||'';
-  const summary=cf.call_trace_summary||null;
-  const chain=ra.propagation_chain||[];
-  const body=document.getElementById('crash-path-body');
-  let h='';
-
-  // 1) 路径导语：一句话讲清完整调用路径
-  if(summary && summary.summary){
-    h+=`<p class="path-intro">${linkify(summary.summary)}</p>`;
-  }
-
-  // 2) 纵向链条 = 调用栈的源码级解读（每跳：函数对 + 关系 + 源码位置 + 解读 + 原始栈帧行）
-  const relMeta={
-    call:{label:'正常调用',cls:'call'},
-    uaf_free:{label:'UAF 释放',cls:'uaf_free'},
-    data_pollution:{label:'数据污染',cls:'data_pollution'},
-    null_deref:{label:'空指针解引用',cls:'null_deref'},
-  };
-  if(chain.length){
-    h+='<div class="pchain">';
-    chain.forEach((step,i)=>{
-      const isCrash=i===chain.length-1;
-      const meta=relMeta[step.type]||{label:step.type||'调用',cls:'call'};
-      const src=step.source_file||'';
-      const fnUrl=step.source_url||'';
-      // 文件页链接：由函数 ident 链接推导（/ident/<func> → /source/<file>）
-      let fileUrl='';
-      if(fnUrl && src){
-        fileUrl=fnUrl.replace(/\/ident\/[^/]+$/, '/source/'+src);
-      }
-      let srcLine='';
-      if(src || fnUrl){
-        srcLine='<div class="pc-src">源码位置：';
-        if(src && fileUrl){
-          srcLine+=`<a class="path" href="${esc(fileUrl)}" target="_blank" rel="noopener" title="在新窗口查看该源码文件">${esc(src)}</a>`;
-        } else {
-          srcLine+=`<span class="path">${esc(src)}</span>`;
-        }
-        if(fnUrl){
-          srcLine+=` <a class="pc-src-link" href="${esc(fnUrl)}" target="_blank" rel="noopener" title="在新窗口定位到函数 ${esc(step.to||'')} 的定义">查看源码 ↗</a>`;
-        }
-        srcLine+='</div>';
-      }
-      const snippet=(step.source_snippet||'').trim();
-      const snippetBlock=snippet
-        ? `<details class="pc-snippet"><summary>源码片段（${esc(step.to||'')}）</summary><pre><code>${esc(snippet)}</code></pre></details>`
-        : '';
-      h+=`<div class="pc-node ${isCrash?'is-crash':''}">`+
-        `<div class="pc-rail"><div class="pc-dot">${i+1}</div><div class="pc-line"></div></div>`+
-        `<div class="pc-card">`+
-          `<div class="pc-head">`+
-            `<span class="pc-funcs"><span class="fn">${esc(step.from||'')}</span><span class="arr">→</span><span class="fn">${esc(step.to||'')}</span></span>`+
-            `<span class="pc-type ${meta.cls}">${meta.label}</span>`+
-            (isCrash?'<span class="pc-crash-tag">崩溃爆发</span>':'')+
-          `</div>`+
-          srcLine+
-          snippetBlock+
-          (step.detail?`<div class="pc-detail">${linkify(step.detail)}</div>`:'')+
-          (step.evidence?`<div class="pc-evidence">${esc(step.evidence)}</div>`:'')+
-        `</div>`+
-      `</div>`;
-    });
-    h+='</div>';
-  } else if(traceText){
-    // 回退：无扩散链数据时，原始调用栈直接展示
-    h+=`<pre><code>${esc(traceText)}</code></pre>`;
-  }
-
-  // 3) 关键观察小结（卡片）
-  if(summary && summary.key_observations && summary.key_observations.length){
-    h+=`<div class="path-obs-card"><div class="path-obs-title">关键观察</div>`+
-       `<ul class="path-obs">${summary.key_observations.map(o=>`<li>${esc(stripLeadingEmoji(o))}</li>`).join('')}</ul></div>`;
-  }
-
-  // 4) 完整原始调用栈折叠备查（有链条时）
-  if(chain.length && traceText){
-    h+=`<details class="raw-stack"><summary>查看完整原始调用栈</summary><pre><code>${esc(traceText)}</code></pre></details>`;
-  }
-
-  if(!h) h='<div class="empty-line">无调用栈数据</div>';
-  body.innerHTML=h;
-}
-
-// ===== Root Cause Analysis =====
-const STAGE_META = {
-  phenomenon:       { name:'现象确认',      color:'#3b82f6' },
-  log_location:     { name:'日志定位',      color:'#0891b2' },
-  source_analysis:  { name:'源码分析',      color:'#7c3aed' },
-  propagation:      { name:'崩溃扩散链',    color:'#ea580c' },
-  root_cause:       { name:'根因收敛',      color:'#dc2626', hint:'仅凭本次崩溃自身证据收敛缺陷机制' },
-  kb_corroboration: { name:'知识库佐证',    color:'#059669', hint:'用外部案例交叉验证上述根因，非重新推导' },
-  fix_verification: { name:'修复方案',      color:'#059669', hint:'把根因转化为可执行修复与版本判定' },
+/* ================= 3 事件时序图（对象泳道） ================= */
+const TYPES_META={
+  process:{label:'进程', color:'#1d4ed8'},
+  kernel:{label:'内核', color:'#0d9488'},
+  thread:{label:'线程', color:'#0284c7'},
+  global:{label:'全局变量', color:'#7c3aed'},
+  local:{label:'局部变量', color:'#c25700'},
+  hardware:{label:'硬件', color:'#475569'},
 };
-const _stageMeta = s => STAGE_META[s] || { name:'分析', color:'#64748b' };
+const KIND_META={
+  irq:{label:'硬件中断', color:'#5b7bb0'},
+  softirq:{label:'软中断', color:'#5b7bb0'},
+  call:{label:'调用', color:'#5b7bb0'},
+  hw:{label:'硬件', color:'#5b7bb0'},
+  mutex:{label:'互斥访问', color:'#2f5bd8'},
+  alloc:{label:'引用/分配', color:'#12805c'},
+  local:{label:'局部变量(值)', color:'#b26a00'},
+  race:{label:'竞态缺口', color:'#c03a2e'},
+  free:{label:'释放', color:'#c03a2e'},
+  global:{label:'全局变化', color:'#7a5bd8'},
+  crash:{label:'崩溃爆发', color:'#c03a2e'},
+};
+function renderEventTimeline(report){
+  const ra=report.root_cause_analysis||{};
+  const sc=ra.event_scene||null;
+  const body=document.getElementById('event-timeline-body');
+  if(!sc || !Array.isArray(sc.participants) || !sc.participants.length){
+    body.innerHTML='<div class="empty-line">无事件时序数据</div>'; return;
+  }
+  const parts=sc.participants, evs=sc.events||[], n=parts.length;
+  const kindOf=e=>({irq:{n:'硬件中断',c:'#5b7bb0'},softirq:{n:'软中断',c:'#5b7bb0'},call:{n:'调用',c:'#5b7bb0'},hw:{n:'硬件',c:'#5b7bb0'},mutex:{n:'互斥/锁',c:'#2f5bd8'},alloc:{n:'引用/分配',c:'#12805c'},local:{n:'局部变量(值)',c:'#b26a00'},race:{n:'竞态缺口',c:'#c03a2e'},free:{n:'释放',c:'#c03a2e'},global:{n:'全局变化',c:'#7a5bd8'},crash:{n:'崩溃爆发',c:'#c03a2e'}}[e.kind]||{n:e.kind||'事件',c:'#5b7bb0'});
+  const typeL=p=>p&&((TYPES_META[p.type]||{}).label||p.type);
+  const mm=p=>{const m={user:{n:'用户态',c:'#0e7490'},sys:{n:'用户→内核',c:'#4f46e5'},kern:{n:'内核态',c:'#1e293b'},hw:{n:'硬件',c:'#5b7bb0'}}[p]; return m||{n:'',c:'#64748b'};};
+  const pad=v=>String(v).padStart(2,'0');
+  const mkTime=(ev)=>{
+    if(sc.anchor && ev.dt_ms!=null){
+      const t=new Date(Date.parse(sc.anchor)-ev.dt_ms);
+      if(!isNaN(t.getTime())) return `${pad(t.getHours())}:${pad(t.getMinutes())}:${pad(t.getSeconds())}.${String(t.getMilliseconds()).padStart(3,'0')}`;
+    }
+    return ev.t||'';
+  };
 
+  const GUT=132, ROW=120, HEAD=80;
+  const LANE=Math.max(210, Math.floor((1180-GUT)/(n||1))-40);
+  const seqW=Math.max(560, GUT+LANE*n);
+  const xAt=i=>GUT+LANE*(i+0.5);
+
+  let html=`<p class="tl-sec-note"><b>泳道线条</b>：用户态(进程) / 内核态(CPU92，含调度器) / 硬件(arch_timer)；事件带<b>时分秒</b>与箭头（含对象自身上发生的事件），并在对象间<b>传递变量/值</b>。悬停事件只看一行概要。最左为全局变量状态列。</p>`;
+  html+=`<div class="tlx-legend">`+
+   `<span class="lg"><span class="sq" style="background:#0e7490"></span>用户态(进程)</span>`+
+   `<span class="lg"><span class="sq" style="background:#1e293b"></span>内核态(CPU)</span>`+
+   `<span class="lg"><span class="sq" style="background:#5b7bb0"></span>硬件</span>`+
+   `<span class="lg"><span class="sq" style="background:#12805c"></span>锁/引用变化</span>`+
+   `<span class="lg"><span class="sq" style="background:#c03a2e"></span>竞态/崩溃</span>`+
+   `<span class="lg"><span class="sq" style="background:#b26a00"></span>变量/值传递</span></div>`;
+
+  const st={}; (sc.ginit||[]).forEach(g=>st[g.k]=g.v);
+  const changeLog=evs.map(ev=>(ev.g||[]).map(c=>{const f=st[c.v]; st[c.v]=c.t; return {name:c.n||c.v,f,t:c.t,down:c.dir==='down'||((Number(f)!=null&&Number(c.t)!=null&&Number(c.t)<Number(f))),bad:/NULL|0x0/.test(String(c.t))};}));
+
+  html+=`<div class="tlx"><div class="tlx-scroll"><div class="tlx-inner" style="min-width:${236+seqW}px">`;
+
+  /* 全局变量列 */
+  html+=`<div class="tlx-gbox" style="flex:0 0 236px"><div class="tlx-ghead">全局变量 · 随事件变化</div>`;
+  evs.forEach((ev,i)=>{
+    const ch=changeLog[i];
+    html+=`<div class="tlx-grow" style="height:${ROW}px;border-bottom:1px dashed var(--line-2);box-sizing:border-box;padding:10px 10px 6px">`;
+    if(!ch.length){ html+=`<div class="tlx-gempty">—</div>`; }
+    else ch.forEach(c=>{
+      html+=`<div class="tlx-gvar"><span class="dot" style="background:${c.down?'#c03a2e':'#12805c'}"></span>${esc(c.name)}</div>`;
+      html+=`<div class="tlx-gchg${c.down?' down':''}" style="font-family:Consolas,monospace;font-size:11px;color:#334155"><span class="old" style="color:#8494ab">${esc(String(c.f))}</span> → <span class="new" style="font-weight:700;color:${c.bad?'#c03a2e':'#12805c'}">${esc(String(c.t))}</span></div>`;
+    });
+    html+=`</div>`;
+  });
+  html+=`</div>`;
+
+  /* 事件序列区 */
+  html+=`<div class="tlx-seq" style="width:${seqW}px;flex:0 0 ${seqW}px;position:relative">`;
+  html+=`<div class="tlx-lanes">`+ parts.map((p,i)=>`<div class="tlx-lane-line" style="left:${xAt(i)}px"></div>`).join('') +`</div>`;
+
+  /* 对象头 */
+  html+=`<div style="position:relative;height:${HEAD}px;border-bottom:1px solid var(--line)">`;
+  parts.forEach((p,i)=>{
+    const x=xAt(i), c=(TYPES_META[p.type]||{}).color||'#5b7bb0', mk=mm(p.mode);
+    html+=`<div style="position:absolute;top:6px;left:${x}px;transform:translateX(-50%);text-align:center;width:${LANE-20}px" data-tip data-tipbody="${esc(p.name+' · '+(typeL(p)||'')+(p.init?' · '+p.init:''))}">`;
+    html+=`<div><span class="tlx-hkind" style="background:${c}14;color:${c};border:1px solid ${c}44">${esc(typeL(p))}</span>`;
+    if(mk.n) html+=` <span class="tlx-hmode" style="background:${mk.c}16;color:${mk.c};border:1px solid ${mk.c}44">${esc(mk.n)}</span></div>`;
+    else html+=`</div>`;
+    html+=`<div style="margin-top:3px;font-size:12px;font-weight:700;color:#1c2733;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(p.name)}</div>`;
+    if(p.init) html+=`<div style="font-size:9px;color:#8494ab;font-family:Consolas,monospace">${esc(p.init)}</div>`;
+    html+=`</div>`;
+  });
+  html+=`</div>`;
+
+  /* 事件行 */
+  evs.forEach((ev,i)=>{
+    const fi=parts.findIndex(p=>p.id===ev.from), ti=parts.findIndex(p=>p.id===(ev.to||''));
+    const fromX=fi>=0?xAt(fi):(GUT+LANE);
+    const hasT=fi>=0&&ti>=0&&ev.to!==ev.from;
+    const toX=hasT?xAt(ti):fromX;
+    const kM=kindOf(ev), mk=mm(ev.m), isCrash=ev.kind==='crash';
+    const d=Math.abs(toX-fromX);
+    const timeLbl=mkTime(ev);
+
+    html+=`<div class="tlx-row" style="height:${ROW}px;border-bottom:1px dashed var(--line-2);box-sizing:border-box;position:relative">`;
+    html+=`<div class="tlx-time" style="position:absolute;left:2px;top:3px;font-size:10px;font-family:Consolas,monospace;color:#1c2733">${esc(timeLbl)}<br><small style="font-size:8.5px;color:#8494ab">${esc(ev.origin||'')}</small></div>`;
+
+    let cardW,L;
+    if(hasT){ const mid=(fromX+toX)/2; cardW=Math.min(300,Math.max(170,Math.round(d*0.7))); L=Math.max(0,Math.min(mid-cardW/2, seqW-cardW-4)); }
+    else { const x=fi>=0?fromX:(GUT+LANE); cardW=Math.min(260,seqW-(x+12)-4); cardW=Math.max(150,cardW); L=Math.min(x+12,Math.max(0,seqW-cardW-4)); }
+
+    /* 悬停只显示一行概要（少而精） */
+    const tipBody=(ev.title||'')+(ev.val?('\n值：'+ev.val):'');
+    html+=`<div class="tlx-card${isCrash?' crash':''}" style="left:${L}px;width:${cardW}px;top:6px" data-tip data-tipbody="${esc(tipBody)}">`;
+    html+=`<div style="padding:5px 8px 4px"><div class="t-title" style="font-size:11.5px;color:#1c2733;line-height:1.4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">`;
+    if(mk.n) html+=`<span class="tlx-mtag" style="background:${mk.c}">${esc(mk.n)}</span>`;
+    html+=`<span class="k-tag" style="background:${kM.c}">${esc(kM.n)}</span>${esc(ev.title||'')}</div>`;
+    if(ev.val) html+=`<div class="t-val" style="font-family:Consolas,monospace;font-size:9.5px;color:#52637b;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(ev.val)}</div>`;
+    html+=`</div></div>`;
+
+    if(hasT){
+      const right=toX>fromX;
+      const bad=isCrash||ev.kind==='race'||ev.kind==='free';
+      html+=`<div class="tlx-arrow ${right?'r':'l'}${bad?' bad':''}" style="left:${Math.min(fromX,toX)+6}px;width:${Math.max(0,d-12)}px;top:${ROW/2}px"></div>`;
+    } else {
+      /* 对象指向自身：画一个弯折的回环箭头（从生命线弯出并指回自身） */
+      const bad=isCrash||ev.kind==='race'||ev.kind==='free';
+      const col=bad?'#c03a2e':'#5b7bb0';
+      html+=`<svg class="tlx-sloop" style="left:${fromX-10}px;top:${Math.round(ROW*0.5)}px" width="30" height="52" viewBox="0 0 30 52" xmlns="http://www.w3.org/2000/svg">`+
+        `<path d="M10 2 C 30 2, 30 50, 10 50" fill="none" stroke="${col}" stroke-width="1.6"/>`+
+        `<polygon points="24,44 10,50 24,56" fill="${col}"/></svg>`;
+    }
+    html+=`</div>`;
+  });
+
+  html+=`</div>`;
+  html+=`</div></div></div>`;
+  if(sc.anchor) html+=`<p class="tlx-foot">纵虚线=对象生命线；箭头=事件/变量在对象间传递，对象指向自身时用弯折回环箭头指回自身。时刻为以崩溃时点(${esc(sc.anchor)})为锚的推算显示（约数），请以主机时钟为准。</p>`;
+  else html+=`<p class="tlx-foot">纵虚线=对象生命线；箭头=事件/变量在对象间传递，对象指向自身时用弯折回环箭头指回自身。悬停可看一行概要；可横向/纵向滚动。</p>`;
+  body.innerHTML=html;
+}
+
+
+/* 悬浮提示：事件/对象详细信息（hover 展示，默认隐藏） */
+let TIP_EL=null;
+function initTip(){
+  if(!TIP_EL){ TIP_EL=document.createElement('div'); TIP_EL.id='tip'; document.body.appendChild(TIP_EL); }
+  document.addEventListener('mousemove', e=>{
+    const el=e.target&&e.target.closest?e.target.closest('[data-tip]'):null;
+    if(!el){ TIP_EL.style.display='none'; return; }
+    const meta=el.getAttribute('data-tipmeta')||'';
+    const body=el.getAttribute('data-tipbody')||'';
+    if(!meta && !body){ TIP_EL.style.display='none'; return; }
+    TIP_EL.innerHTML=(meta?`<div class="tip-m">${esc(meta)}</div>`:'')+(body?`<div class="tip-b">${esc(body)}</div>`:'');
+    TIP_EL.style.display='block';
+    const tw=TIP_EL.offsetWidth||400, th=TIP_EL.offsetHeight||220;
+    let x=e.clientX+14, y=e.clientY+14;
+    if(x+tw>window.innerWidth-8) x=Math.max(8,e.clientX-tw-14);
+    if(y+th>window.innerHeight-8) y=Math.max(8,e.clientY-th-14);
+    TIP_EL.style.left=x+'px'; TIP_EL.style.top=y+'px';
+  });
+  document.addEventListener('mouseleave', ()=>{ if(TIP_EL) TIP_EL.style.display='none'; });
+}
+/* ================= 4 根因分析 ================= */
+function pathMini(ra){
+  const chain=Array.isArray(ra)?ra:[];
+  if(!chain.length) return '';
+  const relLabel={call:'调用',uaf_free:'UAF 释放',data_pollution:'数据污染',null_deref:'空指针解引用'};
+  let h='<div class="pp-wrap">';
+  chain.forEach((s,i)=>{
+    const crash=s.crash||i===chain.length-1;
+    const rel=relLabel[s.type]||s.type||'调用';
+    const file=s.file||s.source_file||'';
+    const line=s.line||'';
+    const fnUrl=s.source_url||s.fn_url||'';
+    h+=`<div class="pp${crash?' pp-crash':''}">`;
+    h+=`<div class="pp-top">`;
+    h+=`<span class="pp-i">${i+1}</span>`;
+    h+=`<code class="pp-fn">${esc(s.from||'')}</code><span class="pp-arr">→</span><code class="pp-fn">${esc(s.to||'')}</code>`;
+    h+=`<span class="pp-rel${crash?' rel-bad':''}">${esc(rel)}</span>`;
+    if(s.stack) h+=`<span class="pp-stack" title="崩溃栈帧对应的符号">栈 ${esc(s.stack)}</span>`;
+    h+=`</div>`;
+
+    /* 源码位置（含目录/文件/行号/函数与栈帧↔源码对应） */
+    if(file||line||s.fn_ctx){
+      h+=`<div class="pp-loc">源码 `;
+      if(file){
+        const dir=(s.src_dir?`${s.src_dir}/`:'');
+        const txt=(line?`${dir}${file}:${line}`:`${dir}${file}`);
+        if(fnUrl) h+=`<a href="${esc(fnUrl)}" target="_blank" rel="noopener">${esc(txt)}</a>`;
+        else h+=`<code>${esc(txt)}</code>`;
+      }
+      if(s.fn_ctx) h+=` <span class="pp-locfn">函数：${esc(s.fn_ctx)}</span>`;
+      h+=`</div>`;
+    }
+
+    const params=Array.isArray(s.params)?s.params:[];
+    if(params.length){
+      h+=`<div class="pp-params"><span class="pp-param-t">实参/寄存器 ↔ 源码形参</span>`;
+      params.forEach(p=>{
+        const bad=!!p.bad;
+        const nm=(p.io==='out'?'out':'in');
+        let label=`${esc(nm)}`;
+        if(p.reg) label+=` <code class="pp-reg">${esc(p.reg)}</code>`;
+        if(p.n) label+=` <b>${esc(p.n)}</b>`;
+        if(p.formal) label+=` (${esc(p.formal)})`;
+        h+=`<span class="pcp${bad?' bad':''}" title="${esc(p.note||'')}">${label}${p.v!=null?` = ${esc(String(p.v))}`:''}${bad?' ✗':''}</span>`;
+      });
+      h+=`</div>`;
+    }
+    if(s.detail||s.evidence){
+      let dbody='';
+      if(s.detail) dbody+=`<div class="sol-full" style="margin:0 0 6px">${rich(s.detail)}</div>`;
+      if(s.evidence) dbody+=`<pre class="rf-evidence plain" style="margin:0;max-height:140px">${esc(s.evidence)}</pre>`;
+      h+=`<details class="pp-detail"><summary>详细解读（含二进制↔源码行对照）</summary>${dbody}</details>`;
+    }
+    h+=`</div>`;
+  });
+  h+=`<p class="pp-foot">说明：<code style="background:transparent">栈帧 ↔ 源码</code>把崩溃栈上的函数/偏移对应到内核源码目录·文件·函数；<b>实参/寄存器 ↔ 源码形参</b>列出当前传入的具体参数值及其对应源码形参；<span class="pcp bad">红色</span>为错误/异常参数。</p>`;
+  h+='</div>';
+  return h;
+}
+function rfStep(step,no){
+  const st=step.stage||'step';
+  const final=st==='conclusion';
+  const path = st==='path_analysis';
+  const color=step.color||(path?'#c2660f':final?'#12805c':'#2f5bd8');
+  const stageName=step.stage_name||step.phase||step.tag||'分析';
+  const short=step.short||'';
+  const hasExtra=!!(step.text||step.evidence);
+  let h=`<div class="rf-step${final?' is-final':''}">`;
+  h+=`<div class="rf-step-dot"><div class="rf-step-dot-inner" style="background:${final?'#12805c':color}">${final?'✓':no}</div></div>`;
+  h+=`<div class="rf-step-card${final?' is-final':''}">`;
+  h+=`<span class="rf-tag" style="background:${color}16;color:${color};border:1px solid ${color}40">${esc(stageName)}</span>`;
+  h+=`<div class="rf-title">${esc(step.title||'')}</div>`;
+  if(short) h+=`<div class="rf-text">${rich(short)}</div>`;
+  if(path && step.path_mini) h+=pathMini(step.path_mini);
+
+  if(step.refs && step.refs.length){
+    h+=`<div class="rf-refs">`;
+    step.refs.forEach(r=>{
+      const c={commit:'#12805c',mail:'#9a6a00',meeting:'#6d4fc2',kb:'#2f5bd8',bugzilla:'#12805c',source:'#5b7bb0'}[r.kind]||'#2f5bd8';
+      const nm={commit:'commit',mail:'邮件',meeting:'会议纪要',kb:'内部案例',bugzilla:'Bugzilla',source:'源码对照'}[r.kind]||'ref';
+      if(r.anchor){
+        h+=`<span class="rf-ref" style="border-color:${c}77;color:${c};background:${c}0f"><a class="lnk" href="#${r.anchor}" onclick="return gotoKB('${r.anchor}')">${esc(r.label||nm)} ↗</a></span>`;
+      } else if(r.url){
+        h+=`<span class="rf-ref" style="border-color:${c}77;color:${c};background:${c}0f"><a class="lnk" href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.label||nm)} ↗</a></span>`;
+      } else {
+        h+=`<span class="rf-ref" style="border-color:${c}77;color:${c};background:${c}0f">${esc(r.label||nm)}</span>`;
+      }
+    });
+    h+=`</div>`;
+  }
+  if(step.branch){
+    const stop=step.branch.verdict==='stop';
+    h+=`<div class="rf-branch ${stop?'stop':'go'}"><b>${stop?'· 高相似命中，终止后续检索':'· 继续推理'}</b>&nbsp;${rich(step.branch.text||'')}</div>`;
+  }
+  if(hasExtra){
+    let body='';
+    if(step.text) body+=`<div class="sol-full">${rich(step.text)}</div>`;
+    if(step.evidence) body+=`<pre class="rf-evid rf-evidence${step.ev_plain?' plain':''}">${rich(step.evidence)}</pre>`;
+    h+=`<details class="rf-detail"><summary>查看详细内容</summary><div class="rf-detail-body">${body}</div></details>`;
+  }
+  h+=`</div></div>`;
+  return h;
+}
 function renderRootCause(report){
   const ra=report.root_cause_analysis||{};
+  const flow=Array.isArray(ra.reasoning_flow)?ra.reasoning_flow:[];
+  const partOf=st=>{
+    if(st==='stack'||st==='hypothesis') return 'feature';
+    if(st==='path_analysis') return 'chain';
+    return 'case';
+  };
+  const PARTS=[
+    {key:'feature',no:'①',title:'崩溃特征分析（含函数栈）',color:'#2f5bd8',
+     desc:'从崩溃函数栈提取 函数/偏移/调用关系/寄存器，还原“在哪一条路径上、以什么方式崩”（含函数栈与寄存器证据）。'},
+    {key:'chain',no:'②',title:'崩溃链路分析',color:'#c2660f',
+     desc:'把崩溃栈按跳转拆解成扩散链：每跳给出 栈帧↔源码(文件/行号)、源码位置与 实参/寄存器↔源码形参（异常参数标红）。'},
+    {key:'case',no:'③',title:'相关案例分析（基于崩溃栈 + 内部/上游案例 + 源码对照）',color:'#12805c',
+     desc:'以崩溃栈特征为锚，交叉分析 内部知识库案例、社区邮件/会议纪要/Bugzilla、上游 commit，并与当前内核对应源码逐行对照，得出修复与结论。'}
+  ];
+  const buckets={feature:[],chain:[],case:[]};
+  flow.forEach((s,i)=>{
+    const st=s.stage||'step';
+    buckets[partOf(st)].push(s);
+  });
+
   let h='';
-  if(ra.conclusion){
-    h+=`<div class="rc-conclusion" style="margin-bottom:16px;">${rich(ra.conclusion)}</div>`;
+  if(ra.deep && ra.deep.lead){
+    h+=`<div class="callout callout-danger rf-conclusion"><div class="title">根因结论</div>`;
+    if(ra.deep.lead) h+=`<div class="rf-text" style="margin:0 0 4px">${rich(ra.deep.lead)}</div>`;
+    const mech=ra.deep.mechanism;
+    if(mech){ const m=Array.isArray(mech)?mech.join('\n'):mech; h+=`<div class="rf-text" style="font-size:12.5px;color:#475569;white-space:pre-wrap">${esc(m)}</div>`; }
+    h+='</div>';
   }
-  const steps = Array.isArray(ra.analysis) ? ra.analysis : (typeof ra.analysis==='string'&&ra.analysis ? [{fact:'深度分析',detail:ra.analysis}] : []);
-  if(steps.length > 0){
-    let lastStage = null;
-    const stepHtml = steps.map((s,i) => {
-      const meta = _stageMeta(s.stage);
-      const isFinal = s.stage === 'fix_verification';
-      const stageHdr = (s.stage !== lastStage) ? (lastStage = s.stage,
-        `<div class="rc-stage-label"><span class="rc-stage-tag" style="background:${meta.color}1a;color:${meta.color};border-color:${meta.color}55">${meta.name}</span>${meta.hint?`<span class="rc-stage-hint">${meta.hint}</span>`:''}</div>`) : '';
-      return stageHdr +
-      `<div class="rc-step${isFinal?' is-final':''}">` +
-        `<div class="rc-step-dot"><div class="rc-step-dot-inner" style="background:${meta.color}">${isFinal?'✓':(i+1)}</div></div>` +
-        `<div class="rc-step-card${isFinal?' is-final':''}">` +
-          `${isFinal?'<div class="rc-final-badge">修复方案</div>':''}` +
-          `<div class="rc-step-fact">${rich(s.fact||'')}</div>` +
-          (s.evidence ? `<div class="rc-step-evidence">${rich(s.evidence)}</div>` : '') +
-          `<div class="rc-step-detail">${rich(s.detail||'')}</div>` +
-        `</div>` +
-      `</div>`;
-    }).join('');
-    h+=`<details class="rc-chain-wrap" open><summary>分析推理链<span class="rc-chain-count">${steps.length} 步</span></summary><div class="rc-chain-body"><div class="rc-chain">${stepHtml}</div></div></details>`;
-  }
+
+  PARTS.forEach(P=>{
+    const steps=buckets[P.key];
+    if(!steps.length) return;
+    h+=`<details class="rf-part" style="border:1px solid ${P.color}44;border-left:4px solid ${P.color};background:${P.color}0a;border-radius:8px;margin:14px 0 6px">`;
+    h+=`<summary style="padding:12px 16px"><span class="rf-part-no" style="background:${P.color}">${P.no}</span><span style="font-size:15px;font-weight:700;color:#1c2733">${esc(P.title)}</span><span class="mg-count" style="margin-left:8px">${steps.length} 个环节</span></summary>`;
+    h+=`<div class="rf-part-body"><div class="rf-part-desc">${esc(P.desc)}</div>`;
+    h+=`<div class="rf-chain">${steps.map((s,i)=>rfStep(s,i+1)).join('')}</div>`;
+    h+=`</div></details>`;
+  });
+
   if(!h) h='<div class="empty-line">无</div>';
   document.getElementById('rootcause-body').innerHTML=h;
 }
 
-// ===== Knowledge Base Matches (三类：内部知识库 / 社区案例 / 在线案例) =====
-const _VERDICT_META={
-  confirmed:['已确认','commit/issue 一手证据确认：补丁直接修复崩溃函数或其调用路径'],
-  same_area:['同域不同因','补丁与崩溃同子系统，但修改的是不同函数/根因，不能直接采用'],
-  not_relevant:['已排除','一手证据显示补丁与崩溃路径无关，已从修复依据中排除'],
-  unverified:['证据待验证','未能获取上游原文（网络/权限），相关性未经代码级确认'],
-};
-const _LEVEL_DESC={
-  L1:'指纹精确命中（崩溃特征签名完全一致）',
-  L2:'RAG语义检索+评分确认（特征高重叠）',
-  L3:'扩大召回弱匹配（需人工核验）'
-};
-
-// 多维匹配论证
-const _CORROB_DIM={
-  feature_data:      {name:'特征数据', color:'#2563eb', role:'fatal'},
-  kernel_version:    {name:'内核版本', color:'#7c3aed', role:'apply'},
-  execution_context: {name:'运行上下文', color:'#0e7490', role:'support'},
-  timeline:          {name:'时间轴', color:'#c25700', role:'support'},
-  mechanism:         {name:'故障机制', color:'#dc2626', role:'fatal'},
-  fix_scope:         {name:'修复闭环', color:'#059669', role:'apply'},
-};
-const _CORROB_ROLE={
-  fatal:  {tag:'致命指纹', cls:'fatal'},
-  support:{tag:'佐证',     cls:'support'},
-  apply:  {tag:'适用性',   cls:'apply'},
-};
-const _CORROB_STATE={
-  support:  {sym:'✓', label:'支持'},
-  partial:  {sym:'△', label:'部分吻合'},
-  mismatch: {sym:'✗', label:'不吻合'},
-};
-function renderCorroboration(corr){
-  const items=Array.isArray(corr)?corr:[];
-  if(!items.length) return '';
-  const hasCompare = items.some(it=> !!(it.current||it.reference));
-  let body='';
-  if(hasCompare){
-    body=`<table class="corrob-table"><thead><tr><th class="ct-dim">论证维度</th><th class="ct-verdict">结论</th><th class="ct-cur">本次崩溃</th><th class="ct-ref">参考案例</th></tr></thead><tbody>`;
-    items.forEach(it=>{
-      const dim=_CORROB_DIM[it.dimension]||{name:it.dimension||'论证', color:'#64748b'};
-      const st=_CORROB_STATE[it.verdict]||_CORROB_STATE.partial;
-      const rl=_CORROB_ROLE[dim.role]||_CORROB_ROLE.support;
-      const cur=it.current||'';
-      const ref=it.reference||'';
-      if(!cur && !ref && it.text){
-        body+=`<tr class="corrob-row ${esc(it.verdict||'partial')}">`+
-          `<td class="ct-dim">${dim.name}<span class="corrob-role ${rl.cls}">${rl.tag}</span></td><td class="ct-verdict"><span class="corrob-state">${st.sym} ${st.label}</span></td>`+
-          `<td class="ct-span" colspan="2">${esc(it.text)}</td></tr>`;
-      } else {
-        body+=`<tr class="corrob-row ${esc(it.verdict||'partial')}">`+
-          `<td class="ct-dim"><span class="corrob-dim" style="background:${dim.color}16;color:${dim.color};border:1px solid ${dim.color}44">${dim.name}</span><span class="corrob-role ${rl.cls}">${rl.tag}</span></td>`+
-          `<td class="ct-verdict"><span class="corrob-state">${st.sym} ${st.label}</span></td>`+
-          `<td class="ct-cur">${esc(cur)}</td>`+
-          `<td class="ct-ref">${esc(ref)}</td></tr>`;
-      }
-    });
-    body+='</tbody></table>';
-  } else {
-    body=`<div class="corrob">`;
-    items.forEach(it=>{
-      const dim=_CORROB_DIM[it.dimension]||{name:it.dimension||'论证', color:'#64748b'};
-      const st=_CORROB_STATE[it.verdict]||_CORROB_STATE.partial;
-      const rl=_CORROB_ROLE[dim.role]||_CORROB_ROLE.support;
-      body+=`<div class="corrob-item ${esc(it.verdict||'partial')}">`+
-        `<span class="corrob-dim" style="background:${dim.color}16;color:${dim.color};border:1px solid ${dim.color}44">${dim.name}</span>`+
-        `<span class="corrob-body"><span class="corrob-state">${st.sym} ${st.label}</span><span class="corrob-text">${esc(it.text||'')}</span></span>`+
-        `</div>`;
-    });
-    body+='</div>';
-  }
-  return `<div class="mc-label">多维匹配论证</div>`+body;
+/* ================= 5 知识库匹配 ================= */
+const C_KIND={internal:['内部知识库','internal'],mail:['社区邮件','mail'],meeting:['社区会议纪要','meeting'],bugzilla:['社区 Bugzilla / Issue','bugzilla'],commit:['上游 commit · 修复补丁','commit']};
+function kscore(v){ const m={高:['high','高匹配'],中:['mid','中匹配'],低:['low','低匹配']}; const r=m[v]; return r?`<span class="c-score ${r[0]}">${r[1]}</span>`:''; }
+function dimName(d){ const m={feature_data:'特征数据',kernel_version:'内核版本',execution_context:'运行上下文',timeline:'时间轴',mechanism:'故障机制',fix_scope:'修复闭环'}; return m[d]||d||'维度'; }
+function corrobTable(arr){
+  if(!Array.isArray(arr)||!arr.length) return '';
+  const rows=arr.map(d=>{
+    const v=d.verdict||'partial';
+    const sym=v==='support'?'✓ 支持':v==='partial'?'△ 部分吻合':v==='mismatch'?'✗ 不吻合':v||'';
+    const cur=d.current||'';
+    const ref=d.reference||'';
+    return `<tr class="corrob-row ${esc(v)}">`+
+      `<td class="ct-dim">${esc(dimName(d.dimension))}</td>`+
+      `<td class="ct-verdict"><span class="corrob-state">${esc(sym)}</span></td>`+
+      `<td class="ct-cur">${esc(cur)}</td>`+
+      `<td class="ct-ref">${esc(ref)}</td></tr>`;
+  }).join('');
+  return `<table class="corrob-table"><thead><tr><th class="ct-dim">论证维度</th><th class="ct-verdict">结论</th><th class="ct-cur">本次崩溃</th><th class="ct-ref">内部案例 / 同簇参考</th></tr></thead><tbody>${rows}</tbody></table>`;
 }
-
-// 适用性判断链（结论 + 采用方式 + 关卡）
-const _AP_VERDICT={
-  direct_adopt:   {label:'可直接采用',   cls:'v-direct_adopt'},
-  adapt:          {label:'需适配后采用', cls:'v-adapt'},
-  borrow:         {label:'仅思路借鉴',   cls:'v-borrow'},
-  not_applicable: {label:'不适用',       cls:'v-not_applicable'},
-};
-function renderApplicability(a){
-  if(!a) return '';
-  if(typeof a === 'string'){
-    return `<div class="mc-applicability"><b>适用条件（采用前提）：</b>${linkify(a)}</div>`;
-  }
-  const v=_AP_VERDICT[a.verdict]||_AP_VERDICT.not_applicable;
-  const method=a.method?`<div class="ap-method"><b>采用方式：</b>${linkify(a.method)}</div>`:'';
-  const steps=Array.isArray(a.steps)&&a.steps.length
-    ? `<ol class="ap-steps">${a.steps.map(s=>`<li>${linkify(s)}</li>`).join('')}</ol>`:'';
-  return `<div class="mc-applicability">`+
-    `<div class="ap-head"><span class="ap-title">适用性判断</span><span class="ap-verdict ${v.cls}">${v.label}</span></div>`+
-    method+steps+
-    `</div>`;
-}
-
-// 本地案例（内部知识库 / 社区案例库）卡片
-function localCaseCard(rawC, sourceLabel, cf, idx){
-  const c={...rawC, source:sourceLabel};
-  const scoreCls={高:'high',中:'mid',低:'low'};
-  const fp=c.fingerprints||[];
-  const level=c.match_level||'';
-  const verdict=c.verdict||'';
-  // L3 是扩大召回的弱匹配池：仅当一手证据 confirmed/same_area 时才采信其分数；
-  // 否则无论分数高低，强制标注"待核验"，不作为确诊依据。
-  const isWeakL3=(level==='L3' && verdict!=='confirmed' && verdict!=='same_area');
-  let h=`<div class="match-case${verdict==='not_relevant'?' excluded':''}${isWeakL3?' l3-weak':''}" id="kb-case-${idx}">`;
-  if(isWeakL3){
-    h+=`<span class="mc-score weak" title="L3 扩大召回的弱匹配，指纹未达确认标准，需人工核验，不作为确诊依据">待核验</span>`;
-  } else {
-    h+=`<span class="mc-score ${scoreCls[c.match_score]||'low'}">${esc(c.match_score||'—')}匹配</span>`;
-  }
-  if(level){
-    h+=`<span class="mc-level ${level}${isWeakL3?' weak':''}" title="${esc(_LEVEL_DESC[level]||'')}">${level}${isWeakL3?' · 弱匹配':''}</span>`;
-  }
-  if(verdict){
-    const vM=_VERDICT_META[verdict]||[verdict,''];
-    h+=`<span class="mc-verdict ${verdict}" title="${esc(vM[1])}">${vM[0]}</span>`;
-  }
-  h+=`<div class="mc-id">${esc(c.source)} · ${esc(c.knowledge_id||c.id||'')}</div>`;
-  if(isWeakL3){
-    h+=`<div class="mc-l3-note">L3 扩大召回弱匹配：该案例来自扩大召回池，崩溃指纹未达 L1/L2 确认标准，仅作排查线索参考，结论需人工核验。</div>`;
-  }
-  const summary=c.bug_summary||c.title||'';
-  if(summary) h+=`<div class="mc-label">案例摘要</div><div class="mc-text">${esc(summary)}</div>`;
-
-  const rawReason=c.match_reason||{};
-  let reason={...rawReason};
-  if(!Object.keys(reason).length){
-    if(level==='L1'){
-      reason['_l1_fingerprint']='指纹精确命中：崩溃特征签名在案例指纹库中完全匹配';
-    }
-    if(cf.bug_type && c.bug_type && cf.bug_type===c.bug_type){
-      reason['bug_type_match']=`bug_type 一致: ${cf.bug_type}`;
-    }
-    if(cf.rip_function && c.rip_function && cf.rip_function===c.rip_function){
-      reason['rip_match']=`RIP 函数一致: ${cf.rip_function}`;
-    }
-    if(cf.bug_key && c.bug_key && cf.bug_key===c.bug_key){
-      reason['bug_key_overlap']=`bug_key 语义一致: ${cf.bug_key}`;
-    }
-    const cfCt=Array.isArray(cf.call_trace_signature)?cf.call_trace_signature:[];
-    const cCt=Array.isArray(c.call_trace_signature)?c.call_trace_signature:[];
-    if(cfCt.length && cCt.length){
-      const cfSet=new Set(cfCt.map(s=>s.toLowerCase()));
-      const common=cCt.filter(f=>cfSet.has(f.toLowerCase()));
-      if(common.length>=2){
-        reason['call_trace_overlap']=`调用栈共同函数: ${common.slice(0,5).join(', ')} (${common.length}个)`;
-      }
-    }
-    const cfMods=Array.isArray(cf.related_modules)?cf.related_modules:[];
-    const cMods=Array.isArray(c.related_modules)?c.related_modules:[];
-    if(cfMods.length && cMods.length){
-      const cfMSet=new Set(cfMods.map(s=>s.toLowerCase()));
-      const commonMods=cMods.filter(m=>cfMSet.has(m.toLowerCase()));
-      if(commonMods.length) reason['module_match']=`关联模块一致: ${commonMods.join(', ')}`;
-    }
-    if(cf.kernel_version && Array.isArray(c.kernel_versions) && c.kernel_versions.length){
-      const cfKv=cf.kernel_version.toLowerCase();
-      const kvMatch=c.kernel_versions.some(kv=>kv && (kv.toLowerCase()===cfKv || kv.toLowerCase().startsWith(cfKv.split('.').slice(0,2).join('.'))));
-      if(kvMatch) reason['kernel_version_match']=`内核版本匹配 (当前: ${cf.kernel_version})`;
-    }
-    const cfEks=(cf.anomaly_features&&cf.anomaly_features.error_keywords)||[];
-    const cEks=Array.isArray(c.error_keywords)?c.error_keywords:[];
-    if(cfEks.length && cEks.length){
-      const cfESet=new Set(cfEks.map(s=>s.toLowerCase()));
-      const commonEks=cEks.filter(k=>cfESet.has(k.toLowerCase()));
-      if(commonEks.length) reason['error_keyword_match']=`异常关键词一致: ${commonEks.join(', ')}`;
-    }
-    if(level==='L2' && !Object.keys(reason).length){
-      reason['_l2_rag']='RAG语义检索召回：综合评分达到匹配阈值';
-    }
-    if(level==='L3' && !Object.keys(reason).length){
-      reason['_l3_expand']='扩大召回弱匹配：语义相似度较高，建议人工核验';
-    }
-  }
-
-  const reasonKeys=Object.keys(reason);
-  let reasonListHtml='';
-  if(reasonKeys.length){
-    reasonListHtml=`<ul class="mc-reason-list">`;
-    const reasonLabel={
-      _l1_fingerprint:'指纹命中', _l2_rag:'检索方式', _l3_expand:'检索方式',
-      bug_type_match:'崩溃类型', rip_match:'RIP函数一致', rip_consistency:'RIP函数一致',
-      call_trace_overlap:'调用栈重叠', module_match:'模块匹配', kernel_version_match:'内核版本',
-      phenomenon_similarity:'现象相似度', content_similarity:'内容/根因匹配',
-      exact_token_match:'关键词精确命中', title_score:'标题匹配', content_score:'内容匹配',
-      exact_token_score:'技术词命中', kernel_version_score:'版本匹配',
-      commit_relevance:'补丁相关性', commit_summary:'补丁摘要',
-      bug_key_overlap:'bug_key语义关联', error_keyword_match:'异常关键词一致',
-      keyword_overlap:'共同关键词', rip_mismatch:'RIP函数不一致',
-    };
-    const priorityKeys=['_l1_fingerprint','_l2_rag','_l3_expand'];
-    const positiveKeys=['bug_type_match','rip_match','rip_consistency','call_trace_overlap',
-      'module_match','kernel_version_match','phenomenon_similarity','content_similarity',
-      'exact_token_match','commit_relevance','commit_summary','bug_key_overlap',
-      'error_keyword_match','keyword_overlap','title_score','content_score',
-      'exact_token_score','kernel_version_score'];
-    const negativeKeys=['rip_mismatch'];
-    const orderedKeys=[];
-    for(const k of priorityKeys){ if(reason[k]) orderedKeys.push(k); }
-    for(const k of positiveKeys){ if(reason[k] && !orderedKeys.includes(k)) orderedKeys.push(k); }
-    for(const k of reasonKeys){ if(!orderedKeys.includes(k) && !negativeKeys.includes(k)) orderedKeys.push(k); }
-    for(const k of negativeKeys){ if(reason[k]) orderedKeys.push(k); }
-    for(const k of orderedKeys){
-      const v=reason[k];
-      if(!v) continue;
-      let liCls='';
-      if(negativeKeys.includes(k)) liCls=' class="miss"';
-      else if(k.startsWith('_l3')) liCls=' class="warn"';
-      const label=reasonLabel[k]||k;
-      reasonListHtml+=`<li${liCls}><b>${esc(label)}</b>：${esc(v)}</li>`;
-    }
-    reasonListHtml+=`</ul>`;
-  }
-  const corr=renderCorroboration(c.corroboration);
-  if(corr){
-    // 多维论证为主，工具自动评分明细折叠备查
-    h+=corr;
-    if(reasonListHtml){
-      h+=`<details class="mc-evidence" style="margin-top:6px"><summary>自动匹配评分明细 · ${esc(level||'L2')}</summary><div class="mc-ev-body">${reasonListHtml}</div></details>`;
-    }
-  } else if(reasonListHtml){
-    h+=`<div class="mc-label">匹配论证${level?' · '+level:''}</div>${reasonListHtml}`;
-  }
-  if(c.phenomenon){
-    h+=`<div class="mc-label">现象描述</div><div class="mc-text">${esc(c.phenomenon)}</div>`;
-  }
-  if(fp.length) h+=`<div class="mc-label">匹配指纹</div><div class="mc-chips">${fp.map(f=>`<span class="mc-chip">${esc(f)}</span>`).join('')}</div>`;
-  if(c.root_cause) h+=`<div class="mc-label">案例根因</div><div class="mc-text">${esc(c.root_cause)}</div>`;
-  h+=renderApplicability(c.applicability);
-  if(c.solution) h+=`<div class="mc-label">案例解决方案</div><div class="mc-text">${esc(c.solution)}</div>`;
-  if(c.hotpatch) h+=`<div class="mc-label">热补丁</div><div class="mc-text">${esc(c.hotpatch)}</div>`;
-
-  const ev=c.evidence||null;
-  if(ev && (ev.fetched || (Array.isArray(ev.reasons)&&ev.reasons.length))){
-    const kind=ev.source_kind==='issue'?'issue 原文':'commit 原文';
-    const stats=(ev.additions||ev.deletions)?` · +${ev.additions||0}/-${ev.deletions||0}`:'';
-    h+=`<details class="mc-evidence"><summary>上游一手证据 · ${esc(kind)}${stats}</summary><div class="mc-ev-body">`;
-    if(Array.isArray(ev.reasons) && ev.reasons.length){
-      h+=`<ul class="mc-reason-list">${ev.reasons.map(r=>`<li>${esc(r)}</li>`).join('')}</ul>`;
-    }
-    const files=ev.touched_files||[];
-    if(files.length){
-      h+=`<div class="mc-label">补丁改动文件</div><div class="mc-files">${files.map(f=>`<span class="mc-file">${esc(f)}</span>`).join('')}</div>`;
-    }
-    const fns=ev.touched_functions||[];
-    if(fns.length){
-      h+=`<div class="mc-label">补丁修改函数</div><div class="mc-fns">${fns.map(f=>`<span class="mc-fn">${esc(f)}()</span>`).join('')}</div>`;
-    }
-    if(ev.commit_message){
-      h+=`<div class="mc-label">commit message</div><div class="mc-quote">${esc(ev.commit_message)}</div>`;
-    }
-    if(ev.issue_title){
-      h+=`<div class="mc-label">issue 标题</div><div class="mc-text">${esc(ev.issue_title)}${ev.issue_state?` <span class="mc-chip">${esc(ev.issue_state)}</span>`:''}</div>`;
-    }
-    if(ev.issue_body_excerpt){
-      h+=`<div class="mc-label">issue 原文摘要</div><div class="mc-quote">${esc(ev.issue_body_excerpt)}</div>`;
-    }
-    if(ev.html_url){
-      h+=`<div style="margin-top:6px"><a href="${esc(ev.html_url)}" target="_blank" style="font-size:11px">查看上游原文 ↗</a></div>`;
-    }
-    const related=ev.related_commits||[];
-    if(related.length){
-      h+=`<div class="mc-label">同一补丁的其他来源（上游/回合）</div><div class="mc-text" style="font-size:11px">`
-        +related.map(r=>`<a href="${esc(r.url)}" target="_blank" style="margin-right:10px; white-space:nowrap">${esc(r.source||'upstream')} ${esc((r.sha||'').slice(0,12))} ↗</a>`).join('')
-        +`</div>`;
-    }
-    h+=`</div></details>`;
-  }
-  h+='</div>';
-  return h;
-}
-
-// 在线案例（实时爬取的 commit/issue/mail）卡片
-function onlineCaseCard(item, idx){
-  const kind=item.kind||'commit';
-  const kindLabel={commit:'上游 commit', issue:'上游 issue', mail:'邮件讨论'}[kind]||kind;
-  const url=item.url || item.source_file || (item.evidence&&item.evidence.html_url) || '';
-  let h=`<div class="match-case online" id="kb-case-${idx}">`;
-  h+=`<span class="mc-kind ${esc(kind)}">${esc(kindLabel)}</span>`;
-  if(kind!=='mail' && item.verdict){
-    const vM=_VERDICT_META[item.verdict]||[item.verdict,''];
-    h+=`<span class="mc-verdict ${item.verdict}" title="${esc(vM[1])}">${vM[0]}</span>`;
-  }
-  // 标题（可点击跳转原文）
-  if(url){
-    h+=`<div class="mc-online-title"><a href="${esc(url)}" target="_blank" rel="noopener">${esc(item.title||'（无标题）')} ↗</a></div>`;
-  } else {
-    h+=`<div class="mc-online-title">${esc(item.title||'（无标题）')}</div>`;
-  }
-
-  if(kind==='mail'){
-    // 邮件：作者 / 列表 / 摘要 / 适用理由
-    const metaBits=[];
-    if(item.author) metaBits.push(`发件人：${esc(item.author)}`);
-    if(item.mail_list) metaBits.push(`<span class="ml-list">${esc(item.mail_list)}</span>`);
-    if(metaBits.length) h+=`<div class="mc-mail-meta">${metaBits.join(' · ')}</div>`;
-
-    // 抽象视图：讨论主线 + 分析思路 + 对本次指导（为主）；原始摘录折叠备查
-    const turns=Array.isArray(item.discussion_logic)?item.discussion_logic:[];
-    const reasoning=Array.isArray(item.analysis_reasoning)?item.analysis_reasoning:[];
-    const hasAbstract = turns.length || reasoning.length || item.guidance;
-    if(hasAbstract){
-      if(turns.length){
-        h+=`<div class="mc-label">讨论主线</div><div class="mail-thread">`;
-        const roleName={reporter:'报告者',maintainer:'维护者',reviewer:'评审者',stable_maintainer:'稳定版负责人',community:'社区讨论'};
-        turns.forEach(t=>{
-          const r=t.role||'community';
-          h+=`<div class="mail-turn"><span class="mt-role ${esc(r)}">${esc(roleName[r]||r)}</span>`+
-             `<span class="mt-text">${esc(t.text||'')}</span></div>`;
-        });
-        h+=`</div>`;
-      }
-      if(reasoning.length){
-        h+=`<div class="mc-label">社区分析思路</div><ol class="mail-reasoning">`+
-           reasoning.map(s=>`<li>${esc(s)}</li>`).join('')+
-           `</ol>`;
-      }
-      if(item.guidance){
-        h+=`<div class="mail-guidance"><b>对本次分析的指导：</b>${linkify(item.guidance)}</div>`;
-      }
-      if(item.snippet){
-        h+=`<details class="mc-evidence" style="margin-top:6px"><summary>原始邮件摘录</summary><div class="mc-ev-body"><div class="mc-quote">${esc(item.snippet)}</div></div></details>`;
-      }
-      const corrMail=renderCorroboration(item.corroboration);
-      if(corrMail) h+=corrMail;
-    } else {
-      // 回退：无抽象数据时展示原始摘录
-      if(item.snippet){
-        h+=`<div class="mc-label">邮件原文摘录</div><div class="mc-quote">${esc(item.snippet)}</div>`;
-      }
-      const corrMail=renderCorroboration(item.corroboration);
-      if(corrMail){
-        h+=corrMail;
-      } else if(item.relevance){
-        h+=`<div class="mc-relevance"><b>匹配论证：</b>${esc(item.relevance)}</div>`;
-      }
-    }
-  } else {
-    // commit/issue：多维论证为主，补丁相关性论据兜底
-    const mr=item.match_reason||{};
-    const relReason=mr.commit_relevance||'';
-    const corrCommit=renderCorroboration(item.corroboration);
-    if(corrCommit){
-      h+=corrCommit;
-    } else if(relReason){
-      h+=`<div class="mc-relevance"><b>匹配论证：</b>${esc(relReason)}</div>`;
-    }
-    if(item.phenomenon){
-      h+=`<div class="mc-label">现象描述</div><div class="mc-text">${esc(item.phenomenon)}</div>`;
-    }
-    if(item.root_cause) h+=`<div class="mc-label">根因说明</div><div class="mc-text">${esc(item.root_cause)}</div>`;
-    h+=renderApplicability(item.applicability);
-    if(item.solution) h+=`<div class="mc-label">修复方案</div><div class="mc-text">${esc(item.solution)}</div>`;
-    const ev=item.evidence||null;
-    if(ev && (ev.fetched || (Array.isArray(ev.reasons)&&ev.reasons.length))){
-      const stats=(ev.additions||ev.deletions)?` · +${ev.additions||0}/-${ev.deletions||0}`:'';
-      h+=`<details class="mc-evidence"><summary>一手 diff 证据${stats}</summary><div class="mc-ev-body">`;
-      if(Array.isArray(ev.reasons) && ev.reasons.length){
-        h+=`<ul class="mc-reason-list">${ev.reasons.map(r=>`<li>${esc(r)}</li>`).join('')}</ul>`;
-      }
-      const files=ev.touched_files||[];
-      if(files.length){
-        h+=`<div class="mc-label">补丁改动文件</div><div class="mc-files">${files.map(f=>`<span class="mc-file">${esc(f)}</span>`).join('')}</div>`;
-      }
-      const fns=ev.touched_functions||[];
-      if(fns.length){
-        h+=`<div class="mc-label">补丁修改函数</div><div class="mc-fns">${fns.map(f=>`<span class="mc-fn">${esc(f)}()</span>`).join('')}</div>`;
-      }
-      if(ev.commit_message){
-        h+=`<div class="mc-label">commit message</div><div class="mc-quote">${esc(ev.commit_message)}</div>`;
-      }
-      h+=`</div></details>`;
-    }
-  }
-  if(url){
-    h+=`<a class="mc-orig-link" href="${esc(url)}" target="_blank" rel="noopener">查看原文 ↗</a>`;
-  }
-  h+='</div>';
-  return h;
-}
-
-function matchGroupHtml(dotCls, title, count, desc, tag, cardsHtml, collapsedId, startCollapsed){
-  let h=`<div class="match-group">`;
-  h+=`<div class="mg-head"><span class="mg-dot ${dotCls}"></span>${esc(title)}<span class="mg-count">${count} 条</span>`;
-  if(tag) h+=`<span class="mg-tag">${esc(tag)}</span>`;
+function internalCard(c){
+  const weak=c.match_level==='L3' && c.verdict!=='confirmed' && c.verdict!=='same_area';
+  const aid=c.anchor||('kb-card-'+c.__i);
+  const row=(k,v)=>v?`<div class="in-row"><span class="in-k">${esc(k)}</span><span class="in-v">${rich(v)}</span></div>`:'';
+  let h=`<div class="card${weak?' in-weak':''}" id="${aid}">`;
+  /* 徽标行 */
+  h+=`<div class="in-badges"><span class="c-kind internal">内部知识库</span>${kscore(c.match_score)}`;
+  if(c.match_level) h+=`<span class="c-level ${esc(c.match_level)}">${esc(c.match_level)}${weak?' · 待核验':''}</span>`;
+  if(c.verdict){ const vm=c.verdict==='confirmed'?'confirmed':c.verdict; h+=`<span class="c-verdict ${esc(vm)}">${vm==='confirmed'?'已确认':vm==='same_area'?'同簇不同因':vm==='not_relevant'?'已排除':'待核验'}</span>`; }
   h+=`</div>`;
-  if(desc) h+=`<p class="mg-desc">${esc(desc)}</p>`;
-  if(cardsHtml){
-    h+=`<div class="match-cases${startCollapsed?' collapsed':''}" id="${collapsedId}">${cardsHtml}</div>`;
-  } else {
-    h+=`<div class="match-empty">无匹配</div>`;
+  h+=`<div class="c-title">${esc(c.bug_summary||c.title||c.knowledge_id||c.id||'')}</div>`;
+  const meta=[c.knowledge_id||c.id||''];
+  if(c.affected_component) meta.push('组件 '+c.affected_component);
+  if(c.kernel_versions&&c.kernel_versions.length) meta.push('内核 '+c.kernel_versions.join('/'));
+  if(c.case_count!=null) meta.push('历史 '+c.case_count+' 起');
+  if(meta.length) h+=`<div class="c-meta">${esc(meta.join(' · '))}</div>`;
+
+  h+=`<div class="in-rows">`;
+  h+=row('案例根因', c.root_cause);
+  if(Array.isArray(c.fingerprints)&&c.fingerprints.length){
+    h+=`<div class="in-row"><span class="in-k">匹配指纹</span><span class="in-v"><span class="mc-chips" style="gap:4px">${c.fingerprints.map(f=>`<span class="mc-chip" style="font-size:10px;padding:1px 7px">${esc(f)}</span>`).join('')}</span></span></div>`;
+  }
+  if(Array.isArray(c.corroboration)&&c.corroboration.length){
+    h+=`<details class="mc-evidence" style="margin:8px 0 0 104px"><summary>多维匹配论证（${c.corroboration.length} 个维度）</summary><div class="mc-ev-body" style="padding-top:8px">${corrobTable(c.corroboration)}</div></details>`;
+  }
+  h+=row('案例解决方案', c.solution);
+  if(c.hotpatch) h+=`<div class="in-row"><span class="in-k">热补丁/补丁建议</span><span class="in-v">${rich(c.hotpatch)}</span></div>`;
+  if(c.history){
+    const hh=(c.history.cases||[]).map(x=>`<div class="c-text" style="margin:2px 0">· ${esc(x)}</div>`).join('');
+    h+=`<details class="mc-evidence" style="margin:8px 0 0 104px"><summary>同簇历史与首末次时间（${esc(c.history.first_seen||'—')} ~ ${esc(c.history.last_seen||'—')}）</summary><div class="mc-ev-body">${hh||'<div class="match-empty">无</div>'}</div></details>`;
+  }
+  if(c.applicability) h+=`<div class="in-row"><span class="in-k">采用前提</span><span class="in-v">${rich(c.applicability)}</span></div>`;
+  h+=`</div>`;
+  h+=`</div>`;
+  return h;
+}
+function commCard(c){
+  const ck=C_KIND[c.kind]||C_KIND.bugzilla;
+  const aid=c.anchor||('kb-card-'+c.__i);
+  let h=`<div class="card" id="${aid}">`;
+  h+=`<span class="c-kind ${ck[1]}">${ck[0]}</span>${c.score?kscore(c.score):''}`;
+  if(c.verdict){ const v=c.verdict; h+=`<span class="c-verdict ${esc(v)}">${v==='confirmed'?'已确认':v==='same_area'?'同域不同因':v==='not_relevant'?'已排除':'待核验'}</span>`; }
+  const title=c.title||c.subject||'';
+  h+=`<div class="c-title">${title}</div>`;
+  const meta=[];
+  if(c.author) meta.push('作者：'+c.author); if(c.list) meta.push(c.list);
+  if(c.date) meta.push(c.date); if(c.kernel_version) meta.push('内核 '+c.kernel_version);
+  if(meta.length) h+=`<div class="c-meta">${esc(meta.join(' · '))}</div>`;
+
+  if(c.url) h+=`<div class="c-orig">原文网址：<a href="${esc(c.url)}" target="_blank" rel="noopener">${esc(c.url)}</a></div>`;
+
+  if(c.lead) h+=`<div class="c-lead">${esc(c.lead)}</div>`;
+  const snip=(c.snippet_full||c.excerpt||'');
+  const expl=c.explain||c.how||'';
+  if(snip){
+    h+=`<details class="c-key"><summary>关键片段（解释 + 原文）</summary><div class="c-key-body">`+
+      (expl?`<div class="ck-expl">解释：${esc(expl)}</div>`:'')+
+      `<div class="ck-orig">原文：<span>${esc(snip)}</span></div>`+
+      `</div></details>`;
+  }
+  if(c.how) h+=`<div class="c-derive"><b>关键信息如何指向补丁：</b>${rich(c.how)}</div>`;
+  if(c.patch_ref){
+    const ph=esc(c.patch_ref);
+    h+=`<div class="c-derive" style="background:#f0fdf6;border-left-color:#34d399;color:#065f46"><b>关联 commit：</b>`+
+      (c.patch_url?`<a href="${esc(c.patch_url)}" target="_blank" rel="noopener">${ph}</a>`:ph)+`</div>`;
   }
   h+=`</div>`;
   return h;
 }
+function commitCard(c){
+  const aid=c.anchor||('kb-card-'+c.__i);
+  let h=`<div class="card" id="${aid}">`;
+  h+=`<span class="c-kind commit">上游 commit · 修复补丁</span>`;
+  if(c.verdict){ const v=c.verdict==='confirmed'; h+=`<span class="c-verdict ${v?'confirmed':'same_area'}">${v?'已确认修复':'部分相关'}</span>`; }
+  h+=`<div class="c-title">${esc(c.title||c.subject||'')}</div>`;
+  const sha=c.sha||shaOf(c.url||c.evidence?.html_url);
+  const meta=[sha?'commit '+sha:'', c.author?c.author:'', c.date?c.date:'', c.kernel_version?('内核 '+c.kernel_version):''].filter(Boolean);
+  if(meta.length) h+=`<div class="c-meta">${esc(meta.join(' · '))}</div>`;
 
-function renderCrashMatch(report){
+  if(c.url) h+=`<div class="c-orig">原文网址：<a href="${esc(c.url)}" target="_blank" rel="noopener">${esc(c.url)}</a></div>`;
+
+  if(c.how) h+=`<div class="c-derive"><b>为什么是它（深度关联依据）：</b>${rich(c.how)}</div>`;
+  if(c.files && c.files.length) h+=`<div style="margin-top:7px" class="c-meta">改动文件：${c.files.map(f=>`<span class="mc-file" style="display:inline-block;font-size:10px;font-family:ui-monospace,Menlo,monospace;background:#eef2ff;color:#4338ca;border-radius:5px;padding:1px 6px;margin:1px">${esc(f)}</span>`).join(' ')}</div>`;
+  if(c.fix_scope && c.fix_scope.length) h+=`<div class="c-derive" style="background:#f0fdf6;border-left-color:#34d399;color:#065f46"><b>修复闭环：</b>${esc(c.fix_scope)}</div>`;
+
+  const cexpl=c.how||'见“为什么是它”说明。';
+  if(c.msg_full||c.message){
+    h+=`<details class="c-key"><summary>commit message（解释 + 原文）</summary><div class="c-key-body">`+
+      `<div class="ck-expl">解释：${esc(cexpl)}</div>`+
+      `<div class="ck-orig">原文：<span>${esc(c.msg_full||c.message||'')}</span></div>`+
+      `</div></details>`;
+  }
+  if(c.diff) h+=`<details class="c-key"><summary>补丁 diff（解释 + 原文）</summary><div class="c-key-body">`+
+    `<div class="ck-expl">解释：改动即在崩溃路径（fair.c pick→set 之间）补 if(!se) 判空（约 +3 行），以当前内核源码对照为准。</div>`+
+    `<div class="ck-orig mono">原文（diff）：<span>${esc(c.diff)}</span></div>`+
+    `</div></details>`;
+  h+=`</div>`;
+  return h;
+}
+function groupHtml(dot,color,name,count,desc,cards,startCollapsed){
+  const list=Array.isArray(cards)?cards.join(''):(cards||'');
+  const key=String(name).replace(/\s+/g,'');
+  const n=Array.isArray(cards)?cards.length:(count||0);
+  let h=`<div class="kbg"><div class="kbg-head"><span class="kbg-dot" style="background:${color}"></span><span class="kbg-name">${esc(name)}</span>`;
+  h+=`<span class="mg-count">${esc(String(n))} 条</span></div>`;
+  if(desc) h+=`<p class="kbg-desc">${esc(desc)}</p>`;
+  if(!list){ h+=`<div class="match-empty">无匹配</div>`; h+='</div>'; return h; }
+  h+=`<div class="cards${startCollapsed?' collapsed':''}" id="kb-cards-${key}">${list}</div>`;
+  if(startCollapsed && n){
+    h+=`<div class="kb-expand"><button onclick="toggleKbCards(this,'${name}')">展开全部 ${n} 条</button></div>`;
+  }
+  h+='</div>';
+  return h;
+}
+function toggleKbCards(btn,name){
+  const el=document.getElementById('kb-cards-'+String(name).replace(/\s+/g,'')); if(!el) return;
+  const c=el.classList.toggle('collapsed');
+  const total=el.querySelectorAll('.card').length;
+  btn.textContent=c?`展开全部 ${total} 条`:'收起（仅显示首条）';
+}
+function toggleSnippet(span){
+  const card=span.closest('.card');
+  if(card){ card.classList.toggle('is-open'); span.textContent=card.classList.contains('is-open')?'收起':'更多…'; }
+}
+function commSub(title,color,items,emptyNote){
+  let h=`<div class="comm-sub" style="margin-top:10px;border:1px solid var(--line);border-left:3px solid ${color};border-radius:6px;padding:8px 10px;background:#fff">`;
+  h+=`<div style="display:flex;align-items:center;gap:7px;margin-bottom:6px"><span style="width:9px;height:9px;border-radius:3px;background:${color}"></span><span style="font-size:13px;font-weight:700;color:#1c2733">${esc(title)}</span><span class="mg-count">${items.length} 条</span></div>`;
+  if(!items.length){ h+=`<div class="match-empty" style="margin:0 0 2px 16px">${emptyNote||'本次未检索到与该崩溃直接相关的记录。'}</div></div>`; return h; }
+  h+=items[0];
+  if(items.length>1){
+    const key=String(title).replace(/\s+/g,'');
+    h+=`<div class="comm-rest" id="comm-rest-${key}" style="display:none">${items.slice(1).join('')}</div>`;
+    h+=`<div style="text-align:center;margin-top:6px"><button onclick="toggleCommRest(this,'${key}')" style="padding:4px 14px;border:1px dashed #b9c4d4;border-radius:6px;background:transparent;color:#52637b;font-size:11.5px;cursor:pointer;font-family:inherit">展开其余 ${items.length-1} 条</button></div>`;
+  }
+  h+='</div>';
+  return h;
+}
+function toggleCommRest(btn,key){
+  const el=document.getElementById('comm-rest-'+key); if(!el) return;
+  const show=el.style.display==='none';
+  el.style.display=show?'block':'none';
+  btn.textContent=show?('收起其余'):('展开其余');
+}
+function renderKB(report){
+  const diag=report.diagnosis_repair_result||{};
   const cf=report.crash_feature_info||{};
-  const g=orderedKBGroups(report);
-  const inr=g.internal, com=g.community, onl=g.online;
+  let h='<div class="kb-section-title">案例匹配总览</div>';
 
-  // 崩溃特征（RIP/签名/关联模块等）统一在"崩溃详情"章节展示，此处不再重复
-  let h='<div class="match-section">';
-  const total=inr.length+com.length+onl.length;
-  if(!total){
-    h+=`<div class="sec-label">知识库案例匹配 (0 条)</div><div class="match-empty">本地知识库、社区案例库与在线检索均无匹配案例</div>`;
-    h+='</div>';
-    document.getElementById('crash-match-body').innerHTML=h;
-    return;
-  }
-  h+=`<div class="sec-label">知识库案例匹配 (${total} 条) · 本地未达高置信时自动在线爬取</div>`;
+  const internal=(diag.internal_kernel_result||[]).slice().sort((a,b)=>({'高':0,'中':1,'低':2}[a.match_score]??9)-({'高':0,'中':1,'低':2}[b.match_score]??9));
+  const commMails=(diag.online_result||[]).filter(c=>c.kind==='mail');
+  const meetings=(diag.community_meetings||[]).filter(c=>c.kind==='meeting');
+  const bugz=(diag.community_kernel_result||[]).concat((diag.online_result||[]).filter(c=>c.kind==='issue'));
+  const commits=(diag.online_result||[]).filter(c=>c.kind==='commit');
 
-  // L1/L2/L3 层级说明（有本地案例时展示）
-  if(inr.length || com.length){
-    h+=`<div class="match-level-legend">`+
-      `<span style="font-weight:600;color:#334155;">匹配层级说明：</span>`+
-      `<span class="leg"><span class="leg-dot L1">L1</span>${_LEVEL_DESC.L1}</span>`+
-      `<span class="leg"><span class="leg-dot L2">L2</span>${_LEVEL_DESC.L2}</span>`+
-      `<span class="leg"><span class="leg-dot L3">L3</span>${_LEVEL_DESC.L3}</span>`+
-      `</div>`;
-  }
+  let idx=0;
+  const tag=a=>a.map(c=>({c,__i:idx++}));
 
-  // 组 1：内部知识库
-  if(inr.length){
-    const cards=inr.map(({c,idx})=>localCaseCard(c,'内部知识库',cf,idx)).join('');
-    h+=matchGroupHtml('internal','内部知识库',inr.length,'本地已知问题库（OSClinic 入库的历史确诊案例），含指纹与 RAG 评分','',cards,'match-cases-internal',inr.length>1);
-    if(inr.length>1){
-      h+=`<div class="match-expand"><button onclick="toggleGroupCases('match-cases-internal',this)">展开全部 ${inr.length} 条</button></div>`;
-    }
-  }
+  const inCards=tag(internal).map(o=>internalCard(o.c));
+  const mailCards=tag(commMails).map(o=>commCard(o.c));
+  const meetCards=tag(meetings).map(o=>commCard(o.c));
+  const bugzCards=tag(bugz).map(o=>commCard(o.c));
+  const comCards=tag(commits).map(o=>commitCard(o.c));
 
-  // 组 2：社区案例库
-  if(com.length){
-    const cards=com.map(({c,idx})=>localCaseCard(c,'社区案例库',cf,idx)).join('');
-    h+=matchGroupHtml('community','社区案例库',com.length,'openEuler / Linux 社区案例库（本地入库存储），附上游一手 diff 校验结论','',cards,'match-cases-community',com.length>1);
-    if(com.length>1){
-      h+=`<div class="match-expand"><button onclick="toggleGroupCases('match-cases-community',this)">展开全部 ${com.length} 条</button></div>`;
-    }
-  }
-
-  // 组 3：在线案例（实时爬取）
-  if(onl.length){
-    const cards=onl.map(({c,idx})=>onlineCaseCard(c,idx)).join('');
-    h+=matchGroupHtml('online','在线社区案例',onl.length,'本地匹配不足时实时爬取的上游 kernel 仓库 commit/patch 与邮件列表讨论，均为公开社区一手资料','实时爬取',cards,'');
-  }
-
+  h+=groupHtml('internal','#2f5bd8','内部知识库',internal.length,'本地已知问题库（历史确诊/入库案例），含指纹、RAG 评分与多维匹配论证。若命中高相似内部案例且附一手补丁证据，可直接采信其结论并终止社区检索。',inCards,internal.length>1);
+  const commDesc='openEuler / Linux 社区资料按来源分组：邮件列表、会议纪要、Bugzilla/Issue。每条摘录只保留与崩溃直接相关的关键段落，并说明这些段落是如何推导出下方“上游 commit”的。';
+  h+=`<div class="kbg"><div class="kbg-head"><span class="kbg-dot" style="background:#b26a00"></span><span class="kbg-name">社区邮件 / 会议纪要 / Bugzilla</span><span class="mg-count">${commMails.length+meetings.length+bugz.length} 条</span></div>`;
+  h+=`<p class="kbg-desc">${esc(commDesc)}</p>`;
+  h+=commSub('社区邮件','#b26a00',mailCards,'本次未检索到独立邮件讨论；修复以上游提交形式落地（见下方“上游 commit”组）。');
+  h+=commSub('社区会议纪要','#6d4fc2',meetCards,'本次未检索到相关社区会议纪要。');
+  h+=commSub('社区 Bugzilla / Issue','#12805c',bugzCards,'本次未检索到相关社区 Bugzilla / Issue 记录。');
   h+='</div>';
-  document.getElementById('crash-match-body').innerHTML=h;
+  h+=groupHtml('commit','#12805c','上游 commit（深度关联的修复补丁）',comCards.length,'由社区/上游检索推导出的、直接修复崩溃路径的补丁，并与当前内核源码/反汇编逐行对照。',comCards,comCards.length>2);
+
+  const total=internal.length+commMails.length+meetings.length+bugz.length+commits.length;
+  const cnt=document.getElementById('kb-count');
+  if(cnt) cnt.textContent=(total?('共 '+total+' 条匹配'):'');
+  if(!total) h='<div class="match-empty">本地知识库、社区资料与在线检索均无匹配案例</div>';
+  document.getElementById('kb-body').innerHTML=h;
 }
 
-function toggleGroupCases(id, btn){
-  const el=document.getElementById(id);
-  if(!el) return;
-  const collapsed=el.classList.toggle('collapsed');
-  const total=el.querySelectorAll('.match-case').length;
-  btn.textContent=collapsed?`展开全部 ${total} 条`:`收起 (仅显示首条)`;
-}
-// 兼容旧调用
-function toggleMatchCases(){ toggleGroupCases('match-cases', document.getElementById('match-expand-btn')); }
-
-// ===== Workflow Trace =====
+/* ================= 工作流追踪 ================= */
 function renderWorkflow(report){
   const wt=report.workflow_trace||{}, steps=wt.steps||[];
   const sourceBadge = wt.source==='opencode_export'
-    ? `<span class="wf-badge export">Session Export</span>`
-    : wt.source==='manual'
-      ? `<span class="wf-badge manual">LLM Summarized</span>`
-      : '';
+    ? '<span class="wf-badge export">Session Export</span>'
+    : wt.source==='manual' ? '<span class="wf-badge manual">LLM Summarized</span>' : '';
   const dur = wt.total_duration_ms!=null ? `${(wt.total_duration_ms/1000).toFixed(1)}s` : '';
-  const sid = wt.session_id ? wt.session_id.slice(0,20)+'...' : '';
-  let h=`<div class="wf-header">`;
+  let h='<div class="wf-header">';
   if(sourceBadge) h+=sourceBadge;
   h+=`<span>${esc(wt.step_count??steps.length)} 个关键决策</span>`;
-  if(sid) h+=`<span style="font-family:monospace;font-size:10px;opacity:.7">${esc(sid)}</span>`;
   if(dur) h+=`<span class="wf-duration">总耗时 ${dur}</span>`;
-  h+=`</div>`;
-  if(!steps.length){h+=`<div class="empty-line">无工作流记录</div>`;}
+  h+='</div>';
+  if(!steps.length){h+='<div class="empty-line">无工作流记录</div>';}
   steps.forEach(s=>{
-    const isFail = s.status==='failed', isPartial = s.status==='partial', isSkip = s.status==='skipped';
-    const dotCls = isFail?'fail':(isPartial?'partial':'');
-    const stageLabel = (s.stage||'').replace(/_/g,' ');
-    let toolsHtml = '';
+    const isFail=s.status==='failed', isPartial=s.status==='partial';
+    const dotCls=isFail?'fail':(isPartial?'partial':'');
+    const stageLabel=(s.stage||'').replace(/_/g,' ');
+    let tools='';
     (s.tools||[]).forEach(t=>{
-      const tOk = t.status==='success' || t.status==='completed';
-      const tWarn = t.status==='timeout' || t.status==='partial';
-      const tErr = t.status==='failed' || t.status==='error';
-      const tIcon = tOk ? '<span class="wf-tool-icon ok">OK</span>'
-        : tWarn ? '<span class="wf-tool-icon warn">TIMEOUT</span>'
-        : tErr ? '<span class="wf-tool-icon err">ERR</span>'
-        : '<span class="wf-tool-icon">•</span>';
-      let durTxt = '';
-      if(t.duration_ms!=null){
-        durTxt = t.duration_ms<1000 ? t.duration_ms+'ms' : (t.duration_ms/1000).toFixed(1)+'s';
-      }
-      const title = t.title||'';
-      toolsHtml += `<div class="wf-tool">${tIcon}<span class="wf-tool-title" title="${esc(t.tool_name+': '+title)}">${esc(t.tool_name)}${title?': '+esc(title):''}</span>${durTxt?`<span class="wf-tool-meta">${durTxt}</span>`:''}</div>`;
+      const ok=t.status==='success'||t.status==='completed';
+      const warn=t.status==='timeout'||t.status==='partial';
+      const err=t.status==='failed'||t.status==='error';
+      const icon=ok?'<span class="wf-tool-icon ok">OK</span>':warn?'<span class="wf-tool-icon warn">TIMEOUT</span>':err?'<span class="wf-tool-icon err">ERR</span>':'<span class="wf-tool-icon">•</span>';
+      let d=''; if(t.duration_ms!=null) d=t.duration_ms<1000?t.duration_ms+'ms':(t.duration_ms/1000).toFixed(1)+'s';
+      tools+=`<div class="wf-tool">${icon}<span class="wf-tool-title" title="${esc(t.tool_name+': '+(t.title||''))}">${esc(t.tool_name)}${t.title?': '+esc(t.title):''}</span>${d?`<span class="wf-tool-meta">${d}</span>`:''}</div>`;
     });
-    const statusText = s.status==='success'?'成功':s.status==='failed'?'失败':s.status==='partial'?'部分成功':s.status==='skipped'?'跳过':s.status||'';
-    h+=`<div class="wf-step">`+
-      `<div class="wf-dot-col"><div class="wf-dot ${dotCls}">${s.step}</div></div>`+
-      `<div class="wf-card-col"><div class="wf-card">`+
-        `<div class="wf-card-head"><span class="wf-stage ${esc(s.stage||'')}">${esc(stageLabel)}</span>`+
-          `<span class="wf-step-status ${esc(s.status||'success')}">${esc(statusText)}</span></div>`+
-        `<div class="wf-decision">${esc(s.decision||'')}</div>`+
-        (s.observations?`<div class="wf-observations">${esc(s.observations)}</div>`:'')+
-        (s.judgment?`<div class="wf-judgment">${esc(s.judgment)}</div>`:'')+
-        (s.reason?`<div class="wf-reason">${esc(s.reason)}</div>`:'')+
-        (toolsHtml?`<div class="wf-tools">${toolsHtml}</div>`:'')+
-        `<div class="wf-time">${esc(s.start_time||'')} ${esc(s.end_time||'')}</div>`+
-      `</div></div></div>`;
+    const statusText=s.status==='success'?'成功':s.status==='failed'?'失败':s.status==='partial'?'部分成功':s.status==='skipped'?'跳过':(s.status||'');
+    h+=`<div class="wf-step"><div class="wf-dot-col"><div class="wf-dot ${dotCls}">${esc(s.step)}</div></div><div class="wf-card-col"><div class="wf-card">`;
+    h+=`<div class="wf-card-head"><span class="wf-stage ${esc(s.stage||'')}">${esc(stageLabel)}</span><span class="wf-step-status ${esc(s.status||'success')}">${esc(statusText)}</span></div>`;
+    h+=`<div class="wf-decision">${esc(s.decision||'')}</div>`;
+    if(s.src) h+=`<div class="wf-src">来源：${esc(s.src)}</div>`;
+    if(s.observations) h+=`<div class="wf-observations">${esc(s.observations)}</div>`;
+    if(s.judgment) h+=`<div class="wf-judgment">${esc(s.judgment)}</div>`;
+    if(s.cross) h+=`<div class="wf-cross">与上文交叉验证：${esc(s.cross)}</div>`;
+    if(tools) h+=`<div class="wf-tools">${tools}</div>`;
+    h+=`</div></div></div>`;
   });
   document.getElementById('workflow-body').innerHTML=h;
 }
 
-// ===== Section numbering =====
-function renumberSections(hasEventTimeline){
-  // 1 执行摘要 → (2 事件时序图 可选) → 崩溃详情 → 崩溃路径分析 → 根因分析
-  let num=2;
-  if(hasEventTimeline){
-    document.getElementById('event-timeline-section').querySelector('.num').textContent='2';
-    num=3;
-  }
-  document.getElementById('crash-detail-num').textContent=String(num); num++;
-  document.getElementById('crash-path-num').textContent=String(num); num++;
-  document.getElementById('rootcause-num').textContent=String(num);
+/* ================= 头部 ================= */
+function renderHeader(report){
+  const cf=report.crash_feature_info||{}, hb=report.host_base_info||{};
+  document.getElementById('header-title').textContent=report.report_id||cf.bug_type||'内核崩溃分析报告';
+  const sub=[hb.machine_model,hb.cpu_model].filter(Boolean);
+  if(hb.kernel_version) sub.push('内核 '+hb.kernel_version);
+  document.getElementById('header-subtitle').textContent=sub.join(' · ');
+  const items=[
+    ['主机名',hb.host_name],['内核版本',hb.kernel_version],['崩溃时间',cf.crash_time],
+    ['崩溃类型',cf.bug_type],['CPU',(hb.cpu_num||'')+' 核'+(hb.cpu_model?' · '+hb.cpu_model:'')],['内存',hb.memory_size],
+  ];
+  document.getElementById('header-meta-grid').innerHTML=items.map(([k,v])=>`<div class="meta-item"><div class="k">${esc(k)}</div><div class="v">${esc(v)}</div></div>`).join('');
 }
 
-// ===== Main =====
-const loadFull = EMBED_FULL ? Promise.resolve(EMBED_FULL) : fetchJSON(FULL_URL);
+/* ================= 主流程 ================= */
+const loadFull = EMBED_FULL ? Promise.resolve(EMBED_FULL) : fetch(FULL_URL).then(r=>{ if(!r.ok) throw new Error(FULL_URL+' HTTP '+r.status); return r.json(); });
 loadFull.then(report=>{
-  const ra=report.root_cause_analysis||{};
-  const hasEventTimeline=(ra.event_chain||[]).length>0;
-
   buildKBRefMap(report);
-
   renderHeader(report);
   renderExecSummary(report);
-  renderEventTimeline(report);
   renderCrashDetail(report);
-  renderCrashPath(report);
+  renderEventTimeline(report);
   renderRootCause(report);
-  renderCrashMatch(report);
+  renderKB(report);
   renderWorkflow(report);
-  renumberSections(hasEventTimeline);
-
-  // Footer
-  const cf=report.crash_feature_info||{};
-  const hb=report.host_base_info||{};
-  document.getElementById('footer-text').innerHTML=
-    `本报告基于崩溃数据分析生成 · ${cf.crash_time||''} · 内核 ${hb.kernel_version||''}`;
+  initTip();
+  const cf=report.crash_feature_info||{}, hb=report.host_base_info||{};
+  document.getElementById('footer-text').innerHTML=`本报告基于崩溃数据分析生成 · ${cf.crash_time||''} · 内核 ${hb.kernel_version||''}`;
 }).catch(err=>{
-  const msg = err.message||'';
-  const isFileProtocol = location.protocol==='file:' && msg.includes('fetch');
-  let hint = '';
-  if(isFileProtocol){
-    hint = '<br><br>提示：需要通过 HTTP 服务访问（如 <code>python3 -m http.server</code>），不能直接 file:// 打开。';
-  }
-  document.getElementById('app').innerHTML=`<div class="error">加载失败: ${esc(msg)}${hint}</div>`;
+  const isFile=location.protocol==='file:' && /fetch/.test(err.message||'');
+  let hint=''; if(isFile) hint='<br><br>提示：需要内嵌数据，或通过 HTTP 服务访问（如 python3 -m http.server）。';
+  document.getElementById('app').innerHTML=`<div class="error">加载失败: ${esc(err.message||err)}${hint}</div>`;
 });
 </script>
 </body>
