@@ -507,13 +507,15 @@ function checkSetup(options) {
 }
 
 function setupFingerprints(metadata) {
-  const contentManifestName = metadata.contentManifest || "package-content-manifest.json"
-  const contentManifest = resolveRegularPackageFile(
-    contentManifestName,
-    "package content manifest",
-  ).absolutePath
+  const venvHashes = VENVS.map((venv) => {
+    const files = [venv.requirements]
+    if (venv.pyproject && existsSync(venv.pyproject)) {
+      files.push(venv.pyproject)
+    }
+    return `${venv.name}:${files.map(sha256).join("|")}`
+  })
   return {
-    contentManifestSha256: sha256(contentManifest),
+    pythonDepsSha256: createHash("sha256").update(venvHashes.join("\n")).digest("hex"),
     wheelManifestSha256: metadata.variant === "offline" ? sha256(WHEEL_MANIFEST_FILE) : null,
   }
 }
@@ -537,7 +539,7 @@ function inspectExistingSetup(metadata, pythonInfo, fingerprints, offline) {
       || marker.version !== metadata.packageVersion
       || marker.variant !== metadata.variant
       || JSON.stringify(marker.python) !== JSON.stringify(pythonInfo)
-      || marker.contentManifestSha256 !== fingerprints.contentManifestSha256
+      || marker.pythonDepsSha256 !== fingerprints.pythonDepsSha256
       || marker.wheelManifestSha256 !== fingerprints.wheelManifestSha256
     ) {
       return { ready: false, reason: "completion marker does not match this package, manifests, or Python" }
