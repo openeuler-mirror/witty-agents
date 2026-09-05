@@ -161,7 +161,7 @@ shennong-configure
 ### 直接引用源码目录（开发调试）
 
 ```bash
-cd /root/shennong-crash-agent
+cd shennong-crash-agent
 npm install
 npm run build
 ```
@@ -189,7 +189,7 @@ npm run build
 
 ```json
 {
-  "plugin": ["file:///root/shennong-crash-agent/dist/index.js"],
+  "plugin": ["file:///path/to/shennong-crash-agent/dist/index.js"],
   "$schema": "https://opencode.ai/config.json"
 }
 ```

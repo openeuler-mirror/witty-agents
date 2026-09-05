@@ -2,7 +2,7 @@
 """OSClinic 知识库 → euler-copilot-rag 数据导入脚本
 
 用法:
-    cd /opt/zhaoxuedong/crash-feature-matcher
+    cd crash-feature-matcher
     PYTHONPATH=src python3 scripts/import_from_osclinic.py
 """
 
