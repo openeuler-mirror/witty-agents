@@ -3,379 +3,401 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>内核崩溃报告 · Crash Report Viewer</title>
+<title>内核崩溃综合分析报告</title>
 <style>
   :root {
-    --bg: #eef1f6;
-    --bg-grad: linear-gradient(135deg, #eef1f6 0%, #e6eaf2 100%);
+    --primary: #1a56db;
+    --primary-dark: #1e429f;
+    --danger: #e02424;
+    --warning: #ff8a00;
+    --success: #057a55;
+    --bg: #f5f7fa;
     --card: #ffffff;
-    --border: #e4e7eb;
-    --text: #1f2329;
-    --muted: #6b7280;
-    --accent: #2563eb;
-    --accent-soft: #dbeafe;
-    --danger: #dc2626;
-    --danger-soft: #fef2f2;
-    --code-bg: #f8fafc;
-    --code-border: #e2e8f0;
-    --shadow: 0 1px 3px rgba(15,23,42,.06), 0 4px 12px rgba(15,23,42,.04);
-    --shadow-lg: 0 8px 28px rgba(15,23,42,.10);
-    --radius: 14px;
+    --border: #e5e7eb;
+    --text: #1f2937;
+    --text-muted: #6b7280;
+    --mono-bg: #f3f4f6;
   }
-  * { box-sizing: border-box; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
-    margin: 0;
-    background: var(--bg-grad);
-    background-attachment: fixed;
+    font-family: "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+    background: var(--bg);
     color: var(--text);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
-    font-size: 14px;
-    line-height: 1.6;
+    line-height: 1.7;
+    font-size: 15px;
     -webkit-font-smoothing: antialiased;
   }
-  .container { max-width: 1100px; margin: 0 auto; padding: 28px 20px 80px; }
-  .header {
-    background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
-    padding: 24px 28px; margin-bottom: 22px; box-shadow: var(--shadow); position: relative; overflow: hidden;
+  .container { max-width: 1100px; margin: 0 auto; padding: 32px 24px 64px; }
+
+  /* ===== Header ===== */
+  .report-header {
+    background: linear-gradient(135deg, #1e3a8a 0%, #1a56db 100%);
+    color: #fff;
+    border-radius: 12px;
+    padding: 40px 40px 32px;
+    margin-bottom: 28px;
+    box-shadow: 0 4px 20px rgba(30, 58, 138, .25);
   }
-  .header::before { content:""; position:absolute; left:0; top:0; bottom:0; width:5px; background:linear-gradient(180deg,var(--danger),var(--accent)); }
-  .header h1 { margin:0 0 10px; font-size:22px; display:flex; align-items:center; gap:10px; }
-  .header .meta { color:var(--muted); font-size:13px; display:flex; gap:22px; flex-wrap:wrap; }
-  .header .meta b { color:var(--text); font-weight:600; }
-  .card {
-    background:var(--card); border:1px solid var(--border); border-radius:var(--radius);
-    padding:20px 26px; margin-bottom:18px; box-shadow:var(--shadow);
+  .report-header .tag {
+    display: inline-block; background: rgba(255,255,255,.18);
+    border: 1px solid rgba(255,255,255,.35);
+    padding: 3px 12px; border-radius: 999px;
+    font-size: 12.5px; letter-spacing: .5px; margin-bottom: 14px;
   }
-  .card h2 { margin:0 0 16px; font-size:15px; font-weight:600; display:flex; align-items:center; gap:9px; border-bottom:1px solid var(--border); padding-bottom:12px; }
-  .card h2 .ico { font-size:16px; }
-  .host-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:14px; }
-  .kv { display:flex; flex-direction:column; gap:3px; padding:8px 12px; background:var(--code-bg); border-radius:8px; border:1px solid var(--code-border); }
-  .kv .k { color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:.3px; }
+  .report-header h1 { font-size: 27px; font-weight: 700; margin-bottom: 10px; }
+  .report-header .subtitle { font-size: 14.5px; opacity: .9; margin-bottom: 22px; }
+  .meta-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px; font-size: 13px;
+  }
+  .meta-item {
+    background: rgba(255,255,255,.12); border-radius: 8px; padding: 10px 14px;
+  }
+  .meta-item .k { opacity: .75; font-size: 12px; margin-bottom: 2px; }
+  .meta-item .v { font-weight: 600; }
+
+  /* ===== Sections ===== */
+  section {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 12px; padding: 28px 32px; margin-bottom: 24px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.04);
+  }
+  h2 {
+    font-size: 20px; color: var(--primary-dark);
+    padding-bottom: 12px; margin-bottom: 18px;
+    border-bottom: 2px solid #e8eefb;
+    display: flex; align-items: center; gap: 10px;
+  }
+  h2 .num {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 28px; height: 28px; border-radius: 8px;
+    background: var(--primary); color: #fff; font-size: 14px; flex-shrink: 0;
+  }
+  h3 { font-size: 16.5px; color: var(--text); margin: 20px 0 10px; }
+  h4 { font-size: 15px; color: var(--text); margin: 14px 0 8px; }
+  p { margin-bottom: 10px; }
+  ul, ol { margin: 8px 0 12px 22px; }
+  li { margin-bottom: 5px; }
+  strong { color: var(--text); }
+  code {
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+    background: var(--mono-bg); padding: 1.5px 6px; border-radius: 4px;
+    font-size: 13px; color: #c7254e;
+  }
+  pre {
+    background: #1e293b; color: #e2e8f0;
+    border-radius: 8px; padding: 16px 18px;
+    overflow-x: auto; font-size: 12.8px; line-height: 1.55;
+    margin: 12px 0;
+  }
+  pre code { background: transparent; color: inherit; padding: 0; font-size: inherit; }
+  .mono { font-family: Consolas, monospace; font-size: 13px; }
+
+  /* ===== Badges & callouts ===== */
+  .badge {
+    display: inline-block; padding: 2px 10px; border-radius: 999px;
+    font-size: 12px; font-weight: 600;
+  }
+  .badge-danger { background: #fde8e8; color: var(--danger); }
+  .badge-warning { background: #fef3e8; color: #c25700; }
+  .badge-success { background: #e8f7f0; color: var(--success); }
+  .badge-info    { background: #e8eefb; color: var(--primary-dark); }
+  .badge-gray    { background: #f3f4f6; color: var(--text-muted); }
+  .badge-blue    { background: #e8eefb; color: var(--primary); }
+  .badge-green   { background: #e8f7f0; color: var(--success); }
+  .callout {
+    border-radius: 8px; padding: 14px 18px; margin: 14px 0;
+    font-size: 14px; border-left: 4px solid;
+  }
+  .callout-danger  { background: #fdf2f2; border-color: var(--danger); }
+  .callout-warning { background: #fffaf0; border-color: var(--warning); }
+  .callout-success { background: #f0fdf6; border-color: var(--success); }
+  .callout-info    { background: #eff6ff; border-color: var(--primary); }
+  .callout .title { font-weight: 700; margin-bottom: 4px; }
+
+  /* ===== Tables ===== */
+  table {
+    width: 100%; border-collapse: collapse; margin: 14px 0;
+    font-size: 13.8px;
+  }
+  th, td { padding: 10px 12px; text-align: left; border: 1px solid var(--border); }
+  th {
+    background: #f8fafc; font-weight: 700; color: var(--text);
+    white-space: nowrap;
+  }
+  tr:nth-child(even) td { background: #fafbfc; }
+  td.mono, th.mono { font-family: Consolas, monospace; font-size: 12.8px; }
+  .center { text-align: center; }
+  .nowrap { white-space: nowrap; }
+
+  /* ===== Sequence diagram (事件时序，UML SVG) ===== */
+  .seq-wrap { overflow-x: auto; margin: 14px 0 4px; }
+  .seq-svg { display: block; min-width: 720px; }
+  .seq-legend { display: flex; gap: 18px; flex-wrap: wrap; margin: 10px 0 2px; font-size: 12px; color: var(--text-muted); }
+  .seq-legend .lg { display: inline-flex; align-items: center; gap: 6px; }
+  .seq-legend .sw { width: 24px; height: 0; border-top: 2px solid #94a3b8; display: inline-block; }
+  .seq-legend .sw.dashed { border-top: 2px dashed #cbd5e1; }
+  .seq-legend .dbox { width: 12px; height: 12px; border-radius: 3px; background: #64748b; display: inline-block; }
+  .seq-legend .dbox.red { background: var(--danger); }
+
+  /* ===== Propagation chain (崩溃扩散链，纵向链条) ===== */
+  .pchain { margin: 16px 0 4px; }
+  .pc-node { display: flex; gap: 14px; }
+  .pc-rail { flex-shrink: 0; display: flex; flex-direction: column; align-items: center; width: 34px; }
+  .pc-dot {
+    width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0;
+    background: var(--primary); color: #fff; font-weight: 700; font-size: 13px;
+    display: flex; align-items: center; justify-content: center; margin-top: 5px;
+    box-shadow: 0 0 0 4px #e8eefb; z-index: 1;
+  }
+  .pc-line { width: 2px; flex: 1; background: #cbd5e1; min-height: 30px; position: relative; margin: 2px 0; }
+  .pc-line::after {
+    content: ""; position: absolute; bottom: -1px; left: 50%; transform: translateX(-50%);
+    border: 5px solid transparent; border-top-color: #cbd5e1;
+  }
+  .pc-node:last-child .pc-line { display: none; }
+  .pc-node.is-crash .pc-dot { background: var(--danger); box-shadow: 0 0 0 4px #fde8e8; }
+  .pc-card {
+    flex: 1; min-width: 0; background: #fff; border: 1px solid var(--border);
+    border-radius: 10px; padding: 13px 18px 15px; margin-bottom: 14px;
+  }
+  .pc-node.is-crash .pc-card { border-color: #f3b4b4; background: #fdf5f5; }
+  .pc-head { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+  .pc-funcs { font-size: 14px; }
+  .pc-funcs .fn { font-family: Consolas, "Liberation Mono", monospace; font-weight: 700; color: var(--text); }
+  .pc-funcs .arr { color: var(--text-muted); margin: 0 8px; font-weight: 700; }
+  .pc-type { font-size: 11px; font-weight: 700; padding: 2px 10px; border-radius: 10px; }
+  .pc-type.call { background: #e8eefb; color: var(--primary); }
+  .pc-type.uaf_free { background: #fde8e8; color: var(--danger); }
+  .pc-type.data_pollution { background: #fef3e8; color: #c25700; }
+  .pc-type.null_deref { background: #fde8e8; color: var(--danger); }
+  .pc-crash-tag { font-size: 11px; font-weight: 700; padding: 2px 10px; border-radius: 10px; background: var(--danger); color: #fff; }
+  .pc-src { margin-top: 6px; font-family: Consolas, "Liberation Mono", monospace; font-size: 12px; color: #94a3b8; }
+  .pc-src .path { color: #475569; }
+  a.path { color: var(--primary); text-decoration: none; border-bottom: 1px dotted var(--primary); }
+  a.path:hover { color: var(--primary-dark); border-bottom-style: solid; }
+  .pc-src-link {
+    color: var(--primary); font-weight: 600; text-decoration: none; margin-left: 8px;
+    border-bottom: 1px dotted var(--primary);
+  }
+  .pc-src-link:hover { color: var(--primary-dark); border-bottom-style: solid; }
+  /* 源码片段展开窗口（未展开时为扁平小标签条；重置全局 details 卡片样式） */
+  .pc-snippet {
+    margin-top: 6px; margin-bottom: 0; background: transparent;
+    border: none; border-radius: 0; box-shadow: none; overflow: visible;
+  }
+  .pc-snippet > summary {
+    cursor: pointer; font-size: 12px; font-weight: 600; color: var(--primary-dark);
+    list-style: none; user-select: none; display: inline-block;
+    padding: 0 9px; height: 22px; line-height: 22px;
+    background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 11px;
+  }
+  .pc-snippet > summary::before { content: "▸ "; }
+  .pc-snippet[open] > summary {
+    background: transparent; border-color: transparent; padding: 0; height: auto;
+    border-radius: 0; margin-bottom: 2px;
+  }
+  .pc-snippet[open] > summary::before { content: "▾ "; }
+  .pc-snippet > summary:hover { background: #e8eefb; border-color: #cdddf5; }
+  .pc-snippet pre {
+    margin: 8px 0 0; background: #0f172a; color: #e2e8f0; border-radius: 8px;
+    padding: 12px 14px; overflow-x: auto;
+  }
+  .pc-snippet pre code {
+    font-family: Consolas, "Liberation Mono", monospace; font-size: 12.5px;
+    line-height: 1.7; white-space: pre; background: none; color: inherit;
+  }
+  .pc-detail { margin-top: 8px; font-size: 13.5px; line-height: 1.75; color: var(--text); }
+  .pc-evidence {
+    margin-top: 9px; font-size: 12.5px; color: var(--text-muted);
+    background: var(--mono-bg); border-left: 3px solid #cbd5e1;
+    padding: 7px 11px; border-radius: 0 6px 6px 0;
+    font-family: Consolas, "Liberation Mono", monospace; white-space: pre-wrap; word-break: break-word;
+  }
+
+  /* 崩溃路径分析：导语 / 关键观察 / 原始栈折叠 */
+  .path-intro {
+    margin: 4px 0 16px; padding: 12px 16px; font-size: 13.5px; line-height: 1.8;
+    color: #475569; font-style: italic; background: #f8fafc;
+    border-left: 3px solid #cbd5e1; border-radius: 0 8px 8px 0;
+  }
+  .path-obs-card {
+    margin: 18px 0 4px; border: 1px solid var(--border); border-radius: 10px;
+    background: #f8fafc; padding: 15px 18px 13px;
+  }
+  .path-obs-title { font-size: 14px; font-weight: 700; color: var(--primary-dark); margin-bottom: 10px; }
+  .path-obs { margin: 0; padding: 0; list-style: none; }
+  .path-obs li {
+    position: relative; font-size: 13.5px; line-height: 1.8; color: var(--text);
+    margin-bottom: 8px; padding-left: 18px;
+  }
+  .path-obs li:last-child { margin-bottom: 0; }
+  .path-obs li::before {
+    content: ""; position: absolute; left: 3px; top: 10px;
+    width: 7px; height: 7px; border-radius: 50%; background: var(--primary);
+  }
+  .raw-stack { margin-top: 14px; border: 1px solid var(--border); border-radius: 8px; background: #fcfcfd; }
+  .raw-stack summary {
+    cursor: pointer; padding: 9px 14px; font-size: 13px; font-weight: 600; color: var(--primary-dark);
+    user-select: none;
+  }
+  .raw-stack pre { margin: 0; border-radius: 0 0 8px 8px; max-height: 420px; overflow: auto; }
+
+  /* ===== Flow ===== */
+  .flow {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+    background: #f8fafc; border: 1px solid var(--border);
+    border-radius: 8px; padding: 14px 16px; margin: 12px 0;
+    font-family: Consolas, monospace; font-size: 12.5px;
+  }
+  .flow .box { background: #fff; border: 1px solid #cbd5e1; border-radius: 6px; padding: 6px 10px; }
+  .flow .box.hot { border-color: var(--danger); background: #fdf2f2; }
+  .flow .arr { color: var(--text-muted); }
+
+  /* ===== Commit cards ===== */
+  .commit-card {
+    border: 1px solid var(--border); border-radius: 10px;
+    padding: 16px 20px; margin-bottom: 14px; background: #fcfcfd;
+  }
+  .commit-card .sha {
+    font-family: Consolas, monospace; font-size: 12.5px;
+    background: #eef2ff; color: #3730a3; padding: 2px 8px;
+    border-radius: 4px; word-break: break-all;
+  }
+  .commit-card .subject { font-weight: 700; font-size: 15px; margin: 8px 0 6px; }
+  .commit-card .meta { font-size: 13px; color: var(--text-muted); }
+
+  /* ===== Root cause analysis steps ===== */
+  .rc-grid { display:flex; flex-direction:column; gap:12px; }
+  .rc-conclusion { font-size:15px; line-height:1.85; color:#1e293b; word-break:break-word; font-weight:500; }
+
+  .rc-chain-wrap { border:none; box-shadow:none; margin:0; background:transparent; }
+  .rc-chain-wrap summary { padding:10px 4px 6px; font-size:13px; color:var(--accent); font-weight:600; cursor:pointer; user-select:none; list-style:none; display:flex; align-items:center; gap:8px; border-radius:6px; }
+  .rc-chain-wrap summary::-webkit-details-marker { display:none; }
+  .rc-chain-wrap summary::before { content:"▸"; color:var(--primary); font-size:11px; display:inline-block; transition:transform .15s; }
+  .rc-chain-wrap[open] summary::before { transform:rotate(90deg); }
+  .rc-chain-wrap summary:hover { background:#f1f5f9; }
+  .rc-chain-wrap .rc-chain-body { padding:8px 0 4px; }
+  .rc-chain-count { background:#e0f2fe; color:#0369a1; font-size:11px; font-weight:600; padding:1px 8px; border-radius:10px; }
+  .rc-chain { position:relative; }
+  .rc-step { display:flex; gap:14px; padding:0 0 14px; position:relative; }
+  .rc-step:last-child { padding-bottom:0; }
+  .rc-step-dot { flex-shrink:0; width:24px; display:flex; justify-content:center; padding-top:2px; position:relative; }
+  .rc-step-dot-inner { width:22px; height:22px; border-radius:50%; background:var(--primary); color:#fff; font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center; z-index:1; box-shadow:0 0 0 3px #fff; flex-shrink:0; }
+  .rc-step-dot::after { content:''; position:absolute; top:24px; bottom:-14px; left:50%; width:2px; background:#e2e8f0; transform:translateX(-50%); z-index:0; }
+  .rc-step:last-child .rc-step-dot::after { display:none; }
+  .rc-step-card { flex:1; min-width:0; background:#fff; border:1px solid var(--border); border-radius:8px; padding:12px 16px; }
+  .rc-step-card.is-final { background:#f0fdf6; border:1px solid #6ee7b7; border-left-width:3px; }
+  .rc-final-badge { display:inline-block; font-size:10.5px; font-weight:700; letter-spacing:.5px; color:#047857; background:#d1fae5; border:1px solid #6ee7b7; border-radius:10px; padding:1px 8px; margin-bottom:6px; }
+  .rc-step.is-final .rc-step-fact { color:#065f46; }
+  .kb-ref { color:#2563eb; text-decoration:underline; cursor:pointer; }
+  .kb-ref:hover { color:#1d4ed8; text-decoration:none; }
+  .rc-step-dot-inner { transition:background .15s; }
+  .rc-step-fact { font-size:13.5px; font-weight:600; color:#1e293b; margin-bottom:6px; line-height:1.6; }
+  .rc-step-evidence { background:#f1f5f9; border-left:3px solid #94a3b8; font-family:"SFMono-Regular",Consolas,monospace; font-size:12px; line-height:1.7; padding:9px 12px; border-radius:0 6px 6px 0; margin:2px 0 8px; white-space:pre; overflow-x:auto; color:#334155; }
+  .rc-step-detail { font-size:13px; line-height:1.8; color:#475569; white-space:pre-wrap; word-break:break-word; }
+  .rc-stage-label { padding:4px 0 10px 38px; }
+  .rc-stage-tag { display:inline-flex; align-items:center; gap:5px; font-size:12px; font-weight:700; padding:2px 10px; border-radius:11px; border:1px solid; }
+
+  /* ===== Anomaly features ===== */
+  .anomaly-grid { display:flex; flex-direction:column; gap:14px; }
+  .anomaly-item { padding:10px 14px; background:var(--mono-bg); border:1px solid var(--border); border-radius:8px; }
+  .anomaly-label { font-size:11px; color:var(--text-muted); font-weight:600; display:block; margin-bottom:8px; }
+  .anomaly-list { display:flex; flex-direction:column; gap:5px; }
+  .anomaly-row { font-size:12px; font-family:monospace; padding:6px 10px; background:#fff; border:1px solid var(--border); border-radius:6px; color:var(--text); }
+  .anomaly-code { max-height:180px; font-size:11.5px; white-space:pre-wrap; word-break:break-all; margin:0; padding:10px 12px; }
+  .chip-warn { background:#fef3c7; color:#92400e; border-color:#fcd34d; }
+
+  /* ===== Modules chips ===== */
+  .modules-chips { display:flex; flex-wrap:wrap; gap:6px; }
+  .chip { font-size:11px; background:var(--mono-bg); border:1px solid var(--border); border-radius:6px; padding:3px 8px; font-family:monospace; }
+  .kv-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:14px; }
+  .kv { display:flex; flex-direction:column; gap:3px; padding:8px 12px; background:var(--mono-bg); border-radius:8px; border:1px solid var(--border); }
+  .kv .k { color:var(--text-muted); font-size:11px; }
   .kv .v { color:var(--text); font-weight:600; word-break:break-all; }
-  .bug-summary { background:var(--danger-soft); border-left:4px solid var(--danger); padding:14px 18px; border-radius:8px; font-weight:500; font-size:14.5px; }
-  .bug-summary.empty { color:var(--muted); font-style:italic; font-weight:400; background:var(--code-bg); border-left-color:var(--code-border); }
 
-  /* ===== 调用链路：Flex 流式蛇形 ===== */
-  .chain-wrap { display:flex; flex-direction:column; align-items:center; padding:32px 0 40px; overflow:visible; }
-  .chain {
-    --nw:160px; --nh:40px; --gw:22px; --turn-h:48px;
-    display:flex; flex-direction:column; align-items:stretch;
-    width:calc(5 * var(--nw) + 4 * var(--gw));
-    max-width:100%;
-  }
-  .chain-row { display:flex; align-items:center; justify-content:flex-start; min-height:var(--nh); }
-  .chain-row.has-seg { padding-top:26px; }
-  .chain-row.has-crash-bubble { padding-bottom:48px; }
-  .chain-row.reverse { flex-direction:row-reverse; }
-  .node {
-    flex:0 0 var(--nw); width:var(--nw); min-width:0; height:var(--nh); padding:0 12px; border-radius:8px;
-    background:var(--card); border:1.5px solid var(--accent); border-top-width:4px;
-    font-family:"SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace; font-size:12px;
-    display:flex; align-items:center; white-space:nowrap;
-    box-shadow:0 2px 8px rgba(37,99,235,0.12); position:relative; cursor:default;
-  }
-  .node .node-body { display:flex; align-items:center; gap:8px; flex:1; min-width:0; overflow:hidden; }
-  .node .fname { flex:1; min-width:0; font-weight:600; color:var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .node .tip{
-    position:absolute; bottom:calc(100% + 8px); left:50%; transform:translateX(-50%);
-    background:#1e293b; color:#f8fafc; padding:6px 12px; border-radius:6px;
-    font-size:12px; font-family:"SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace;
-    white-space:nowrap; font-weight:600; pointer-events:none; opacity:0;
-    box-shadow:0 4px 14px rgba(15,23,42,.25); z-index:50; transition:opacity .15s;
-  }
-  .node .tip::after{
-    content:""; position:absolute; top:100%; left:50%; transform:translateX(-50%);
-    border:6px solid transparent; border-top-color:#1e293b;
-  }
-  .node { transition:box-shadow .15s, transform .15s, border-color .15s; }
-  .node:hover { z-index:10; box-shadow:0 6px 20px rgba(37,99,235,.28); transform:translateY(-2px); border-color:var(--accent); }
-  .node.crash:hover { box-shadow:0 6px 20px rgba(220,38,38,.32); border-color:var(--danger); }
-  .node.entry:hover { box-shadow:0 6px 20px rgba(100,116,139,.25); border-color:#64748b; }
-  .node.thunk:hover { box-shadow:0 6px 16px rgba(100,116,139,.18); border-color:#94a3b8; }
-  .node:hover .tip { opacity:1; }
-  .node .badge {
-    font-size:10px; padding:2px 7px; border-radius:8px; font-weight:600; white-space:nowrap; flex-shrink:0;
-    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;
-  }
-  .node.crash { border-color:var(--danger); background:var(--danger-soft); box-shadow:0 2px 8px rgba(220,38,38,0.20); }
-  .node.crash .fname { color:var(--danger); font-weight:700; }
-  .node.crash .badge { background:var(--danger); color:#fff; }
-  .node.entry { border-color:#94a3b8; background:#f8fafc; box-shadow:0 2px 8px rgba(148,163,184,0.18); }
-  .node.entry .fname { color:#475569; }
-  .node.entry .badge { background:#94a3b8; color:#fff; }
-  .node.mid .badge { background:var(--accent-soft); color:var(--accent); }
-  .node.thunk { background:#f8fafc; border-color:#e2e8f0; box-shadow:none; border-top-width:2px; border-radius:6px; }
-  .node.thunk .fname { color:#94a3b8; font-weight:500; font-style:italic; }
-  .node.thunk .badge { display:none; }
-
-  .h-link { flex:0 0 var(--gw); height:2px; background:var(--accent); position:relative; align-self:center; }
-  .h-link.crash { background:var(--danger); }
-  .h-link::after {
-    content:"▶"; position:absolute; right:-2px; top:50%; transform:translateY(-50%);
-    font-size:12px; color:var(--accent); font-weight:700; line-height:1;
-    text-shadow:0 0 3px #fff, -1px 0 0 #fff, 1px 0 0 #fff, 0 -1px 0 #fff, 0 1px 0 #fff;
-  }
-  .h-link.crash::after { color:var(--danger); }
-  .chain-row.reverse .h-link::after { right:auto; left:-2px; content:"◀"; }
-
-  .v-turn { flex:0 0 var(--turn-h); position:relative; width:100%; }
-  .v-turn .v-line { position:absolute; top:0; bottom:0; width:2px; background:var(--accent); }
-  .v-turn.right .v-line { right:calc(var(--nw)/2); }
-  .v-turn.left  .v-line { left:calc(var(--nw)/2); }
-  .v-turn.crash .v-line { background:var(--danger); }
-  .v-turn::after {
-    content:"▼"; position:absolute; bottom:-2px;
-    font-size:12px; color:var(--accent); font-weight:700; line-height:1;
-    text-shadow:0 0 3px #fff, -1px 0 0 #fff, 1px 0 0 #fff, 0 -1px 0 #fff, 0 1px 0 #fff;
-  }
-  .v-turn.right::after { right:calc(var(--nw)/2 - 6px); }
-  .v-turn.left::after  { left:calc(var(--nw)/2 - 6px); }
-  .v-turn.crash::after { color:var(--danger); }
-
-  .fold-row { display:flex; justify-content:center; margin:8px 0; }
-  .fold-btn {
-    padding:8px 18px; border-radius:10px;
-    background:repeating-linear-gradient(45deg,#f1f5f9,#f1f5f9 6px,#e2e8f0 6px,#e2e8f0 12px);
-    border:1px dashed #94a3b8; color:#475569; font-size:13px; font-weight:600;
-    cursor:pointer; user-select:none; font-family:inherit;
-  }
-  .fold-btn .pill { background:#fff; padding:1px 8px; border-radius:10px; border:1px solid #cbd5e1; margin-left:8px; font-size:11px; font-weight:600; }
-  .fold-btn:hover { background:#e2e8f0; }
-  .chain-legend {
-    margin-top:14px; display:flex; gap:18px; flex-wrap:wrap; font-size:11px;
-    color:var(--muted); align-items:center; justify-content:center; width:100%;
-  }
-  .chain-legend .dot { display:inline-block; width:10px; height:10px; border-radius:3px; margin-right:5px; vertical-align:middle; }
-  .chain-legend .dot.crash { background:var(--danger); }
-  .chain-legend .dot.entry { background:#94a3b8; }
-  .chain-legend .dot.mid { background:var(--accent); }
-  .chain-legend .hint { margin-left:auto; color:#94a3b8; }
-
-  /* 子系统配色 - mid 节点的边框/标签颜色覆盖 */
-  .node.ss-netdrv { border-color:#0284c7; }
-  .node.ss-netdrv .badge { background:#e0f2fe; color:#0284c7; }
-  .node.ss-netcore { border-color:#0891b2; }
-  .node.ss-netcore .badge { background:#cffafe; color:#0891b2; }
-  .node.ss-nettcp { border-color:#059669; }
-  .node.ss-nettcp .badge { background:#d1fae5; color:#059669; }
-  .node.ss-netip { border-color:#0d9488; }
-  .node.ss-netip .badge { background:#ccfbf1; color:#0d9488; }
-  .node.ss-netsock { border-color:#0f766e; }
-  .node.ss-netsock .badge { background:#ccfbf1; color:#0f766e; }
-  .node.ss-softirq { border-color:#d97706; }
-  .node.ss-softirq .badge { background:#fef3c7; color:#d97706; }
-  .node.ss-hardirq { border-color:#c2410c; }
-  .node.ss-hardirq .badge { background:#ffedd5; color:#c2410c; }
-  .node.ss-syscall { border-color:#7c3aed; }
-  .node.ss-syscall .badge { background:#ede9fe; color:#7c3aed; }
-  .node.ss-mm { border-color:#db2777; }
-  .node.ss-mm .badge { background:#fce7f3; color:#db2777; }
-  .node.ss-vfs { border-color:#ca8a04; }
-  .node.ss-vfs .badge { background:#fef9c3; color:#ca8a04; }
-  .node.ss-sched { border-color:#6d28d9; }
-  .node.ss-sched .badge { background:#ede9fe; color:#6d28d9; }
-  .node.ss-lock { border-color:#9f1239; }
-  .node.ss-lock .badge { background:#ffe4e6; color:#9f1239; }
-  .node.ss-driver { border-color:#475569; }
-  .node.ss-driver .badge { background:#f1f5f9; color:#475569; }
-  .node.ss-other .badge { background:var(--accent-soft); color:var(--accent); }
-
-  /* 子系统连线颜色（h-link 和 v-line 跟随目标节点子系统） */
-  .h-link.to-netdrv, .v-turn.to-netdrv .v-line { background:#0284c7; }
-  .h-link.to-netdrv::after, .v-turn.to-netdrv::after { color:#0284c7; }
-  .h-link.to-netcore, .v-turn.to-netcore .v-line { background:#0891b2; }
-  .h-link.to-netcore::after, .v-turn.to-netcore::after { color:#0891b2; }
-  .h-link.to-nettcp, .v-turn.to-nettcp .v-line { background:#059669; }
-  .h-link.to-nettcp::after, .v-turn.to-nettcp::after { color:#059669; }
-  .h-link.to-netip, .v-turn.to-netip .v-line { background:#0d9488; }
-  .h-link.to-netip::after, .v-turn.to-netip::after { color:#0d9488; }
-  .h-link.to-netsock, .v-turn.to-netsock .v-line { background:#0f766e; }
-  .h-link.to-netsock::after, .v-turn.to-netsock::after { color:#0f766e; }
-  .h-link.to-softirq, .v-turn.to-softirq .v-line { background:#d97706; }
-  .h-link.to-softirq::after, .v-turn.to-softirq::after { color:#d97706; }
-  .h-link.to-hardirq, .v-turn.to-hardirq .v-line { background:#c2410c; }
-  .h-link.to-hardirq::after, .v-turn.to-hardirq::after { color:#c2410c; }
-  .h-link.to-syscall, .v-turn.to-syscall .v-line { background:#7c3aed; }
-  .h-link.to-syscall::after, .v-turn.to-syscall::after { color:#7c3aed; }
-  .h-link.to-mm, .v-turn.to-mm .v-line { background:#db2777; }
-  .h-link.to-mm::after, .v-turn.to-mm::after { color:#db2777; }
-  .h-link.to-vfs, .v-turn.to-vfs .v-line { background:#ca8a04; }
-  .h-link.to-vfs::after, .v-turn.to-vfs::after { color:#ca8a04; }
-  .h-link.to-sched, .v-turn.to-sched .v-line { background:#6d28d9; }
-  .h-link.to-sched::after, .v-turn.to-sched::after { color:#6d28d9; }
-  .h-link.to-lock, .v-turn.to-lock .v-line { background:#9f1239; }
-  .h-link.to-lock::after, .v-turn.to-lock::after { color:#9f1239; }
-  .h-link.to-driver, .v-turn.to-driver .v-line { background:#475569; }
-  .h-link.to-driver::after, .v-turn.to-driver::after { color:#475569; }
-
-  /* 链条导语 - 一句话故事融入链上方 */
-  .chain-story {
-    text-align:center;
-    font-size:13.5px; line-height:1.7; color:#475569; font-style:italic;
-    padding:10px 20px 0; max-width:780px; margin:0 auto;
-    position:relative;
-  }
-  .chain-story::before{
-    content:""; position:absolute; left:50%; top:0; transform:translateX(-50%);
-    width:40px; height:3px; background:linear-gradient(90deg,transparent,var(--accent),transparent); border-radius:2px;
-  }
-
-  /* 段标签 - 显示在段首节点上方 */
-  .node .seg-label{
-    position:absolute; bottom:calc(100% + 4px); left:50%; transform:translateX(-50%);
-    font-size:10.5px; font-weight:700; font-style:normal; white-space:nowrap;
-    padding:2px 8px; border-radius:10px; line-height:1.4;
-    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;
-    pointer-events:none; z-index:5;
-  }
-  .node.ss-netdrv .seg-label { background:#0284c7; color:#fff; }
-  .node.ss-netcore .seg-label { background:#0891b2; color:#fff; }
-  .node.ss-nettcp .seg-label { background:#059669; color:#fff; }
-  .node.ss-netip .seg-label { background:#0d9488; color:#fff; }
-  .node.ss-netsock .seg-label { background:#0f766e; color:#fff; }
-  .node.ss-softirq .seg-label { background:#d97706; color:#fff; }
-  .node.ss-hardirq .seg-label { background:#c2410c; color:#fff; }
-  .node.ss-syscall .seg-label { background:#7c3aed; color:#fff; }
-  .node.ss-mm .seg-label { background:#db2777; color:#fff; }
-  .node.ss-vfs .seg-label { background:#ca8a04; color:#fff; }
-  .node.ss-sched .seg-label { background:#6d28d9; color:#fff; }
-  .node.ss-lock .seg-label { background:#9f1239; color:#fff; }
-  .node.ss-driver .seg-label { background:#475569; color:#fff; }
-  .node.ss-other .seg-label { background:var(--accent); color:#fff; }
-  .node.entry .seg-label { background:#64748b; color:#fff; }
-  /* 段首标签下方的小三角 */
-  .node .seg-label::after{
-    content:""; position:absolute; top:100%; left:50%; transform:translateX(-50%);
-    border:4px solid transparent;
-  }
-  .node.ss-netdrv .seg-label::after { border-top-color:#0284c7; }
-  .node.ss-netcore .seg-label::after { border-top-color:#0891b2; }
-  .node.ss-nettcp .seg-label::after { border-top-color:#059669; }
-  .node.ss-netip .seg-label::after { border-top-color:#0d9488; }
-  .node.ss-netsock .seg-label::after { border-top-color:#0f766e; }
-  .node.ss-softirq .seg-label::after { border-top-color:#d97706; }
-  .node.ss-hardirq .seg-label::after { border-top-color:#c2410c; }
-  .node.ss-syscall .seg-label::after { border-top-color:#7c3aed; }
-  .node.ss-mm .seg-label::after { border-top-color:#db2777; }
-  .node.ss-vfs .seg-label::after { border-top-color:#ca8a04; }
-  .node.ss-sched .seg-label::after { border-top-color:#6d28d9; }
-  .node.ss-lock .seg-label::after { border-top-color:#9f1239; }
-  .node.ss-driver .seg-label::after { border-top-color:#475569; }
-  .node.ss-other .seg-label::after { border-top-color:var(--accent); }
-  .node.entry .seg-label::after { border-top-color:#64748b; }
-
-  /* 崩溃点注释气泡 */
-  .node.crash .crash-note{
-    position:absolute; top:calc(100% + 6px); left:50%; transform:translateX(-50%);
-    background:var(--danger); color:#fff; font-size:10.5px; font-weight:600;
-    padding:4px 10px; border-radius:6px; white-space:normal; max-width:260px; text-align:center; line-height:1.4;
-    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;
-    pointer-events:none; z-index:5;
-  }
-  .node.crash .crash-note::before{
-    content:""; position:absolute; bottom:100%; left:50%; transform:translateX(-50%);
-    border:5px solid transparent; border-bottom-color:var(--danger);
-  }
-
-  /* 关键观察点 - 紧凑横向芯片条 */
-  .chain-observations{
-    display:flex; flex-wrap:wrap; gap:8px; justify-content:center;
-    margin-top:16px; padding:0 8px;
-  }
-  .chain-obs-chip{
-    font-size:12px; line-height:1.5; color:#334155;
-    background:#f8fafc; border:1px solid #e2e8f0; border-radius:14px;
-    padding:6px 12px; display:inline-flex; align-items:flex-start; gap:5px;
-    max-width:420px; white-space:normal; word-break:break-word;
-  }
-  .chain-obs-chip .chip-tag{ font-size:13px; flex-shrink:0; line-height:1.5; }
-
-  /* 原始栈折叠块（保留） */
-  .trace-raw { margin-top:12px; }
-  .trace-raw details { margin:0; box-shadow:none; border:1px solid var(--border); border-radius:8px; }
-  .trace-raw summary { cursor:pointer; padding:8px 14px; font-size:12px; font-weight:600; color:#64748b; background:#f8fafc; user-select:none; }
-  .trace-raw pre { margin:0; padding:12px 16px; background:#0f172a; color:#e2e8f0; font-size:11px; line-height:1.65; overflow-x:auto; font-family:"SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace; white-space:pre; border-radius:0; max-height:300px; }
-
-  .prose { white-space:pre-wrap; word-break:break-word; line-height:1.8; color:#334155; }
-  details { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); margin-bottom:14px; box-shadow:var(--shadow); overflow:hidden; }
-  details[open] { box-shadow:var(--shadow-lg); }
-  summary { padding:16px 26px; cursor:pointer; font-weight:600; font-size:14px; user-select:none; list-style:none; display:flex; align-items:center; gap:9px; }
-  summary::-webkit-details-marker { display:none; }
-  summary::before { content:"▸"; color:var(--accent); font-size:12px; display:inline-block; }
-  details[open] summary::before { transform:rotate(90deg); }
-  summary:hover { background:#f8fafc; }
-  .detail-body { padding:0 26px 20px; }
-  pre.json { background:var(--code-bg); border:1px solid var(--code-border); border-radius:8px; padding:16px; margin:0; overflow-x:auto; font-family:"SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace; font-size:12.5px; line-height:1.6; max-height:540px; overflow-y:auto; }
-  .json-key { color:#0369a1; } .json-str { color:#15803d; } .json-num { color:#b45309; } .json-bool { color:#7c3aed; } .json-null { color:var(--muted); }
-  /* Workflow trace (new) */
-  .wf-header { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:14px; font-size:12px; color:var(--muted); }
-  .wf-badge { font-size:10px; font-weight:700; padding:2px 8px; border-radius:10px; letter-spacing:.3px; text-transform:uppercase; }
-  .wf-badge.export { background:#dbeafe; color:#1e40af; }
-  .wf-badge.manual { background:#fef3c7; color:#92400e; }
-  .wf-duration { font-variant-numeric:tabular-nums; }
-  .wf-step { display:flex; gap:12px; margin-bottom:2px; position:relative; }
-  .wf-step:not(:last-child)::after { content:""; position:absolute; left:11px; top:26px; bottom:-2px; width:2px; background:var(--border); }
-  .wf-dot-col { flex:0 0 24px; display:flex; flex-direction:column; align-items:center; padding-top:4px; }
-  .wf-dot { width:24px; height:24px; border-radius:50%; background:var(--accent); color:#fff; font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0; z-index:1; }
-  .wf-dot.fail { background:#ef4444; }
-  .wf-dot.partial { background:#f59e0b; }
-  .wf-card-col { flex:1; min-width:0; padding-bottom:14px; }
-  .wf-card { background:var(--card); border:1px solid var(--border); border-radius:8px; padding:10px 14px; }
-  .wf-card-head { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:6px; }
-  .wf-stage { font-size:10px; font-weight:700; padding:2px 8px; border-radius:4px; text-transform:uppercase; letter-spacing:.3px; }
-  .wf-stage.init { background:#f1f5f9; color:#475569; }
-  .wf-stage.baseline_collection { background:#ecfdf5; color:#065f46; }
-  .wf-stage.crash_feature_extraction { background:#fef3c7; color:#92400e; }
-  .wf-stage.log_detection { background:#ede9fe; color:#5b21b6; }
-  .wf-stage.knowledge_retrieval { background:#e0f2fe; color:#075985; }
-  .wf-stage.root_cause_validation { background:#fee2e2; color:#991b1b; }
-  .wf-stage.report_generation { background:#dbeafe; color:#1e40af; }
-  .wf-step-status { font-size:10px; font-weight:600; padding:1px 7px; border-radius:8px; margin-left:auto; }
-  .wf-step-status.success { background:#dcfce7; color:#166534; }
-  .wf-step-status.failed { background:#fee2e2; color:#991b1b; }
-  .wf-step-status.partial { background:#fef3c7; color:#92400e; }
-  .wf-step-status.skipped { background:#f1f5f9; color:#64748b; }
-  .wf-decision { font-size:13px; font-weight:600; color:var(--fg); line-height:1.6; margin-bottom:4px; }
-  .wf-observations { font-size:12px; color:#475569; line-height:1.7; background:#f8fafc; border-left:3px solid #cbd5e1; padding:7px 10px; border-radius:0 6px 6px 0; margin:4px 0 6px; white-space:pre-wrap; word-break:break-word; }
-  .wf-judgment { font-size:12px; color:#64748b; font-style:italic; line-height:1.6; margin:2px 0 6px; }
-  .wf-reason { font-size:12px; color:#991b1b; background:#fef2f2; border-left:3px solid #fca5a5; padding:6px 10px; border-radius:0 6px 6px 0; margin:4px 0 6px; }
-  .wf-tools { display:flex; flex-direction:column; gap:3px; margin-top:6px; }
-  .wf-tool { font-size:11px; display:flex; align-items:center; gap:8px; padding:4px 8px; background:var(--bg,#f8fafc); border:1px solid var(--border); border-radius:5px; color:var(--muted); line-height:1.4; }
-  .wf-tool-icon { flex-shrink:0; font-size:12px; }
-  .wf-tool-icon.ok { color:#16a34a; }
-  .wf-tool-icon.err { color:#dc2626; }
-  .wf-tool-icon.warn { color:#d97706; }
-  .wf-tool-title { flex:1; font-family:"SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace; font-size:11px; color:#334155; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .wf-tool-meta { flex-shrink:0; font-size:10px; color:#94a3b8; font-variant-numeric:tabular-nums; }
-  .wf-time { font-size:11px; color:#94a3b8; margin-top:5px; font-variant-numeric:tabular-nums; }
-    /* 崩溃特征 & 知识库匹配 */
+  /* ===== Match cases ===== */
   .match-section { margin-bottom:22px; }
   .match-section:last-child { margin-bottom:0; }
-  .match-section .sec-label { font-size:11px; color:var(--muted); margin:16px 0 10px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; }
-  .match-section .sec-label:first-child { margin-top:0; }
-  .match-section .host-grid { margin-bottom:4px; }
-  .match-section .modules-chips { margin-bottom:4px; }
-  .match-cases { display:flex; gap:12px; flex-wrap:wrap; }
+  .match-cases { display:flex; flex-direction:column; gap:12px; }
   .match-cases.collapsed .match-case:not(:first-child) { display:none; }
+
+  /* 三类案例分组 */
+  .match-group { margin-bottom:18px; }
+  .match-group:last-child { margin-bottom:0; }
+  .mg-head {
+    display:flex; align-items:center; gap:9px; font-size:14.5px; font-weight:700;
+    color:var(--text); margin-bottom:3px;
+  }
+  .mg-dot { width:10px; height:10px; border-radius:3px; flex-shrink:0; }
+  .mg-dot.internal { background:#2563eb; }
+  .mg-dot.community { background:#059669; }
+  .mg-dot.online { background:#d97706; }
+  .mg-count {
+    font-size:11px; font-weight:700; padding:1px 9px; border-radius:10px;
+    background:#eef2f7; color:#64748b;
+  }
+  .mg-tag {
+    font-size:10.5px; font-weight:600; padding:1px 8px; border-radius:4px;
+    background:#fef3e8; color:#b45309; border:1px solid #f5d9b0;
+  }
+  .mg-desc { font-size:12.5px; color:var(--text-muted); line-height:1.6; margin:0 0 10px 19px; }
+  .match-group + .match-group { border-top:1px dashed var(--border); padding-top:16px; }
   .match-case {
-    flex:1; min-width:280px; background:var(--code-bg); border:1px solid var(--code-border);
+    width:100%; flex:0 0 auto; min-width:0;
+    background:var(--mono-bg); border:1px solid var(--border);
     border-radius:10px; padding:14px 16px; position:relative; overflow:hidden;
   }
   .match-case .mc-score {
     display:inline-block; font-size:11px; font-weight:700; padding:2px 10px; border-radius:10px;
-    margin-bottom:8px; font-family:-apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;
+    margin-bottom:8px;
   }
   .match-case .mc-score.high { background:#dcfce7; color:#166534; }
   .match-case .mc-score.mid { background:#fef3c7; color:#92400e; }
   .match-case .mc-score.low { background:#f1f5f9; color:#64748b; }
   .match-case .mc-level {
     display:inline-block; font-size:10px; font-weight:800; padding:2px 8px; border-radius:10px;
-    margin-bottom:8px; margin-left:6px; font-family:-apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;
-    letter-spacing:.5px;
+    margin-bottom:8px; margin-left:6px; letter-spacing:.5px;
   }
   .match-case .mc-level.L1 { background:#dcfce7; color:#15803d; border:1px solid #86efac; }
   .match-case .mc-level.L2 { background:#dbeafe; color:#1d4ed8; border:1px solid #93c5fd; }
   .match-case .mc-level.L3 { background:#fef3c7; color:#b45309; border:1px solid #fcd34d; }
+  /* L3 弱匹配兜底：未获一手证据确认时，强制警示样式，不携带"高匹配" */
+  .match-case.l3-weak { border-color:#fcd34d; background:#fffdf5; }
+  .match-case .mc-score.weak { background:#fef3c7; color:#b45309; border:1px dashed #f59e0b; }
+  .match-case .mc-level.L3.weak { background:#fff7ed; color:#c2410c; border:1px solid #fb923c; }
+  .mc-l3-note {
+    background:#fffbeb; border:1px solid #fde68a; border-left:3px solid #f59e0b;
+    border-radius:0 6px 6px 0; padding:7px 11px; font-size:12px; line-height:1.7;
+    color:#92400e; margin-bottom:10px;
+  }
+  .match-case .mc-verdict {
+    display:inline-block; font-size:11px; font-weight:700; padding:2px 9px; border-radius:10px;
+    margin-bottom:8px; margin-left:6px;
+  }
+  .match-case .mc-verdict.confirmed { background:#dcfce7; color:#15803d; border:1px solid #86efac; }
+  .match-case .mc-verdict.same_area { background:#fef3c7; color:#b45309; border:1px solid #fcd34d; }
+  .match-case .mc-verdict.not_relevant { background:#f1f5f9; color:#94a3b8; border:1px solid #e2e8f0; }
+  .match-case .mc-verdict.unverified { background:#fff; color:#94a3b8; border:1px dashed #cbd5e1; }
+  .match-case.excluded { opacity:.6; }
+  .mc-evidence { margin-top:10px; border:1px solid var(--border); border-radius:8px; background:var(--mono-bg); }
+  .mc-evidence summary {
+    cursor:pointer; padding:7px 10px; font-size:11px; font-weight:600; color:var(--text-muted);
+    list-style:none; user-select:none;
+  }
+  .mc-evidence summary::-webkit-details-marker { display:none; }
+  .mc-evidence summary::before { content:"▸ "; color:var(--primary); }
+  .mc-evidence[open] summary::before { content:"▾ "; }
+  .mc-evidence .mc-ev-body { padding:0 10px 10px; }
+  .mc-evidence .mc-quote {
+    font-size:12px; color:var(--text); background:#fff; border-left:3px solid var(--primary);
+    padding:6px 10px; margin:4px 0 6px; white-space:pre-wrap; font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+    line-height:1.55; max-height:200px; overflow:auto; border-radius:0 6px 6px 0;
+  }
+  .mc-evidence .mc-files { display:flex; flex-wrap:wrap; gap:4px; margin:4px 0; }
+  .mc-evidence .mc-file { font-size:10px; font-family:ui-monospace,Menlo,monospace; background:#eef2ff; color:#4338ca; border-radius:5px; padding:2px 7px; }
+  .mc-evidence .mc-fns { display:flex; flex-wrap:wrap; gap:4px; margin:4px 0; }
+  .mc-evidence .mc-fn { font-size:10px; font-family:ui-monospace,Menlo,monospace; background:#dcfce7; color:#15803d; border:1px solid #86efac; border-radius:5px; padding:2px 7px; }
   .match-level-legend {
     display:flex; gap:10px; flex-wrap:wrap; margin-bottom:12px; padding:8px 12px;
     background:#f8fafc; border-radius:8px; font-size:11px; color:#64748b; line-height:1.5;
@@ -391,84 +413,267 @@
   .match-case .mc-reason-list { margin:4px 0 0; padding:0; list-style:none; }
   .match-case .mc-reason-list li {
     font-size:12px; line-height:1.6; color:#475569; padding:3px 0 3px 16px; position:relative;
+    overflow-wrap:break-word; word-break:break-word;
   }
   .match-case .mc-reason-list li::before {
     content:"✓"; position:absolute; left:0; top:3px; color:#22c55e; font-weight:700; font-size:11px;
   }
   .match-case .mc-reason-list li.miss::before { content:"✗"; color:#ef4444; }
-  .match-case .mc-reason-list li.warn::before { content:"⚠"; color:#f59e0b; }
-  .match-case .mc-id { font-size:11px; color:var(--muted); margin-bottom:4px; font-family:monospace; }
-  .match-case .mc-label { font-size:11px; color:var(--muted); font-weight:600; margin:8px 0 4px; }
-  .match-case .mc-text { font-size:13px; color:var(--text); line-height:1.6; }
+  .match-case .mc-reason-list li.warn::before { content:"!"; color:#f59e0b; }
+  .match-case .mc-id { font-size:11px; color:var(--text-muted); margin-bottom:4px; font-family:monospace; overflow-wrap:break-word; word-break:break-all; }
+  .match-case .mc-label { font-size:11px; color:var(--text-muted); font-weight:600; margin:8px 0 4px; }
+  .match-case .mc-text { font-size:13px; color:var(--text); line-height:1.6; overflow-wrap:break-word; word-break:break-word; }
   .match-case .mc-chips { display:flex; flex-wrap:wrap; gap:4px; margin-top:4px; }
-  .match-case .mc-chip { font-size:10px; background:var(--accent-soft); color:var(--accent); border-radius:5px; padding:2px 7px; font-family:monospace; font-weight:500; }
+  .match-case .mc-chip { font-size:10px; background:var(--primary); color:#1e40af; border-radius:5px; padding:2px 7px; font-family:monospace; font-weight:500; background:#e8eefb; }
   .match-expand { text-align:center; margin-top:10px; }
   .match-expand button {
     padding:6px 16px; border-radius:8px; border:1px dashed #94a3b8; background:transparent;
     color:#64748b; font-size:12px; cursor:pointer; font-family:inherit;
   }
   .match-expand button:hover { background:#f1f5f9; color:#475569; }
-  .match-empty { color:var(--muted); font-style:italic; font-size:13px; }
-  /* 根因分析：一句话结论 + 分析思维链 */
-  .rc-grid { display:flex; flex-direction:column; gap:12px; }
-  .rc-box { padding:14px 18px; border-radius:8px; border:1px solid var(--code-border); background:var(--code-bg); }
-  .rc-box.conclusion { border-left:4px solid var(--accent); background:#f8fafc; }
-  .rc-conclusion { font-size:15px; line-height:1.85; color:#1e293b; word-break:break-word; font-weight:500; }
-  /* 思维链折叠按钮 */
-  .rc-chain-wrap { border:none; box-shadow:none; margin:0; background:transparent; }
-  .rc-chain-wrap summary { padding:10px 4px 6px; font-size:13px; color:var(--accent); font-weight:600; cursor:pointer; user-select:none; list-style:none; display:flex; align-items:center; gap:8px; border-radius:6px; }
-  .rc-chain-wrap summary::-webkit-details-marker { display:none; }
-  .rc-chain-wrap summary::before { content:"▸"; color:var(--accent); font-size:11px; display:inline-block; transition:transform .15s; }
-  .rc-chain-wrap[open] summary::before { transform:rotate(90deg); }
-  .rc-chain-wrap summary:hover { background:#f1f5f9; }
-  .rc-chain-wrap .rc-chain-body { padding:8px 0 4px; }
-  .rc-chain-count { background:#e0f2fe; color:#0369a1; font-size:11px; font-weight:600; padding:1px 8px; border-radius:10px; }
-  /* 思维链时间线 */
-  .rc-chain { position:relative; }
-  .rc-step { display:flex; gap:14px; padding:0 0 14px; position:relative; }
-  .rc-step:last-child { padding-bottom:0; }
-  .rc-step-dot { flex-shrink:0; width:24px; display:flex; justify-content:center; padding-top:2px; position:relative; }
-  .rc-step-dot-inner { width:22px; height:22px; border-radius:50%; background:var(--accent); color:#fff; font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center; z-index:1; box-shadow:0 0 0 3px #fff; flex-shrink:0; }
-  .rc-step-dot::after { content:''; position:absolute; top:24px; bottom:-14px; left:50%; width:2px; background:#e2e8f0; transform:translateX(-50%); z-index:0; }
-  .rc-step:last-child .rc-step-dot::after { display:none; }
-  .rc-step-card { flex:1; min-width:0; background:#fff; border:1px solid var(--code-border); border-radius:8px; padding:12px 16px; }
-  .rc-step-fact { font-size:13.5px; font-weight:600; color:#1e293b; margin-bottom:6px; line-height:1.6; }
-  .rc-step-evidence { background:#f1f5f9; border-left:3px solid #94a3b8; font-family:"SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace; font-size:12px; line-height:1.7; padding:9px 12px; border-radius:0 6px 6px 0; margin:2px 0 8px; white-space:pre; overflow-x:auto; color:#334155; }
-  .rc-step-detail { font-size:13px; line-height:1.8; color:#475569; white-space:pre-wrap; word-break:break-word; }
+  .match-empty { color:var(--text-muted); font-style:italic; font-size:13px; }
 
-  /* 异常特征样式 */
-  .anomaly-grid { display:flex; flex-direction:column; gap:14px; }
-  .anomaly-item { padding:10px 14px; background:var(--code-bg); border:1px solid var(--code-border); border-radius:8px; }
-  .anomaly-label { font-size:11px; color:var(--muted); font-weight:600; display:block; margin-bottom:8px; }
-  .anomaly-list { display:flex; flex-direction:column; gap:5px; }
-  .anomaly-row { font-size:12px; font-family:monospace; padding:6px 10px; background:#fff; border:1px solid var(--code-border); border-radius:6px; color:var(--text); }
-  .anomaly-code { max-height:180px; font-size:11.5px; white-space:pre-wrap; word-break:break-all; margin:0; padding:10px 12px; }
-  .chip-warn { background:#fef3c7; color:#92400e; border-color:#fcd34d; }
+  /* 在线案例 */
+  .match-case.online { border-color:#f0d9b0; background:#fffdf8; }
+  .mc-kind {
+    display:inline-block; font-size:11px; font-weight:700; padding:2px 10px;
+    border-radius:10px; margin:0 6px 8px 0;
+  }
+  .mc-kind.commit, .mc-kind.issue { background:#e8eefb; color:#2563eb; }
+  .mc-kind.mail { background:#fef3e8; color:#b45309; }
+  .mc-online-title { font-size:14px; font-weight:700; line-height:1.6; color:var(--text); margin:2px 0 6px; word-break:break-word; }
+  .mc-online-title a { color:inherit; text-decoration:none; border-bottom:1px solid #cbd5e1; }
+  .mc-online-title a:hover { color:var(--primary-dark); border-bottom-color:var(--primary-dark); }
+  .mc-mail-meta { font-size:12px; color:var(--text-muted); margin-bottom:8px; }
+  .mc-mail-meta .ml-list { font-family:Consolas, monospace; }
 
-.empty-line { color:var(--muted); font-style:italic; }
+  /* 邮件：讨论主线（角色化交流链） */
+  .mail-thread { margin:4px 0 2px; }
+  .mail-turn { display:flex; align-items:flex-start; gap:10px; position:relative; padding-bottom:12px; }
+  .mail-turn:not(:last-child)::before {
+    content:""; position:absolute; left:37px; top:20px; bottom:0; width:2px; background:#e2e8f0;
+  }
+  .mail-turn .mt-role {
+    flex-shrink:0; width:76px; text-align:center; font-size:11px; font-weight:700;
+    padding:2px 0; border-radius:4px; margin-top:1px; position:relative; z-index:1;
+  }
+  .mt-role.reporter { background:#e8eefb; color:#2563eb; }
+  .mt-role.maintainer { background:#e6f7f0; color:#057a55; }
+  .mt-role.reviewer { background:#fef3e8; color:#c25700; }
+  .mt-role.stable_maintainer { background:#f0ecfc; color:#6d28d9; }
+  .mt-role.community { background:#eef2f7; color:#64748b; }
+  .mail-turn .mt-text { flex:1; min-width:0; font-size:13px; line-height:1.7; color:var(--text); padding-top:2px; }
+
+  /* 邮件：分析思路链 */
+  .mail-reasoning { list-style:none; margin:2px 0 4px; padding:0; counter-reset:mr; }
+  .mail-reasoning li {
+    position:relative; padding:5px 0 5px 30px; font-size:13px; line-height:1.7;
+    color:var(--text); counter-increment:mr;
+  }
+  .mail-reasoning li::before {
+    content:counter(mr); position:absolute; left:0; top:7px;
+    width:19px; height:19px; border-radius:50%; background:#fef3e8; color:#b45309;
+    font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center;
+  }
+
+  /* 邮件：对本次分析的指导 */
+  .mail-guidance {
+    background:#f8fafc; border-left:3px solid #0d9488; border-radius:0 6px 6px 0;
+    padding:9px 13px; font-size:13px; line-height:1.8; color:#1f2937; margin:4px 0 2px;
+  }
+  .mail-guidance b { color:#0d9488; }
+  .mc-relevance {
+    background:#f8fafc; border-left:3px solid #d97706; border-radius:0 6px 6px 0;
+    padding:8px 12px; font-size:13px; line-height:1.75; color:#334155; margin-top:6px;
+  }
+  .mc-relevance b { color:#b45309; }
+  .mc-orig-link { display:inline-block; margin-top:8px; font-size:12px; font-weight:600; color:var(--primary-dark); }
+  .mc-orig-link:hover { text-decoration:underline; }
+
+  /* 多维匹配论证 */
+  .corrob { margin-top:4px; border:1px solid var(--border); border-radius:8px; overflow:hidden; }
+  .corrob-item {
+    display:flex; align-items:flex-start; gap:10px; padding:8px 12px;
+    background:#fff; border-bottom:1px solid #eef1f5;
+  }
+  .corrob-item:last-child { border-bottom:none; }
+  .corrob-item.mismatch { background:#fdf5f5; }
+  .corrob-dim {
+    flex-shrink:0; width:64px; text-align:center; font-size:11px; font-weight:700;
+    padding:2px 0; border-radius:4px; margin-top:1px;
+  }
+  .corrob-body { flex:1; min-width:0; font-size:13px; line-height:1.7; color:var(--text); }
+  .corrob-state { font-weight:700; margin-right:6px; white-space:nowrap; }
+  .corrob-item.support .corrob-state { color:#059669; }
+  .corrob-item.partial .corrob-state { color:#c25700; }
+  .corrob-item.mismatch .corrob-state { color:#dc2626; }
+  .corrob-text { word-break:break-word; }
+
+  /* 证据对照表（current vs reference 并列展示） */
+  .corrob-table { width:100%; border-collapse:collapse; margin-top:4px; font-size:12.5px; border:1px solid var(--border); border-radius:8px; overflow:hidden; }
+  .corrob-table thead th { background:#f8fafc; color:#475569; font-weight:700; font-size:11px; text-align:left; padding:7px 10px; border-bottom:1px solid var(--border); white-space:nowrap; }
+  .corrob-table tbody td { padding:8px 10px; border-bottom:1px solid #eef1f5; vertical-align:top; line-height:1.65; color:var(--text); word-break:break-word; }
+  .corrob-table tbody tr:last-child td { border-bottom:none; }
+  .corrob-table .ct-dim { width:70px; font-weight:600; color:#334155; }
+  .corrob-table .ct-verdict { width:60px; white-space:nowrap; color:#475569; }
+  .corrob-table .ct-cur { width:42%; border-right:1px solid #eef1f5; background:#fff; }
+  .corrob-table .ct-ref { width:42%; background:#fbfcfe; }
+  .corrob-table .ct-span { background:#fff; }
+  .corrob-row.mismatch td { background:#fdf5f5; }
+  .corrob-row.mismatch .ct-cur, .corrob-row.mismatch .ct-ref { background:transparent; }
+  .corrob-row.support .corrob-state { color:#059669; }
+  .corrob-row.partial .corrob-state { color:#c25700; }
+  .corrob-row.mismatch .corrob-state { color:#dc2626; }
+
+  .corrob-role { display:inline-block; font-size:9px; font-weight:700; padding:1px 6px; border-radius:999px; margin-left:5px; vertical-align:middle; }
+  .corrob-role.fatal { background:#fee2e2; color:#b91c1c; border:1px solid #fca5a5; }
+  .corrob-role.support { background:#f1f5f9; color:#64748b; border:1px solid #e2e8f0; }
+  .corrob-role.apply { background:#f0fdf4; color:#15803d; border:1px solid #86efac; }
+
+  /* 适用性判断链 */
+  .mc-applicability {
+    background:#f0f9ff; border:1px solid #bae6fd; border-left:3px solid #0ea5e9;
+    border-radius:0 6px 6px 0; padding:10px 13px; font-size:12.5px; line-height:1.7;
+    color:#0c4a6e; margin-top:8px;
+  }
+  .mc-applicability b { color:#0369a1; }
+  .ap-head { display:flex; align-items:center; gap:8px; margin-bottom:7px; }
+  .ap-title { font-weight:700; color:#0c4a6e; font-size:13px; }
+  .ap-verdict { font-size:11px; font-weight:700; padding:2px 9px; border-radius:999px; white-space:nowrap; }
+  .ap-verdict.v-direct_adopt { background:#dcfce7; color:#15803d; border:1px solid #86efac; }
+  .ap-verdict.v-adapt { background:#fef3c7; color:#b45309; border:1px solid #fcd34d; }
+  .ap-verdict.v-borrow { background:#dbeafe; color:#1d4ed8; border:1px solid #93c5fd; }
+  .ap-verdict.v-not_applicable { background:#f1f5f9; color:#475569; border:1px solid #cbd5e1; }
+  .ap-method { margin-bottom:6px; }
+  .ap-steps { margin:2px 0 0; padding-left:20px; }
+  .ap-steps li { margin-bottom:3px; }
+
+  /* 分析阶段边界提示 */
+  .rc-stage-hint { font-size:11px; color:var(--text-muted); margin-left:6px; font-weight:400; }
+
+  /* ===== Workflow trace ===== */
+  .wf-header { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:14px; font-size:12px; color:var(--text-muted); }
+  .wf-badge { font-size:10px; font-weight:700; padding:2px 8px; border-radius:10px; letter-spacing:.3px; }
+  .wf-badge.export { background:#dbeafe; color:#1e40af; }
+  .wf-badge.manual { background:#fef3c7; color:#92400e; }
+  .wf-duration { font-variant-numeric:tabular-nums; }
+  .wf-step { display:flex; gap:12px; margin-bottom:2px; position:relative; }
+  .wf-step:not(:last-child)::after { content:""; position:absolute; left:11px; top:26px; bottom:-2px; width:2px; background:var(--border); }
+  .wf-dot-col { flex:0 0 24px; display:flex; flex-direction:column; align-items:center; padding-top:4px; }
+  .wf-dot { width:24px; height:24px; border-radius:50%; background:var(--primary); color:#fff; font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0; z-index:1; }
+  .wf-dot.fail { background:#ef4444; }
+  .wf-dot.partial { background:#f59e0b; }
+  .wf-card-col { flex:1; min-width:0; padding-bottom:14px; }
+  .wf-card { background:var(--card); border:1px solid var(--border); border-radius:8px; padding:10px 14px; }
+  .wf-card-head { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:6px; }
+  .wf-stage { font-size:10px; font-weight:700; padding:2px 8px; border-radius:4px; letter-spacing:.3px; }
+  .wf-stage.init { background:#f1f5f9; color:#475569; }
+  .wf-stage.baseline_collection { background:#ecfdf5; color:#065f46; }
+  .wf-stage.crash_feature_extraction { background:#fef3c7; color:#92400e; }
+  .wf-stage.log_detection { background:#ede9fe; color:#5b21b6; }
+  .wf-stage.knowledge_retrieval { background:#e0f2fe; color:#075985; }
+  .wf-stage.online_retrieval { background:#cffafe; color:#155e75; }
+  .wf-stage.deep_analysis { background:#fce7f3; color:#9d174d; }
+  .wf-stage.root_cause_validation { background:#fee2e2; color:#991b1b; }
+  .wf-stage.report_generation { background:#dbeafe; color:#1e40af; }
+  .wf-step-status { font-size:10px; font-weight:600; padding:1px 7px; border-radius:8px; margin-left:auto; }
+  .wf-step-status.success { background:#dcfce7; color:#166534; }
+  .wf-step-status.failed { background:#fee2e2; color:#991b1b; }
+  .wf-step-status.partial { background:#fef3c7; color:#92400e; }
+  .wf-step-status.skipped { background:#f1f5f9; color:#64748b; }
+  .wf-decision { font-size:13px; font-weight:600; line-height:1.6; margin-bottom:4px; }
+  .wf-observations { font-size:12px; color:#475569; line-height:1.7; background:#f8fafc; border-left:3px solid #cbd5e1; padding:7px 10px; border-radius:0 6px 6px 0; margin:4px 0 6px; white-space:pre-wrap; word-break:break-word; }
+  .wf-judgment { font-size:12px; color:#64748b; font-style:italic; line-height:1.6; margin:2px 0 6px; }
+  .wf-reason { font-size:12px; color:#991b1b; background:#fef2f2; border-left:3px solid #fca5a5; padding:6px 10px; border-radius:0 6px 6px 0; margin:4px 0 6px; }
+  .wf-tools { display:flex; flex-direction:column; gap:3px; margin-top:6px; }
+  .wf-tool { font-size:11px; display:flex; align-items:center; gap:8px; padding:4px 8px; background:var(--bg); border:1px solid var(--border); border-radius:5px; color:var(--text-muted); line-height:1.4; }
+  .wf-tool-icon { flex-shrink:0; font-size:12px; }
+  .wf-tool-icon.ok { color:#16a34a; }
+  .wf-tool-icon.err { color:#dc2626; }
+  .wf-tool-icon.warn { color:#d97706; }
+  .wf-tool-title { flex:1; font-family:"SFMono-Regular",Consolas,monospace; font-size:11px; color:#334155; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .wf-tool-meta { flex-shrink:0; font-size:10px; color:#94a3b8; font-variant-numeric:tabular-nums; }
+  .wf-time { font-size:11px; color:#94a3b8; margin-top:5px; font-variant-numeric:tabular-nums; }
+
+  /* ===== Collapsible details ===== */
+  details { background:var(--card); border:1px solid var(--border); border-radius:12px; margin-bottom:14px; box-shadow:0 1px 3px rgba(0,0,0,.04); overflow:hidden; }
+  details summary { padding:16px 28px; cursor:pointer; font-weight:600; font-size:14px; user-select:none; list-style:none; display:flex; align-items:center; gap:9px; }
+  details summary::-webkit-details-marker { display:none; }
+  details summary::before { content:"▸"; color:var(--primary); font-size:12px; display:inline-block; }
+  details[open] summary::before { transform:rotate(90deg); }
+  details summary:hover { background:#f8fafc; }
+  .detail-body { padding:0 28px 20px; }
+
+  .empty-line { color:var(--text-muted); font-style:italic; }
   .error { color:var(--danger); padding:28px; text-align:center; }
-  .sec-label { font-size:11px; color:var(--muted); margin:12px 0 6px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; }
-  .modules-chips { display:flex; flex-wrap:wrap; gap:6px; }
-  .chip { font-size:11px; background:var(--code-bg); border:1px solid var(--code-border); border-radius:6px; padding:3px 8px; font-family:monospace; }
-  code { background:var(--code-bg); border:1px solid var(--code-border); border-radius:4px; padding:1px 5px; font-family:monospace; font-size:12px; }
+  .sec-label { font-size:11px; color:var(--text-muted); margin:12px 0 6px; font-weight:700; letter-spacing:.4px; }
+  .prose { white-space:pre-wrap; word-break:break-word; line-height:1.8; color:#334155; }
+
+  .footer {
+    text-align: center; color: var(--text-muted); font-size: 12.5px;
+    margin-top: 36px; padding-top: 18px; border-top: 1px solid var(--border);
+  }
+  @media print {
+    body { background: #fff; }
+    section { box-shadow: none; break-inside: avoid; }
+  }
 </style>
 </head>
 <body>
 <div class="container" id="app">
-  <div class="header">
-    <h1 id="header-title"><span>📋</span> 加载中…</h1>
-    <div class="meta" id="header-meta">加载中…</div>
+
+  <!-- Header -->
+  <div class="report-header" id="report-header">
+    <span class="tag">KERNEL CRASH · 综合分析报告</span>
+    <h1 id="header-title">加载中...</h1>
+    <div class="subtitle" id="header-subtitle"></div>
+    <div class="meta-grid" id="header-meta-grid"></div>
   </div>
-  <div id="core-section">
-    <div class="card" id="host-card"><h2><span class="ico">🖥️</span> 宿主机信息</h2><div id="host-body"></div></div>
-    <div class="card"><h2><span class="ico">🔍</span> 根因分析</h2><div id="rootcause-body"></div></div>
-    <div class="card"><h2><span class="ico">🛠️</span> 解决方案</h2><div id="solution-body"></div></div>
-    <div class="card"><h2><span class="ico">🔗</span> 调用链路</h2><div id="trace-body"></div></div>
-    <details id="crash-match-details"><summary>🔬 崩溃特征 & 知识库匹配</summary><div class="detail-body" id="crash-match-body"></div></details>
-  </div>
-  <div id="details-section">
-<details><summary>🔍 诊断工作流追踪</summary><div class="detail-body" id="workflow-body"></div></details>
-  </div>
+
+  <!-- Executive Summary -->
+  <section id="exec-summary-section">
+    <h2><span class="num">1</span>执行摘要</h2>
+    <div id="exec-summary-body"></div>
+  </section>
+
+  <!-- Event Timeline -->
+  <section id="event-timeline-section" style="display:none;">
+    <h2><span class="num">2</span>事件时序图</h2>
+    <div id="event-timeline-body"></div>
+  </section>
+
+  <!-- Crash Detail -->
+  <section id="crash-detail-section">
+    <h2><span class="num" id="crash-detail-num">2</span>崩溃详情</h2>
+    <div id="crash-detail-body"></div>
+  </section>
+
+  <!-- Crash Path (调用栈 + 崩溃扩散链 + 源码线索 整合) -->
+  <section id="crash-path-section">
+    <h2><span class="num" id="crash-path-num">4</span>崩溃路径分析</h2>
+    <div id="crash-path-body"></div>
+  </section>
+
+  <!-- Root Cause Analysis -->
+  <section id="rootcause-section">
+    <h2><span class="num" id="rootcause-num">5</span>根因分析</h2>
+    <div id="rootcause-body"></div>
+  </section>
+
+  <!-- Knowledge Base Matches -->
+  <details id="crash-match-details">
+    <summary>知识库匹配</summary>
+    <div class="detail-body" id="crash-match-body"></div>
+  </details>
+
+  <!-- Workflow Trace -->
+  <details id="workflow-details">
+    <summary>诊断工作流追踪</summary>
+    <div class="detail-body" id="workflow-body"></div>
+  </details>
+
+  <div class="footer" id="footer-text"></div>
+
 </div>
 <script>
 const FULL_URL='report.json';
@@ -476,538 +681,888 @@ const EMBED_FULL = /*__FULL_DATA__*/null;
 const esc=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 function fetchJSON(url){return fetch(url).then(r=>{if(!r.ok)throw new Error(url+' HTTP '+r.status);return r.json();});}
 
-// 从 report.json 提取渲染所需的精简视图字段（core 视图）
-function buildCore(report){
-  const cf=report.crash_feature_info||{};
-  const ra=report.root_cause_analysis||{};
-  const hb=report.host_base_info||{};
+const linkify=s=>esc(s).replace(/https?:\/\/[^\s<]+/g,m=>{
+  const url=m.replace(/[)\].,，。；;！!？?'"'"'”）】]+$/,'');
+  const tail=m.slice(url.length);
+  return `<a href="${url}" target="_blank" rel="noopener" style="color:#2563eb;text-decoration:underline;word-break:break-all">${url}</a>${tail}`;
+});
+
+// ===== 知识库引用跳转（案例 / commit 提及 → 滚动到对应匹配卡片） =====
+let KB_REF_MAP = {};
+let KB_REF_REGEX = null;
+const GENERIC_KB_TOKENS = ['匹配案例','知识库案例','知识库匹配','社区案例','案例','commit','补丁'];
+function escapeRe(s){ return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); }
+function extractSha(v){
+  if(v==null) return '';
+  const m = String(v).match(/[0-9a-f]{7,40}/i);
+  return m ? m[0] : '';
+}
+function orderedKBGroups(report){
+  const diag = (report && report.diagnosis_repair_result) || {};
+  const inr = diag.internal_kernel_result || [];
+  const com = diag.community_kernel_result || [];
+  const onl = diag.online_result || [];
+  const scoreOrder = {高:0,中:1,低:2};
+  const byScore = (a,b) => (scoreOrder[a.match_score]??9) - (scoreOrder[b.match_score]??9);
+  let idx = 0;
+  const pack = arr => arr.map(c => ({c, idx: idx++}));
   return {
-    report_id: report.report_id,
-    crash_time: cf.crash_time,
-    bug_summary: cf.bug_summary,
-    host: {
-      host_name: hb.host_name, machine_model: hb.machine_model, cpu_model: hb.cpu_model,
-      cpu_num: hb.cpu_num, kernel_version: hb.kernel_version, memory_size: hb.memory_size,
-    },
-    call_trace: cf.call_trace_signature||[],
-    call_trace_text: cf.call_trace_text||'',
-    rip_offset: cf.rip_offset||'',
-    call_trace_summary: cf.call_trace_summary||null,
-    conclusion: ra.conclusion,
-    analysis: ra.analysis,
-    solution: ra.solution,
+    internal: pack([...inr].sort(byScore)),
+    community: pack([...com].sort(byScore)),
+    online: pack([...onl])
   };
 }
-
-function renderHeader(core){
-  const h=(core.host||{});
-  const d=String(core.crash_time||'').slice(0,10);
-  document.getElementById('header-title').innerHTML=`<span>📋</span> ${d?esc(d)+' · ':''}${esc(core.bug_summary||'内核崩溃报告')}`;
-  document.getElementById('header-meta').innerHTML=
-    `<span>报告ID: <b>${esc(core.report_id)}</b></span>`+
-    `<span>崩溃时间: <b>${esc(core.crash_time)}</b></span>`+
-    `<span>主机: <b>${esc(h.host_name)}</b></span>`+
-    `<span>内核: <b>${esc(h.kernel_version)}</b></span>`;
+function buildKBRefMap(report){
+  const map = {};
+  const add = (anchor, vals) => {
+    vals.forEach(v => {
+      const s = String(v==null?'':v).trim();
+      if(s.length >= 4){
+        const k = s.toLowerCase();
+        if(!(k in map)) map[k] = anchor;
+      }
+    });
+  };
+  const g = orderedKBGroups(report);
+  [...g.internal, ...g.community].forEach(({c, idx}) => {
+    add('kb-case-' + idx, [c.knowledge_id, c.id, c.kb_id, c.json_id, c.title]);
+  });
+  g.online.forEach(({c, idx}) => {
+    add('kb-case-' + idx, [c.title, extractSha(c.url), extractSha(c.evidence && c.evidence.html_url), extractSha((c.evidence && c.evidence.sha) || c.source_file)]);
+  });
+  KB_REF_MAP = map;
+  const tokens = [...Object.keys(map), ...GENERIC_KB_TOKENS].sort((a,b) => b.length - a.length);
+  const uniq = [...new Set(tokens)];
+  KB_REF_REGEX = uniq.length ? new RegExp('(' + uniq.map(escapeRe).join('|') + ')', 'gi') : null;
+  return map;
 }
-function renderHost(core){
-  const h=core.host||{};
-  const fs=[['主机名',h.host_name],['机型',h.machine_model],['CPU',h.cpu_model],['CPU 数',h.cpu_num],['内核版本',h.kernel_version],['内存',h.memory_size]];
-  document.getElementById('host-body').innerHTML=`<div class="host-grid">${fs.map(([k,v])=>`<div class="kv"><span class="k">${esc(k)}</span><span class="v">${esc(v)}</span></div>`).join('')}</div>`;
+function gotoKB(anchor){
+  const details = document.getElementById('crash-match-details');
+  if(details && !details.open) details.open = true;
+  const el = document.getElementById(anchor) || document.getElementById('crash-match-body');
+  if(el) el.scrollIntoView({behavior:'smooth', block:'center'});
+}
+function rich(text){
+  const html = linkify(text);
+  if(!KB_REF_REGEX) return html;
+  return html.split(/(<a\b[^>]*>.*?<\/a>)/gs).map(seg => {
+    if(/^<a\b/.test(seg)) return seg;
+    return seg.replace(KB_REF_REGEX, function(m){
+      const anchor = KB_REF_MAP[m.toLowerCase()] || 'crash-match-body';
+      return `<a class="kb-ref" href="#${anchor}" onclick="gotoKB('${anchor}');return false;">${m}</a>`;
+    });
+  }).join('');
+}
+function renderProse(id,val,fallback){
+  document.getElementById(id).innerHTML=val?`<div class="prose">${linkify(val)}</div>`:(fallback||'<div class="empty-line">无</div>');
 }
 
-/* ============ 调用链路：Flex 流式蛇形（融入式路径解读） ============ */
-const THUNK_PATTERNS=[/^srso_alias_/,/^srso_/,/^ret_from_fork/,/^entry_SYSCALL_/,/^asm_sysvec_/,/^asm_exc_/,/__x86_return_thunk/,/__retain_return_poison/,/__cfi_/];
-const isThunk=fn=>THUNK_PATTERNS.some(re=>re.test(fn));
-const ROW_LEN=5, FOLD_THRESHOLD=12, HEAD_SHOW=2, TAIL_SHOW=3;
-const UNIT=182; // 节点宽 160 + 间隙 22 = 182
+// ===== Header =====
+function renderHeader(report){
+  const cf=report.crash_feature_info||{};
+  const hb=report.host_base_info||{};
+  const title=report.report_id||cf.bug_type||'内核崩溃分析报告';
+  document.getElementById('header-title').textContent=title;
+  const subParts=[];
+  if(hb.machine_model) subParts.push(hb.machine_model);
+  if(hb.cpu_model) subParts.push(hb.cpu_model);
+  if(hb.kernel_version) subParts.push('内核 '+hb.kernel_version);
+  document.getElementById('header-subtitle').textContent=subParts.join(' · ');
+  const metaItems=[
+    ['主机名', hb.host_name],
+    ['内核版本', hb.kernel_version],
+    ['崩溃时间', cf.crash_time],
+    ['崩溃类型', cf.bug_type],
+    ['CPU', (hb.cpu_num||'')+' 核 · '+(hb.cpu_model||'')],
+    ['内存', hb.memory_size],
+  ];
+  document.getElementById('header-meta-grid').innerHTML=metaItems.map(([k,v])=>
+    `<div class="meta-item"><div class="k">${esc(k)}</div><div class="v">${esc(v)}</div></div>`
+  ).join('');
+}
 
-// 子系统分类规则（按优先级顺序，先匹配先命中）
-const SUBSYS_RULES=[
-  {re:/^(mlx5e?_|mlx4e?_|ixgbe_|i40e_|ice_|bnxt_|r8169_|virtnet_|e1000e?_|enic_|tg3_|be2net_|qede_|sfc_|nfp_)/,key:'netdrv',label:'网卡',icon:'📡'},
-  {re:/^(napi_|napi_gro_|gro_|netif_|dev_queue_xmit|netif_receive|__netif_receive|xdp_|skb_|__skb|dev_hard_start|enqueue_to_backlog|process_backlog|do_xdp_generic)/,key:'netcore',label:'网络核心',icon:'🌐'},
-  {re:/^(tcp_v[46]_|tcp_|__tcp|tcp_time_wait|tcp_v[46]_send|tcp_v[46]_rcv|tcp_rcv|tcp_send|udp_v[46]_|udp_|__inet_lookup|inet_)/,key:'nettcp',label:'TCP/UDP',icon:'🔌'},
-  {re:/^(ip_rcv|ip_local|ip_output|ip_forward|ip_protocol|ip6_rcv|ip6_local|icmp_|icmpv6_|ip_send|ip_finish|ip_route)/,key:'netip',label:'IP层',icon:'📦'},
-  {re:/^(sock_|sk_|sock_def|unix_.*recv|unix_.*send|af_)/,key:'netsock',label:'Socket',icon:'🔗'},
-  {re:/(__do_softirq|do_softirq|net_rx_action|tasklet_action|irq_poll_|raise_softirq)/,key:'softirq',label:'软中断',icon:'🔄'},
-  {re:/^(do_IRQ|irq_exit|handle_irq|generic_handle_irq|handle_edge_irq|__handle_irq)/,key:'hardirq',label:'硬中断',icon:'⚡'},
-  {re:/^(do_syscall|do_sys|sys_call|SyS_|__x64_sys_|__arm64_sys_|__se_sys_|do_execveat|do_execve|do_fork|do_exit|sys_init_module|sys_delete_module|ksys_)/,key:'syscall',label:'系统调用',icon:'📝'},
-  {re:/^(kmalloc|kfree|kzalloc|kcalloc|krealloc|vmalloc|vfree|__get_free_pages|alloc_pages|__alloc_pages|get_free_page|free_page|__free_pages|slab_|kmem_cache|slob_|slub_|page_alloc|__free_page|buddy_)/,key:'mm',label:'内存管理',icon:'💾'},
-  {re:/^(vfs_|__vfs|ext4_|xfs_|btrfs_|btrfs_|nfs_|d_instantiate|dentry|inode|do_filp|filp_open|do_sys_open|path_openat|do_lookup|generic_file|address_space)/,key:'vfs',label:'VFS',icon:'📂'},
-  {re:/^(schedule|_schedule|try_to_wake_up|wake_up|__wake_up|dequeue_task|enqueue_task|pick_next|scheduler_tick|copy_process|do_fork|kernel_clone|finish_task_switch|context_switch)/,key:'sched',label:'调度',icon:'🔀'},
-  {re:/^(rcu_|_raw_spin|spin_lock|spin_unlock|read_lock|write_lock|mutex_|rwlock|raw_spin|rcu_read|rcu_exit|rcu_enter|synchronize_rcu|preempt_disable|preempt_enable|local_bh_disable|local_bh_enable)/,key:'lock',label:'锁/RCU',icon:'🔒'},
-  {re:/^(pci_|pcie_|usb_|ata_|nvme_|scsi_|nvme_rdma|nvmet_|ib_|rdma_)/,key:'driver',label:'设备驱动',icon:'🔧'},
+// ===== Executive Summary =====
+function renderExecSummary(report){
+  const ra=report.root_cause_analysis||{};
+  let h='';
+  if(ra.conclusion){
+    h+=`<div class="callout callout-danger"><div class="title">结论</div>${rich(ra.conclusion)}</div>`;
+  }
+  if(ra.solution){
+    h+=`<div class="callout callout-success"><div class="title">标准解决方案</div>${rich(ra.solution)}</div>`;
+  }
+  if(ra.workaround){
+    h+=`<div class="callout callout-warning"><div class="title">临时规避方案</div>${rich(ra.workaround)}</div>`;
+  }
+  if(!h) h='<div class="empty-line">无</div>';
+  document.getElementById('exec-summary-body').innerHTML=h;
+}
+
+// ===== Event Timeline (事件时序，UML 时序图 SVG) =====
+const SEQ_PALETTE = [
+  {m:'#1e429f', fill:'#e8eefb'}, {m:'#057a55', fill:'#e6f7f0'},
+  {m:'#c25700', fill:'#fef3e8'}, {m:'#6d28d9', fill:'#f0ecfc'},
+  {m:'#b91c1c', fill:'#fde8e8'}, {m:'#0e7490', fill:'#e5f6f8'},
 ];
-function classifySubsystem(fn){
-  for(const r of SUBSYS_RULES) if(r.re.test(fn)) return {key:r.key,label:r.label,icon:r.icon,cls:'ss-'+r.key,toCls:'to-'+r.key};
-  return {key:'other',label:'其他',icon:'•',cls:'ss-other',toCls:'to-other'};
+
+function fmtSeqTime(t){
+  if(!t || t==='unknown') return '时间未知';
+  try{
+    const d=new Date(t);
+    if(!isNaN(d.getTime())){
+      return d.toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
+    }
+  }catch(e){}
+  return t;
 }
 
-function nodeHTML(fn,i,n,opts){
-  const {ripOffset='', isSegStart=false, segLabel='', crashNote='', isCrash=false, isEntry=false, isThunkFn=false, ssCls='', ssKey='other'} = opts;
-  let badge='';
-  let nodeTypeCls='mid';
-  if(isEntry){
-    nodeTypeCls='entry'; badge='入口';
-  }else if(isCrash){
-    nodeTypeCls='crash'; badge='💥'+(ripOffset||'');
-  }else{
-    badge=isThunkFn?'跳板':classifySubsystem(fn).label;
+function _wrapSeqLines(text, maxChars){
+  const t=String(text||'');
+  const lines=[]; let cur='';
+  for(const ch of t){
+    cur+=ch;
+    const w=[...cur].reduce((sum,c)=>sum+(c.charCodeAt(0)<128?0.55:1),0);
+    if(w>=maxChars){ lines.push(cur); cur=''; }
   }
-  let classes=['node',nodeTypeCls];
-  if(isSegStart) classes.push('seg-start');
-  if(!isEntry && !isCrash && ssCls && !isThunkFn) classes.push(ssCls);
-  if(isThunkFn) classes.push('thunk');
-  const segLabelHtml = isSegStart && segLabel ? `<span class="seg-label">${segLabel}</span>` : '';
-  const crashNoteHtml = isCrash && crashNote ? `<span class="crash-note">${esc(crashNote)}</span>` : '';
-  const tipText=isCrash?`${fn}${ripOffset||''} · 崩溃点${crashNote?' · '+crashNote:''}`:(isEntry?`${fn} · 调用入口`:fn);
-  return `<div class="${classes.join(' ')}" title="${esc(tipText)}" data-fn="${esc(fn)}" data-ss="${ssKey}">`+
-    `${segLabelHtml}<span class="tip">${esc(tipText)}</span>`+
-    `<div class="node-body"><span class="fname">${esc(fn)}</span><span class="badge">${badge}</span></div>`+
-    `${crashNoteHtml}</div>`;
+  if(cur) lines.push(cur);
+  return lines.slice(0,4);
 }
 
-// 渲染从 from 到 to（含）的连续段
-function snakeSegment(order, from, to, n, opts){
-  const {ripOffset='', nodeSs=null, effectiveSs=null, segStarts=null, crashNote=''} = opts;
-  const html=[];
-  const startRow=Math.floor(from/ROW_LEN);
-  const endRow=Math.floor(to/ROW_LEN);
-  for(let r=startRow;r<=endRow;r++){
-    const isReverse=(r%2===1);
-    const idxs=[];
-    for(let i=r*ROW_LEN;i<=Math.min((r+1)*ROW_LEN-1,n-1);i++) if(i>=from&&i<=to) idxs.push(i);
-    if(!idxs.length) continue;
-    const hasNext=(r<endRow);
-    const firstCol=idxs[0]%ROW_LEN;
-    const lastCol=idxs[idxs.length-1]%ROW_LEN;
-
-    // v-turn (vertical connector between rows)
-    // Forward rows (side=left): connects to first node (col 0)
-    // Reverse rows with hasNext (side=right): connects to first node (col ROW_LEN-1 due to spacers)
-    // Reverse last row (side=right, no spacers): connects to last node (right-aligned)
-    if(r>startRow){
-      const side=isReverse?'right':'left';
-      let connectIdx;
-      if(!isReverse){
-        connectIdx = idxs[0];
-      }else if(hasNext){
-        connectIdx = idxs[0];
-      }else{
-        connectIdx = idxs[idxs.length-1];
-      }
-      const connectEff = effectiveSs[connectIdx];
-      const isCrashTurn = (connectIdx===n-1);
-      let toCls = '';
-      if(!isCrashTurn && connectEff && connectEff.toCls){
-        toCls = ' '+connectEff.toCls;
-      }
-      html.push(`<div class="v-turn ${side}${toCls}${isCrashTurn?' crash':''}"><div class="v-line"></div></div>`);
-    }
-    // Build row content
-    let parts=[];
-    for(let k=0;k<idxs.length;k++){
-      const i=idxs[k];
-      const fn=order[i];
-      const ss=nodeSs[i];
-      const isThunkFn=isThunk(fn);
-      const isEntry=(i===0);
-      const isCrash=(i===n-1);
-      const isSegStart=segStarts.has(i);
-      let segLabel='';
-      if(isSegStart){
-        if(isEntry){
-          const entrySs=classifySubsystem(fn);
-          const ctxLabel = isThunkFn?'执行入口':(entrySs.key==='other'?'调用入口':entrySs.icon+' '+entrySs.label+'入口');
-          segLabel='🚪 '+ctxLabel;
-        }else if(isCrash){
-          segLabel='💥 崩溃点';
-        }else{
-          segLabel=ss.icon+' '+ss.label;
-        }
-      }
-      parts.push(nodeHTML(fn,i,n,{
-        ripOffset, isSegStart, segLabel, crashNote:isCrash?crashNote:'',
-        isCrash, isEntry, isThunkFn, ssCls:ss.cls, ssKey:ss.key
-      }));
-      if(k<idxs.length-1){
-        // h-link color follows effective subsystem of destination node
-        const nextI=idxs[k+1];
-        const nextEff=effectiveSs[nextI];
-        const isCrashLink=(nextI===n-1);
-        let linkCls='h-link';
-        if(isCrashLink) linkCls+=' crash';
-        else if(nextEff && nextEff.toCls) linkCls+=' '+nextEff.toCls;
-        parts.push(`<div class="${linkCls}"></div>`);
-      }
-    }
-    // Spacers to align start/end to grid columns (only when row has a turn)
-    if(hasNext){
-      if(!isReverse){
-        if(firstCol>0) parts.unshift(`<div style="flex:0 0 ${firstCol*UNIT}px"></div>`);
-        const trail=ROW_LEN-1-lastCol;
-        if(trail>0) parts.push(`<div style="flex:0 0 ${trail*UNIT}px"></div>`);
-      } else {
-        const trail=ROW_LEN-1-firstCol;
-        if(trail>0) parts.push(`<div style="flex:0 0 ${trail*UNIT}px"></div>`);
-        if(lastCol>0) parts.unshift(`<div style="flex:0 0 ${lastCol*UNIT}px"></div>`);
-      }
-    }
-    // Determine if this row has any seg-start node or crash node
-    let rowHasSeg=false, rowHasCrash=false;
-    for(const ki of idxs){
-      if(segStarts.has(ki)) rowHasSeg=true;
-      if(ki===n-1) rowHasCrash=true;
-    }
-    html.push(`<div class="chain-row${isReverse?' reverse':''}${rowHasSeg?' has-seg':''}${rowHasCrash?' has-crash-bubble':''}">${parts.join('')}</div>`);
-  }
-  return html.join('');
-}
-
-function renderTrace(core){
-  const t=core.call_trace||[];
-  const el=document.getElementById('trace-body');
-  if(!t.length){el.innerHTML=`<div class="empty-line">无调用栈数据</div>`;return;}
-  const order=t.slice().reverse();
-  const n=order.length;
-  const folded=n>FOLD_THRESHOLD;
-  const ripOffset=core.rip_offset||'';
-  const sum=core.call_trace_summary;
-  const rawText=core.call_trace_text||'';
-
-  // 预计算每个节点的子系统信息
-  const nodeSs=order.map(fn=>{
-    if(isThunk(fn)) return {key:'thunk',label:'跳板',icon:'',cls:'',toCls:''};
-    if(fn===order[0]) return classifySubsystem(fn); // entry
-    if(fn===order[n-1]) return {key:'crash',label:'崩溃',icon:'',cls:'',toCls:''}; // crash
-    return classifySubsystem(fn);
+function seqCard(cx, cy, w, time, event, isCrash){
+  const padX=11, padY=8, lineH=16;
+  const maxChars=Math.max(8, Math.floor((w-padX*2)/12));
+  const lines=_wrapSeqLines(event, maxChars);
+  const h=padY*2+14+lines.length*lineH;
+  const x=cx-w/2, y=cy-h/2;
+  let out=`<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${w}" height="${h}" rx="7" fill="${isCrash?'#fdf5f5':'#ffffff'}" stroke="${isCrash?'#f3b4b4':'#d5dbe6'}" stroke-width="${isCrash?1.6:1.1}"/>`;
+  out+=`<text x="${(x+padX).toFixed(1)}" y="${(y+padY+9).toFixed(1)}" font-size="10.5" fill="#94a3b8" font-family="Consolas, monospace">${esc(time)}</text>`;
+  lines.forEach((ln,li)=>{
+    out+=`<text x="${(x+padX).toFixed(1)}" y="${(y+padY+24+li*lineH).toFixed(1)}" font-size="12" fill="${isCrash?'#b91c1c':'#334155'}" font-family="PingFang SC, Microsoft YaHei, sans-serif">${esc(ln)}</text>`;
   });
-  // 计算有效子系统：other 节点延续最近一个已分类子系统的颜色
-  const effectiveSs=new Array(n);
-  let lastClassified=null;
-  for(let i=0;i<n;i++){
-    const s=nodeSs[i];
-    if(s.key==='thunk'){
-      effectiveSs[i]=lastClassified||{key:'other',toCls:''};
-    }else if(s.key==='other'){
-      effectiveSs[i]=lastClassified||s;
-    }else{
-      effectiveSs[i]=s;
-      lastClassified=s;
+  return out;
+}
+
+function renderEventTimeline(report){
+  const ra=report.root_cause_analysis||{};
+  const events=ra.event_chain||[];
+  const el=document.getElementById('event-timeline-section');
+  const body=document.getElementById('event-timeline-body');
+  if(!events.length){ el.style.display='none'; return; }
+  el.style.display='';
+
+  // 参与者(泳道)：按事件首次出现顺序
+  const actors=[];
+  events.forEach(ev=>{
+    if(ev.actor && !actors.includes(ev.actor)) actors.push(ev.actor);
+    if(ev.to_actor && !actors.includes(ev.to_actor)) actors.push(ev.to_actor);
+  });
+  if(!actors.length) actors.push('系统日志观测');
+  const n=actors.length;
+  const margin=90, spacing=210;
+  const width=Math.max(760, margin*2+Math.max(1,n-1)*spacing);
+  const headH=46, rowH=92, bottomPad=22;
+  const height=headH+events.length*rowH+bottomPad;
+  const px=i => n===1 ? width/2 : margin+i*((width-margin*2)/(n-1));
+  const lane=i => SEQ_PALETTE[i%SEQ_PALETTE.length];
+
+  let s='';
+  s+=`<div class="seq-wrap"><svg class="seq-svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">`;
+  s+=`<defs>
+    <marker id="seq-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#64748b"/></marker>
+    <marker id="seq-arrow-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#dc2626"/></marker>
+  </defs>`;
+
+  // 生命线
+  actors.forEach((a,i)=>{
+    s+=`<line x1="${px(i)}" y1="${headH-2}" x2="${px(i)}" y2="${height-bottomPad}" stroke="#cbd5e1" stroke-width="1.5" stroke-dasharray="6,5"/>`;
+  });
+  // 参与者头部
+  actors.forEach((a,i)=>{
+    const c=lane(i), w=Math.min(150, spacing-24);
+    s+=`<rect x="${(px(i)-w/2).toFixed(1)}" y="8" width="${w}" height="32" rx="6" fill="${c.fill}" stroke="${c.m}" stroke-width="1.5"/>`;
+    s+=`<text x="${px(i)}" y="29" text-anchor="middle" font-size="13" font-weight="700" fill="${c.m}" font-family="PingFang SC, Microsoft YaHei, sans-serif">${esc(a)}</text>`;
+  });
+
+  // 事件
+  events.forEach((ev,i)=>{
+    const isCrash=i===events.length-1;
+    const y=headH+i*rowH+40;
+    const ai=Math.max(0, actors.indexOf(ev.actor));
+    const ax=px(ai);
+    const c=lane(ai);
+    const tLabel=fmtSeqTime(ev.time);
+    // 激活条
+    s+=`<rect x="${(ax-5).toFixed(1)}" y="${y-17}" width="10" height="34" rx="3" fill="${isCrash?'#dc2626':c.m}"/>`;
+    if(ev.to_actor && actors.includes(ev.to_actor)){
+      const bx=px(actors.indexOf(ev.to_actor));
+      const dir=bx>ax?1:-1;
+      s+=`<line x1="${(ax+dir*7).toFixed(1)}" y1="${y}" x2="${(bx-dir*7).toFixed(1)}" y2="${y}" stroke="${isCrash?'#dc2626':'#64748b'}" stroke-width="1.6" marker-end="${isCrash?'url(#seq-arrow-red)':'url(#seq-arrow)'}"/>`;
+      s+=seqCard((ax+bx)/2, y-10, Math.abs(bx-ax)-26, tLabel, ev.event, isCrash);
+    } else {
+      const cardW=Math.min(196, spacing-28);
+      const putLeft=(n>1 && ai===n-1);
+      const cx=putLeft ? ax-cardW/2-16 : ax+cardW/2+16;
+      const x1=putLeft?ax-7:ax+7, x2=putLeft?cx+cardW/2:cx-cardW/2;
+      s+=`<line x1="${x1.toFixed(1)}" y1="${y}" x2="${x2.toFixed(1)}" y2="${y}" stroke="#cbd5e1" stroke-width="1.2" stroke-dasharray="3,3"/>`;
+      s+=seqCard(cx, y, cardW, tLabel, ev.event, isCrash);
     }
-  }
-  // 计算段起始点（子系统变化处、entry、crash）
-  // 规则：entry 和 crash 总是段首；进入一个"已分类"（非 other/非 thunk）的子系统时启动新段
-  const segStarts=new Set([0]);
-  for(let i=1;i<n-1;i++){
-    const cur = nodeSs[i].key;
-    if(cur==='thunk' || cur==='other') continue; // thunk/other 不启动新段
-    // 找前一个非 thunk 节点做比较
-    let pi=i-1;
-    while(pi>0 && nodeSs[pi].key==='thunk') pi--;
-    const prev = nodeSs[pi].key;
-    if(prev!==cur) segStarts.add(i);
-  }
-  segStarts.add(n-1); // crash point always gets a label
-
-  // 崩溃点注释（优先用 key_observations 中📍标签的条目，否则自动生成）
-  let crashNote='';
-  if(sum && sum.key_observations){
-    const locObs = sum.key_observations.find(o=>/^📍/.test(o));
-    if(locObs){
-      crashNote = locObs.replace(/^📍\s*/,'').substring(0,50);
-    }
-  }
-  if(!crashNote){
-    crashNote = ripOffset?'RIP+'+ripOffset+' 崩溃':'崩溃点';
-  }
-
-  // 链条导语（一句话故事）
-  const storyHtml = (sum && sum.summary) ? `<div class="chain-story">${esc(sum.summary)}</div>` : '';
-
-  // 图例
-  const legend=`<div class="chain-legend">
-    <span><span class="dot entry"></span>调用入口</span>
-    <span><span class="dot mid"></span>子系统路径</span>
-    <span><span class="dot crash"></span>崩溃触发点</span>
+  });
+  s+='</svg></div>';
+  s+=`<div class="seq-legend">
+    <span class="lg"><span class="sw"></span>跨组件消息/调用</span>
+    <span class="lg"><span class="sw dashed"></span>生命线（时间向下）</span>
+    <span class="lg"><span class="dbox"></span>组件事件</span>
+    <span class="lg"><span class="dbox red"></span>崩溃爆发</span>
   </div>`;
-
-  // 关键观察点芯片
-  let obsChips='';
-  if(sum && sum.key_observations && sum.key_observations.length){
-    obsChips=`<div class="chain-observations">`+
-      sum.key_observations.map(o=>{
-        const m=String(o).match(/^(\S+)\s+(.*)$/);
-        const tag=m?m[1]:'💡';
-        const text=m?m[2]:o;
-        return `<span class="chain-obs-chip" title="${esc(tag+' '+text)}"><span class="chip-tag">${esc(tag)}</span>${esc(text)}</span>`;
-      }).join('')+
-      `</div>`;
-  }
-
-  // 原始栈折叠块
-  const rawHtml=rawText?`<div class="trace-raw"><details><summary>📜 查看完整调用栈（带偏移量）</summary><pre>${esc(rawText)}</pre></details></div>`:'';
-
-  const segOpts={ripOffset, nodeSs, effectiveSs, segStarts, crashNote};
-
-  const buildChain=(bodyHtml)=>`<div class="chain-wrap">${storyHtml}<div class="chain">${bodyHtml}</div>${legend}${obsChips}</div>`;
-
-  const renderAll=()=>{
-    const body=snakeSegment(order,0,n-1,n,segOpts);
-    el.innerHTML=buildChain(body)+rawHtml;
-  };
-  const renderFolded=()=>{
-    const tailStart=n-TAIL_SHOW;
-    const skipped=tailStart-HEAD_SHOW;
-    const head=snakeSegment(order,0,HEAD_SHOW-1,n,segOpts);
-    const tail=snakeSegment(order,tailStart,n-1,n,segOpts);
-    const body=head+
-      `<div class="fold-row"><button class="fold-btn" id="fold-expand">⋯ 省略中间 <b>${skipped}</b> 层<span class="pill">点击展开</span></button></div>`+
-      tail;
-    el.innerHTML=buildChain(body)+rawHtml;
-    document.getElementById('fold-expand').addEventListener('click',renderAll);
-  };
-  folded?renderFolded():renderAll();
+  body.innerHTML=s;
 }
 
-function renderProse(id,val){document.getElementById(id).innerHTML=val?`<div class="prose">${esc(val)}</div>`:`<div class="empty-line">无</div>`;}
-function renderRootCause(core){
-  const blocks=[];
-  if(core.conclusion){
-    blocks.push(`<div class="rc-box conclusion"><div class="rc-conclusion">${esc(core.conclusion)}</div></div>`);
-  }
-  const steps = Array.isArray(core.analysis) ? core.analysis : (typeof core.analysis==='string'&&core.analysis ? [{fact:'深度分析',detail:core.analysis}] : []);
-  if(steps.length > 0){
-    const stepHtml = steps.map((s,i) =>
-      `<div class="rc-step">` +
-        `<div class="rc-step-dot"><div class="rc-step-dot-inner">${i+1}</div></div>` +
-        `<div class="rc-step-card">` +
-          `<div class="rc-step-fact">${esc(s.fact||'')}</div>` +
-          (s.evidence ? `<div class="rc-step-evidence">${esc(s.evidence)}</div>` : '') +
-          `<div class="rc-step-detail">${esc(s.detail||'')}</div>` +
-        `</div>` +
-      `</div>`
-    ).join('');
-    blocks.push(`<details class="rc-chain-wrap"><summary>🧠 分析推理链<span class="rc-chain-count">${steps.length} 步</span></summary><div class="rc-chain-body"><div class="rc-chain">${stepHtml}</div></div></details>`);
-  }
-  document.getElementById('rootcause-body').innerHTML=`<div class="rc-grid">${blocks.join('')||'<div class="empty-line">无</div>'}</div>`;
-}
-function hlJSON(obj){
-  let s=JSON.stringify(obj,null,2);
-  s=s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  return s.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)/g,m=>{
-    let cls='json-num';
-    if(/^"/.test(m))cls=/:$/.test(m)?'json-key':'json-str';
-    else if(/true|false/.test(m))cls='json-bool';
-    else if(/null/.test(m))cls='json-null';
-    return `<span class="${cls}">${m}</span>`;
+// ===== Crash Detail =====
+function renderCrashDetail(report){
+  const cf=report.crash_feature_info||{};
+  const rows=[
+    ['RIP', cf.rip],
+    ['RIP 函数', cf.rip_function],
+    ['RIP 偏移', cf.rip_offset],
+    ['崩溃类型', cf.bug_type],
+    ['Bug Key', cf.bug_key],
+    ['签名', cf.signature],
+    ['崩溃摘要', cf.bug_summary],
+  ];
+  let h='<table><tr><th>字段</th><th>值</th></tr>';
+  rows.forEach(([k,v])=>{
+    if(v!=null && v!=='') h+=`<tr><td class="nowrap">${esc(k)}</td><td class="mono">${esc(String(v))}</td></tr>`;
   });
+  const rm=cf.related_modules||[];
+  if(rm.length) h+=`<tr><td class="nowrap">关联模块</td><td><div class="modules-chips">${rm.map(m=>`<span class="chip">${esc(m)}</span>`).join('')}</div></td></tr>`;
+  h+='</table>';
+
+  // Anomaly features (collapsible)
+  const an=cf.anomaly_features||{};
+  if(Object.keys(an).length){
+    h+='<details style="margin-top:12px;border:1px solid var(--border);"><summary>异常特征</summary><div class="detail-body">'+renderAnomaly(an)+'</div></details>';
+  }
+  document.getElementById('crash-detail-body').innerHTML=h;
 }
-const preJSON=o=>`<pre class="json">${hlJSON(o)}</pre>`;
+
 function renderAnomaly(an){
   let a='<div class="anomaly-grid">';
-  // error_keywords
-  if(an.error_keywords&&an.error_keywords.length) a+=`<div class="anomaly-item"><span class="anomaly-label">🔑 错误关键词</span><div class="modules-chips">${an.error_keywords.map(k=>`<span class="chip chip-warn">${esc(k)}</span>`).join('')}</div></div>`;
-  // repeated_errors
-  if(an.repeated_errors&&an.repeated_errors.length) a+=`<div class="anomaly-item"><span class="anomaly-label">🔄 重复错误</span><div class="anomaly-list">${an.repeated_errors.map(e=>`<div class="anomaly-row">${esc(e)}</div>`).join('')}</div></div>`;
-  // register_values
-  if(an.register_values&&Object.keys(an.register_values).length) a+=`<div class="anomaly-item"><span class="anomaly-label">📋 寄存器值</span><div class="host-grid">${Object.entries(an.register_values).map(([k,v])=>`<div class="kv"><span class="k">${esc(k)}</span><span class="v">${esc(v)}</span></div>`).join('')}</div></div>`;
-  // pre_crash_events
-  if(an.pre_crash_events&&an.pre_crash_events.length) a+=`<div class="anomaly-item"><span class="anomaly-label">⏪ 崩溃前事件</span><div class="anomaly-list">${an.pre_crash_events.map(e=>`<div class="anomaly-row">${esc(e)}</div>`).join('')}</div></div>`;
-  // dump_stack_context
-  if(an.dump_stack_context) a+=`<div class="anomaly-item"><span class="anomaly-label">📜 Dump Stack 上下文</span><pre class="json anomaly-code">${esc(an.dump_stack_context)}</pre></div>`;
-  // cpu_context
-  if(an.cpu_context) a+=`<div class="anomaly-item"><span class="anomaly-label">🖥️ CPU 上下文</span><pre class="json anomaly-code">${esc(an.cpu_context)}</pre></div>`;
+  if(an.error_keywords&&an.error_keywords.length) a+=`<div class="anomaly-item"><span class="anomaly-label">错误关键词</span><div class="modules-chips">${an.error_keywords.map(k=>`<span class="chip chip-warn">${esc(k)}</span>`).join('')}</div></div>`;
+  if(an.repeated_errors&&an.repeated_errors.length) a+=`<div class="anomaly-item"><span class="anomaly-label">重复错误</span><div class="anomaly-list">${an.repeated_errors.map(e=>`<div class="anomaly-row">${esc(e)}</div>`).join('')}</div></div>`;
+  if(an.register_values&&Object.keys(an.register_values).length) a+=`<div class="anomaly-item"><span class="anomaly-label">寄存器值</span><div class="kv-grid">${Object.entries(an.register_values).map(([k,v])=>`<div class="kv"><span class="k">${esc(k)}</span><span class="v">${esc(v)}</span></div>`).join('')}</div></div>`;
+  if(an.pre_crash_events&&an.pre_crash_events.length) a+=`<div class="anomaly-item"><span class="anomaly-label">崩溃前事件</span><div class="anomaly-list">${an.pre_crash_events.map(e=>`<div class="anomaly-row">${esc(e)}</div>`).join('')}</div></div>`;
+  if(an.dump_stack_context) a+=`<div class="anomaly-item"><span class="anomaly-label">Dump Stack 上下文</span><pre class="anomaly-code" style="background:#1e293b;color:#e2e8f0;border-radius:8px;padding:12px 14px;">${esc(an.dump_stack_context)}</pre></div>`;
+  if(an.cpu_context) a+=`<div class="anomaly-item"><span class="anomaly-label">CPU 上下文</span><pre class="anomaly-code" style="background:#1e293b;color:#e2e8f0;border-radius:8px;padding:12px 14px;">${esc(an.cpu_context)}</pre></div>`;
   a+='</div>';
   return a;
 }
-function renderCrashMatch(report){
+
+// ===== Crash Path (调用栈 + 崩溃扩散链 + 源码线索 整合) =====
+function stripLeadingEmoji(s){
+  return String(s||'').replace(/^\s*[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\u{FE0F}\u{200D}]+\s*/u,'');
+}
+
+function renderCrashPath(report){
   const cf=report.crash_feature_info||{};
-  const diag=report.diagnosis_repair_result||{};
-  const inr=diag.internal_kernel_result||[], com=diag.community_kernel_result||[];
-  const allCases=[...inr.map(c=>({...c,source:'内部知识库'})),...com.map(c=>({...c,source:'社区案例'}))];
-  const scoreOrder={高:0,中:1,低:2};
-  allCases.sort((a,b)=>(scoreOrder[a.match_score]??9)-(scoreOrder[b.match_score]??9));
+  const ra=report.root_cause_analysis||{};
+  const traceText=cf.call_trace_text||'';
+  const summary=cf.call_trace_summary||null;
+  const chain=ra.propagation_chain||[];
+  const body=document.getElementById('crash-path-body');
+  let h='';
 
-  const rm=cf.related_modules||[], an=cf.anomaly_features||{};
-  const sig=cf.call_trace_signature||[];
-  const rows=[['signature',cf.signature],['bug_type',cf.bug_type],['bug_key',cf.bug_key],['rip',cf.rip],['rip_function',cf.rip_function],['rip_offset',cf.rip_offset]];
+  // 1) 路径导语：一句话讲清完整调用路径
+  if(summary && summary.summary){
+    h+=`<p class="path-intro">${linkify(summary.summary)}</p>`;
+  }
 
-  let h='<div class="match-section">';
-  h+=`<div class="sec-label">📊 崩溃特征</div>`;
-  h+=`<div class="host-grid">${rows.map(([k,v])=>`<div class="kv"><span class="k">${esc(k)}</span><span class="v">${esc(v)}</span></div>`).join('')}</div>`;
-  if(rm.length) h+=`<div class="sec-label">关联模块</div><div class="modules-chips">${rm.map(m=>`<span class="chip">${esc(m)}</span>`).join('')}</div>`;
-  if(Object.keys(an).length) h+=`<div class="sec-label">异常特征</div>${renderAnomaly(an)}`;
-  if(sig.length) h+=`<div class="sec-label">调用栈签名</div><div class="modules-chips">${sig.map(s=>`<span class="chip">${esc(s)}</span>`).join('')}</div>`;
-  h+='</div>';
-
-  h+='<div class="match-section">';
-  h+=`<div class="sec-label">📚 知识库案例匹配 (${allCases.length} 条)</div>`;
-  if(!allCases.length){
-    h+='<div class="match-empty">无匹配案例</div>';
-  } else {
-    const scoreCls={高:'high',中:'mid',低:'low'};
-    const levelDesc={
-      L1:'指纹精确命中（崩溃特征签名完全一致）',
-      L2:'RAG语义检索+评分确认（特征高重叠）',
-      L3:'扩大召回弱匹配（需人工核验）'
-    };
-    // Add L-level legend
-    h+=`<div class="match-level-legend">`+
-      `<span style="font-weight:600;color:#334155;">匹配层级说明：</span>`+
-      `<span class="leg"><span class="leg-dot L1">L1</span>${levelDesc.L1}</span>`+
-      `<span class="leg"><span class="leg-dot L2">L2</span>${levelDesc.L2}</span>`+
-      `<span class="leg"><span class="leg-dot L3">L3</span>${levelDesc.L3}</span>`+
+  // 2) 纵向链条 = 调用栈的源码级解读（每跳：函数对 + 关系 + 源码位置 + 解读 + 原始栈帧行）
+  const relMeta={
+    call:{label:'正常调用',cls:'call'},
+    uaf_free:{label:'UAF 释放',cls:'uaf_free'},
+    data_pollution:{label:'数据污染',cls:'data_pollution'},
+    null_deref:{label:'空指针解引用',cls:'null_deref'},
+  };
+  if(chain.length){
+    h+='<div class="pchain">';
+    chain.forEach((step,i)=>{
+      const isCrash=i===chain.length-1;
+      const meta=relMeta[step.type]||{label:step.type||'调用',cls:'call'};
+      const src=step.source_file||'';
+      const fnUrl=step.source_url||'';
+      // 文件页链接：由函数 ident 链接推导（/ident/<func> → /source/<file>）
+      let fileUrl='';
+      if(fnUrl && src){
+        fileUrl=fnUrl.replace(/\/ident\/[^/]+$/, '/source/'+src);
+      }
+      let srcLine='';
+      if(src || fnUrl){
+        srcLine='<div class="pc-src">源码位置：';
+        if(src && fileUrl){
+          srcLine+=`<a class="path" href="${esc(fileUrl)}" target="_blank" rel="noopener" title="在新窗口查看该源码文件">${esc(src)}</a>`;
+        } else {
+          srcLine+=`<span class="path">${esc(src)}</span>`;
+        }
+        if(fnUrl){
+          srcLine+=` <a class="pc-src-link" href="${esc(fnUrl)}" target="_blank" rel="noopener" title="在新窗口定位到函数 ${esc(step.to||'')} 的定义">查看源码 ↗</a>`;
+        }
+        srcLine+='</div>';
+      }
+      const snippet=(step.source_snippet||'').trim();
+      const snippetBlock=snippet
+        ? `<details class="pc-snippet"><summary>源码片段（${esc(step.to||'')}）</summary><pre><code>${esc(snippet)}</code></pre></details>`
+        : '';
+      h+=`<div class="pc-node ${isCrash?'is-crash':''}">`+
+        `<div class="pc-rail"><div class="pc-dot">${i+1}</div><div class="pc-line"></div></div>`+
+        `<div class="pc-card">`+
+          `<div class="pc-head">`+
+            `<span class="pc-funcs"><span class="fn">${esc(step.from||'')}</span><span class="arr">→</span><span class="fn">${esc(step.to||'')}</span></span>`+
+            `<span class="pc-type ${meta.cls}">${meta.label}</span>`+
+            (isCrash?'<span class="pc-crash-tag">崩溃爆发</span>':'')+
+          `</div>`+
+          srcLine+
+          snippetBlock+
+          (step.detail?`<div class="pc-detail">${linkify(step.detail)}</div>`:'')+
+          (step.evidence?`<div class="pc-evidence">${esc(step.evidence)}</div>`:'')+
+        `</div>`+
       `</div>`;
-    h+=`<div class="match-cases${allCases.length>1?' collapsed':''}" id="match-cases">`;
-    allCases.forEach((c,i)=>{
-      const fp=c.fingerprints||[];
-      const level=c.match_level||'';
-      h+=`<div class="match-case">`;
-      // Score badge + Level badge
-      h+=`<span class="mc-score ${scoreCls[c.match_score]||'low'}">${esc(c.match_score||'—')}匹配</span>`;
-      if(level){
-        h+=`<span class="mc-level ${level}" title="${esc(levelDesc[level]||'')}">${level}</span>`;
-      }
-      h+=`<div class="mc-id">${esc(c.source)} · ${esc(c.knowledge_id||c.id||'')}</div>`;
-      // Case summary
-      const summary=c.bug_summary||c.title||'';
-      if(summary) h+=`<div class="mc-label">案例摘要</div><div class="mc-text">${esc(summary)}</div>`;
-
-      // Build effective reasons: prefer match_reason from matcher; auto-synthesize when empty
-      const rawReason=c.match_reason||{};
-      let reason={...rawReason};
-      if(!Object.keys(reason).length){
-        // Synthesize reasoning by comparing crash features (cf) with case (c)
-        if(level==='L1'){
-          reason['_l1_fingerprint']='指纹精确命中：崩溃特征签名在案例指纹库中完全匹配';
-        }
-        if(cf.bug_type && c.bug_type){
-          if(cf.bug_type===c.bug_type) reason['bug_type_match']=`bug_type 一致: ${cf.bug_type}`;
-        }
-        if(cf.rip_function && c.rip_function){
-          if(cf.rip_function===c.rip_function) reason['rip_match']=`RIP 函数一致: ${cf.rip_function}`;
-        }
-        if(cf.bug_key && c.bug_key && cf.bug_key===c.bug_key){
-          reason['bug_key_overlap']=`bug_key 语义一致: ${cf.bug_key}`;
-        }
-        // call_trace overlap
-        const cfCt=Array.isArray(cf.call_trace_signature)?cf.call_trace_signature:[];
-        const cCt=Array.isArray(c.call_trace_signature)?c.call_trace_signature:[];
-        if(cfCt.length && cCt.length){
-          const cfSet=new Set(cfCt.map(s=>s.toLowerCase()));
-          const common=cCt.filter(f=>cfSet.has(f.toLowerCase()));
-          if(common.length>=2){
-            reason['call_trace_overlap']=`调用栈共同函数: ${common.slice(0,5).join(', ')} (${common.length}个)`;
-          }
-        }
-        // module overlap
-        const cfMods=Array.isArray(cf.related_modules)?cf.related_modules:[];
-        const cMods=Array.isArray(c.related_modules)?c.related_modules:[];
-        if(cfMods.length && cMods.length){
-          const cfMSet=new Set(cfMods.map(s=>s.toLowerCase()));
-          const commonMods=cMods.filter(m=>cfMSet.has(m.toLowerCase()));
-          if(commonMods.length) reason['module_match']=`关联模块一致: ${commonMods.join(', ')}`;
-        }
-        // kernel version
-        if(cf.kernel_version && Array.isArray(c.kernel_versions) && c.kernel_versions.length){
-          const cfKv=cf.kernel_version.toLowerCase();
-          const kvMatch=c.kernel_versions.some(kv=>kv && (kv.toLowerCase()===cfKv || kv.toLowerCase().startsWith(cfKv.split('.').slice(0,2).join('.'))));
-          if(kvMatch) reason['kernel_version_match']=`内核版本匹配 (当前: ${cf.kernel_version})`;
-        }
-        // error keywords
-        const cfEks=(cf.anomaly_features&&cf.anomaly_features.error_keywords)||[];
-        const cEks=Array.isArray(c.error_keywords)?c.error_keywords:[];
-        if(cfEks.length && cEks.length){
-          const cfESet=new Set(cfEks.map(s=>s.toLowerCase()));
-          const commonEks=cEks.filter(k=>cfESet.has(k.toLowerCase()));
-          if(commonEks.length) reason['error_keyword_match']=`异常关键词一致: ${commonEks.join(', ')}`;
-        }
-        // L2/L3 without reason: note retrieval method
-        if(level==='L2' && !Object.keys(reason).length){
-          reason['_l2_rag']='RAG语义检索召回：综合评分达到匹配阈值';
-        }
-        if(level==='L3' && !Object.keys(reason).length){
-          reason['_l3_expand']='扩大召回弱匹配：语义相似度较高，建议人工核验';
-        }
-      }
-
-      // Match reasoning - structured rendering
-      const reasonKeys=Object.keys(reason);
-      if(reasonKeys.length){
-        h+=`<div class="mc-label">匹配论证${level?' · '+level:''}</div>`;
-        h+=`<ul class="mc-reason-list">`;
-        // Chinese label mapping for known reason keys
-        const reasonLabel={
-          _l1_fingerprint:'指纹命中', _l2_rag:'检索方式', _l3_expand:'检索方式',
-          bug_type_match:'崩溃类型', rip_match:'RIP函数一致', rip_consistency:'RIP函数一致',
-          call_trace_overlap:'调用栈重叠', module_match:'模块匹配', kernel_version_match:'内核版本',
-          phenomenon_similarity:'现象相似度', content_similarity:'内容/根因匹配',
-          exact_token_match:'关键词精确命中', title_score:'标题匹配', content_score:'内容匹配',
-          exact_token_score:'技术词命中', kernel_version_score:'版本匹配',
-          commit_relevance:'补丁相关性', commit_summary:'补丁摘要',
-          bug_key_overlap:'bug_key语义关联', error_keyword_match:'异常关键词一致',
-          keyword_overlap:'共同关键词', rip_mismatch:'RIP函数不一致',
-        };
-        // Display order: L-level marker first, then positive matches, then warnings/negatives
-        const priorityKeys=['_l1_fingerprint','_l2_rag','_l3_expand'];
-        const positiveKeys=['bug_type_match','rip_match','rip_consistency','call_trace_overlap',
-          'module_match','kernel_version_match','phenomenon_similarity','content_similarity',
-          'exact_token_match','commit_relevance','commit_summary','bug_key_overlap',
-          'error_keyword_match','keyword_overlap','title_score','content_score',
-          'exact_token_score','kernel_version_score'];
-        const negativeKeys=['rip_mismatch'];
-        // Build ordered key list
-        const orderedKeys=[];
-        for(const k of priorityKeys){ if(reason[k]) orderedKeys.push(k); }
-        for(const k of positiveKeys){ if(reason[k] && !orderedKeys.includes(k)) orderedKeys.push(k); }
-        for(const k of reasonKeys){ if(!orderedKeys.includes(k) && !negativeKeys.includes(k)) orderedKeys.push(k); }
-        for(const k of negativeKeys){ if(reason[k]) orderedKeys.push(k); }
-        for(const k of orderedKeys){
-          const v=reason[k];
-          if(!v) continue;
-          let liCls='';
-          if(negativeKeys.includes(k)) liCls=' class="miss"';
-          else if(k.startsWith('_l3')) liCls=' class="warn"';
-          const label=reasonLabel[k]||k;
-          h+=`<li${liCls}><b>${esc(label)}</b>：${esc(v)}</li>`;
-        }
-        h+=`</ul>`;
-      }
-      // Phenomenon as supplementary description (never as matching argument)
-      if(c.phenomenon){
-        h+=`<div class="mc-label">现象描述</div><div class="mc-text">${esc(c.phenomenon)}</div>`;
-      }
-      if(fp.length) h+=`<div class="mc-label">匹配指纹</div><div class="mc-chips">${fp.map(f=>`<span class="mc-chip">${esc(f)}</span>`).join('')}</div>`;
-      if(c.root_cause) h+=`<div class="mc-label">案例根因</div><div class="mc-text">${esc(c.root_cause)}</div>`;
-      if(c.solution) h+=`<div class="mc-label">案例解决方案</div><div class="mc-text">${esc(c.solution)}</div>`;
-      if(c.hotpatch) h+=`<div class="mc-label">热补丁</div><div class="mc-text">${esc(c.hotpatch)}</div>`;
-      h+='</div>';
     });
     h+='</div>';
-    if(allCases.length>1){
-      h+=`<div class="match-expand"><button id="match-expand-btn" onclick="toggleMatchCases()">展开全部 ${allCases.length} 条匹配</button></div>`;
+  } else if(traceText){
+    // 回退：无扩散链数据时，原始调用栈直接展示
+    h+=`<pre><code>${esc(traceText)}</code></pre>`;
+  }
+
+  // 3) 关键观察小结（卡片）
+  if(summary && summary.key_observations && summary.key_observations.length){
+    h+=`<div class="path-obs-card"><div class="path-obs-title">关键观察</div>`+
+       `<ul class="path-obs">${summary.key_observations.map(o=>`<li>${esc(stripLeadingEmoji(o))}</li>`).join('')}</ul></div>`;
+  }
+
+  // 4) 完整原始调用栈折叠备查（有链条时）
+  if(chain.length && traceText){
+    h+=`<details class="raw-stack"><summary>查看完整原始调用栈</summary><pre><code>${esc(traceText)}</code></pre></details>`;
+  }
+
+  if(!h) h='<div class="empty-line">无调用栈数据</div>';
+  body.innerHTML=h;
+}
+
+// ===== Root Cause Analysis =====
+const STAGE_META = {
+  phenomenon:       { name:'现象确认',      color:'#3b82f6' },
+  log_location:     { name:'日志定位',      color:'#0891b2' },
+  source_analysis:  { name:'源码分析',      color:'#7c3aed' },
+  propagation:      { name:'崩溃扩散链',    color:'#ea580c' },
+  root_cause:       { name:'根因收敛',      color:'#dc2626', hint:'仅凭本次崩溃自身证据收敛缺陷机制' },
+  kb_corroboration: { name:'知识库佐证',    color:'#059669', hint:'用外部案例交叉验证上述根因，非重新推导' },
+  fix_verification: { name:'修复方案',      color:'#059669', hint:'把根因转化为可执行修复与版本判定' },
+};
+const _stageMeta = s => STAGE_META[s] || { name:'分析', color:'#64748b' };
+
+function renderRootCause(report){
+  const ra=report.root_cause_analysis||{};
+  let h='';
+  if(ra.conclusion){
+    h+=`<div class="rc-conclusion" style="margin-bottom:16px;">${rich(ra.conclusion)}</div>`;
+  }
+  const steps = Array.isArray(ra.analysis) ? ra.analysis : (typeof ra.analysis==='string'&&ra.analysis ? [{fact:'深度分析',detail:ra.analysis}] : []);
+  if(steps.length > 0){
+    let lastStage = null;
+    const stepHtml = steps.map((s,i) => {
+      const meta = _stageMeta(s.stage);
+      const isFinal = s.stage === 'fix_verification';
+      const stageHdr = (s.stage !== lastStage) ? (lastStage = s.stage,
+        `<div class="rc-stage-label"><span class="rc-stage-tag" style="background:${meta.color}1a;color:${meta.color};border-color:${meta.color}55">${meta.name}</span>${meta.hint?`<span class="rc-stage-hint">${meta.hint}</span>`:''}</div>`) : '';
+      return stageHdr +
+      `<div class="rc-step${isFinal?' is-final':''}">` +
+        `<div class="rc-step-dot"><div class="rc-step-dot-inner" style="background:${meta.color}">${isFinal?'✓':(i+1)}</div></div>` +
+        `<div class="rc-step-card${isFinal?' is-final':''}">` +
+          `${isFinal?'<div class="rc-final-badge">修复方案</div>':''}` +
+          `<div class="rc-step-fact">${rich(s.fact||'')}</div>` +
+          (s.evidence ? `<div class="rc-step-evidence">${rich(s.evidence)}</div>` : '') +
+          `<div class="rc-step-detail">${rich(s.detail||'')}</div>` +
+        `</div>` +
+      `</div>`;
+    }).join('');
+    h+=`<details class="rc-chain-wrap" open><summary>分析推理链<span class="rc-chain-count">${steps.length} 步</span></summary><div class="rc-chain-body"><div class="rc-chain">${stepHtml}</div></div></details>`;
+  }
+  if(!h) h='<div class="empty-line">无</div>';
+  document.getElementById('rootcause-body').innerHTML=h;
+}
+
+// ===== Knowledge Base Matches (三类：内部知识库 / 社区案例 / 在线案例) =====
+const _VERDICT_META={
+  confirmed:['已确认','commit/issue 一手证据确认：补丁直接修复崩溃函数或其调用路径'],
+  same_area:['同域不同因','补丁与崩溃同子系统，但修改的是不同函数/根因，不能直接采用'],
+  not_relevant:['已排除','一手证据显示补丁与崩溃路径无关，已从修复依据中排除'],
+  unverified:['证据待验证','未能获取上游原文（网络/权限），相关性未经代码级确认'],
+};
+const _LEVEL_DESC={
+  L1:'指纹精确命中（崩溃特征签名完全一致）',
+  L2:'RAG语义检索+评分确认（特征高重叠）',
+  L3:'扩大召回弱匹配（需人工核验）'
+};
+
+// 多维匹配论证
+const _CORROB_DIM={
+  feature_data:      {name:'特征数据', color:'#2563eb', role:'fatal'},
+  kernel_version:    {name:'内核版本', color:'#7c3aed', role:'apply'},
+  execution_context: {name:'运行上下文', color:'#0e7490', role:'support'},
+  timeline:          {name:'时间轴', color:'#c25700', role:'support'},
+  mechanism:         {name:'故障机制', color:'#dc2626', role:'fatal'},
+  fix_scope:         {name:'修复闭环', color:'#059669', role:'apply'},
+};
+const _CORROB_ROLE={
+  fatal:  {tag:'致命指纹', cls:'fatal'},
+  support:{tag:'佐证',     cls:'support'},
+  apply:  {tag:'适用性',   cls:'apply'},
+};
+const _CORROB_STATE={
+  support:  {sym:'✓', label:'支持'},
+  partial:  {sym:'△', label:'部分吻合'},
+  mismatch: {sym:'✗', label:'不吻合'},
+};
+function renderCorroboration(corr){
+  const items=Array.isArray(corr)?corr:[];
+  if(!items.length) return '';
+  const hasCompare = items.some(it=> !!(it.current||it.reference));
+  let body='';
+  if(hasCompare){
+    body=`<table class="corrob-table"><thead><tr><th class="ct-dim">论证维度</th><th class="ct-verdict">结论</th><th class="ct-cur">本次崩溃</th><th class="ct-ref">参考案例</th></tr></thead><tbody>`;
+    items.forEach(it=>{
+      const dim=_CORROB_DIM[it.dimension]||{name:it.dimension||'论证', color:'#64748b'};
+      const st=_CORROB_STATE[it.verdict]||_CORROB_STATE.partial;
+      const rl=_CORROB_ROLE[dim.role]||_CORROB_ROLE.support;
+      const cur=it.current||'';
+      const ref=it.reference||'';
+      if(!cur && !ref && it.text){
+        body+=`<tr class="corrob-row ${esc(it.verdict||'partial')}">`+
+          `<td class="ct-dim">${dim.name}<span class="corrob-role ${rl.cls}">${rl.tag}</span></td><td class="ct-verdict"><span class="corrob-state">${st.sym} ${st.label}</span></td>`+
+          `<td class="ct-span" colspan="2">${esc(it.text)}</td></tr>`;
+      } else {
+        body+=`<tr class="corrob-row ${esc(it.verdict||'partial')}">`+
+          `<td class="ct-dim"><span class="corrob-dim" style="background:${dim.color}16;color:${dim.color};border:1px solid ${dim.color}44">${dim.name}</span><span class="corrob-role ${rl.cls}">${rl.tag}</span></td>`+
+          `<td class="ct-verdict"><span class="corrob-state">${st.sym} ${st.label}</span></td>`+
+          `<td class="ct-cur">${esc(cur)}</td>`+
+          `<td class="ct-ref">${esc(ref)}</td></tr>`;
+      }
+    });
+    body+='</tbody></table>';
+  } else {
+    body=`<div class="corrob">`;
+    items.forEach(it=>{
+      const dim=_CORROB_DIM[it.dimension]||{name:it.dimension||'论证', color:'#64748b'};
+      const st=_CORROB_STATE[it.verdict]||_CORROB_STATE.partial;
+      const rl=_CORROB_ROLE[dim.role]||_CORROB_ROLE.support;
+      body+=`<div class="corrob-item ${esc(it.verdict||'partial')}">`+
+        `<span class="corrob-dim" style="background:${dim.color}16;color:${dim.color};border:1px solid ${dim.color}44">${dim.name}</span>`+
+        `<span class="corrob-body"><span class="corrob-state">${st.sym} ${st.label}</span><span class="corrob-text">${esc(it.text||'')}</span></span>`+
+        `</div>`;
+    });
+    body+='</div>';
+  }
+  return `<div class="mc-label">多维匹配论证</div>`+body;
+}
+
+// 适用性判断链（结论 + 采用方式 + 关卡）
+const _AP_VERDICT={
+  direct_adopt:   {label:'可直接采用',   cls:'v-direct_adopt'},
+  adapt:          {label:'需适配后采用', cls:'v-adapt'},
+  borrow:         {label:'仅思路借鉴',   cls:'v-borrow'},
+  not_applicable: {label:'不适用',       cls:'v-not_applicable'},
+};
+function renderApplicability(a){
+  if(!a) return '';
+  if(typeof a === 'string'){
+    return `<div class="mc-applicability"><b>适用条件（采用前提）：</b>${linkify(a)}</div>`;
+  }
+  const v=_AP_VERDICT[a.verdict]||_AP_VERDICT.not_applicable;
+  const method=a.method?`<div class="ap-method"><b>采用方式：</b>${linkify(a.method)}</div>`:'';
+  const steps=Array.isArray(a.steps)&&a.steps.length
+    ? `<ol class="ap-steps">${a.steps.map(s=>`<li>${linkify(s)}</li>`).join('')}</ol>`:'';
+  return `<div class="mc-applicability">`+
+    `<div class="ap-head"><span class="ap-title">适用性判断</span><span class="ap-verdict ${v.cls}">${v.label}</span></div>`+
+    method+steps+
+    `</div>`;
+}
+
+// 本地案例（内部知识库 / 社区案例库）卡片
+function localCaseCard(rawC, sourceLabel, cf, idx){
+  const c={...rawC, source:sourceLabel};
+  const scoreCls={高:'high',中:'mid',低:'low'};
+  const fp=c.fingerprints||[];
+  const level=c.match_level||'';
+  const verdict=c.verdict||'';
+  // L3 是扩大召回的弱匹配池：仅当一手证据 confirmed/same_area 时才采信其分数；
+  // 否则无论分数高低，强制标注"待核验"，不作为确诊依据。
+  const isWeakL3=(level==='L3' && verdict!=='confirmed' && verdict!=='same_area');
+  let h=`<div class="match-case${verdict==='not_relevant'?' excluded':''}${isWeakL3?' l3-weak':''}" id="kb-case-${idx}">`;
+  if(isWeakL3){
+    h+=`<span class="mc-score weak" title="L3 扩大召回的弱匹配，指纹未达确认标准，需人工核验，不作为确诊依据">待核验</span>`;
+  } else {
+    h+=`<span class="mc-score ${scoreCls[c.match_score]||'low'}">${esc(c.match_score||'—')}匹配</span>`;
+  }
+  if(level){
+    h+=`<span class="mc-level ${level}${isWeakL3?' weak':''}" title="${esc(_LEVEL_DESC[level]||'')}">${level}${isWeakL3?' · 弱匹配':''}</span>`;
+  }
+  if(verdict){
+    const vM=_VERDICT_META[verdict]||[verdict,''];
+    h+=`<span class="mc-verdict ${verdict}" title="${esc(vM[1])}">${vM[0]}</span>`;
+  }
+  h+=`<div class="mc-id">${esc(c.source)} · ${esc(c.knowledge_id||c.id||'')}</div>`;
+  if(isWeakL3){
+    h+=`<div class="mc-l3-note">L3 扩大召回弱匹配：该案例来自扩大召回池，崩溃指纹未达 L1/L2 确认标准，仅作排查线索参考，结论需人工核验。</div>`;
+  }
+  const summary=c.bug_summary||c.title||'';
+  if(summary) h+=`<div class="mc-label">案例摘要</div><div class="mc-text">${esc(summary)}</div>`;
+
+  const rawReason=c.match_reason||{};
+  let reason={...rawReason};
+  if(!Object.keys(reason).length){
+    if(level==='L1'){
+      reason['_l1_fingerprint']='指纹精确命中：崩溃特征签名在案例指纹库中完全匹配';
+    }
+    if(cf.bug_type && c.bug_type && cf.bug_type===c.bug_type){
+      reason['bug_type_match']=`bug_type 一致: ${cf.bug_type}`;
+    }
+    if(cf.rip_function && c.rip_function && cf.rip_function===c.rip_function){
+      reason['rip_match']=`RIP 函数一致: ${cf.rip_function}`;
+    }
+    if(cf.bug_key && c.bug_key && cf.bug_key===c.bug_key){
+      reason['bug_key_overlap']=`bug_key 语义一致: ${cf.bug_key}`;
+    }
+    const cfCt=Array.isArray(cf.call_trace_signature)?cf.call_trace_signature:[];
+    const cCt=Array.isArray(c.call_trace_signature)?c.call_trace_signature:[];
+    if(cfCt.length && cCt.length){
+      const cfSet=new Set(cfCt.map(s=>s.toLowerCase()));
+      const common=cCt.filter(f=>cfSet.has(f.toLowerCase()));
+      if(common.length>=2){
+        reason['call_trace_overlap']=`调用栈共同函数: ${common.slice(0,5).join(', ')} (${common.length}个)`;
+      }
+    }
+    const cfMods=Array.isArray(cf.related_modules)?cf.related_modules:[];
+    const cMods=Array.isArray(c.related_modules)?c.related_modules:[];
+    if(cfMods.length && cMods.length){
+      const cfMSet=new Set(cfMods.map(s=>s.toLowerCase()));
+      const commonMods=cMods.filter(m=>cfMSet.has(m.toLowerCase()));
+      if(commonMods.length) reason['module_match']=`关联模块一致: ${commonMods.join(', ')}`;
+    }
+    if(cf.kernel_version && Array.isArray(c.kernel_versions) && c.kernel_versions.length){
+      const cfKv=cf.kernel_version.toLowerCase();
+      const kvMatch=c.kernel_versions.some(kv=>kv && (kv.toLowerCase()===cfKv || kv.toLowerCase().startsWith(cfKv.split('.').slice(0,2).join('.'))));
+      if(kvMatch) reason['kernel_version_match']=`内核版本匹配 (当前: ${cf.kernel_version})`;
+    }
+    const cfEks=(cf.anomaly_features&&cf.anomaly_features.error_keywords)||[];
+    const cEks=Array.isArray(c.error_keywords)?c.error_keywords:[];
+    if(cfEks.length && cEks.length){
+      const cfESet=new Set(cfEks.map(s=>s.toLowerCase()));
+      const commonEks=cEks.filter(k=>cfESet.has(k.toLowerCase()));
+      if(commonEks.length) reason['error_keyword_match']=`异常关键词一致: ${commonEks.join(', ')}`;
+    }
+    if(level==='L2' && !Object.keys(reason).length){
+      reason['_l2_rag']='RAG语义检索召回：综合评分达到匹配阈值';
+    }
+    if(level==='L3' && !Object.keys(reason).length){
+      reason['_l3_expand']='扩大召回弱匹配：语义相似度较高，建议人工核验';
     }
   }
-  h+='</div>';
 
+  const reasonKeys=Object.keys(reason);
+  let reasonListHtml='';
+  if(reasonKeys.length){
+    reasonListHtml=`<ul class="mc-reason-list">`;
+    const reasonLabel={
+      _l1_fingerprint:'指纹命中', _l2_rag:'检索方式', _l3_expand:'检索方式',
+      bug_type_match:'崩溃类型', rip_match:'RIP函数一致', rip_consistency:'RIP函数一致',
+      call_trace_overlap:'调用栈重叠', module_match:'模块匹配', kernel_version_match:'内核版本',
+      phenomenon_similarity:'现象相似度', content_similarity:'内容/根因匹配',
+      exact_token_match:'关键词精确命中', title_score:'标题匹配', content_score:'内容匹配',
+      exact_token_score:'技术词命中', kernel_version_score:'版本匹配',
+      commit_relevance:'补丁相关性', commit_summary:'补丁摘要',
+      bug_key_overlap:'bug_key语义关联', error_keyword_match:'异常关键词一致',
+      keyword_overlap:'共同关键词', rip_mismatch:'RIP函数不一致',
+    };
+    const priorityKeys=['_l1_fingerprint','_l2_rag','_l3_expand'];
+    const positiveKeys=['bug_type_match','rip_match','rip_consistency','call_trace_overlap',
+      'module_match','kernel_version_match','phenomenon_similarity','content_similarity',
+      'exact_token_match','commit_relevance','commit_summary','bug_key_overlap',
+      'error_keyword_match','keyword_overlap','title_score','content_score',
+      'exact_token_score','kernel_version_score'];
+    const negativeKeys=['rip_mismatch'];
+    const orderedKeys=[];
+    for(const k of priorityKeys){ if(reason[k]) orderedKeys.push(k); }
+    for(const k of positiveKeys){ if(reason[k] && !orderedKeys.includes(k)) orderedKeys.push(k); }
+    for(const k of reasonKeys){ if(!orderedKeys.includes(k) && !negativeKeys.includes(k)) orderedKeys.push(k); }
+    for(const k of negativeKeys){ if(reason[k]) orderedKeys.push(k); }
+    for(const k of orderedKeys){
+      const v=reason[k];
+      if(!v) continue;
+      let liCls='';
+      if(negativeKeys.includes(k)) liCls=' class="miss"';
+      else if(k.startsWith('_l3')) liCls=' class="warn"';
+      const label=reasonLabel[k]||k;
+      reasonListHtml+=`<li${liCls}><b>${esc(label)}</b>：${esc(v)}</li>`;
+    }
+    reasonListHtml+=`</ul>`;
+  }
+  const corr=renderCorroboration(c.corroboration);
+  if(corr){
+    // 多维论证为主，工具自动评分明细折叠备查
+    h+=corr;
+    if(reasonListHtml){
+      h+=`<details class="mc-evidence" style="margin-top:6px"><summary>自动匹配评分明细 · ${esc(level||'L2')}</summary><div class="mc-ev-body">${reasonListHtml}</div></details>`;
+    }
+  } else if(reasonListHtml){
+    h+=`<div class="mc-label">匹配论证${level?' · '+level:''}</div>${reasonListHtml}`;
+  }
+  if(c.phenomenon){
+    h+=`<div class="mc-label">现象描述</div><div class="mc-text">${esc(c.phenomenon)}</div>`;
+  }
+  if(fp.length) h+=`<div class="mc-label">匹配指纹</div><div class="mc-chips">${fp.map(f=>`<span class="mc-chip">${esc(f)}</span>`).join('')}</div>`;
+  if(c.root_cause) h+=`<div class="mc-label">案例根因</div><div class="mc-text">${esc(c.root_cause)}</div>`;
+  h+=renderApplicability(c.applicability);
+  if(c.solution) h+=`<div class="mc-label">案例解决方案</div><div class="mc-text">${esc(c.solution)}</div>`;
+  if(c.hotpatch) h+=`<div class="mc-label">热补丁</div><div class="mc-text">${esc(c.hotpatch)}</div>`;
+
+  const ev=c.evidence||null;
+  if(ev && (ev.fetched || (Array.isArray(ev.reasons)&&ev.reasons.length))){
+    const kind=ev.source_kind==='issue'?'issue 原文':'commit 原文';
+    const stats=(ev.additions||ev.deletions)?` · +${ev.additions||0}/-${ev.deletions||0}`:'';
+    h+=`<details class="mc-evidence"><summary>上游一手证据 · ${esc(kind)}${stats}</summary><div class="mc-ev-body">`;
+    if(Array.isArray(ev.reasons) && ev.reasons.length){
+      h+=`<ul class="mc-reason-list">${ev.reasons.map(r=>`<li>${esc(r)}</li>`).join('')}</ul>`;
+    }
+    const files=ev.touched_files||[];
+    if(files.length){
+      h+=`<div class="mc-label">补丁改动文件</div><div class="mc-files">${files.map(f=>`<span class="mc-file">${esc(f)}</span>`).join('')}</div>`;
+    }
+    const fns=ev.touched_functions||[];
+    if(fns.length){
+      h+=`<div class="mc-label">补丁修改函数</div><div class="mc-fns">${fns.map(f=>`<span class="mc-fn">${esc(f)}()</span>`).join('')}</div>`;
+    }
+    if(ev.commit_message){
+      h+=`<div class="mc-label">commit message</div><div class="mc-quote">${esc(ev.commit_message)}</div>`;
+    }
+    if(ev.issue_title){
+      h+=`<div class="mc-label">issue 标题</div><div class="mc-text">${esc(ev.issue_title)}${ev.issue_state?` <span class="mc-chip">${esc(ev.issue_state)}</span>`:''}</div>`;
+    }
+    if(ev.issue_body_excerpt){
+      h+=`<div class="mc-label">issue 原文摘要</div><div class="mc-quote">${esc(ev.issue_body_excerpt)}</div>`;
+    }
+    if(ev.html_url){
+      h+=`<div style="margin-top:6px"><a href="${esc(ev.html_url)}" target="_blank" style="font-size:11px">查看上游原文 ↗</a></div>`;
+    }
+    const related=ev.related_commits||[];
+    if(related.length){
+      h+=`<div class="mc-label">同一补丁的其他来源（上游/回合）</div><div class="mc-text" style="font-size:11px">`
+        +related.map(r=>`<a href="${esc(r.url)}" target="_blank" style="margin-right:10px; white-space:nowrap">${esc(r.source||'upstream')} ${esc((r.sha||'').slice(0,12))} ↗</a>`).join('')
+        +`</div>`;
+    }
+    h+=`</div></details>`;
+  }
+  h+='</div>';
+  return h;
+}
+
+// 在线案例（实时爬取的 commit/issue/mail）卡片
+function onlineCaseCard(item, idx){
+  const kind=item.kind||'commit';
+  const kindLabel={commit:'上游 commit', issue:'上游 issue', mail:'邮件讨论'}[kind]||kind;
+  const url=item.url || item.source_file || (item.evidence&&item.evidence.html_url) || '';
+  let h=`<div class="match-case online" id="kb-case-${idx}">`;
+  h+=`<span class="mc-kind ${esc(kind)}">${esc(kindLabel)}</span>`;
+  if(kind!=='mail' && item.verdict){
+    const vM=_VERDICT_META[item.verdict]||[item.verdict,''];
+    h+=`<span class="mc-verdict ${item.verdict}" title="${esc(vM[1])}">${vM[0]}</span>`;
+  }
+  // 标题（可点击跳转原文）
+  if(url){
+    h+=`<div class="mc-online-title"><a href="${esc(url)}" target="_blank" rel="noopener">${esc(item.title||'（无标题）')} ↗</a></div>`;
+  } else {
+    h+=`<div class="mc-online-title">${esc(item.title||'（无标题）')}</div>`;
+  }
+
+  if(kind==='mail'){
+    // 邮件：作者 / 列表 / 摘要 / 适用理由
+    const metaBits=[];
+    if(item.author) metaBits.push(`发件人：${esc(item.author)}`);
+    if(item.mail_list) metaBits.push(`<span class="ml-list">${esc(item.mail_list)}</span>`);
+    if(metaBits.length) h+=`<div class="mc-mail-meta">${metaBits.join(' · ')}</div>`;
+
+    // 抽象视图：讨论主线 + 分析思路 + 对本次指导（为主）；原始摘录折叠备查
+    const turns=Array.isArray(item.discussion_logic)?item.discussion_logic:[];
+    const reasoning=Array.isArray(item.analysis_reasoning)?item.analysis_reasoning:[];
+    const hasAbstract = turns.length || reasoning.length || item.guidance;
+    if(hasAbstract){
+      if(turns.length){
+        h+=`<div class="mc-label">讨论主线</div><div class="mail-thread">`;
+        const roleName={reporter:'报告者',maintainer:'维护者',reviewer:'评审者',stable_maintainer:'稳定版负责人',community:'社区讨论'};
+        turns.forEach(t=>{
+          const r=t.role||'community';
+          h+=`<div class="mail-turn"><span class="mt-role ${esc(r)}">${esc(roleName[r]||r)}</span>`+
+             `<span class="mt-text">${esc(t.text||'')}</span></div>`;
+        });
+        h+=`</div>`;
+      }
+      if(reasoning.length){
+        h+=`<div class="mc-label">社区分析思路</div><ol class="mail-reasoning">`+
+           reasoning.map(s=>`<li>${esc(s)}</li>`).join('')+
+           `</ol>`;
+      }
+      if(item.guidance){
+        h+=`<div class="mail-guidance"><b>对本次分析的指导：</b>${linkify(item.guidance)}</div>`;
+      }
+      if(item.snippet){
+        h+=`<details class="mc-evidence" style="margin-top:6px"><summary>原始邮件摘录</summary><div class="mc-ev-body"><div class="mc-quote">${esc(item.snippet)}</div></div></details>`;
+      }
+      const corrMail=renderCorroboration(item.corroboration);
+      if(corrMail) h+=corrMail;
+    } else {
+      // 回退：无抽象数据时展示原始摘录
+      if(item.snippet){
+        h+=`<div class="mc-label">邮件原文摘录</div><div class="mc-quote">${esc(item.snippet)}</div>`;
+      }
+      const corrMail=renderCorroboration(item.corroboration);
+      if(corrMail){
+        h+=corrMail;
+      } else if(item.relevance){
+        h+=`<div class="mc-relevance"><b>匹配论证：</b>${esc(item.relevance)}</div>`;
+      }
+    }
+  } else {
+    // commit/issue：多维论证为主，补丁相关性论据兜底
+    const mr=item.match_reason||{};
+    const relReason=mr.commit_relevance||'';
+    const corrCommit=renderCorroboration(item.corroboration);
+    if(corrCommit){
+      h+=corrCommit;
+    } else if(relReason){
+      h+=`<div class="mc-relevance"><b>匹配论证：</b>${esc(relReason)}</div>`;
+    }
+    if(item.phenomenon){
+      h+=`<div class="mc-label">现象描述</div><div class="mc-text">${esc(item.phenomenon)}</div>`;
+    }
+    if(item.root_cause) h+=`<div class="mc-label">根因说明</div><div class="mc-text">${esc(item.root_cause)}</div>`;
+    h+=renderApplicability(item.applicability);
+    if(item.solution) h+=`<div class="mc-label">修复方案</div><div class="mc-text">${esc(item.solution)}</div>`;
+    const ev=item.evidence||null;
+    if(ev && (ev.fetched || (Array.isArray(ev.reasons)&&ev.reasons.length))){
+      const stats=(ev.additions||ev.deletions)?` · +${ev.additions||0}/-${ev.deletions||0}`:'';
+      h+=`<details class="mc-evidence"><summary>一手 diff 证据${stats}</summary><div class="mc-ev-body">`;
+      if(Array.isArray(ev.reasons) && ev.reasons.length){
+        h+=`<ul class="mc-reason-list">${ev.reasons.map(r=>`<li>${esc(r)}</li>`).join('')}</ul>`;
+      }
+      const files=ev.touched_files||[];
+      if(files.length){
+        h+=`<div class="mc-label">补丁改动文件</div><div class="mc-files">${files.map(f=>`<span class="mc-file">${esc(f)}</span>`).join('')}</div>`;
+      }
+      const fns=ev.touched_functions||[];
+      if(fns.length){
+        h+=`<div class="mc-label">补丁修改函数</div><div class="mc-fns">${fns.map(f=>`<span class="mc-fn">${esc(f)}()</span>`).join('')}</div>`;
+      }
+      if(ev.commit_message){
+        h+=`<div class="mc-label">commit message</div><div class="mc-quote">${esc(ev.commit_message)}</div>`;
+      }
+      h+=`</div></details>`;
+    }
+  }
+  if(url){
+    h+=`<a class="mc-orig-link" href="${esc(url)}" target="_blank" rel="noopener">查看原文 ↗</a>`;
+  }
+  h+='</div>';
+  return h;
+}
+
+function matchGroupHtml(dotCls, title, count, desc, tag, cardsHtml, collapsedId, startCollapsed){
+  let h=`<div class="match-group">`;
+  h+=`<div class="mg-head"><span class="mg-dot ${dotCls}"></span>${esc(title)}<span class="mg-count">${count} 条</span>`;
+  if(tag) h+=`<span class="mg-tag">${esc(tag)}</span>`;
+  h+=`</div>`;
+  if(desc) h+=`<p class="mg-desc">${esc(desc)}</p>`;
+  if(cardsHtml){
+    h+=`<div class="match-cases${startCollapsed?' collapsed':''}" id="${collapsedId}">${cardsHtml}</div>`;
+  } else {
+    h+=`<div class="match-empty">无匹配</div>`;
+  }
+  h+=`</div>`;
+  return h;
+}
+
+function renderCrashMatch(report){
+  const cf=report.crash_feature_info||{};
+  const g=orderedKBGroups(report);
+  const inr=g.internal, com=g.community, onl=g.online;
+
+  // 崩溃特征（RIP/签名/关联模块等）统一在"崩溃详情"章节展示，此处不再重复
+  let h='<div class="match-section">';
+  const total=inr.length+com.length+onl.length;
+  if(!total){
+    h+=`<div class="sec-label">知识库案例匹配 (0 条)</div><div class="match-empty">本地知识库、社区案例库与在线检索均无匹配案例</div>`;
+    h+='</div>';
+    document.getElementById('crash-match-body').innerHTML=h;
+    return;
+  }
+  h+=`<div class="sec-label">知识库案例匹配 (${total} 条) · 本地未达高置信时自动在线爬取</div>`;
+
+  // L1/L2/L3 层级说明（有本地案例时展示）
+  if(inr.length || com.length){
+    h+=`<div class="match-level-legend">`+
+      `<span style="font-weight:600;color:#334155;">匹配层级说明：</span>`+
+      `<span class="leg"><span class="leg-dot L1">L1</span>${_LEVEL_DESC.L1}</span>`+
+      `<span class="leg"><span class="leg-dot L2">L2</span>${_LEVEL_DESC.L2}</span>`+
+      `<span class="leg"><span class="leg-dot L3">L3</span>${_LEVEL_DESC.L3}</span>`+
+      `</div>`;
+  }
+
+  // 组 1：内部知识库
+  if(inr.length){
+    const cards=inr.map(({c,idx})=>localCaseCard(c,'内部知识库',cf,idx)).join('');
+    h+=matchGroupHtml('internal','内部知识库',inr.length,'本地已知问题库（OSClinic 入库的历史确诊案例），含指纹与 RAG 评分','',cards,'match-cases-internal',inr.length>1);
+    if(inr.length>1){
+      h+=`<div class="match-expand"><button onclick="toggleGroupCases('match-cases-internal',this)">展开全部 ${inr.length} 条</button></div>`;
+    }
+  }
+
+  // 组 2：社区案例库
+  if(com.length){
+    const cards=com.map(({c,idx})=>localCaseCard(c,'社区案例库',cf,idx)).join('');
+    h+=matchGroupHtml('community','社区案例库',com.length,'openEuler / Linux 社区案例库（本地入库存储），附上游一手 diff 校验结论','',cards,'match-cases-community',com.length>1);
+    if(com.length>1){
+      h+=`<div class="match-expand"><button onclick="toggleGroupCases('match-cases-community',this)">展开全部 ${com.length} 条</button></div>`;
+    }
+  }
+
+  // 组 3：在线案例（实时爬取）
+  if(onl.length){
+    const cards=onl.map(({c,idx})=>onlineCaseCard(c,idx)).join('');
+    h+=matchGroupHtml('online','在线社区案例',onl.length,'本地匹配不足时实时爬取的上游 kernel 仓库 commit/patch 与邮件列表讨论，均为公开社区一手资料','实时爬取',cards,'');
+  }
+
+  h+='</div>';
   document.getElementById('crash-match-body').innerHTML=h;
 }
-function toggleMatchCases(){
-  const el=document.getElementById('match-cases');
-  const btn=document.getElementById('match-expand-btn');
+
+function toggleGroupCases(id, btn){
+  const el=document.getElementById(id);
+  if(!el) return;
   const collapsed=el.classList.toggle('collapsed');
   const total=el.querySelectorAll('.match-case').length;
-  btn.textContent=collapsed?`展开全部 ${total} 条匹配`:`收起 (仅显示首条)`;
+  btn.textContent=collapsed?`展开全部 ${total} 条`:`收起 (仅显示首条)`;
 }
+// 兼容旧调用
+function toggleMatchCases(){ toggleGroupCases('match-cases', document.getElementById('match-expand-btn')); }
+
+// ===== Workflow Trace =====
 function renderWorkflow(report){
   const wt=report.workflow_trace||{}, steps=wt.steps||[];
   const sourceBadge = wt.source==='opencode_export'
-    ? `<span class="wf-badge export">◉ Session Export</span>`
+    ? `<span class="wf-badge export">Session Export</span>`
     : wt.source==='manual'
-      ? `<span class="wf-badge manual">✎ LLM Summarized</span>`
+      ? `<span class="wf-badge manual">LLM Summarized</span>`
       : '';
   const dur = wt.total_duration_ms!=null ? `${(wt.total_duration_ms/1000).toFixed(1)}s` : '';
-  const sid = wt.session_id ? wt.session_id.slice(0,20)+'…' : '';
+  const sid = wt.session_id ? wt.session_id.slice(0,20)+'...' : '';
   let h=`<div class="wf-header">`;
   if(sourceBadge) h+=sourceBadge;
   h+=`<span>${esc(wt.step_count??steps.length)} 个关键决策</span>`;
@@ -1019,15 +1574,14 @@ function renderWorkflow(report){
     const isFail = s.status==='failed', isPartial = s.status==='partial', isSkip = s.status==='skipped';
     const dotCls = isFail?'fail':(isPartial?'partial':'');
     const stageLabel = (s.stage||'').replace(/_/g,' ');
-    const stageCls = (s.stage||'').replace(/_/g,'-');
     let toolsHtml = '';
     (s.tools||[]).forEach(t=>{
       const tOk = t.status==='success' || t.status==='completed';
       const tWarn = t.status==='timeout' || t.status==='partial';
       const tErr = t.status==='failed' || t.status==='error';
-      const tIcon = tOk ? '<span class="wf-tool-icon ok">✓</span>'
-        : tWarn ? '<span class="wf-tool-icon warn">⏱</span>'
-        : tErr ? '<span class="wf-tool-icon err">✗</span>'
+      const tIcon = tOk ? '<span class="wf-tool-icon ok">OK</span>'
+        : tWarn ? '<span class="wf-tool-icon warn">TIMEOUT</span>'
+        : tErr ? '<span class="wf-tool-icon err">ERR</span>'
         : '<span class="wf-tool-icon">•</span>';
       let durTxt = '';
       if(t.duration_ms!=null){
@@ -1044,22 +1598,59 @@ function renderWorkflow(report){
           `<span class="wf-step-status ${esc(s.status||'success')}">${esc(statusText)}</span></div>`+
         `<div class="wf-decision">${esc(s.decision||'')}</div>`+
         (s.observations?`<div class="wf-observations">${esc(s.observations)}</div>`:'')+
-        (s.judgment?`<div class="wf-judgment">→ ${esc(s.judgment)}</div>`:'')+
-        (s.reason?`<div class="wf-reason">⚠ ${esc(s.reason)}</div>`:'')+
+        (s.judgment?`<div class="wf-judgment">${esc(s.judgment)}</div>`:'')+
+        (s.reason?`<div class="wf-reason">${esc(s.reason)}</div>`:'')+
         (toolsHtml?`<div class="wf-tools">${toolsHtml}</div>`:'')+
-        `<div class="wf-time">${esc(s.start_time||'')} → ${esc(s.end_time||'')}</div>`+
+        `<div class="wf-time">${esc(s.start_time||'')} ${esc(s.end_time||'')}</div>`+
       `</div></div></div>`;
   });
   document.getElementById('workflow-body').innerHTML=h;
 }
+
+// ===== Section numbering =====
+function renumberSections(hasEventTimeline){
+  // 1 执行摘要 → (2 事件时序图 可选) → 崩溃详情 → 崩溃路径分析 → 根因分析
+  let num=2;
+  if(hasEventTimeline){
+    document.getElementById('event-timeline-section').querySelector('.num').textContent='2';
+    num=3;
+  }
+  document.getElementById('crash-detail-num').textContent=String(num); num++;
+  document.getElementById('crash-path-num').textContent=String(num); num++;
+  document.getElementById('rootcause-num').textContent=String(num);
+}
+
+// ===== Main =====
 const loadFull = EMBED_FULL ? Promise.resolve(EMBED_FULL) : fetchJSON(FULL_URL);
 loadFull.then(report=>{
-  const core=buildCore(report);
-  renderHeader(core);renderHost(core);renderTrace(core);
-  renderRootCause(core);renderProse('solution-body',core.solution);
-  renderCrashMatch(report);renderWorkflow(report);
+  const ra=report.root_cause_analysis||{};
+  const hasEventTimeline=(ra.event_chain||[]).length>0;
+
+  buildKBRefMap(report);
+
+  renderHeader(report);
+  renderExecSummary(report);
+  renderEventTimeline(report);
+  renderCrashDetail(report);
+  renderCrashPath(report);
+  renderRootCause(report);
+  renderCrashMatch(report);
+  renderWorkflow(report);
+  renumberSections(hasEventTimeline);
+
+  // Footer
+  const cf=report.crash_feature_info||{};
+  const hb=report.host_base_info||{};
+  document.getElementById('footer-text').innerHTML=
+    `本报告基于崩溃数据分析生成 · ${cf.crash_time||''} · 内核 ${hb.kernel_version||''}`;
 }).catch(err=>{
-  document.getElementById('app').innerHTML=`<div class="error">加载失败: ${esc(err.message)}<br><br>需通过本地 HTTP 服务访问（如 <code>python3 -m http.server</code>），不能直接 file:// 打开。</div>`;
+  const msg = err.message||'';
+  const isFileProtocol = location.protocol==='file:' && msg.includes('fetch');
+  let hint = '';
+  if(isFileProtocol){
+    hint = '<br><br>提示：需要通过 HTTP 服务访问（如 <code>python3 -m http.server</code>），不能直接 file:// 打开。';
+  }
+  document.getElementById('app').innerHTML=`<div class="error">加载失败: ${esc(msg)}${hint}</div>`;
 });
 </script>
 </body>

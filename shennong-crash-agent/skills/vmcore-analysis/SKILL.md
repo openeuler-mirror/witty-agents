@@ -80,6 +80,15 @@ cd pcie_panic && crash ./vmlinux vmcore
 bash scripts/01_baseline_info.sh <vmcore> <vmlinux> [src_dir]
 ```
 
+vmlinux 获取顺序（`ensure_vmlinux`，无需人工干预）：
+
+1. 用户显式提供的 `<vmlinux>` 路径；
+2. vmcore 同级目录、系统调试目录（`/usr/lib/debug/lib/modules/<kver>/vmlinux`）；
+3. **自动下载**：先提取 vmcore 内核版本（`crash --osrelease` → vmcore-dmesg `Linux version` 行 → 目录名），再从 openEuler debuginfo 源下载 `kernel-debuginfo-<kver>` 包并解压出 vmlinux，缓存于 `~/.cache/vmcore-analysis/<kver>-<arch>/vmlinux` 供复用（可用 `VMLINUX_CACHE_DIR` / `VMLINUX_REPO_BASE` / `VMCORE_ARCH` 覆盖默认行为）；
+4. 以上均失败才进入 vmcore-dmesg 回退模式。
+
+后续 branch 脚本统一使用基线脚本确认/下载到的 vmlinux 路径（见基线输出中的 `vmlinux ：...` 行）。
+
 记录输出中的四类关键信息（后续所有步骤都围绕它们推进）：
 
 - 内核版本字符串（用于 S0 版本验证）

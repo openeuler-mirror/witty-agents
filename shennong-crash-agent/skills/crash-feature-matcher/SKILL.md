@@ -15,7 +15,7 @@ mcp:
     type: stdio
     command: "/root/.config/opencode/skills/crash-feature-matcher/run_mcp.sh"
     args: []
-allowed-tools: Bash(python3:*) Bash(pip:*) Bash(curl:*) Bash(crash:*) Bash(cat:*) Bash(ls:*) Bash(rg:*)
+allowed-tools: Bash(python3:*) Bash(pip:*) Bash(curl:*) Bash(crash:*) Bash(cat:*) Bash(ls:*) Bash(rg:*) Bash(bash:*)
 ---
 
 # crash-feature-matcher
@@ -196,6 +196,7 @@ All tools are exposed via the `CrashFeatureMatcher` FastMCP server.
 | `CrashFeatureMatcher:query_community_cases` | L1/L2/L3 community case retrieval (Linux → openEuler). See Query Text Guidelines below for query_text construction rules. | `query_text`, `kernel_version` |
 | `CrashFeatureMatcher:add_knowledge` | Add a new known-issue entry | `bug_summary`, `bug_type`, `bug_key`, `fingerprints`, `rip`, `rip_function`, `rip_offset`, `related_modules`, `call_trace_text`, `call_trace_signature`, `root_cause`, `solution`, `hotpatch` |
 | `CrashFeatureMatcher:merge_knowledge` | Merge multiple similar issues into one | `source_ids`, `target_bug_summary`, `target_root_cause`, `target_solution`, `target_hotpatch` |
+| `CrashFeatureMatcher:query_upstream_online` | Explicit online retrieval when local KBs (internal/community/history) yield no high-confidence match (no match_score ≥ 0.7, or no confirmed verdict). Searches upstream fix commits (REST API + first-hand diff verdict: only confirmed/same_area returned) and openEuler mailing-list patch discussions (`patch_mails`: analysis rationale, stable-inclusion notes). Does NOT require RAG configuration. | `crash_features` (required, from analyze_crash), `query_text`, `max_mails` |
 | `CrashFeatureMatcher:get_stats` | Crash statistics overview | *(not yet implemented)* |
 
 ---
@@ -406,11 +407,20 @@ Input: query_text + kernel_version
          │ miss
          ▼
 ┌─────────────────────────────────────────────────────┐
-│ L3: Broader Recall                                    │
-│   - Linux top5 + openEuler top5                       │
-│   - Rerank by score, return top3                    │
+│ L3: Broader Recall (weak-match pool, l3_top_k > l1)  │
+│   - Recall is a superset of L1; cases already scored │
+│     in L1 reuse their score (no LLM re-scoring → no  │
+│     non-deterministic score drift)                   │
+│   - Newly recalled cases reaching the L2 confirm     │
+│     threshold are PROMOTED to L2; only the rest stay │
+│     L3 (weak matches, manual review required)        │
+│   - A first-hand diff verdict of "confirmed" also    │
+│     promotes an L3 case to L2                        │
+│   - Rerank by score, return top_k_final              │
 └─────────────────────────────────────────────────────┘
 ```
+
+> **L3 confidence contract:** L3 is a *broader-recall candidate pool*, not a high-confidence verdict. An L3 case that is not confirmed by first-hand evidence (`verdict` = `unverified`/empty) is a weak lead: the report renders it as **"待核验 / 弱匹配"** regardless of its numeric score, and it must not be treated as a diagnosed root cause. Strong evidence (score reaching the L2 threshold, or `verdict=confirmed`) always promotes the case to L2 — so a genuine L3 card by definition carries no high-confidence label.
 
 ### Scoring Rules (0-100)
 
@@ -482,6 +492,33 @@ This supports mixed-language queries such as `KVM e500 find_linux_pte 中断 主
 以下词在 jieba 停用词表中，加入 query 不产生任何效果：
 
 `修复` `导致` `触发` `发生` `系统` `进程` `内核` `模块` `驱动` `文件` `设备` `信息` `数据` `代码` `调用` `函数` `指针` `地址` `内存` `错误` `失败` `异常` `崩溃` `挂起` `死机` `重启`
+
+### Inspecting Upstream Evidence Manually
+
+**Do NOT `git clone`, `git ls-remote`, or download kernel repositories** when looking for upstream fixes. A kernel repository is hundreds of MB to GB; the REST CLI below fetches only the needed JSON/text over HTTPS and is orders of magnitude faster. This prohibition applies to delegated subagents/General Tasks as well.
+
+`query_community_cases` automatically fetches first-hand upstream evidence (diff / commit message / issue body) for top cases and computes a code-level verdict. When a case is `unverified` (the original text could not be fetched) or `same_area` (needs confirmation that it is the same subsystem but a different bug), re-inspect the concrete commit/issue with the bundled CLI (it reuses `git_commit_fetcher`'s anonymous-first fetch strategy):
+
+```bash
+# Search upstream fix commits WITHOUT cloning: list commits touching a file
+# whose message contains the keyword(s), newest first (per_page=100 per page).
+bash run_python.sh scripts/fetch_commit.py search openeuler/kernel \
+  net/netfilter/nf_tables_api.c verdict nf_tables
+#   -> JSON array of {sha, html_url, date, author, message}; then verify a hit:
+
+# Raw commit diff
+bash run_python.sh scripts/fetch_commit.py diff "https://gitcode.com/openeuler/kernel/commit/<sha>"
+
+# Commit metadata (message / author / additions / deletions)
+bash run_python.sh scripts/fetch_commit.py detail "https://gitcode.com/openeuler/kernel/commit/<sha>"
+
+# Issue / PR body
+bash run_python.sh scripts/fetch_commit.py issue "https://gitcode.com/openeuler/kernel/issues/<number>"
+```
+
+Typical flow when `query_community_cases` returns nothing: derive the crashing file path from the RIP function's subsystem (e.g. `nft_verdict_init` → `net/netfilter/nf_tables_api.c`), run `search <repo> <path> <bug keywords>` to find candidate fix commits, then `diff <html_url>` to confirm the patch modifies the crashing function. All over HTTPS, no clone.
+
+The output is the same upstream source that the automatic verdict analysis consumes, so it can confirm or exclude a candidate before it is written into the root-cause conclusion.
 ---
 
 ## Knowledge Base
@@ -534,7 +571,7 @@ python3 -m crash_matcher.cli query-community \
   -q "空指针解引用 内核崩溃"
 ```
 
-Expected output: top3 community cases from Linux/openEuler with stop reason `L3 Linux社区 + openEuler社区 扩大召回`.
+Expected output: community cases from Linux/openEuler with stop reason `L3 Linux社区 + openEuler社区 扩大召回（弱匹配，需人工核验）`. These cases carry `match_level=L3` and are weak leads — the report renders them as "待核验" unless a new case reached the L2 threshold (promoted, stop reason mentions `提升为 L2`) or first-hand verification returned `confirmed`.
 
 ### Example 3: No Community Match
 

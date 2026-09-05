@@ -129,8 +129,30 @@ class CommunityConfig(BaseModel):
         "logical_expression_strategy": "semantic_only",
     })
     commit_analysis: dict = Field(default_factory=lambda: {
-        "enabled": False,
+        "enabled": True,
         "max_commits_to_analyze": 5,
+        "confirmed_boost": 1.15,
+        "irrelevant_penalty": 0.5,
+    })
+    # Online fallback: when community KBs are unconfigured or return nothing,
+    # search upstream kernel commits via the lightweight REST commits API
+    # (no git clone). Candidates get a baseline score and must pass the
+    # first-hand diff verification (commit_analysis) before reaching the report.
+    online_fallback: dict = Field(default_factory=lambda: {
+        "enabled": True,
+        "repo": "openeuler/kernel",
+        "source": "gitcode",       # gitcode | gitee
+        "max_pages": 5,
+        "max_candidates": 8,
+        "baseline_score": 50.0,
+        "source_label": "openEuler社区",
+        # LLM-generate Chinese phenomenon/root_cause/solution for verified
+        # `confirmed` commits (RAG hits + online fallback; best-effort, English
+        # content untouched on failure, already-Chinese docs skipped)
+        "summarize_confirmed": True,
+        # persist online-verified `confirmed` commits into the community KB
+        # (dedup by commit sha) so future analyses hit them via RAG retrieval
+        "persist_confirmed": True,
     })
 
 

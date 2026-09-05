@@ -236,3 +236,117 @@ class LLMScorer:
             c.score_details = details
         return cases
 
+
+# ------------------------------------------------------------
+# Chinese structured summary for verified upstream commits
+# ------------------------------------------------------------
+
+COMMIT_SUMMARY_PROMPT = """你是一位资深的 Linux 内核崩溃分析专家。下面是一个已经过一手代码证据（commit diff）确认、与当前崩溃直接相关的上游补丁。请用简体中文为崩溃分析报告撰写该补丁的结构化摘要。
+
+严格要求：
+- 全部使用简体中文；但内核函数名、文件名、宏/枚举名、子系统名（例如 nft_verdict_init、net/netfilter/nf_tables_api.c、NF_QUEUE、KASAN、use-after-free）必须保持英文原样，禁止翻译。
+- phenomenon：1-2 句，描述该补丁修复的问题现象（触发条件、错误类型、崩溃位置）。
+- root_cause：1-2 句，说明代码层面的根本原因。
+- solution：1-2 句，说明补丁的修复手法。
+- 只允许依据下面给出的材料，不得编造材料中没有的信息；每个字段不超过 120 个汉字。
+- 只输出一个 JSON 对象，不要 Markdown 代码块、不要任何额外解释：
+{"phenomenon": "...", "root_cause": "...", "solution": "..."}
+
+当前崩溃特征：
+{{crash}}
+
+补丁材料：
+标题: {{title}}
+改动文件: {{files}}
+修改函数: {{functions}}
+commit message 摘要:
+{{message}}
+案例库中已有的英文描述（如有，作为参考材料，可据其内容改写为中文）:
+现象: {{phenomenon}}
+根因: {{root_cause}}
+方案: {{solution}}
+"""
+
+
+def _parse_summary_json(text: str) -> dict:
+    """Extract the {phenomenon, root_cause, solution} object from LLM output."""
+    if not text:
+        return {}
+    t = text.strip()
+    # strip ```json ... ``` fences if present
+    t = re.sub(r"^```(?:json)?\s*|\s*```$", "", t, flags=re.IGNORECASE | re.MULTILINE)
+    start, end = t.find("{"), t.rfind("}")
+    if start == -1 or end == -1 or end <= start:
+        return {}
+    try:
+        data = json.loads(t[start:end + 1])
+    except Exception:
+        return {}
+    out = {}
+    for k in ("phenomenon", "root_cause", "solution"):
+        v = data.get(k)
+        if isinstance(v, str) and v.strip():
+            out[k] = v.strip()[:400]
+    return out
+
+
+async def summarize_commit_case(
+    case: CommunityCase,
+    crash_text: str,
+) -> bool:
+    """Fill ``case.phenomenon/root_cause/solution`` with a Chinese structured
+    summary derived from the verified commit evidence. Returns True on success.
+
+    Uses the shared [llm_scorer] config; silently degrades (returns False) when
+    the LLM is not configured or the call/parse fails.
+    """
+    cfg = Config().get().llm_scorer
+    if not cfg.api_key or not cfg.model or not cfg.base_url:
+        return False
+    ev = case.evidence or {}
+    message = (ev.get("commit_message") or case.content or "")[:1500]
+    if not message:
+        return False
+    files = ", ".join(ev.get("touched_files") or []) or "-"
+    functions = ", ".join(f"{f}()" for f in (ev.get("touched_functions") or [])) or "-"
+
+    scorer = LLMScorer()
+    try:
+        prompt = (
+            COMMIT_SUMMARY_PROMPT
+            .replace("{{crash}}", (crash_text or "")[:600])
+            .replace("{{title}}", case.title or "")
+            .replace("{{files}}", files)
+            .replace("{{functions}}", functions)
+            .replace("{{message}}", message)
+            .replace("{{phenomenon}}", (case.phenomenon or "-")[:300])
+            .replace("{{root_cause}}", (case.root_cause or "-")[:300])
+            .replace("{{solution}}", (case.solution or "-")[:300])
+        )
+        payload = {
+            "model": scorer.model,
+            "messages": [{"role": "user", "content": prompt}],
+            "temperature": 0.2,
+            "max_tokens": 600,
+        }
+        data = await scorer._call_llm(payload)
+        content = data["choices"][0]["message"]["content"]
+    except Exception as e:
+        logger.warning(f"LLM commit summary failed for {case.title[:60]}: {e}")
+        return False
+    finally:
+        await scorer.close()
+
+    summary = _parse_summary_json(content)
+    if len(summary) < 2:
+        logger.debug("LLM commit summary unparseable, skipped: %s", content[:200])
+        return False
+    if summary.get("phenomenon"):
+        case.phenomenon = summary["phenomenon"]
+    if summary.get("root_cause"):
+        case.root_cause = summary["root_cause"]
+    if summary.get("solution"):
+        case.solution = summary["solution"]
+    case.evidence = {**(case.evidence or {}), "summary_zh": True}
+    return True
+

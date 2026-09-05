@@ -203,7 +203,7 @@
       }
     ],
     "solution": "已命中内部知识库匹配案例，建议直接应用上游修复补丁，在 GRO 聚合入口处增加 skb 空指针检查以消除竞态窗口；若条件允许也可升级至包含该修复的稳定版本，从根源上避免该问题再次发生。",
-    "workaround": "临时规避：业务低峰期通过 ethtool -K <网卡> gro off 关闭 GRO 聚合，规避收包路径竞态窗口；加强网络中断与 panic 监控值守，出现异常立即切换备用节点。风险：单节点网络吞吐略有下降，不影响业务正确性。补丁回合后可恢复 GRO。"
+    "workaround": "临时规避：在业务低峰期通过 ethtool -L eth0 combined 2 降低网卡并发队列数，并关闭 GRO（ethtool -K eth0 gro off）以规避收包路径竞态窗口；同时加强网络中断与 panic 监控值守，出现异常立即切换备用节点。风险：单节点网络吞吐略有下降，不影响业务正确性。"
   },
   "diagnosis_repair_result": {
     "community_kernel_result": [
@@ -243,51 +243,35 @@
           {
             "dimension": "feature_data",
             "verdict": "support",
-            "current": "RIP 函数 __inet_lookup_established，调用栈共同函数 4 个，bug_type general_protection。",
-            "reference": "案例 RIP 函数同为 __inet_lookup_established，调用栈共同函数 4 个；社区案例证据 verdict=confirmed（一手 diff 校验通过）。"
+            "text": "RIP 函数一致（__inet_lookup_established），调用栈共同函数 4 个，bug_type 同为 general_protection，社区案例证据 verdict=confirmed（一手 diff 校验通过）。"
           },
           {
             "dimension": "kernel_version",
             "verdict": "partial",
-            "current": "当前内核 5.10.0-180.12.0.50，需人工确认是否在补丁受影响区间内。",
-            "reference": "社区案例未记录明确受影响版本区间，仅确认补丁存在于 5.10.y 稳定分支。"
+            "text": "社区案例未记录明确受影响版本区间，仅能确认补丁存在于 5.10.y 稳定分支；当前 5.10.0-180.12.0.50 版本相关性需结合回合记录人工确认。"
           },
           {
             "dimension": "execution_context",
             "verdict": "support",
-            "current": "本次处于软中断收包路径（net_rx_action→mlx5e→tcp_v4_rcv），<IRQ> 上下文。",
-            "reference": "案例栈同为软中断收包路径，上下文一致。"
+            "text": "案例栈同为软中断收包路径（net_rx_action→mlx5e→tcp_v4_rcv），上下文一致。"
           },
           {
             "dimension": "timeline",
             "verdict": "partial",
-            "current": "本次崩溃前 66 秒 CQE error 重复 12 次，随后 GRO 上送并在 lookup 崩溃。",
-            "reference": "案例正文未给出崩溃前异常事件时间线，仅描述高负载触发，无法逐条对照。"
+            "text": "案例正文未给出崩溃前异常事件时间线，仅描述高负载触发；本次 CQE error 反复出现的演进无法与案例逐条对照。"
           },
           {
             "dimension": "mechanism",
             "verdict": "support",
-            "current": "fault addr 0x18 解引用空 sk，崩溃点 __inet_lookup_established 入口 +0x0。",
-            "reference": "补丁 hunk 新增 skb->sk 空指针检查，touched_functions 含 __inet_lookup_established，机制直接对应。"
+            "text": "补丁 hunk 新增 skb->sk 空指针检查，与 fault addr 0x18 解引用空 sk 的机制直接对应；touched_functions 含 __inet_lookup_established。"
           },
           {
             "dimension": "fix_scope",
             "verdict": "support",
-            "current": "崩溃函数 __inet_lookup_established 与 GRO 上送路径。",
-            "reference": "补丁改动 net/ipv4/inet_hashtables.c 与 net/core/dev.c，覆盖崩溃函数与 GRO 上送路径；+24/-6，修复点闭环。"
+            "text": "补丁改动 net/ipv4/inet_hashtables.c 与 net/core/dev.c，覆盖崩溃函数与 GRO 上送路径；+24/-6 规模，修复点闭环。"
           }
         ],
-        "verdict": "confirmed",
-        "applicability": {
-          "verdict": "adapt",
-          "method": "先确认本机版本是否在补丁受影响区间，再回合社区补丁 commit 或升级至含修复稳定版本",
-          "steps": [
-            "受影响范围：需人工确认 5.10.0-180.12.0.50 是否落在该补丁受影响区间（案例正文未记录明确版本区间）。",
-            "补丁基线：补丁位于 5.10.y 稳定分支，机制与崩溃点直接对应，确认区间后无需大改即可回合。",
-            "前置一致性：崩溃上下文（软中断收包）与触发特性（mlx5 GRO）一致，无额外配置前提。",
-            "验证与风险：回合后验证 GRO 上送路径不再触发 lookup 空指针；风险在于版本区间未核实，需先查回合记录。"
-          ]
-        }
+        "verdict": "confirmed"
       },
       {
         "id": "community-case-weak-l3",
@@ -340,16 +324,6 @@
         "root_cause": "null pointer in GRO path",
         "solution": "Hotfix available",
         "hotpatch": "mlx5-gro-fix-2024",
-        "applicability": {
-          "verdict": "direct_adopt",
-          "method": "安装热补丁 mlx5-gro-fix-2024，或升级至含修复版本 5.10.0-180.13.0+",
-          "steps": [
-            "受影响范围：当前 5.10.0-180.12.0.50 落在案例受影响区间（5.10.0-150~180.12.x）内且补丁尚未回合，满足适用前提。",
-            "补丁基线：热补丁 mlx5-gro-fix-2024 即针对当前 oe2203 5.10 谱系制作，无需移植适配。",
-            "前置一致性：崩溃上下文（NET_RX_SOFTIRQ）与触发特性（mlx5 GRO 收包）与案例完全一致。",
-            "验证与风险：升级后观测 CQE error 是否复现、收包路径不再出现 GPF；无可识别回归风险。"
-          ]
-        },
         "history_wiki": "https://wiki.example.com/issues/...",
         "case_count": 5,
         "first_seen": "2024-01-01T00:00:00Z",
@@ -367,38 +341,32 @@
           {
             "dimension": "feature_data",
             "verdict": "support",
-            "current": "RIP 函数 __inet_lookup_established，调用栈 __do_softirq→net_rx_action→mlx5e_poll_rx_cq→mlx5e_handle_rx_cqe→tcp_v4_rcv，bug_type general_protection，模块 mlx5_core。",
-            "reference": "案例 RIP 函数均为 __inet_lookup_established，调用栈共同函数 5 个，bug_type 同为 general_protection，关联模块同为 mlx5_core。"
+            "text": "数据指纹完全对齐：RIP 函数均为 __inet_lookup_established，调用栈共同函数 5 个（__do_softirq→net_rx_action→mlx5e_poll_rx_cq→mlx5e_handle_rx_cqe→tcp_v4_rcv），bug_type 同为 general_protection，关联模块同为 mlx5_core。"
           },
           {
             "dimension": "kernel_version",
             "verdict": "support",
-            "current": "当前内核 5.10.0-180.12.0.50.oe2203（补丁尚未回合，处于未修复）。",
-            "reference": "案例受影响范围 5.10.0-150 ~ 180.12.x，修复版本为 5.10.0-180.13.0+。"
+            "text": "当前内核 5.10.0-180.12.0.50.oe2203 在案例记录的受影响范围（5.10.0-150 ~ 180.12.x）内，版本谱系一致。"
           },
           {
             "dimension": "execution_context",
             "verdict": "support",
-            "current": "本次处于 NET_RX_SOFTIRQ 软中断收包上下文（栈底 __do_softirq，标注 <IRQ>）。",
-            "reference": "案例同为 NET_RX_SOFTIRQ 软中断收包上下文，运行场景一致。"
+            "text": "均发生在 NET_RX_SOFTIRQ 软中断收包上下文（栈底 __do_softirq，标注 <IRQ>），崩溃时 CPU 正在处理网卡接收轮询，运行场景一致。"
           },
           {
             "dimension": "timeline",
             "verdict": "support",
-            "current": "本次 event_chain：崩溃前 66 秒起 CQE error 重复 12 次，随后 GRO 上送、最终在 __inet_lookup_established 崩溃。",
-            "reference": "案例现象：高负载下先出现网卡 CQE/收包异常、随后在 TCP 查找崩溃，演进序列吻合。"
+            "text": "案例现象为'高负载下先出现网卡 CQE/收包异常、随后在 TCP 查找崩溃'；本次 event_chain 显示崩溃前 66 秒起 CQE error 重复 12 次，随后 GRO 上送、最终在 __inet_lookup_established 崩溃，演进序列吻合。"
           },
           {
             "dimension": "mechanism",
             "verdict": "support",
-            "current": "fault addr 0x18 对应 sk->__sk_common 成员偏移，崩溃点入口 +0x0。",
-            "reference": "案例根因 GRO 路径 skb->sk 空指针，机制一致（未做空指针校验即解引用）。"
+            "text": "fault addr 0x18 对应 sk->__sk_common 成员偏移，与案例根因'GRO 路径 skb->sk 空指针'机制一致；崩溃点位于函数入口 +0x0，符合未做空指针校验即解引用。"
           },
           {
             "dimension": "fix_scope",
             "verdict": "support",
-            "current": "崩溃函数 __inet_lookup_established 入口校验与 GRO 上送引用保护。",
-            "reference": "案例提供热补丁 mlx5-gro-fix-2024，修复点覆盖对应位置，闭环可直接采用。"
+            "text": "案例提供热补丁 mlx5-gro-fix-2024，修复点覆盖 __inet_lookup_established 入口校验与 GRO 上送引用保护，闭环可直接采用。"
           }
         ]
       }
@@ -417,16 +385,6 @@
         "phenomenon": "高网络负载软中断收包路径上，GRO 聚合并发窗口中 skb->sk 已失效，TCP 连接查找解引用空指针触发 general protection fault。",
         "root_cause": "mlx5 驱动异常 CQE 处理路径在 GRO 聚合时未对 skb->sk 生命周期做完整保护，并发释放后复用导致空指针传入 inet lookup。",
         "solution": "在 __inet_lookup_established 调用前增加 sk 空指针校验，并在 GRO 上送路径补齐 skb 引用计数保护；已回合至 5.10.0-180.13.0 及以上内核。",
-        "applicability": {
-          "verdict": "direct_adopt",
-          "method": "回合该 commit(a1b2c3d4e5f6) 或升级至 5.10.0-180.13.0+",
-          "steps": [
-            "受影响范围：当前 5.10.0-180.12.0.50 低于修复版本 5.10.0-180.13.0，处于未修复，满足采用前提。",
-            "补丁基线：补丁已回合至 openEuler 5.10.0-180.13.0，与当前同基线，直接 cherry-pick 即可。",
-            "前置一致性：崩溃上下文（软中断 GRO）与触发特性（mlx5 CQE/GRO）与补丁一致，无额外限制。",
-            "验证与风险：升级后若不再复现即闭环；无可识别回归风险。"
-          ]
-        },
         "evidence": {
           "fetched": true,
           "source_kind": "commit",
@@ -452,38 +410,32 @@
           {
             "dimension": "feature_data",
             "verdict": "support",
-            "current": "RIP 函数 __inet_lookup_established，bug_type general_protection，模块 mlx5_core。",
-            "reference": "补丁标题 fix NULL deref in __inet_lookup_established under GRO race，在线一手 diff 验证 verdict=confirmed。"
+            "text": "补丁标题与 RIP 函数直接对应（fix NULL deref in __inet_lookup_established under GRO race），在线一手 diff 验证 verdict=confirmed。"
           },
           {
             "dimension": "kernel_version",
             "verdict": "support",
-            "current": "当前 5.10.0-180.12.0.50，低于修复版本，确认处于'未修复'。",
-            "reference": "补丁已回合至 openEuler 5.10.0-180.13.0 及以上。"
+            "text": "补丁已回合至 openEuler 5.10.0-180.13.0 及以上；当前 180.12.0.50 低于修复版本，确认处于'未修复'状态，升级路径明确。"
           },
           {
             "dimension": "execution_context",
             "verdict": "support",
-            "current": "本次 <IRQ> 软中断收包上下文（softirq / GRO delivery）。",
-            "reference": "commit message 明确 from softirq context / GRO delivery，完全一致。"
+            "text": "commit message 明确 from softirq context / GRO delivery，与本次 <IRQ> 软中断收包上下文完全一致。"
           },
           {
             "dimension": "timeline",
             "verdict": "support",
-            "current": "本次 CQE error 重复→GRO 聚合→lookup 崩溃的时序因果。",
-            "reference": "补丁描述并发窗口：NAPI poll 高负载下 skb->sk 被释放，时序因果一致。"
+            "text": "补丁描述的并发窗口（NAPI poll 高负载下 skb->sk 被释放）与本次'CQE error 重复→GRO 聚合→lookup 崩溃'的时序因果一致。"
           },
           {
             "dimension": "mechanism",
             "verdict": "support",
-            "current": "fault addr 0x18 = sk->成员偏移，lookup 前解引用空指针。",
-            "reference": "补丁新增 lookup 前 sk 空指针校验与 GRO 引用持有，机制层完全吻合。"
+            "text": "fault addr 0x18 = sk->成员偏移，补丁新增的正是 lookup 前 sk 空指针校验与 GRO 引用持有，机制层完全吻合。"
           },
           {
             "dimension": "fix_scope",
             "verdict": "support",
-            "current": "崩溃函数 __inet_lookup_established 与扩散链污染传递点 napi_gro_receive。",
-            "reference": "touched_functions 含 __inet_lookup_established 与 napi_gro_receive，覆盖对应位置。"
+            "text": "touched_functions 含 __inet_lookup_established 与 napi_gro_receive，正好覆盖崩溃函数与扩散链中的污染传递点。"
           }
         ]
       },
@@ -499,38 +451,32 @@
           {
             "dimension": "feature_data",
             "verdict": "support",
-            "current": "崩溃点 __inet_lookup_established+0x0、GPF、mlx5 网卡环境。",
-            "reference": "邮件报告相同崩溃点、相同 GPF、相同 mlx5 网卡环境，现象数据一致。"
+            "text": "邮件报告相同崩溃点 __inet_lookup_established+0x0、相同 GPF、相同 mlx5 网卡环境，现象数据与本次一致。"
           },
           {
             "dimension": "kernel_version",
             "verdict": "support",
-            "current": "当前 oe2203 5.10 谱系。",
-            "reference": "邮件针对 openEuler 22.03 SP3 的 5.10 稳定分支请求 stable 回合，谱系对应。"
+            "text": "邮件针对 openEuler 22.03 SP3 的 5.10 稳定分支请求 stable 回合，与当前 oe2203 5.10 谱系对应。"
           },
           {
             "dimension": "execution_context",
             "verdict": "support",
-            "current": "本次 <IRQ> 软中断收包上下文。",
-            "reference": "邮件描述 heavy GRO traffic 下的 softirq 收包崩溃，上下文一致。"
+            "text": "邮件描述 heavy GRO traffic 下的 softirq 收包崩溃，与本次 <IRQ> 上下文一致。"
           },
           {
             "dimension": "timeline",
             "verdict": "partial",
-            "current": "本次崩溃前 66 秒 CQE error 重复 12 次。",
-            "reference": "邮件未提供崩溃前事件序列，仅描述复现条件（高 GRO 流量），无法逐条对照。"
+            "text": "邮件未提供崩溃前事件序列，仅描述复现条件（高 GRO 流量），无法与本次 CQE error 时间线逐条对照。"
           },
           {
             "dimension": "mechanism",
             "verdict": "support",
-            "current": "竞态窗口 sk 失效机制。",
-            "reference": "邮件指出 sk pointer can be freed in the concurrent NAPI poll window，机制一致。"
+            "text": "邮件指出 sk pointer can be freed in the concurrent NAPI poll window，与本次根因（竞态窗口 sk 失效）机制一致。"
           },
           {
             "dimension": "fix_scope",
             "verdict": "support",
-            "current": "版本未回合前需以'降低 GRO 聚合负载/关闭 GRO'作临时规避。",
-            "reference": "随附补丁 early NULL check + 持有 skb 引用至 lookup 之后，正在走 stable 评审。"
+            "text": "随附补丁为 early NULL check + 持有 skb 引用至 lookup 之后，并在走 stable 评审，支撑修复版本判定。"
           }
         ],
         "discussion_logic": [

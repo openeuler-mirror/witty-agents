@@ -10,9 +10,10 @@ from .models import CrashFeatures, HostFeatures, CrashIssue, CrashCase, MatchRes
 from .extractor import parse_dmesg, compute_signature, parse_host_from_dmesg, run_crash_analysis
 from .matcher import match_crash
 from .matcher.engine import _compute_issue_match_score
-from .matcher.community_retriever import retrieve_community_cases
+from .matcher.community_retriever import retrieve_community_cases, retrieve_upstream_online
 from .knowledge import RAGClient
 from .config import Config
+from .analysis_chain import build_analysis_chain as _build_analysis_chain
 
 logger = logging.getLogger(__name__)
 
@@ -89,6 +90,14 @@ async def analyze_crash(
         "modules": host.modules,
     }
 
+    # Determine if online fallback is recommended based on match result
+    has_high_match = False
+    has_confirmed = False
+    if result.knowledge:
+        has_high_match = getattr(result.knowledge, 'match_score', 0.0) >= 0.7
+        has_confirmed = getattr(result.knowledge, 'verdict', '') == 'confirmed'
+    should_fallback = not (has_high_match or has_confirmed)
+
     return {
         "signature": feature_sig,
         "crash_features": crash_dict,
@@ -101,6 +110,8 @@ async def analyze_crash(
             "suggestions": result.suggestions,
         },
         "missing_fields": result.missing_fields,
+        "should_fallback_online": should_fallback,
+        "fallback_reason": "无 match_score >= 0.7 的高匹配" if not has_high_match else ("无 confirmed verdict" if not has_confirmed else ""),
     }
 
 
@@ -186,7 +197,17 @@ async def query_knowledge(
                 elif issue.match_score > 0:
                     issue.match_level = "L3"
 
-        return {"total": len(issues), "issues": [i.model_dump() for i in issues]}
+        # Determine if online fallback is recommended
+        has_high_match = any(i.match_score >= 0.7 for i in issues) if issues else False
+        has_confirmed = any(getattr(i, 'verdict', '') == 'confirmed' for i in issues) if issues else False
+        should_fallback = not (has_high_match or has_confirmed)
+        
+        return {
+            "total": len(issues),
+            "issues": [i.model_dump() for i in issues],
+            "should_fallback_online": should_fallback,
+            "fallback_reason": "无 match_score >= 0.7 的高匹配" if not has_high_match else ("无 confirmed verdict" if not has_confirmed else ""),
+        }
     finally:
         await rag.close()
 
@@ -216,28 +237,171 @@ async def query_cases(
 # query_community_cases
 # ============================================================
 
+def _build_verdict_summary(cases) -> dict:
+    """Aggregate community case verdicts into a structured summary consumed by
+    the LLM when composing root_cause_analysis.conclusion / solution."""
+    confirmed, excluded, unverified = [], [], []
+    for c in cases:
+        v = (getattr(c, "verdict", "") or "").strip()
+        ev = getattr(c, "evidence", {}) or {}
+        if v == "confirmed":
+            confirmed.append({
+                "title": c.title,
+                "id": c.id or "",
+                "html_url": ev.get("html_url") or c.source_file or "",
+                "touched_files": ev.get("touched_files", []) or [],
+                "touched_functions": ev.get("touched_functions", []) or [],
+            })
+        elif v in ("same_area", "not_relevant"):
+            excluded.append({
+                "title": c.title,
+                "verdict": v,
+                "html_url": ev.get("html_url") or c.source_file or "",
+                "reason": (ev.get("reasons") or ["上游一手证据比对后判定不相关"])[0],
+            })
+        else:
+            unverified.append({
+                "title": c.title,
+                "html_url": ev.get("html_url") or c.source_file or "",
+            })
+
+    if confirmed:
+        top_verdict, confidence = "confirmed", "high"
+    elif excluded:
+        top_verdict, confidence = "same_area", "medium"
+    elif unverified:
+        top_verdict, confidence = "unverified", "low"
+    else:
+        top_verdict, confidence = "none", "low"
+
+    if confirmed:
+        first = confirmed[0]
+        fns = "、".join(first["touched_functions"][:2]) if first["touched_functions"] else first["title"]
+        ref = first["id"] or first["html_url"]
+        conclusion_hint = f"上游提交 {ref} 直接修改崩溃路径上的函数（{fns}），确认本次根因，结论由推测升级为确认"
+        solution_hint = f"采纳上游补丁：{first['title']}（{first['html_url']}）"
+    elif excluded:
+        conclusion_hint = "社区检索到的案例经上游 diff 比对未直接修复本次崩溃点，结论是否确认仅取决于内部知识库"
+        solution_hint = "参考同子系统补丁思路，但不将其作为本次修复证据"
+    elif unverified:
+        conclusion_hint = "社区上游证据未能获取，相关性未经代码级确认，结论标记为推测"
+        solution_hint = "无社区确认补丁，给出缓解建议"
+    else:
+        conclusion_hint = "未匹配到社区案例，结论标记为推测"
+        solution_hint = "无社区确认补丁，给出缓解建议"
+
+    return {
+        "top_verdict": top_verdict,
+        "confidence": confidence,
+        "confirmed": confirmed,
+        "excluded": excluded,
+        "unverified": unverified,
+        "conclusion_hint": conclusion_hint,
+        "solution_hint": solution_hint,
+    }
+
+
 @mcp.tool()
 async def query_community_cases(
-    query_text: str = Field(..., description="查询文本/宕机关键词"),
+    query_text: str = Field(..., description="查询文本/宕机关键词，建议包含 RIP 函数名与调用栈关键函数"),
     kernel_version: str = Field(default="", description="内核版本, 用于逻辑过滤"),
+    crash_features: dict = Field(default={}, description="analyze_crash 返回的 crash_features (含 rip_function、call_trace 等), 用于对社区案例抓取上游一手证据(commit diff/message、issue 原文)并做代码级相关性校验"),
 ) -> dict:
-    """L1/L2/L3 检索社区案例 (Linux/openEuler, 返回top3)"""
+    """L1/L2/L3 检索社区案例 (Linux/openEuler, 返回top3)。
+
+    返回案例自动附带:
+      - verdict: confirmed(补丁直接修复崩溃函数) / same_area(同子系统不同bug) /
+        not_relevant(与崩溃路径无关) / unverified(原文获取失败)
+      - evidence: commit message 原文、issue 正文摘要、改动文件/函数、diff 统计
+      - verdict_summary: 聚合后的 confirmed/excluded/unverified 清单 + conclusion_hint /
+        solution_hint, 供根因分析直接消费 (confirmed 补丁结构化注入结论)
+    """
     rag = _get_rag()
     if not rag:
         return {"error": "RAG knowledge base not configured"}
     try:
-        result = await retrieve_community_cases(query_text, kernel_version, rag)
+        result = await retrieve_community_cases(
+            query_text, kernel_version, rag, crash_features=crash_features or None
+        )
+        # Determine if online fallback is recommended
+        has_high_match = any(c.match_score >= 0.7 for c in result.cases) if result.cases else False
+        has_confirmed = any(c.verdict == 'confirmed' for c in result.cases) if result.cases else False
+        should_fallback = not (has_high_match or has_confirmed)
+        
         return {
             "matched": result.matched,
             "stop_reason": result.stop_reason,
             "total_candidates": result.total_candidates,
             "cases": [c.model_dump() for c in result.cases],
+            "verdict_summary": _build_verdict_summary(result.cases),
+            "should_fallback_online": should_fallback,
+            "fallback_reason": "无 match_score >= 0.7 的高匹配" if not has_high_match else ("无 confirmed verdict" if not has_confirmed else ""),
         }
     except Exception as e:
         logger.exception("query_community_cases failed")
         return {"error": str(e)}
     finally:
         await rag.close()
+
+
+# ============================================================
+# query_upstream_online
+# ============================================================
+
+@mcp.tool()
+async def query_upstream_online(
+    crash_features: dict = Field(..., description="analyze_crash 返回的 crash_features (必须含 rip_function；call_trace_signature 用于子系统定位)"),
+    query_text: str = Field(default="", description="补充查询文本 (崩溃现象描述)"),
+    max_mails: int = Field(default=5, description="邮件列表讨论返回条数上限"),
+) -> dict:
+    """在线检索上游修复证据（本地知识库无高匹配时调用，不依赖 RAG 配置）。
+
+    使用场景：query_knowledge / query_cases / query_community_cases 均无
+    高匹配 (match_score < 0.7) 或无 confirmed 案例时，显式调用本工具在线获取：
+      - commits: 上游修复 commit (REST API 检索 + 一手 diff 验证，
+        仅返回 confirmed/same_area)，含 verdict / evidence / commit_relevance
+      - patch_mails: openEuler 邮件列表中的 patch 讨论与分析线索
+        (title / url / author / snippet)，用于补充根因分析思路
+      - verdict_summary: 聚合 confirmed_commits / conclusion_hint / solution_hint
+
+    与 query_community_cases 的区别：本工具不查 RAG 知识库，直接在线检索，
+    因此 RAG 未配置时同样可用。
+    """
+    try:
+        cfg = Config().get()
+        result = await retrieve_upstream_online(
+            crash_features, cfg, query_text=query_text, max_mails=max_mails
+        )
+        commits = [c.model_dump() for c in result["commits"]]
+        return {
+            "commits": commits,
+            "patch_mails": result["patch_mails"],
+            "stop_reason": result["stop_reason"],
+            "verdict_summary": _build_verdict_summary(result["commits"]),
+        }
+    except Exception as e:
+        logger.exception("query_upstream_online failed")
+        return {"error": str(e)}
+
+
+# ============================================================
+# build_analysis_chain
+# ============================================================
+
+@mcp.tool()
+async def build_analysis_chain(
+    crash_features: dict = Field(..., description="analyze_crash 返回的 crash_features (含 rip_function, call_trace_signature, anomaly_features)"),
+) -> dict:
+    """构建深度分析链：事件时间线 + 崩溃传播链 + 源码线索。
+
+    为 LLM 的 analysis[] 提供结构化输入，支撑"先分析后判定"的推理过程。
+    输出供 stage=propagation/source_analysis 的 analysis 步骤使用。
+    """
+    try:
+        return _build_analysis_chain(crash_features)
+    except Exception as e:
+        logger.exception("build_analysis_chain failed")
+        return {"error": str(e)}
 
 
 # ============================================================

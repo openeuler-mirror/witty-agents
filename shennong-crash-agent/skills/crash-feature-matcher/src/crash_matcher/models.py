@@ -176,6 +176,8 @@ class CommunityCase(BaseModel):
 
     match_reason: dict = Field(default_factory=dict, description="匹配原因: phenomenon_similarity, rip_consistency, module_match, commit_relevance, commit_summary")
     commit_diff: str = Field(default="", description="commit 的 diff 内容，用于相关性分析")
+    verdict: str = Field(default="", description="一手证据校验结论: confirmed/same_area/not_relevant/unverified")
+    evidence: dict = Field(default_factory=dict, description="上游一手证据: commit message/issue 原文摘要 + diff 校验结论")
 
 
 class CommunityMatchResult(BaseModel):
