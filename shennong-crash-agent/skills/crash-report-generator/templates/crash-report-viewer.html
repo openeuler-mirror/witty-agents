@@ -1083,6 +1083,7 @@ const EMBED_FULL = /*__FULL_DATA__*/null;
 
 /* ================= 基础工具 ================= */
 const esc = s => String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const toArr = v => Array.isArray(v) ? v : (v==null || v==='' ? [] : [v]);
 function linkify(s){
   return esc(s).replace(/https?:\/\/[^\s<]+/g, m=>{
     const url=m.replace(/[)\].,，。；;！!？?'"'"'”）】]+$/,'');
@@ -1162,17 +1163,17 @@ function renderExecSummary(report){
     /* —— 简短的解决动作（合入补丁；若为纯配置修复则附执行命令） —— */
     const brief=ss.short||ss.summary_short||ss.claim||'';
     if(brief) h+=`<div class="sol-lead">${rich(brief)}</div>`;
-    if(ss.type==='config' && ss.commands && ss.commands.length){
+    if(ss.type==='config' && toArr(ss.commands).length){
       h+=`<div class="sol-block"><div class="sol-block-t">执行命令 / 配置</div>`;
-      h+=`<pre class="patch-diff" style="background:#0f172a;max-height:180px;overflow:auto;">${esc(ss.commands.join('\n'))}</pre>`;
+      h+=`<pre class="patch-diff" style="background:#0f172a;max-height:180px;overflow:auto;">${esc(toArr(ss.commands).join('\n'))}</pre>`;
       h+=`</div>`;
     }
 
     /* —— 补充信息（收起 + 滚动） —— */
     let sup='';
-    if(ss.basis && ss.basis.length){
+    if(toArr(ss.basis).length){
       sup+=`<div class="sol-block"><div class="sol-block-t">修复依据（社区邮件 / 会议纪要 / bugfix）</div><div class="basis-list">`;
-      ss.basis.forEach(b=>{
+      toArr(ss.basis).forEach(b=>{
         const k=BASIS_KIND[b.kind]||b.kind;
         sup+=`<div class="basis-item"><span class="basis-kind ${esc(b.kind||'bugfix')}">${esc(k)}</span>`;
         sup+=`<span class="basis-txt">${b.text?rich(b.text)+' ':''}${b.title?esc(b.title):''}${b.url?` <a href="${esc(b.url)}" target="_blank" rel="noopener">原文 ↗</a>`:''}</span></div>`;
@@ -1180,23 +1181,23 @@ function renderExecSummary(report){
       sup+=`</div></div>`;
     }
     if(ss.fixed_in) sup+=`<div class="fixed-in"><b>修复版本判定：</b>${rich(ss.fixed_in)}</div>`;
-    if(ss.patch_list && ss.patch_list.length){
-      sup+=`<div class="sol-block"><div class="sol-block-t">建议合入补丁（${ss.patch_list.length} 个）</div>`;
-      ss.patch_list.forEach(p=>{
+    if(toArr(ss.patch_list).length){
+      sup+=`<div class="sol-block"><div class="sol-block-t">建议合入补丁（${toArr(ss.patch_list).length} 个）</div>`;
+      toArr(ss.patch_list).forEach(p=>{
         const mode={full:['整体合入','full'],part:['局部合入(最小改动)','part'],pick:['取其思路改造','pick']}[p.mode]||[p.mode,'full'];
         sup+=`<div class="patch-card"><div class="pc-top">`;
         sup+=`<span class="patch-sha">${esc(p.sha)}</span><span class="patch-subject">${esc(p.subject)}</span><span class="patch-mode ${mode[1]}">${mode[0]}</span>`;
         sup+=`</div><div class="patch-body">`;
         if(p.why) sup+=`<div class="patch-why">${rich(p.why)}</div>`;
-        if(p.files && p.files.length) sup+=`<div class="patch-files">${p.files.map(f=>`<span class="patch-file">${esc(f)}</span>`).join('')}</div>`;
+        if(toArr(p.files).length) sup+=`<div class="patch-files">${toArr(p.files).map(f=>`<span class="patch-file">${esc(f)}</span>`).join('')}</div>`;
         if(p.diff) sup+=`<details class="picker"><summary>查看补丁差异（diff）</summary><div class="picker-body"><pre class="patch-diff">${esc(p.diff)}</pre></div></details>`;
         sup+=`</div></div>`;
       });
       sup+=`</div>`;
     }
-    if(ss.method_steps && ss.method_steps.length){
+    if(toArr(ss.method_steps).length){
       sup+=`<div class="sol-block"><div class="sol-block-t">合入方案（步骤）</div><div class="basis-list">`;
-      ss.method_steps.forEach(s=>sup+=`<div class="basis-item"><span class="basis-txt">${rich(s)}</span></div>`);
+      toArr(ss.method_steps).forEach(s=>sup+=`<div class="basis-item"><span class="basis-txt">${rich(s)}</span></div>`);
       sup+=`</div></div>`;
     }
     if(ss.detail) sup+=`<details class="picker"><summary>完整说明 / 回退与验证</summary><div class="picker-body"><div class="sol-full">${rich(ss.detail)}</div></div></details>`;
@@ -1207,17 +1208,17 @@ function renderExecSummary(report){
   const w=ra.temporary_workaround||null;
   if(w){
     h+=`<div class="callout callout-warning sol"><div class="sol-head">`;
-    h+=`<span class="sol-title">临时规避方案</span><span class="sol-type config">${w.type==='config'?'命令行/配置规避':'操作规避'}</span>`;
+    h+=`<span class="sol-title">临时规避方案</span><span class="sol-type config">${w.type==='config'?'命令行/配置规避':w.type==='none'?'无临时规避方案':'操作规避'}</span>`;
     h+=`</div>`;
     h+=`<div class="sol-lead">${rich(w.summary)}</div>`;
     /* 步骤 / 风险 / 回退统一收起，需要时展开（滚动） */
     let wr='';
-    if(w.steps && w.steps.length){
+    if(toArr(w.steps).length){
       wr+=`<div class="sol-block"><div class="sol-block-t">操作步骤</div>`;
       if(w.type==='config'){
-        wr+=`<pre class="patch-diff" style="background:#0f172a;max-height:220px;overflow:auto;">${esc(w.steps.join('\n'))}</pre>`;
+        wr+=`<pre class="patch-diff" style="background:#0f172a;max-height:220px;overflow:auto;">${esc(toArr(w.steps).join('\n'))}</pre>`;
       } else {
-        wr+=`<ol style="margin:4px 0 0 22px;font-size:13px;line-height:1.8">${w.steps.map(s=>`<li>${rich(s)}</li>`).join('')}</ol>`;
+        wr+=`<ol style="margin:4px 0 0 22px;font-size:13px;line-height:1.8">${toArr(w.steps).map(s=>`<li>${rich(s)}</li>`).join('')}</ol>`;
       }
       wr+=`</div>`;
     }
@@ -1281,7 +1282,7 @@ function renderCrashDetail(report){
   const rows=[['RIP',cf.rip],['RIP 函数',cf.rip_function],['RIP 偏移',cf.rip_offset],['崩溃类型',cf.bug_type],['Bug Key',cf.bug_key],['签名',cf.signature],['崩溃摘要',cf.bug_summary]];
   let h='<table><tr><th>字段</th><th>值</th></tr>';
   rows.forEach(([k,v])=>{ if(v!=null && v!=='') h+=`<tr><td class="nowrap">${esc(k)}</td><td class="mono">${esc(String(v))}</td></tr>`; });
-  const rm=cf.related_modules||[];
+  const rm=toArr(cf.related_modules);
   if(rm.length) h+=`<tr><td class="nowrap">关联模块</td><td><div class="modules-chips">${rm.map(m=>`<span class="chip">${esc(m)}</span>`).join('')}</div></td></tr>`;
   h+='</table>';
   const lf=logFeaturesHtml(cf.log_features);
@@ -1631,7 +1632,7 @@ function internalCard(c){
   h+=`<div class="c-title">${esc(c.bug_summary||c.title||c.knowledge_id||c.id||'')}</div>`;
   const meta=[c.knowledge_id||c.id||''];
   if(c.affected_component) meta.push('组件 '+c.affected_component);
-  if(c.kernel_versions&&c.kernel_versions.length) meta.push('内核 '+c.kernel_versions.join('/'));
+  if(toArr(c.kernel_versions).length) meta.push('内核 '+toArr(c.kernel_versions).join('/'));
   if(c.case_count!=null) meta.push('历史 '+c.case_count+' 起');
   if(meta.length) h+=`<div class="c-meta">${esc(meta.join(' · '))}</div>`;
 
@@ -1700,7 +1701,7 @@ function commitCard(c){
   if(c.url) h+=`<div class="c-orig">原文网址：<a href="${esc(c.url)}" target="_blank" rel="noopener">${esc(c.url)}</a></div>`;
 
   if(c.how) h+=`<div class="c-derive"><b>为什么是它（深度关联依据）：</b>${rich(c.how)}</div>`;
-  if(c.files && c.files.length) h+=`<div style="margin-top:7px" class="c-meta">改动文件：${c.files.map(f=>`<span class="mc-file" style="display:inline-block;font-size:10px;font-family:ui-monospace,Menlo,monospace;background:#eef2ff;color:#4338ca;border-radius:5px;padding:1px 6px;margin:1px">${esc(f)}</span>`).join(' ')}</div>`;
+  if(toArr(c.files).length) h+=`<div style="margin-top:7px" class="c-meta">改动文件：${toArr(c.files).map(f=>`<span class="mc-file" style="display:inline-block;font-size:10px;font-family:ui-monospace,Menlo,monospace;background:#eef2ff;color:#4338ca;border-radius:5px;padding:1px 6px;margin:1px">${esc(f)}</span>`).join(' ')}</div>`;
   if(c.fix_scope && c.fix_scope.length) h+=`<div class="c-derive" style="background:#f0fdf6;border-left-color:#34d399;color:#065f46"><b>修复闭环：</b>${esc(c.fix_scope)}</div>`;
 
   const cexpl=c.how||'见“为什么是它”说明。';

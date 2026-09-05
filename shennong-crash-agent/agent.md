@@ -19,7 +19,7 @@
 
 - 一份符合 `DiagnoseReport` 结构的标准化 JSON 诊断报告，最终渲染为自包含的 `crash-report.html`（可直接 file:// 打开）。
 - 报告由七个章节构成：
-  1. **执行摘要**：`结论`（问题是什么 → 要做什么 → 为什么，通俗、书面、少术语）+ `标准解决方案`（`standard_solution` 结构化对象：补丁/升级/配置命令 + 修复依据 + 补丁 diff + 合入步骤）+ `临时规避方案`（`temporary_workaround`：可执行步骤 + 风险 + 回退）；
+  1. **执行摘要**：`结论`（问题是什么 → 要做什么 → 为什么，通俗、书面、少术语）+ `标准解决方案`（`standard_solution` 结构化对象：补丁/升级/配置命令 + 修复依据 + 补丁 diff + 合入步骤）+ `临时规避方案`（`temporary_workaround`：无方案写「无」；有方案给 shell/改配置/换机等可执行步骤 + 风险 + 回退）；
   2. **崩溃详情**：RIP / 签名 / 模块等基础字段 + `日志特征`（`log_features`：相关报错、重复可疑日志、其它异常，每条标注来源文件与行号）；
   3. **事件时序图**：`event_scene`（对象泳道：进程/内核/硬件，携带具体名称、PID、CPU 序号）+ 全局变量列（随事件变化的取值）+ 用户态/内核态/硬件区分；
   4. **根因分析**（`root_cause_analysis`，分三部分）：①崩溃特征分析（含函数栈与寄存器）；②崩溃链路分析（`propagation_chain` 逐跳：栈帧 ↔ 源码 目录/文件/行号/函数，实参/寄存器 ↔ 源码形参，异常参数标红）；③相关案例分析（内部案例 + 社区案例 + 上游 commit + 源码对照 → 结论）；
@@ -128,7 +128,7 @@
 6. \`root_cause_analysis.json\`：**LLM 基于上下文总结生成**。在已有多源证据（基线、崩溃特征、内部/社区案例、日志检测、源码分析、在线 commit/patch/邮件）基础上，产出与 report.html 第 1/3/4 章一致的字段：
    - \`conclusion\`：一句自然中文、高度抽象（场景+缺陷大类+推测/确认），不含函数名/寄存器/地址等实现细节；
    - \`standard_solution\`：结构化对象（type/claim_tag/short「要做什么·为什么·怎么做」/basis/fixed_in/patch_list/method_steps/detail），主述区通俗、书面、少术语；
-   - \`temporary_workaround\`：结构化对象（type/summary/steps/risk/detail）；
+   - \`temporary_workaround\`：结构化对象（type/summary/steps/risk/detail）；无方案 type=none 且 summary 写「无」，有方案 steps 给 shell/改配置/换机等可执行命令；
    - \`event_scene\`：事件时序图（participants 对象泳道、gvars/ginit 全局变量列、anchor、events 含 用户态/内核态/硬件 与 dt_ms）；
    - \`propagation_chain\`：崩溃链路逐跳（from/to/type/src_dir/file/line/stack/fn_ctx/crash/source_url/detail/evidence/params），params 中异常参数 bad=true 标红；
    - \`reasoning_flow\`：三部分根因（①崩溃特征分析含函数栈 ②崩溃链路分析 ③相关案例分析），refs 用 anchor 跳第 5 章案例卡；
@@ -147,11 +147,11 @@
 2. **并行检测**：三种日志检测手段与 crash-feature-matcher 必须并行执行，不得串行等待前者产物作为后者输入；但崩溃特征以 crash-feature-matcher 的 \`analyze_crash\` 输出为准。
 3. **使用现存 MCP**：必须使用现存的 \`crash-feature-matcher\` MCP 进行崩溃特征提取与知识库检索；最终报告必须调用 \`crash-report-generator\` Skill 生成。
 4. **崩溃特征以 crash-feature-matcher 为准**：\`crash_feature_info\` 中的 \`signature\`、\`bug_type\`、\`bug_key\`、\`bug_summary\`、\`rip\`、\`rip_function\`、\`rip_offset\`、\`related_modules\`、\`call_trace_signature\`、\`call_trace_text\`、\`kernel_version\` 必须严格取自 MCP 工具 \`analyze_crash\` 返回的 \`crash_features\` 字段；\`call_trace_text\` 与 \`call_trace_signature\` 必须唯一且保持原格式，不得从其他工具获取或改写；其他工具仅作补充，不得覆盖。
-5. **原生 JSON 逐值直通**：\`diagnosis_repair_result.internal_kernel_result\` 和 \`diagnosis_repair_result.community_kernel_result\` 必须逐字段、逐值复制 \`crash-feature-matcher\` 返回的原生 JSON 对象，禁止改写 value、禁止重新总结、禁止字段名映射、禁止数值归一化或类型转换、禁止增加解释，保留所有原始字段。内部案例取自 \`query_knowledge\` 返回的 \`issues\` 数组元素或 \`query_cases\` 返回的 \`cases\` 数组元素；社区案例取自 \`query_community_cases\` 返回的 \`cases\` 数组元素。
+5. **原生 JSON 逐值直通**：\`diagnosis_repair_result.internal_kernel_result\` 和 \`diagnosis_repair_result.community_kernel_result\` 必须逐字段、逐值复制 \`crash-feature-matcher\` 返回的原生 JSON 对象，禁止改写 value、禁止重新总结、禁止字段名映射、禁止数值归一化或类型转换、禁止增加解释，保留所有原始字段。内部案例取自 \`query_knowledge\` 返回的 \`issues\` 数组元素或 \`query_cases\` 返回的 \`cases\` 数组元素；社区案例取自 \`query_community_cases\` 返回的 \`cases\` 数组元素。**未命中时对应数组写空数组 \`[]\`，严禁编造条目。**
 6. **知识库多轮查询**：查询 \`query_knowledge\` 时应构造不少于 5 种不同形式的 \`keyword\` / \`rip_function\` / \`bug_type\` 组合查询（例如 rip_function 精确查询、bug_type 过滤查询、包含 signature / call_trace 顶层函数 / module / kernel_version 的 keyword 组合查询），直到命中高相似度（\`match_score\` >= 0.85 或现象高度相似）目标，或累计 15 轮无果后停止。若 RAG 未配置，则跳过此要求。当本地检索未命中或相关性不足（无 \`match_score\` ≥ 0.7 的高匹配、无 confirmed verdict）时，必须调用 \`query_upstream_online\` 在线爬取社区 commit/patch/邮件作为补充证据，不得直接给出低置信结论。
 7. **内部案例优先**：当内部内核案例库已给出解决方案时，社区内核案例库结果无需输出。
 8. **文档知识库贯穿**：在任务启动、日志检测、异常识别、根因判定各阶段必须穿插查询文档知识库，但文档片段仅作为诊断指导，不直接写入报告结构化字段。
-9. **不臆造案例**：检索为空时如实说明，严禁虚构知识库案例。
+9. **不臆造案例**：内部案例 / 社区邮件 / 社区会议纪要 / 社区 Bugzilla / 上游 commit 各分类检索为空时，对应字段写空数组 \`[]\`，严禁虚构任何条目（标题、url、snippet、verdict、evidence 等一律不得编造）；空分类显示「未检索到…」属正常。
 10. **知识图谱自洽**：根因判定必须基于知识图谱的多源交叉验证，不得依赖单一匹配分数。
 11. **Schema 强校验**：最终输出必须调用 \`crash-report-generator\` Skill 生成，严格符合 \`DiagnoseReport\` JSON 结构，并通过 \`schemas/crash-report-schema.json\` 强校验；生成后应调用 \`skills/crash-report-generator/scripts/validate_report.py\` 脚本确认报告有效，不得遗漏 \`workflow_trace\` 与 \`steps\`。
 12. **工作流追踪**：必须基于真实会话数据生成 \`workflow_trace\`，包含 \`source\`、\`session_id\`、\`total_duration_ms\`、\`step_count\`、\`steps[]\`；每个 step 包含 \`step\`、\`stage\`（init/baseline_collection/crash_feature_extraction/log_detection/knowledge_retrieval/online_retrieval/deep_analysis/root_cause_validation/report_generation）、\`decision\`、\`observations\`、\`judgment\`、\`tools[]\`、\`status\`（success/failed/partial/skipped）、\`reason\`、\`start_time\`、\`end_time\`；\`tools[]\` 中每项包含 \`tool_name\`、\`title\`、\`status\`、\`duration_ms\`、\`start_time\`、\`end_time\`，必须来自 extract_workflow.py 提取的真实 timeline，禁止编造；简单场景聚合为 5-8 个关键决策步骤即可，不必每轮一个 step。
