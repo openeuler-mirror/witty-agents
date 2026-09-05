@@ -17,12 +17,14 @@ The final report must be a single JSON object with these top-level sections:
 - `report_id`
 - `parse_log_range`
 - `host_base_info`
-- `crash_feature_info`
-- `root_cause_analysis`
-- `diagnosis_repair_result`
+- `crash_feature_info`（含 `log_features`：相关报错 / 重复可疑日志 / 其它异常，每条标注来源文件与行号）
+- `root_cause_analysis`（`conclusion` + `standard_solution` + `temporary_workaround` + 三部分根因：崩溃特征分析 / 崩溃链路分析 / 相关案例分析）
+- `diagnosis_repair_result`（内部知识库 / 社区邮件·会议纪要·Bugzilla / 上游 commit 三组）
 - `workflow_trace`
 
 See the full schema in `schemas/crash-report-schema.json` and an example in `sample-crash-report.json`.
+
+The standalone HTML (`crash-report.html`) presents the report in seven sections: 执行摘要 → 崩溃详情（含日志特征）→ 事件时序图（对象泳道 + 全局变量列）→ 根因分析（三部分）→ 知识库匹配（三组）→ 诊断工作流追踪。
 
 ## Rules for `diagnosis_repair_result`
 
@@ -30,6 +32,15 @@ See the full schema in `schemas/crash-report-schema.json` and an example in `sam
 - `community_kernel_result` is the **byte-for-byte** native JSON array returned by `crash-feature-matcher:query_community_cases`.
 - Do **not** rename fields, rewrite values, summarize, normalize numbers, convert types, or drop fields.
 - Other top-level objects must still conform to `additionalProperties: false`.
+
+## Community Case Retrieval (dual channel)
+
+社区案例两种获取方式，可互为兜底，结果需合并去重：
+
+1. **rag_core 语义检索**：`crash-feature-matcher:query_community_cases`（依赖 RAG 配置），返回 L1/L2/L3 社区案例与一手 evidence / verdict。
+2. **本地源文件 grep**：社区邮件、会议纪要、上游 commit 在本机保留一份本地副本（`$SHENNONG_COMMUNITY_DIR`，默认 `/data/shennong/community/`，子目录 `mails/`、`meetings/`、`commits/`）。当 RAG 未配置或无高置信命中时，用 `rg`/`grep` 以 `rip_function`、`bug_key`、调用栈顶层函数、模块名、内核版本等关键词在本地源文件检索，摘取「关键片段 + 原文网址 + commit 号」作为社区案例。
+
+无论走哪条通道，每条社区案例 / 上游 commit 在报告里都需附：**原文网址（url）、关联 commit、关键片段（解释 + 原文）**。
 
 ## Generation Workflow (Incremental)
 
