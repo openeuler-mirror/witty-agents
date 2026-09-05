@@ -73,7 +73,7 @@
 6. **`root_cause_analysis.json`**（LLM 综合多源证据总结），字段与 report.html 第 1/3/4 章一致：
    - **`conclusion`**（一句自然中文，高度抽象）：概括场景、缺陷大类、结论（推测 or 确认）。剔除实现细节——不出现函数名、寄存器名、标志常量、机制内部细节、地址/偏移。当社区 `verdict=confirmed` 时去掉"推测"、以"（社区补丁已确认）"收尾；否则以"（推测）"结尾。
    - **`standard_solution`**（结构化对象）：`type`（patch/config/upgrade/none）、`claim_tag`、`short`（「要做什么/为什么/怎么做」，通俗、书面、少术语）、`basis`（修复依据，数组 `{kind,title,url,text}`，来自社区邮件/会议纪要/上游 bugfix）、`fixed_in`（修复版本判定）、`patch_list`（数组 `{sha,mode,subject,why,files[],diff}`）、`method_steps`（合入步骤）、`detail`。专业细节收进可展开的补充信息。
-   - **`temporary_workaround`**（结构化对象）：`type`、`summary`、`steps`（命令/操作）、`risk`、`detail`。主述区通俗、书面。
+   - **`temporary_workaround`**（结构化对象）：`type`（`config`=命令行/配置规避、`none`=无有效临时规避方案）、`summary`、`steps`（命令/操作）、`risk`、`detail`。**无有效方案时** `type` 取 `none`、`summary` 写「无」、`steps` 置空。有方案时 `steps` 必须给出**可直接执行**的命令/操作，优先考虑：① 内核/系统配置（`sysctl` / `echo > /proc/sys/...` / 内核启动参数）；② 服务与资源控制（`systemctl set-property <svc> TasksMax=<n>`、`taskset`/`numactl` 绑核、`cgroup` 限流）；③ 换机/分散部署/流量切走（同局点避免同业务集中）；④ 关闭触发特性（`modprobe.blacklist` / 特性开关降级）；⑤ 压概率（降低并发、延长周期、避开触发路径）。`risk` 说明无法根治的原因与回退方式。
    - **`event_scene`**（事件时序图）：`participants`（对象泳道，具体到进程名+PID、CPU 序号、硬件名）、`gvars`/`ginit`（全局变量列：k 变量名、v 值）、`anchor`（时刻锚点，可选）、`events`（每条带 `m` 用户态/内核态/硬件、`from`/`to`、`kind`、`title`、`val`、`full`、`g` 全局变量变化、`dt_ms` 相对崩溃的毫秒偏移）。
    - **`propagation_chain`**（崩溃链路逐跳）：每跳 `{from,to,type,src_dir,file,line,stack,fn_ctx,crash,source_url,detail,evidence,params[]}`。**必须**给出栈帧 ↔ 源码（目录/文件/行号/函数）、关键参数 `params`（`{io,reg,n,formal,v,bad,note}`，异常参数 `bad=true` 标红）。精确行号需 vmlinux 调试信息或本地源码树，`dis -rl` 无法给出行号时注明边界。最后一跳必须写明崩溃爆发的直接原因（含二进制↔源码行对照）。
    - **`reasoning_flow`**（三部分根因，每步 `{stage,stage_name,color,title,short,text,evidence,ev_plain,path_mini,refs[],branch}`）：

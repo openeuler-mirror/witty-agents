@@ -19,7 +19,7 @@
 
 - 一份符合 `DiagnoseReport` 结构的标准化 JSON 诊断报告，最终渲染为自包含的 `crash-report.html`（可直接 file:// 打开）。
 - 报告由七个章节构成：
-  1. **执行摘要**：`结论`（问题是什么 → 要做什么 → 为什么，通俗、书面、少术语）+ `标准解决方案`（`standard_solution` 结构化对象：补丁/升级/配置命令 + 修复依据 + 补丁 diff + 合入步骤）+ `临时规避方案`（`temporary_workaround`：可执行步骤 + 风险 + 回退）；
+  1. **执行摘要**：`结论`（问题是什么 → 要做什么 → 为什么，通俗、书面、少术语）+ `标准解决方案`（`standard_solution` 结构化对象：补丁/升级/配置命令 + 修复依据 + 补丁 diff + 合入步骤）+ `临时规避方案`（`temporary_workaround`：无方案写「无」；有方案给 shell/改配置/换机等可执行步骤 + 风险 + 回退）；
   2. **崩溃详情**：RIP / 签名 / 模块等基础字段 + `日志特征`（`log_features`：相关报错、重复可疑日志、其它异常，每条标注来源文件与行号）；
   3. **事件时序图**：`event_scene`（对象泳道：进程/内核/硬件，携带具体名称、PID、CPU 序号）+ 全局变量列（随事件变化的取值）+ 用户态/内核态/硬件区分；
   4. **根因分析**（`root_cause_analysis`，分三部分）：①崩溃特征分析（含函数栈与寄存器）；②崩溃链路分析（`propagation_chain` 逐跳：栈帧 ↔ 源码 目录/文件/行号/函数，实参/寄存器 ↔ 源码形参，异常参数标红）；③相关案例分析（内部案例 + 社区案例 + 上游 commit + 源码对照 → 结论）；
@@ -128,7 +128,7 @@
 6. \`root_cause_analysis.json\`：**LLM 基于上下文总结生成**。在已有多源证据（基线、崩溃特征、内部/社区案例、日志检测、源码分析、在线 commit/patch/邮件）基础上，产出与 report.html 第 1/3/4 章一致的字段：
    - \`conclusion\`：一句自然中文、高度抽象（场景+缺陷大类+推测/确认），不含函数名/寄存器/地址等实现细节；
    - \`standard_solution\`：结构化对象（type/claim_tag/short「要做什么·为什么·怎么做」/basis/fixed_in/patch_list/method_steps/detail），主述区通俗、书面、少术语；
-   - \`temporary_workaround\`：结构化对象（type/summary/steps/risk/detail）；
+   - \`temporary_workaround\`：结构化对象（type/summary/steps/risk/detail）；无方案 type=none 且 summary 写「无」，有方案 steps 给 shell/改配置/换机等可执行命令；
    - \`event_scene\`：事件时序图（participants 对象泳道、gvars/ginit 全局变量列、anchor、events 含 用户态/内核态/硬件 与 dt_ms）；
    - \`propagation_chain\`：崩溃链路逐跳（from/to/type/src_dir/file/line/stack/fn_ctx/crash/source_url/detail/evidence/params），params 中异常参数 bad=true 标红；
    - \`reasoning_flow\`：三部分根因（①崩溃特征分析含函数栈 ②崩溃链路分析 ③相关案例分析），refs 用 anchor 跳第 5 章案例卡；
