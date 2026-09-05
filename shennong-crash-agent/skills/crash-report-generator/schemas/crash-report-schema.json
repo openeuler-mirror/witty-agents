@@ -20,17 +20,31 @@
       "description": "多维匹配论证：从多个角度论证该案例为何能/不能支撑当前崩溃分析，让报告阅读者看到完整的证据对照而非单点结论。维度固定为 6 个，按维度语义填写；每维度优先拆成 current（本次崩溃）与 reference（参考案例）两列对照，让读者看到证据对照而非单点结论；确实无证据的维度用 verdict=partial 并说明信息缺失，不得省略不写；与案例矛盾的维度必须用 mismatch 诚实标注。",
       "items": {
         "type": "object",
-        "required": ["dimension", "verdict"],
+        "required": [
+          "dimension",
+          "verdict"
+        ],
         "additionalProperties": false,
         "properties": {
           "dimension": {
             "type": "string",
-            "enum": ["feature_data", "kernel_version", "execution_context", "timeline", "mechanism", "fix_scope"],
+            "enum": [
+              "feature_data",
+              "kernel_version",
+              "execution_context",
+              "timeline",
+              "mechanism",
+              "fix_scope"
+            ],
             "description": "论证维度：feature_data=特征数据(RIP/调用栈/bug类型/模块/错误关键词的数据指纹对照)；kernel_version=内核版本(当前版本是否在案例受影响范围、与修复版本的关系)；execution_context=运行上下文(软中断/硬中断/进程上下文、崩溃进程、CPU 场景)；timeline=时间轴(崩溃前异常事件序列与案例现象演进的对照，可引用 event_chain)；mechanism=故障机制(源码级机制是否吻合：fault addr/RIP 偏移/调用链/UAF 窗口/锁逻辑)；fix_scope=修复闭环(补丁修改点是否覆盖崩溃函数或调用路径、版本是否已回合)。"
           },
           "verdict": {
             "type": "string",
-            "enum": ["support", "partial", "mismatch"],
+            "enum": [
+              "support",
+              "partial",
+              "mismatch"
+            ],
             "description": "该维度结论：support=证据支持案例匹配；partial=部分吻合或证据不足需人工确认；mismatch=与案例不符（必须诚实标注并说明差异，如版本不在记录范围、上下文不同）。"
           },
           "current": {
@@ -51,12 +65,20 @@
     "applicability": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["verdict", "method"],
+      "required": [
+        "verdict",
+        "method"
+      ],
       "description": "适用性判断链（仅对给出修复方案的 commit/issue/内部/社区案例填写；mail 类不填）：从'匹配'过渡到'采用'的整段判断，让读者看到该案例的修复方案能否落到当前主机、以及如何落地，避免从'高匹配/已确认'直接跳到'直接采用'。",
       "properties": {
         "verdict": {
           "type": "string",
-          "enum": ["direct_adopt", "adapt", "borrow", "not_applicable"],
+          "enum": [
+            "direct_adopt",
+            "adapt",
+            "borrow",
+            "not_applicable"
+          ],
           "description": "适用性结论（四档，必填）：direct_adopt=可直接采用（前提已满足，修法原样落地）；adapt=需适配后采用（同源但修法需移植/改动）；borrow=仅思路借鉴（方向对但不直接搬修法）；not_applicable=不适用（这边用不上或已修复）。"
         },
         "method": {
@@ -67,7 +89,9 @@
           "type": "array",
           "minItems": 2,
           "maxItems": 5,
-          "items": { "type": "string" },
+          "items": {
+            "type": "string"
+          },
           "description": "适用性判断链（关卡式，2-5 条，按顺序一条一个独立判定并附依据）：先①受影响范围（当前内核是否在 bug 受影响/修复区间、是否已回合），再②补丁基线（修法在哪个基点/版本做的、能否直接回合还是需移植），再③前置一致性（崩溃上下文/模块/配置/触发特性是否一致），最后④验证与风险（修完靠什么确认、有无新风险）。每条写成完整判定句，禁止空话；确实无关的关卡可省略。"
         }
       }
@@ -82,8 +106,7 @@
       "type": "array",
       "description": "List of log sources analyzed (e.g., vmcore, vmcore-dmesg, dmesg).",
       "items": {
-        "type": "string",
-        "enum": ["vmcore", "vmcore-dmesg", "dmesg", "syslog", "kdump", "var-log-messages"]
+        "type": "string"
       }
     },
     "host_base_info": {
@@ -99,15 +122,30 @@
       ],
       "additionalProperties": false,
       "properties": {
-        "host_name": { "type": "string" },
-        "kernel_version": { "type": "string" },
-        "cpu_model": { "type": "string" },
-        "machine_model": { "type": "string" },
-        "cpu_num": { "type": "integer", "minimum": 0 },
-        "memory_size": { "type": "string" },
+        "host_name": {
+          "type": "string"
+        },
+        "kernel_version": {
+          "type": "string"
+        },
+        "cpu_model": {
+          "type": "string"
+        },
+        "machine_model": {
+          "type": "string"
+        },
+        "cpu_num": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "memory_size": {
+          "type": "string"
+        },
         "modules": {
           "type": "array",
-          "items": { "type": "string" }
+          "items": {
+            "type": "string"
+          }
         }
       }
     },
@@ -124,8 +162,7 @@
         "rip_offset",
         "related_modules",
         "call_trace_signature",
-        "call_trace_text",
-        "kernel_version"
+        "call_trace_text"
       ],
       "additionalProperties": false,
       "properties": {
@@ -137,21 +174,39 @@
           "type": "string",
           "description": "Deterministic fingerprint in the form bug_type::module::rip_function::rip_offset."
         },
-        "bug_type": { "type": "string" },
-        "bug_key": { "type": "string" },
-        "bug_summary": { "type": "string" },
-        "rip": { "type": "string" },
-        "rip_function": { "type": "string" },
-        "rip_offset": { "type": "string" },
+        "bug_type": {
+          "type": "string"
+        },
+        "bug_key": {
+          "type": "string"
+        },
+        "bug_summary": {
+          "type": "string"
+        },
+        "rip": {
+          "type": "string"
+        },
+        "rip_function": {
+          "type": "string"
+        },
+        "rip_offset": {
+          "type": "string"
+        },
         "related_modules": {
           "type": "array",
-          "items": { "type": "string" }
+          "items": {
+            "type": "string"
+          }
         },
         "call_trace_signature": {
           "type": "array",
-          "items": { "type": "string" }
+          "items": {
+            "type": "string"
+          }
         },
-        "call_trace_text": { "type": "string" },
+        "call_trace_text": {
+          "type": "string"
+        },
         "call_trace_summary": {
           "type": "object",
           "description": "调用路径的自动解读摘要，让用户不看原始栈也能理解'谁在什么上下文做了什么然后崩了'。",
@@ -164,22 +219,30 @@
             "key_observations": {
               "type": "array",
               "description": "2-5个关键观察点，每个是一句带语义标签的短句。例如：'⚠️ RIP偏移+0x0意味着函数入口第一条指令，入参skb相关指针为NULL'。",
-              "items": { "type": "string" }
+              "items": {
+                "type": "string"
+              }
             }
           }
         },
-        "kernel_version": { "type": "string" },
+        "kernel_version": {
+          "type": "string"
+        },
         "anomaly_features": {
           "type": "object",
           "description": "额外异常特征上下文: repeated_errors, error_keywords, register_values, dump_stack_context, pre_crash_events, cpu_context"
+        },
+        "log_features": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "日志特征（崩溃详情扩展）：related_ref、related_errors[{file,lines,line}]、repeated[{title,count,window,ref,note,examples}]、other[{name,count,span,ref,note,lines}]，每条标注来源文件与行号。"
         }
       }
     },
     "root_cause_analysis": {
       "type": "object",
       "required": [
-        "conclusion",
-        "solution"
+        "conclusion"
       ],
       "additionalProperties": false,
       "properties": {
@@ -192,12 +255,24 @@
           "description": "深度分析思维链（可选，简单问题留空数组）。按人类分析师的推理顺序排列：现象确认(phenomenon) → 日志定位(log_location) → 源码分析(source_analysis) → 崩溃扩散链(propagation) → 根因收敛(root_cause) → 知识库佐证(kb_corroboration) → 修复方案(fix_verification)。每步必须带 stage 标签；同阶段可有多步。fact 是本步推出的结论，evidence 是原始证据，detail 是推理过程。",
           "items": {
             "type": "object",
-            "required": ["stage", "fact", "detail"],
+            "required": [
+              "stage",
+              "fact",
+              "detail"
+            ],
             "additionalProperties": false,
             "properties": {
               "stage": {
                 "type": "string",
-                "enum": ["phenomenon", "log_location", "source_analysis", "propagation", "root_cause", "kb_corroboration", "fix_verification"],
+                "enum": [
+                  "phenomenon",
+                  "log_location",
+                  "source_analysis",
+                  "propagation",
+                  "root_cause",
+                  "kb_corroboration",
+                  "fix_verification"
+                ],
                 "description": "本步所属分析阶段（驱动 HTML 按人类分析师思路分组渲染）：phenomenon=现象确认（崩溃表象：panic 行/RIP/调用栈）；log_location=日志定位（关键日志片段与异常首现点）；source_analysis=源码分析（基于日志位置追踪对应源码逻辑）；propagation=崩溃扩散链（事件发生过程与扩散路径还原：谁污染了谁）；root_cause=根因收敛（源码缺陷的本质机制）；kb_corroboration=知识库佐证（本地案例/社区 commit/patch/邮件讨论交叉验证）；fix_verification=修复方案（必填，分析链最后一步收尾：修复方法/补丁/升级目标 + 是否已修复的版本判定）。"
               },
               "fact": {
@@ -220,7 +295,11 @@
           "description": "事件发生链（时序图，来自 build_analysis_chain 的 event_timeline，LLM 补充 actor）。按时间顺序：异常首现 → 扩散 → 崩溃爆发，渲染为 UML 时序图（参与者泳道+生命线）。",
           "items": {
             "type": "object",
-            "required": ["time", "event", "source"],
+            "required": [
+              "time",
+              "event",
+              "source"
+            ],
             "additionalProperties": false,
             "properties": {
               "time": {
@@ -233,7 +312,11 @@
               },
               "source": {
                 "type": "string",
-                "enum": ["dmesg", "calltrace", "inferred"],
+                "enum": [
+                  "dmesg",
+                  "calltrace",
+                  "inferred"
+                ],
                 "description": "事件来源：dmesg=日志提取，calltrace=调用栈推导，inferred=推理推断"
               },
               "actor": {
@@ -252,8 +335,12 @@
           "description": "崩溃传播链（源码级纵向解读链）。相邻调用栈帧一跳：from→to 函数、关系类型、源码位置，以及 detail 解释这一跳源码侧发生了什么、状态如何变化、为什么异常会传到下一步；最后一跳必须说明为什么在此处爆发崩溃。注意与调用栈分析的分工：调用栈是原始栈帧证据，传播链是源码级因果解读。",
           "items": {
             "type": "object",
-            "required": ["from", "to", "type"],
-            "additionalProperties": false,
+            "required": [
+              "from",
+              "to",
+              "type"
+            ],
+            "additionalProperties": true,
             "properties": {
               "from": {
                 "type": "string",
@@ -265,7 +352,13 @@
               },
               "type": {
                 "type": "string",
-                "enum": ["call", "uaf_free", "data_pollution", "null_deref"],
+                "enum": [
+                  "call",
+                  "uaf_free",
+                  "data_pollution",
+                  "null_deref",
+                  "race"
+                ],
                 "description": "关系类型：call=普通调用，uaf_free=调用方释放了被调用方使用的内存，data_pollution=调用方写入/传递了被污染的数据，null_deref=被调用方解引用空指针"
               },
               "detail": {
@@ -287,6 +380,69 @@
               "evidence": {
                 "type": "string",
                 "description": "原始调用栈帧证据（可选）"
+              },
+              "src_dir": {
+                "type": [
+                  "string",
+                  "boolean",
+                  "array",
+                  "object",
+                  "null"
+                ]
+              },
+              "file": {
+                "type": [
+                  "string",
+                  "boolean",
+                  "array",
+                  "object",
+                  "null"
+                ]
+              },
+              "line": {
+                "type": [
+                  "string",
+                  "boolean",
+                  "array",
+                  "object",
+                  "null"
+                ]
+              },
+              "fn_ctx": {
+                "type": [
+                  "string",
+                  "boolean",
+                  "array",
+                  "object",
+                  "null"
+                ]
+              },
+              "stack": {
+                "type": [
+                  "string",
+                  "boolean",
+                  "array",
+                  "object",
+                  "null"
+                ]
+              },
+              "crash": {
+                "type": [
+                  "string",
+                  "boolean",
+                  "array",
+                  "object",
+                  "null"
+                ]
+              },
+              "params": {
+                "type": [
+                  "string",
+                  "boolean",
+                  "array",
+                  "object",
+                  "null"
+                ]
               }
             }
           }
@@ -296,7 +452,11 @@
           "description": "源码线索（来自 build_analysis_chain.source_clues）。调用栈关键函数的源码路径推断，用于 source_analysis 阶段。",
           "items": {
             "type": "object",
-            "required": ["function", "file_hint", "reason"],
+            "required": [
+              "function",
+              "file_hint",
+              "reason"
+            ],
             "additionalProperties": false,
             "properties": {
               "function": {
@@ -313,7 +473,11 @@
               },
               "reason": {
                 "type": "string",
-                "enum": ["crash_point", "call_trace", "module_pattern"],
+                "enum": [
+                  "crash_point",
+                  "call_trace",
+                  "module_pattern"
+                ],
                 "description": "推断依据：crash_point=崩溃点（高置信），call_trace=调用栈函数，module_pattern=模块命名模式"
               }
             }
@@ -326,12 +490,43 @@
         "workaround": {
           "type": "string",
           "description": "临时规避方案（可选，仅在标准修复落地前存在可信可行业务规避手段时填写）。必须基于当前环境可执行且风险可控，例如：规避触发条件（调整业务配置/内核参数/关闭触发特性）、卸载或禁用问题模块、回退到已验证稳定的内核版本、错峰/流量调度、加强监控值守与应急预案。说明适用条件、预期效果和风险；没有可信规避手段（如纯硬件问题、简单人为触发）时不填。"
+        },
+        "standard_solution": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "标准解决方案（结构化对象）：type(patch/config/upgrade/none)、claim_tag、short(要做什么/为什么/怎么做，通俗少术语)、basis(修复依据)、fixed_in(版本判定)、patch_list(补丁 diff)、method_steps(合入步骤)、commands、detail。"
+        },
+        "temporary_workaround": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "临时规避方案（结构化对象）：type、summary、steps、risk、detail。"
+        },
+        "reasoning_flow": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "description": "根因分析三步推理流（崩溃特征分析/崩溃链路分析/相关案例分析）的步骤数组。"
+        },
+        "deep": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "根因结论（详细）：lead、mechanism、evidence、confidence、scope。"
+        },
+        "event_scene": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "事件时序图场景：participants(对象泳道)、gvars/ginit(全局变量列)、events(带 m 用户态/内核态/硬件、from/to、val、g 变化、dt_ms)、anchor(时刻锚点)。"
         }
       }
     },
     "diagnosis_repair_result": {
       "type": "object",
-      "required": ["community_kernel_result", "internal_kernel_result"],
+      "required": [
+        "community_kernel_result",
+        "internal_kernel_result"
+      ],
       "additionalProperties": false,
       "properties": {
         "community_kernel_result": {
@@ -340,31 +535,89 @@
             "type": "object",
             "additionalProperties": true,
             "properties": {
-              "id": { "type": "string" },
-              "source_url": { "type": "string" },
-              "type": { "type": "string" },
-              "title": { "type": "string" },
-              "kernel_version": { "type": "string" },
-              "phenomenon": { "type": "string" },
-              "root_cause": { "type": "string" },
-              "solution": { "type": "string" },
-              "content": { "type": "string" },
-              "applicability": { "$ref": "#/$defs/applicability" },
-              "match_score": { "type": "string", "enum": ["高", "中", "低"], "description": "匹配等级，由 match_score(0-1) 映射：高≥0.7 / 中0.4-0.69 / 低<0.4" },
-              "match_level": { "type": "string", "enum": ["L1", "L2", "L3"], "description": "匹配层级：L1=指纹精确命中（最强），L2=RAG语义检索+评分确认（中等），L3=扩大召回（弱匹配）" },
-              "verdict": { "type": "string", "enum": ["confirmed", "same_area", "not_relevant", "unverified"], "description": "上游一手证据(diff/commit/issue原文)代码级校验结论：confirmed=补丁直接修复崩溃函数；same_area=同子系统但根因不同；not_relevant=与崩溃路径无关；unverified=原文获取失败未验证" },
+              "id": {
+                "type": "string"
+              },
+              "source_url": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              },
+              "kernel_version": {
+                "type": "string"
+              },
+              "phenomenon": {
+                "type": "string"
+              },
+              "root_cause": {
+                "type": "string"
+              },
+              "solution": {
+                "type": "string"
+              },
+              "content": {
+                "type": "string"
+              },
+              "applicability": {
+                "type": [
+                  "string",
+                  "object"
+                ]
+              },
+              "match_score": {
+                "type": "string",
+                "enum": [
+                  "高",
+                  "中",
+                  "低"
+                ],
+                "description": "匹配等级，由 match_score(0-1) 映射：高≥0.7 / 中0.4-0.69 / 低<0.4"
+              },
+              "match_level": {
+                "type": "string",
+                "enum": [
+                  "L1",
+                  "L2",
+                  "L3"
+                ],
+                "description": "匹配层级：L1=指纹精确命中（最强），L2=RAG语义检索+评分确认（中等），L3=扩大召回（弱匹配）"
+              },
+              "verdict": {
+                "type": "string",
+                "enum": [
+                  "confirmed",
+                  "same_area",
+                  "not_relevant",
+                  "unverified"
+                ],
+                "description": "上游一手证据(diff/commit/issue原文)代码级校验结论：confirmed=补丁直接修复崩溃函数；same_area=同子系统但根因不同；not_relevant=与崩溃路径无关；unverified=原文获取失败未验证"
+              },
               "evidence": {
                 "type": "object",
                 "description": "上游一手证据：verdict_label、reasons(校验论据)、commit_message(commit原文)、issue_title/issue_body_excerpt(issue原文)、touched_files/touched_functions(补丁改动范围)、additions/deletions、source_kind(commit/issue)、html_url、fetched"
               },
-              "source_file": { "type": "string" },
-              "score": { "type": "number", "minimum": 0, "maximum": 100 },
-              "score_details": { "type": "object" },
+              "source_file": {
+                "type": "string"
+              },
+              "score": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 100
+              },
+              "score_details": {
+                "type": "object"
+              },
               "match_reason": {
                 "type": "object",
                 "description": "社区案例匹配原因解释: phenomenon_similarity, rip_consistency, module_match, commit_relevance, commit_summary"
               },
-              "corroboration": { "$ref": "#/$defs/corroboration" }
+              "corroboration": {
+                "$ref": "#/$defs/corroboration"
+              }
             }
           }
         },
@@ -374,28 +627,88 @@
             "type": "object",
             "additionalProperties": true,
             "properties": {
-              "id": { "type": "string" },
-              "source_url": { "type": "string" },
-              "affected_kernel_versions": { "type": "array", "items": { "type": "string" } },
-              "phenomenon": { "type": "string" },
-              "root_cause": { "type": "string" },
-              "solution": { "type": "string" },
-              "hotpatch": { "type": "string" },
-              "applicability": { "$ref": "#/$defs/applicability" },
-              "match_score": { "type": "string", "enum": ["高", "中", "低"], "description": "匹配等级，由 match_score(0-1) 映射：高≥0.7 / 中0.4-0.69 / 低<0.4" },
-              "match_level": { "type": "string", "enum": ["L1", "L2", "L3"], "description": "匹配层级：L1=指纹精确命中（最强），L2=RAG语义检索+评分确认（中等），L3=扩大召回（弱匹配）" },
-              "knowledge_id": { "type": "string" },
-              "history_wiki": { "type": "string" },
-              "kernel_versions": { "type": "array", "items": { "type": "string" } },
-              "bug_summary": { "type": "string" },
-              "bug": { "type": "string" },
-              "call_trace_text": { "type": "string" },
-              "call_trace_signature": { "type": "array", "items": { "type": "string" } },
+              "id": {
+                "type": "string"
+              },
+              "source_url": {
+                "type": "string"
+              },
+              "affected_kernel_versions": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "phenomenon": {
+                "type": "string"
+              },
+              "root_cause": {
+                "type": "string"
+              },
+              "solution": {
+                "type": "string"
+              },
+              "hotpatch": {
+                "type": "string"
+              },
+              "applicability": {
+                "type": [
+                  "string",
+                  "object"
+                ]
+              },
+              "match_score": {
+                "type": "string",
+                "enum": [
+                  "高",
+                  "中",
+                  "低"
+                ],
+                "description": "匹配等级，由 match_score(0-1) 映射：高≥0.7 / 中0.4-0.69 / 低<0.4"
+              },
+              "match_level": {
+                "type": "string",
+                "enum": [
+                  "L1",
+                  "L2",
+                  "L3"
+                ],
+                "description": "匹配层级：L1=指纹精确命中（最强），L2=RAG语义检索+评分确认（中等），L3=扩大召回（弱匹配）"
+              },
+              "knowledge_id": {
+                "type": "string"
+              },
+              "history_wiki": {
+                "type": "string"
+              },
+              "kernel_versions": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "bug_summary": {
+                "type": "string"
+              },
+              "bug": {
+                "type": "string"
+              },
+              "call_trace_text": {
+                "type": "string"
+              },
+              "call_trace_signature": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
               "match_reason": {
                 "type": "object",
                 "description": "内部案例匹配原因解释: rip_match, call_trace_overlap, bug_type_match, module_match, kernel_version_match"
               },
-              "corroboration": { "$ref": "#/$defs/corroboration" }
+              "corroboration": {
+                "$ref": "#/$defs/corroboration"
+              }
             }
           }
         },
@@ -405,39 +718,75 @@
           "items": {
             "type": "object",
             "additionalProperties": true,
-            "required": ["kind", "title"],
+            "required": [
+              "kind",
+              "title"
+            ],
             "properties": {
               "kind": {
                 "type": "string",
-                "enum": ["commit", "issue", "mail"],
+                "enum": [
+                  "commit",
+                  "issue",
+                  "mail"
+                ],
                 "description": "在线资料类型：commit=上游修复提交，issue=上游 issue/PR，mail=邮件列表讨论/补丁邮件"
               },
-              "title": { "type": "string", "description": "标题：commit message 首行 / issue 标题 / 邮件主题" },
-              "url": { "type": "string", "description": "原文链接（commit/issue/邮件的可访问 URL，用于'查看原文'跳转）" },
-              "author": { "type": "string", "description": "作者/发件人（mail 类必填，commit 可选）" },
-              "mail_list": { "type": "string", "description": "邮件列表名（仅 mail 类，如 kernel@openeuler.org）" },
-              "snippet": { "type": "string", "description": "邮件原文摘录（仅 mail 类，来自归档检索的原始片段，报告中折叠备查）" },
+              "title": {
+                "type": "string",
+                "description": "标题：commit message 首行 / issue 标题 / 邮件主题"
+              },
+              "url": {
+                "type": "string",
+                "description": "原文链接（commit/issue/邮件的可访问 URL，用于'查看原文'跳转）"
+              },
+              "author": {
+                "type": "string",
+                "description": "作者/发件人（mail 类必填，commit 可选）"
+              },
+              "mail_list": {
+                "type": "string",
+                "description": "邮件列表名（仅 mail 类，如 kernel@openeuler.org）"
+              },
+              "snippet": {
+                "type": "string",
+                "description": "邮件原文摘录（仅 mail 类，来自归档检索的原始片段，报告中折叠备查）"
+              },
               "discussion_logic": {
                 "type": "array",
                 "description": "【仅 mail 类，LLM 基于 snippet/标题抽象】交流主线：把邮件串的讨论过程抽象为按时间推进的角色化要点，体现社区如何围绕问题展开交流（报告现象 → 提出怀疑 → 给补丁 → 评审反馈 → 修订/求回合）。仅抽象 snippet 中能读到的内容，不得编造对话轮次。",
                 "items": {
                   "type": "object",
-                  "required": ["role", "text"],
+                  "required": [
+                    "role",
+                    "text"
+                  ],
                   "additionalProperties": false,
                   "properties": {
                     "role": {
                       "type": "string",
-                      "enum": ["reporter", "maintainer", "reviewer", "stable_maintainer", "community"],
+                      "enum": [
+                        "reporter",
+                        "maintainer",
+                        "reviewer",
+                        "stable_maintainer",
+                        "community"
+                      ],
                       "description": "该轮发言角色：reporter=问题报告者/复现者；maintainer=子系统维护者/补丁作者；reviewer=评审者（指出问题/提修改意见）；stable_maintainer=稳定版/回合负责人；community=其他社区讨论者。snippet 无法判断发言者时统一用 community。"
                     },
-                    "text": { "type": "string", "description": "该轮交流要点（一句中文）：发言者做了什么/提出了什么/结论是什么。" }
+                    "text": {
+                      "type": "string",
+                      "description": "该轮交流要点（一句中文）：发言者做了什么/提出了什么/结论是什么。"
+                    }
                   }
                 }
               },
               "analysis_reasoning": {
                 "type": "array",
                 "description": "【仅 mail 类，LLM 基于 snippet/标题抽象】社区分析该问题的思路链：他们如何从现象一步步定位到根因（如从 fault address 判断空指针来自哪个参数 → 追溯该指针来源 → 在并发窗口定位释放竞态）。每步是一句中文的排查动作/判断，按推理顺序排列；这是给报告阅读者的'分析方法论'参考。",
-                "items": { "type": "string" }
+                "items": {
+                  "type": "string"
+                }
               },
               "guidance": {
                 "type": "string",
@@ -449,7 +798,12 @@
               },
               "verdict": {
                 "type": "string",
-                "enum": ["confirmed", "same_area", "not_relevant", "unverified"],
+                "enum": [
+                  "confirmed",
+                  "same_area",
+                  "not_relevant",
+                  "unverified"
+                ],
                 "description": "commit/issue 的一手 diff 校验结论（mail 类不填）"
               },
               "evidence": {
@@ -460,23 +814,49 @@
                 "type": "object",
                 "description": "匹配原因（commit/issue 类，含 commit_relevance 补丁相关性论据）"
               },
-              "applicability": { "$ref": "#/$defs/applicability" },
-              "corroboration": { "$ref": "#/$defs/corroboration" },
-              "source_file": { "type": "string", "description": "原始链接（commit/issue 类，与 url 同源）" },
-              "score": { "type": "number", "minimum": 0, "maximum": 100 }
+              "applicability": {
+                "$ref": "#/$defs/applicability"
+              },
+              "corroboration": {
+                "$ref": "#/$defs/corroboration"
+              },
+              "source_file": {
+                "type": "string",
+                "description": "原始链接（commit/issue 类，与 url 同源）"
+              },
+              "score": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 100
+              }
             }
           }
+        },
+        "community_meetings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "description": "社区会议纪要分组（kind=meeting；含 url、excerpt、how、patch_ref、patch_url、verdict 等）。"
         }
       }
     },
     "workflow_trace": {
       "type": "object",
-      "required": ["source", "step_count", "steps"],
+      "required": [
+        "source",
+        "step_count",
+        "steps"
+      ],
       "additionalProperties": false,
       "properties": {
         "source": {
           "type": "string",
-          "enum": ["opencode_export", "manual"],
+          "enum": [
+            "opencode_export",
+            "manual"
+          ],
           "description": "Data source of the trace. 'opencode_export' means extracted from opencode session export; 'manual' means LLM-summarized without export data."
         },
         "session_id": {
@@ -488,16 +868,28 @@
           "minimum": 0,
           "description": "Total diagnosis session duration in milliseconds."
         },
-        "step_count": { "type": "integer", "minimum": 1 },
+        "step_count": {
+          "type": "integer",
+          "minimum": 1
+        },
         "steps": {
           "type": "array",
           "description": "Key decision steps in the diagnosis process. Each step groups related tool calls under one decision point, recording what the agent thought, what it did, what it observed, and the judgment made.",
           "items": {
             "type": "object",
-            "required": ["step", "stage", "decision", "tools", "status", "start_time", "end_time"],
+            "required": [
+              "step",
+              "stage",
+              "decision",
+              "tools",
+              "status"
+            ],
             "additionalProperties": false,
             "properties": {
-              "step": { "type": "integer", "minimum": 1 },
+              "step": {
+                "type": "integer",
+                "minimum": 1
+              },
               "stage": {
                 "type": "string",
                 "enum": [
@@ -509,7 +901,8 @@
                   "online_retrieval",
                   "deep_analysis",
                   "root_cause_validation",
-                  "report_generation"
+                  "report_generation",
+                  "community_retrieval"
                 ],
                 "description": "Which diagnosis stage this step belongs to."
               },
@@ -530,34 +923,91 @@
                 "description": "Tools called in this decision step.",
                 "items": {
                   "type": "object",
-                  "required": ["tool_name", "title", "status", "start_time"],
+                  "required": [
+                    "tool_name",
+                    "title",
+                    "status"
+                  ],
                   "additionalProperties": false,
                   "properties": {
-                    "tool_name": { "type": "string" },
-                    "title": { "type": "string", "description": "Human-readable summary: command, file path, or action." },
+                    "tool_name": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string",
+                      "description": "Human-readable summary: command, file path, or action."
+                    },
                     "status": {
                       "type": "string",
-                      "enum": ["success", "failed", "timeout", "skipped"]
+                      "enum": [
+                        "success",
+                        "failed",
+                        "timeout",
+                        "skipped",
+                        "partial"
+                      ]
                     },
-                    "exit_code": { "type": ["integer", "null"] },
-                    "duration_ms": { "type": ["integer", "null"], "minimum": 0 },
-                    "start_time": { "type": "string", "format": "date-time" },
-                    "end_time": { "type": "string", "format": "date-time" }
+                    "exit_code": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    },
+                    "duration_ms": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ],
+                      "minimum": 0
+                    },
+                    "start_time": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "end_time": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
                   }
                 }
               },
               "status": {
                 "type": "string",
-                "enum": ["success", "failed", "partial", "skipped"]
+                "enum": [
+                  "success",
+                  "failed",
+                  "partial",
+                  "skipped"
+                ]
               },
               "reason": {
                 "type": "string",
                 "description": "Failure reason if status is failed/partial/skipped."
               },
-              "start_time": { "type": "string", "format": "date-time" },
-              "end_time": { "type": "string", "format": "date-time" }
+              "start_time": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "end_time": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "src": {
+                "type": "string",
+                "description": "本步信息来源（现场文件 / 内部知识库 / 社区邮件 / 会议纪要 / Bugzilla / 上游 Git 等）。"
+              },
+              "cross": {
+                "type": "string",
+                "description": "与上文交叉验证说明（引用章节/行号/案例锚点）。"
+              }
             }
-          }
+          },
+          "required": [
+            "step",
+            "stage",
+            "decision",
+            "status"
+          ]
         }
       }
     }

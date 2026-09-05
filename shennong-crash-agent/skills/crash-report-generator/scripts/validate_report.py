@@ -104,7 +104,6 @@ def validate_semantics(report: Any) -> list[str]:
             "rip",
             "rip_function",
             "rip_offset",
-            "kernel_version",
         ):
             value = crash_feature_info.get(key)
             if value is None or (isinstance(value, str) and value == ""):

@@ -17,9 +17,15 @@
 
 ### 你的产出 (Output)
 
-- 一份符合 \`DiagnoseReport\` 结构的标准化 JSON 诊断报告；
-- 报告包含：\`report_id\`、\`parse_log_range\`、\`host_base_info\`、\`crash_feature_info\`、\`root_cause_analysis\`、\`diagnosis_repair_result\`（\`community_kernel_result\` + \`internal_kernel_result\`）、\`workflow_trace\`；
-- 工作流追踪 \`workflow_trace\` 必须记录每轮每个阶段的状态、工具调用明细与失败原因。
+- 一份符合 `DiagnoseReport` 结构的标准化 JSON 诊断报告，最终渲染为自包含的 `crash-report.html`（可直接 file:// 打开）。
+- 报告由七个章节构成：
+  1. **执行摘要**：`结论`（问题是什么 → 要做什么 → 为什么，通俗、书面、少术语）+ `标准解决方案`（`standard_solution` 结构化对象：补丁/升级/配置命令 + 修复依据 + 补丁 diff + 合入步骤）+ `临时规避方案`（`temporary_workaround`：可执行步骤 + 风险 + 回退）；
+  2. **崩溃详情**：RIP / 签名 / 模块等基础字段 + `日志特征`（`log_features`：相关报错、重复可疑日志、其它异常，每条标注来源文件与行号）；
+  3. **事件时序图**：`event_scene`（对象泳道：进程/内核/硬件，携带具体名称、PID、CPU 序号）+ 全局变量列（随事件变化的取值）+ 用户态/内核态/硬件区分；
+  4. **根因分析**（`root_cause_analysis`，分三部分）：①崩溃特征分析（含函数栈与寄存器）；②崩溃链路分析（`propagation_chain` 逐跳：栈帧 ↔ 源码 目录/文件/行号/函数，实参/寄存器 ↔ 源码形参，异常参数标红）；③相关案例分析（内部案例 + 社区案例 + 上游 commit + 源码对照 → 结论）；
+  5. **知识库匹配**（`diagnosis_repair_result`）：内部知识库 / 社区邮件·会议纪要·Bugzilla / 上游 commit 三组，每条附原文网址、关联 commit、关键片段（解释 + 原文）；
+  6. **诊断工作流追踪**（`workflow_trace`）：完整 Agent 分析过程（特征提取 → 假设 → 验证 → 案例匹配 → 试错 → 结论），每步标注来源、交叉验证、工具与耗时；
+  7. 报告元信息：`report_id`、`parse_log_range`。
 
 ---
 
@@ -66,7 +72,9 @@
   - \`{"keyword": "mlx5_core __inet_lookup_established 5.10.0", "limit": 2}\`
   - \`{"keyword": "general protection fault mlx5_core GRO", "limit": 2}\`
   取 **Top 1-2** 命中项；若某轮命中高相似度（\`match_score\` >= 0.85 或现象高度相似），可提前停止。
-- **社区内核案例库**：调用 MCP 工具 \`query_community_cases\`，参数如 \`{"query_text": "...", "kernel_version": "..."}\`，取 **Top 3-4**。
+- **社区内核案例库（两种获取方式，可互为兜底，结果需合并去重）**：
+  - **rag_core 语义检索**：调用 MCP 工具 `query_community_cases`，参数如 `{"query_text": "...", "kernel_version": "..."}`，取 **Top 3-4**（依赖 RAG 配置，返回 L1/L2/L3 社区案例与一手 evidence / verdict）。
+  - **本地源文件 grep**：社区邮件、会议纪要、上游 commit 在本机均保留一份本地副本（目录由环境变量 `SHENNONG_COMMUNITY_DIR` 指定，默认 `/data/shennong/community/`，子目录 `mails/`、`meetings/`、`commits/`）。当 RAG 未配置或语义检索无高置信命中时，用 `rg`/`grep` 以 `rip_function`、`bug_key`、调用栈顶层函数、模块名、内核版本等关键词在本地源文件中检索，摘取「关键片段 + 原文网址 + commit 号」作为社区案例，与 RAG 结果合并去重后进入根因佐证。
 - **历史案例溯源**：调用 MCP 工具 \`query_cases\`，参数如 \`{"knowledge_id": "...", "limit": 5}\`。
 - **在线社区检索（本地不达标自动触发）**：当本地三类检索（\`query_knowledge\` / \`query_cases\` / \`query_community_cases\`）未命中或相关性不足（无 \`match_score\` ≥ 0.7 的"高"匹配、无 confirmed verdict）时，调用 MCP 工具 \`query_upstream_online\` 在线爬取上游社区一手信息作为补充证据：
   - commit / bugfix / patch diff（含修复前后源码上下文对照），用于修复方法获取与修复状态验证（当前内核是否已包含修复）；
@@ -83,6 +91,10 @@
 
 ### 第五步：根因判定与知识图谱验证（先分析、后定因）
 
+- **根因分析按三部分呈现（与 report.html 第 4 章一致）**：
+  1. **崩溃特征分析（含函数栈）**：从 `analyze_crash` 的 `call_trace_text` / `call_trace_signature` 与寄存器还原「在哪条路径、以什么方式崩」（RIP / fault addr / ESR / 关键寄存器）。
+  2. **崩溃链路分析**：把函数栈拆成逐跳扩散链 `propagation_chain`，每一跳必须给出：栈帧符号 ↔ 内核源码（目录/文件/行号/函数）、关键输入输出参数（寄存器值），并明确「实参/寄存器 ↔ 源码形参」的对应关系，异常参数标红；精确源码行需 `vmlinux` 调试信息或本地源码树，`dis -rl <func>` 无法给出行号时注明工具边界。
+  3. **相关案例分析**：以崩溃栈特征为锚，交叉分析 内部知识库案例 → 社区邮件/会议纪要/Bugzilla → 上游 commit → 当前内核对应位置源码逐行对照 → 得出结论（`verdict` 已确认则去掉「推测」标注）。
 - **先分析、后定因**：在输出结论前，按人类分析师的推理顺序组织 \`root_cause_analysis.analysis\` 思维链，每步必须带 \`stage\` 标签，按序推进：\`phenomenon\`（现象确认）→ \`log_location\`（日志定位）→ \`source_analysis\`（结合源码分析）→ \`propagation\`（崩溃扩散链/事件还原）→ \`root_cause\`（根因收敛）→ \`kb_corroboration\`（知识库佐证，用本地/社区案例、commit、patch、邮件佐证推理）→ \`fix_verification\`（修复验证与方案得出）。同阶段可有多步；每步 \`fact\` 为本步推出的中间结论（一句话）、`evidence` 为原始证据片段（可选）、`detail` 为推理过程。简单问题可留空数组。
 - 将内部案例 Top 1-2、社区案例 Top 3-4、三种日志检测产物、本地内核源码（如有）、在线爬取的 commit/patch/邮件（如触发）作为节点构建局部知识图谱；
 - 建立案例根因、修复方案、受影响版本、调用栈、模块、RIP、异常值、源码函数/指针校验/锁操作等节点之间的关联边；
