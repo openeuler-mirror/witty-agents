@@ -95,7 +95,7 @@
   1. **崩溃特征分析（含函数栈）**：从 `analyze_crash` 的 `call_trace_text` / `call_trace_signature` 与寄存器还原「在哪条路径、以什么方式崩」（RIP / fault addr / ESR / 关键寄存器）。
   2. **崩溃链路分析**：把函数栈拆成逐跳扩散链 `propagation_chain`，每一跳必须给出：栈帧符号 ↔ 内核源码（目录/文件/行号/函数）、关键输入输出参数（寄存器值），并明确「实参/寄存器 ↔ 源码形参」的对应关系，异常参数标红；精确源码行需 `vmlinux` 调试信息或本地源码树，`dis -rl <func>` 无法给出行号时注明工具边界。
   3. **相关案例分析**：以崩溃栈特征为锚，交叉分析 内部知识库案例 → 社区邮件/会议纪要/Bugzilla → 上游 commit → 当前内核对应位置源码逐行对照 → 得出结论（`verdict` 已确认则去掉「推测」标注）。
-- **先分析、后定因**：在输出结论前，按人类分析师的推理顺序组织 \`root_cause_analysis.analysis\` 思维链，每步必须带 \`stage\` 标签，按序推进：\`phenomenon\`（现象确认）→ \`log_location\`（日志定位）→ \`source_analysis\`（结合源码分析）→ \`propagation\`（崩溃扩散链/事件还原）→ \`root_cause\`（根因收敛）→ \`kb_corroboration\`（知识库佐证，用本地/社区案例、commit、patch、邮件佐证推理）→ \`fix_verification\`（修复验证与方案得出）。同阶段可有多步；每步 \`fact\` 为本步推出的中间结论（一句话）、`evidence` 为原始证据片段（可选）、`detail` 为推理过程。简单问题可留空数组。
+- **先分析、后定因**：按三部分组织根因推理（对应 report.html 第 4 章）：`reasoning_flow`（①崩溃特征分析含函数栈 ②崩溃链路分析 ③相关案例分析；每步带 stage/stage_name/title/short/text/evidence/refs/branch，refs 用 anchor 跳转第 5 章案例卡）+ `deep`（根因结论：lead/mechanism/evidence/confidence/scope）+ `propagation_chain`（逐跳 栈帧↔源码 目录/文件/行号/函数 + 实参/寄存器↔源码形参）+ `event_scene`（事件时序图）。
 - 将内部案例 Top 1-2、社区案例 Top 3-4、三种日志检测产物、本地内核源码（如有）、在线爬取的 commit/patch/邮件（如触发）作为节点构建局部知识图谱；
 - 建立案例根因、修复方案、受影响版本、调用栈、模块、RIP、异常值、源码函数/指针校验/锁操作等节点之间的关联边；
 - 执行逻辑自洽验证：案例根因是否解释当前日志异常、修复方案涉及的源码改动是否与崩溃现场一致、受影响版本/模块/业务场景是否与主机基线匹配；
@@ -114,7 +114,7 @@
 
 - 内部案例优先于社区案例；
 - 对冲突信息进行消解，生成根因摘要；
-- 输出 root_cause (根因分析, 自然语言段落, 像人话一样连贯叙述, 不分点/不用小标题, 融合问题表现/根因/可能场景/知识库检索 4 方面)、solution (解决方案, 同样自然语言段落, 不分点)。
+- 输出 `conclusion`（结论）、`standard_solution`（标准解决方案，结构化）、`temporary_workaround`（临时规避方案，结构化），并补齐 `deep` / `reasoning_flow` / `propagation_chain` / `event_scene`（字段说明见第 8 步 root_cause_analysis.json）。
 
 ### 第八步：标准化 JSON 报告生成（分片生成、脚本优先、总结补充、合并输出）
 
@@ -125,7 +125,15 @@
 3. \`host_base_info.json\`：**脚本/工具直接生成**。优先调用 \`vmcore-analysis/scripts/01_baseline_info.sh\` 或从 \`analyze_crash\` 的 \`host_features\` 保存，缺失字段补空；
 4. \`crash_feature_info.json\`：**脚本/工具直接生成**。严格取自 \`analyze_crash\` 返回的 \`crash_features\`，保存为 JSON 文件，禁止 LLM 重新总结；
 5. \`diagnosis_repair_result.json\`：**脚本/工具直接生成**。\`internal_kernel_result\` 与 \`community_kernel_result\` 分别取自 \`query_knowledge\` / \`query_cases\` / \`query_community_cases\` 返回数组的原始 JSON，禁止改写； （唯一例外：仅 \`match_score\` 字段转换为匹配等级 高/中/低——\`match_score\`(0-1): 高≥0.7 / 中0.4-0.69 / 低<0.4。）
-6. \`root_cause_analysis.json\`：**LLM 基于上下文总结生成**。在已有多源证据（基线、崩溃特征、内部/社区案例、日志检测、源码分析、在线 commit/patch/邮件）基础上，人工综合生成 analysis（带 stage 标签的分析思维链，按 phenomenon → log_location → source_analysis → propagation → root_cause → kb_corroboration → fix_verification 顺序，简单问题留空数组）与 root_cause (根因分析, 自然语言段落, 像人话一样连贯叙述, 不分点/不用小标题, 融合问题表现/根因分析/可能场景/知识库检索)、solution (解决方案, 同样自然语言段落, 不分点)； 当知识库检索（query_knowledge/query_cases/query_community_cases）均无匹配案例时，**必须**调用 git skill 查询相关 commit/issue 作为根因参考（查询过程记入 root_cause_validation 阶段的 tool_calls），基于检索结果输出 root_cause 的「根因分析」部分；若 git skill 也无相关结果，则标注为「推测」给出根因；solution 始终必填，按证据强度分层：(a) 有匹配案例 → 采用其 solution；(b) 无匹配但 git skill 有 commit/issue → 基于社区 commit 给参考性修复建议，标注「参考社区 commit xxx」；(c) git skill 也无结果 → 写「处置建议」而非修复方案：临时缓解 + 信息收集 + 下一步排查方向，不强行推测修复代码。
+6. \`root_cause_analysis.json\`：**LLM 基于上下文总结生成**。在已有多源证据（基线、崩溃特征、内部/社区案例、日志检测、源码分析、在线 commit/patch/邮件）基础上，产出与 report.html 第 1/3/4 章一致的字段：
+   - \`conclusion\`：一句自然中文、高度抽象（场景+缺陷大类+推测/确认），不含函数名/寄存器/地址等实现细节；
+   - \`standard_solution\`：结构化对象（type/claim_tag/short「要做什么·为什么·怎么做」/basis/fixed_in/patch_list/method_steps/detail），主述区通俗、书面、少术语；
+   - \`temporary_workaround\`：结构化对象（type/summary/steps/risk/detail）；
+   - \`event_scene\`：事件时序图（participants 对象泳道、gvars/ginit 全局变量列、anchor、events 含 用户态/内核态/硬件 与 dt_ms）；
+   - \`propagation_chain\`：崩溃链路逐跳（from/to/type/src_dir/file/line/stack/fn_ctx/crash/source_url/detail/evidence/params），params 中异常参数 bad=true 标红；
+   - \`reasoning_flow\`：三部分根因（①崩溃特征分析含函数栈 ②崩溃链路分析 ③相关案例分析），refs 用 anchor 跳第 5 章案例卡；
+   - \`deep\`：根因结论详细（lead/mechanism/evidence/confidence/scope）。
+   当知识库检索（query_knowledge/query_cases/query_community_cases）均无匹配案例时，**必须**调用 git skill 查询相关 commit/issue 作为根因参考（查询过程记入 root_cause_validation 阶段的 tool_calls）；若 git skill 也无相关结果，则标注「推测」。
 7. \`workflow_trace.json\`：**基于 opencode 真实会话数据 + LLM 语义摘要**。先运行 \`scripts/extract_workflow.py\` 提取当前会话的真实时间线（opencode export 获取工具调用、时间戳、耗时、状态、reasoning），再读 timeline.json 把连续相关 turns 聚合为 5-8 个关键决策 steps，每个 step 写 decision/observations/judgment/tools/status/reason/start_time/end_time；tools 必须从 timeline 原样复制（tool_name/title/status/duration_ms/timestamps），禁止编造工具、状态或时间戳。若脚本失败则 source=manual 并注明。
 
 每生成一个分片，立即检查其是否符合 schema（可调用 \`crash-report-generator\` Skill 或 \`validate_report.py\`）；发现错误立即修正，确保每片正确后再进入下一片。
