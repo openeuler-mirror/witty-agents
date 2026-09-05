@@ -18,6 +18,7 @@
    - 只把 `match_score`（0-1 浮点）换算成展示标签：高 ≥ 0.7 / 中 0.4–0.69 / 低 < 0.4（不要用原始 `score`，那是 0-100）。
    - `match_level`（L1/L2/L3）与 `verdict`（confirmed/same_area/not_relevant/unverified）由匹配工具计算，原样复制，不得覆盖。
    - 原样复制 `evidence`（commit message 摘录、issue 摘录、改动文件、校验论据），它驱动「上游一手证据」卡片。
+   - **未命中即留空，禁止幻想**：`internal_kernel_result` / `community_kernel_result` / `community_meetings` / `online_result` 每个分类只有在对应工具**真实返回匹配**时才填；未检索到就写空数组 `[]`，不得编造标题、url、snippet、verdict、evidence 等任何内容。空分类在报告里会显示「未检索到…」，属正常状态，不要为了填满而虚构条目。
 
 ### 社区案例检索（双通道，可互为兜底，结果合并去重）
 
@@ -79,9 +80,9 @@
    - **`reasoning_flow`**（三部分根因，每步 `{stage,stage_name,color,title,short,text,evidence,ev_plain,path_mini,refs[],branch}`）：
      1. **崩溃特征分析（含函数栈）**：`stage` 用 `stack`/`hypothesis`——从调用栈、寄存器还原"在哪条路径、以什么方式崩"。
      2. **崩溃链路分析**：`stage=path_analysis`，`path_mini` 引用 `propagation_chain` 呈现逐跳。
-     3. **相关案例分析**：`stage` 用 `internal`/`community`/`commit`/`source_compare`/`conclusion`——内部案例 → 社区邮件/会议纪要/Bugzilla → 上游 commit → 当前内核对应位置源码逐行对照 → 结论。每步 `refs` 用 `anchor`（`kb-internal`/`kb-mail`/`kb-meeting`/`kb-bugzilla`/`kb-commit`）跳转到第 5 章对应卡片。
+     3. **相关案例分析**：`stage` 用 `internal`/`community`/`commit`/`source_compare`/`conclusion`——内部案例 → 社区邮件/会议纪要/Bugzilla → 上游 commit → 当前内核对应位置源码逐行对照 → 结论。每步 `refs` 用 `anchor`（`kb-internal`/`kb-mail`/`kb-meeting`/`kb-bugzilla`/`kb-commit`）跳转到第 5 章对应卡片。**未命中的分类直接跳过，不虚构对应案例与 anchor。**
    - **`deep`**（根因结论详细）：`lead`（一句话根因）、`mechanism`（触发链条）、`evidence`（证据要点数组）、`confidence`（置信度）、`scope`（触发面）。
-7. **`diagnosis_repair_result.json`**（脚本/工具生成）：复用第 6 步开头的匹配工具响应，逐字节复制；社区案例走双通道（rag_core / 本地 grep+find，取 Top 3-4）。
+7. **`diagnosis_repair_result.json`**（脚本/工具生成）：复用第 6 步开头的匹配工具响应，逐字节复制；社区案例走双通道（rag_core / 本地 grep+find，取 Top 3-4）。**未命中的分类写空数组 `[]`，严禁编造/幻想条目**（内部案例、社区邮件、会议纪要、Bugzilla、上游 commit 各自独立：有命中才填，没有就空）。
 8. **`workflow_trace.json`**（基于真实会话数据，非记忆）：
    a. 运行 `scripts/extract_workflow.py` 提取真实时间线（`opencode export`）。
    b. 读 `timeline.json`，把连续相关轮次折叠成 **5–8 个关键决策步骤**。每步填：`step`、`stage`（init/baseline_collection/crash_feature_extraction/log_detection/knowledge_retrieval/community_retrieval/online_retrieval/deep_analysis/root_cause_validation/report_generation）、`decision`、`observations`、`judgment`、`src`（本步信息来源：现场文件/内部知识库/社区邮件/会议纪要/Bugzilla/上游 Git 等）、`cross`（与上文交叉验证：引用章节/行号/案例锚点）、`tools`（真实工具条目 `tool_name/title/status/duration_ms/…`）、`status`、`reason`、`start_time`/`end_time`。

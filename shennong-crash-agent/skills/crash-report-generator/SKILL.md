@@ -31,6 +31,7 @@ allowed-tools: Bash(python3:*) Bash(pip:*) Bash(cat:*) Bash(ls:*) Bash(rg:*) Bas
 - `internal_kernel_result` 必须是 `crash-feature-matcher:query_knowledge` / `query_cases` 返回的原生 JSON 数组的**逐字节**复制。
 - `community_kernel_result` 必须是 `crash-feature-matcher:query_community_cases` 返回的原生 JSON 数组的**逐字节**复制。
 - **不得**重命名字段、改写值、重新总结、归一化数值、转换类型或删除字段。
+- **未命中即留空，禁止幻想**：内部案例 / 社区邮件 / 会议纪要 / Bugzilla / 上游 commit 每个分类只有工具真实返回匹配时才填，未检索到就写空数组 `[]`，不得编造标题、url、snippet、verdict、evidence 等任何内容（空分类显示「未检索到…」属正常）。
 - 其余顶层对象仍须满足 `additionalProperties: false`。
 
 ## 社区案例检索（双通道）
@@ -57,7 +58,7 @@ allowed-tools: Bash(python3:*) Bash(pip:*) Bash(cat:*) Bash(ls:*) Bash(rg:*) Bas
    - **`temporary_workaround`**（结构化对象）：`type`（config=命令行/配置规避、none=无方案）/ `summary` / `steps` / `risk` / `detail`。无有效方案时 `type=none`、`summary` 写「无」；有方案时 `steps` 优先给 shell 命令、改内核/服务配置、换机/分散部署等可落地手段。
    - **`event_scene`**（事件时序图）：`participants`（对象泳道，具体到进程名+PID、CPU 序号、硬件名）/ `gvars`+`ginit`（全局变量列）/ `anchor` / `events`（含 用户态/内核态/硬件、`from`/`to`、`g` 全局变量变化、`dt_ms`）。
    - **`propagation_chain`**（崩溃链路逐跳）：每跳给 栈帧↔源码（`src_dir`/`file`/`line`/`fn_ctx`/`stack`）、关键参数 `params`（`io`/`reg`/`formal`/`v`/`bad`，异常参数标红）、`detail`/`evidence`；最后一跳写明二进制↔源码行对照。
-   - **`reasoning_flow`**（三部分根因）：①崩溃特征分析（含函数栈）②崩溃链路分析 ③相关案例分析（内部案例 → 社区邮件/会议纪要/Bugzilla → 上游 commit → 源码对照 → 结论）；每步 `refs` 用 `anchor`（kb-internal/kb-mail/kb-meeting/kb-bugzilla/kb-commit）跳转到第 5 章对应案例卡。
+   - **`reasoning_flow`**（三部分根因）：①崩溃特征分析（含函数栈）②崩溃链路分析 ③相关案例分析（内部案例 → 社区邮件/会议纪要/Bugzilla → 上游 commit → 源码对照 → 结论）；每步 `refs` 用 `anchor`（kb-internal/kb-mail/kb-meeting/kb-bugzilla/kb-commit）跳转到第 5 章对应案例卡。**未命中的分类直接跳过，不虚构对应案例与 anchor。**
    - **`deep`**（根因结论详细）：`lead` / `mechanism` / `evidence` / `confidence` / `scope`。
     完整规则与示例见 `prompts/generate-report.md`。
 7. **工作流追踪** — 基于**真实会话数据**生成 `workflow_trace.json`：
