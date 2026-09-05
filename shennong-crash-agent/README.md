@@ -2,6 +2,23 @@
 
 > 一个最小化的 OpenCode 插件，仅用于 Linux 内核宕机诊断。
 
+## 目录
+
+- [范围](#范围)
+- [诊断产出（报告结构）](#诊断产出报告结构)
+- [快速开始](#快速开始)
+- [安装](#安装)
+  - [源码构建与本地安装（开发者）](#源码构建与本地安装开发者)
+- [注册到 OpenCode](#注册到-opencode)
+- [验证](#验证)
+- [使用示例](#使用示例)
+- [MCP 与 Skill 配置](#mcp-与-skill-配置)
+- [环境变量](#环境变量)
+- [online / offline 变体打包](#online--offline-变体打包)
+- [目录结构](#目录结构)
+- [版本](#版本)
+- [常见问题](#常见问题)
+
 ## 范围
 
 只保留以下核心能力：
@@ -15,6 +32,34 @@
 - **辅助 Skill**：`gitcode` — 按需查询 GitCode 上的仓库、议题、PR 和提交。
 
 神农作为独立 Agent，直接调用 crash-feature-matcher 与 witty-log-detection 两个 MCP 完成诊断。
+
+## 诊断产出（报告结构）
+
+神农基于现场数据（vmcore / vmcore-dmesg / dmesg / sosreport 等）输出一份符合
+`DiagnoseReport` 结构的标准化 JSON 报告，并渲染为可直接 `file://` 打开的自包含
+`crash-report.html`。报告分七个章节：
+
+1. **执行摘要**：`conclusion`（发生了什么 → 为什么 → 与业务/硬件是否有关）+ `standard_solution`（补丁/升级/配置 + 修复依据 + 补丁 diff + 合入步骤 + 回退/验证方案）+ `temporary_workaround`（临时规避）；
+2. **崩溃详情**：RIP / 签名 / 模块等基础字段 + `log_features` 日志特征（相关报错 / 重复日志 / 其它异常，各标相关性 `强相关`/`一般相关`/`弱相关`）；
+3. **事件时序图**：`event_scene` 对象泳道（进程 / 内核 / 硬件）+ 全局变量列（随事件变化）；
+4. **根因分析**（三部分）：① 崩溃特征分析（含函数栈）② 崩溃链路分析（`propagation_chain` 逐跳，栈帧↔源码、寄存器值↔形参）③ 相关案例分析（内部 / 社区 / 上游 commit + 源码对照 → 结论）；
+5. **知识库匹配**：`diagnosis_repair_result` 内部知识库 / 社区邮件·会议纪要·Bugzilla / 上游 commit 三组（各附原文网址、关联 commit、关键片段，并标相关度 `强相关`/`部分相关`/`弱相关`）；
+6. **诊断工作流追踪**：`workflow_trace` 完整分析过程（工具调用、耗时、状态）；
+7. **报告元信息**：`report_id`、`parse_log_range`。
+
+诊断约束与字段规范见 `agent.md` 与 `skills/crash-report-generator/`（含 JSON Schema
+`schemas/crash-report-schema.json`）；报告生成后必须通过 `validate_report.py` 强校验。
+
+## 快速开始
+
+已发布的 npm 包最短三步（详见「安装」）：
+
+```bash
+npm install @openeuler/agent-shennong-crash-online   # ① 装包
+npm exec --offline -- shennong-setup install         # ② 装 Python 依赖
+npm exec --offline -- shennong-configure             # ③ 登记 OpenCode 插件 + MCP
+# 重启 opencode 后：@ shennong <vmcore 路径 / 日志路径>
+```
 
 ## 安装
 
@@ -375,6 +420,21 @@ export SHENNONG_LLM_MODEL="your-model"
 - 继续使用 `analyze_crash` 提取崩溃特征；
 - 跳过内部/社区案例检索；
 - 更多依赖 `witty-log-detection` 与 `vmcore-analysis` 回退模式完成诊断。
+
+### 4. `crash-report-generator` 报告生成 Skill
+
+标准化的 JSON 报告生成 Skill，定义 `DiagnoseReport` 的 JSON Schema 与生成提示词。
+产物为 `report.json` + 自包含的 `crash-report.html`（可直接 `file://` 打开），
+报告结构与字段规范见「诊断产出（报告结构）」一节。核心文件：
+
+- `schemas/crash-report-schema.json`：报告 Schema（强校验用）；
+- `prompts/generate-report.md`：报告生成提示词；
+- `scripts/validate_report.py` / `combine_report.py` / `generate_report_html.py`：校验 / 合并 / 渲染脚本。
+
+### 5. `gitcode` 辅助 Skill
+
+按需查询 GitCode 平台上的仓库、议题、PR、提交等数据的辅助 Skill，仅在诊断过程中
+需要查询相关 commit / issue 时使用。
 
 ## 环境变量
 
