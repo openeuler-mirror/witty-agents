@@ -158,17 +158,124 @@ npm exec --offline -- shennong-configure status --target=dsh
 shennong-configure
 ```
 
-### 直接引用源码目录（开发调试）
+### 源码构建与本地安装（开发者）
+
+本节给出「改源码 → 构建 → 本地安装 → 验证」的完整流程，适用于二次开发后在本地跑通验证。
+三步 npm 安装（install → setup → configure）的语义与上面「安装」一节一致，这里重点讲**从源码构建**以及**踩坑点**。
+
+#### 0. 前置条件
+
+- **Node.js ≥ 20**（`npm run build` / `pack:*` 脚本运行依赖）
+- **Python 3.11 或 3.12**（`shennong-setup install` 用它创建 venv；3.13 暂不放行）
+- **Git LFS**（构建 **offline** 包才需要，用于拉取 `*.pdiparams` OCR 模型；online 包可跳过）
+- **opencode** 已安装、可启动
+
+#### 1. 拉取源码
+
+```bash
+git clone <仓库地址> shennong-crash-agent
+cd shennong-crash-agent
+git lfs pull          # 仅 offline 包需要；online 包跳过
+```
+
+#### 2. 构建 npm 包
 
 ```bash
 cd shennong-crash-agent
-npm install
-npm run build
+npm install           # 安装构建/校验依赖
+npm run build         # 校验 dist/index.js：语法、导出、Shennong Agent 注册结果
+npm run pack:online   # 生成 artifacts/openeuler-agent-shennong-crash-<version>.tgz
 ```
 
-当前仓库以已提交的 `dist/index.js` 作为发布入口，不包含 TypeScript 源码生成链。
-`npm run build` 会校验该预构建入口的语法、导出和 Shennong Agent 注册结果；
-在线/离线 npm 包则由 `pack:online` / `pack:offline` 生成。
+> 仓库以**已提交的预构建 `dist/index.js` 作为发布入口，不含 TypeScript 源码生成链**。
+> `npm run build`（`scripts/validate-dist.mjs`）只做校验、不重新生成 `dist/index.js`。
+> `pack:offline` 会额外为当前 Python/OS/CPU 构建并携带 wheels，见「online / offline 变体打包」一节。
+
+#### 3. 安装到本地 consumer 项目
+
+```bash
+mkdir -p /tmp/shennong-consumer && cd /tmp/shennong-consumer
+# 写一个最小 package.json，依赖指向刚打的 tgz
+cat > package.json <<'EOF'
+{"name":"shennong-consumer","private":true,"dependencies":{"@openeuler/agent-shennong-crash":"file:/path/to/shennong-crash-agent/artifacts/openeuler-agent-shennong-crash-<version>.tgz"}}
+EOF
+npm install
+```
+
+#### 4. 安装 Python 依赖（创建 venv）
+
+```bash
+cd node_modules/@openeuler/agent-shennong-crash
+npm exec --offline -- shennong-setup install
+npm exec --offline -- shennong-setup status   # 确认 crash-feature-matcher / witty-log-detection / crash-report-generator 三个组件 ready
+```
+
+#### 5. 登记 OpenCode 插件 + MCP
+
+```bash
+npm exec --offline -- shennong-configure install --target=opencode
+```
+
+#### 6. 重启 opencode 验证
+
+```bash
+opencode agent list   # 应能看到 shennong (primary)
+```
+
+改完配置 / 重装后**必须重启 opencode**（旧配置和插件会被缓存）。
+
+---
+
+#### 源码构建安装踩坑清单（重要）
+
+1. **改了源码必须「重新打包 + 重装」，且 npm 有缓存会误判「up to date」**
+   `pack:online` 打出的 tgz 内容变了、但版本号没变时，npm 对 `file:` 依赖按缓存命中，
+   会返回 `up to date` 而**不重新解包**。重装时要显式清掉：
+   ```bash
+   cd /tmp/shennong-consumer
+   rm -rf node_modules/@openeuler/agent-shennong-crash package-lock.json
+   npm install          # 必要时加 npm cache clean --force
+   ```
+
+2. **版本号变了，consumer 的 `file:` 路径要同步改**
+   `pack:online` 生成的 tgz 文件名带版本号（`openeuler-agent-shennong-crash-<version>.tgz`），
+   改了 `package.json` 里的 `version` 后，consumer 的依赖路径要跟着改成新文件名，否则装的是旧包。
+
+3. **skill 实际加载自 `~/.config/opencode/skills/`，不是安装包里的 `skills/`**
+   opencode 里同名 skill 会解析到用户级 `~/.config/opencode/skills/<skill>/` 的**副本**，
+   而不是 `node_modules/@openeuler/agent-shennong-crash/skills/`。改了 skill
+   （如 `crash-report-generator` 的 SKILL.md / prompt / schema / viewer 模板）后，
+   **重装 npm 包并不会自动更新这个副本**，必须手动同步，否则报告生成规则还是旧的：
+   ```bash
+   rsync -a --delete --exclude '__pycache__' --exclude '.venv' \
+     shennong-crash-agent/skills/crash-report-generator/ \
+     ~/.config/opencode/skills/crash-report-generator/
+   ```
+
+4. **agent 的 prompt 内嵌在 `dist/index.js`，不是直接读 `agent.md`**
+   插件运行时用 `dist/index.js` 里内嵌的 `SHENNONG_SYSTEM_PROMPT`。当前实现里
+   `getShennongPrompt` 会**优先读包内 `agent.md`**（读不到才回退内嵌），所以改
+   `agent.md` 后重新打包即可生效；但如果改动了 `dist/index.js` 自身的 prompt 加载逻辑，
+   要确认它仍能正确加载 `agent.md`。
+
+5. **OCR 模型是 Git LFS（仅 offline 包）**
+   `*.pdiparams` 走 Git LFS，构建 **offline** 包前必须 `git lfs pull`，否则构建脚本会
+   拒绝残留的 LFS pointer。online 包不携带模型，`setup install` 时从 PaddleOCR 官方源下载。
+
+6. **venv 缓存在包外，重装 npm 包不会重建**
+   Python 环境在 `~/.cache/witty-agents/<package>/venvs/`（可用 `SHENNONG_VENV_CACHE`
+   覆盖）。只有 Python 依赖变化时才需要重跑 `shennong-setup install`（`--force` 会重建，
+   失败时回退到原有可用环境）；改纯文档/schema/viewer 不触发重建。
+
+7. **SSE 服务端口被旧进程占用**
+   witty-log-detection 用 `127.0.0.1:12144`。旧安装残留的进程会占住端口，setup 会
+   WARNING 并复用，可能行为异常——先 `shennong-setup stop` 或杀掉残留进程再重装。
+
+8. **报告有 Schema 强校验，缺字段会直接 FAILED**
+   最终 `report.json` 必须通过 `validate_report.py`（jsonschema 强校验）。例如
+   `root_cause_analysis` 现在**强制要求** `conclusion`/`event_scene`/`propagation_chain`/
+   `reasoning_flow`/`deep`，缺了会报 `'event_scene' is a required property`，
+   生成报告时要保证这些章节齐备。
 
 ## 注册到 OpenCode
 
