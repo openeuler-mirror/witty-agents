@@ -275,7 +275,11 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "conclusion"
+        "conclusion",
+        "event_scene",
+        "propagation_chain",
+        "reasoning_flow",
+        "deep"
       ],
       "properties": {
         "conclusion": {
