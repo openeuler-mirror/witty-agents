@@ -51,13 +51,15 @@ allowed-tools: Bash(python3:*) Bash(pip:*) Bash(cat:*) Bash(ls:*) Bash(rg:*) Bas
 3. **崩溃特征提取** — 用 `crash-feature-matcher` MCP 工具（`analyze_crash`、`query_knowledge`、`query_cases`）生成 `crash_feature_info.json`。若 `crash_time` 不是合法 ISO 8601 时间戳，则从日志推导或填 `"unknown"`，不得留空。该节应由**脚本/工具生成**，不得由 LLM 改写。
 4. **日志异常检测** — 用 `witty-log-detection` MCP 工具（`create_log_parse_task`、`get_task_result`）补充证据。
 5. **社区案例检索** — 用 `crash-feature-matcher:query_community_cases` 生成 `diagnosis_repair_result.json`。内部与社区案例须与原 JSON 逐字节一致，**仅** `match_score` 例外：转换成匹配等级 高/中/低（`match_score`(0-1)：高≥0.7 / 中0.4-0.69 / 低<0.4）。该节应由**脚本/工具生成**，不得由 LLM 改写。
-6. **根因验证** — 在核验调用栈完整性、模块一致性、源码映射后生成 `root_cause_analysis.json`；若不完整则再跑一轮。该节应由 **LLM 综合所有证据总结**，产出以下字段：
-   - **`conclusion`**（一句自然中文，高度抽象）：概括场景、缺陷大类与结论（是推测还是真实缺陷、还是预期动作）。**剔除**所有实现细节：不出现函数名、寄存器名、标志常量、机制内部细节（如"exception table"、"single-step"、"fixup"、"NMI"、"GRO"），不出现具体地址/偏移/路径。示例：
-     - 简单（sysrq）："当前主机发生内核 panic，通过日志及调用栈表明，该故障由人工通过 sysrq 手动触发，并非内核缺陷。"
-     - 复杂："当前主机在高网络负载下发生内核崩溃，通过调用栈定位到网卡驱动收包路径，存在内存释放后重用的并发竞态（推测）。"
-   - **`analysis`**（有序数组，可选；简单问题留空 `[]`）：复杂问题给出**推理链**（3–7 步），模仿人类分析师的思路，而非一坨文字或一堆孤立事实。每一步 `{ stage, fact, evidence?, detail }` 是推理的一个环节：`stage`（必填，枚举）标注分析阶段并驱动 HTML 叙事分组，顺序为：`phenomenon`（崩溃表象：panic 日志/RIP/**调用栈**，栈是第一份证据）→ `log_location`（关键日志片段、异常首现点、dmesg 窗口）→ `source_analysis`（定位处对应源码逻辑）→ `propagation`（事件序列与污染扩散链：谁污染了谁）→ `root_cause`（缺陷本质机制）→ `kb_corroboration`（内部知识库命中 + 社区 verdict + 邮件讨论佐证）→ `fix_verification`（是否已修复的版本判定 + 修复方法）。同阶段可有多步；阶段仅在确实不适用时才跳过。`fact` 是本步证明的中间结论（是论断而非观察）；`evidence`（可选）是原始支撑数据——关键调用栈帧（3–6 帧，一行一帧）、寄存器值、dmesg 行、反汇编、结构体字段、源码行、diff 片段，用等宽字体、以换行分隔；`detail` 是推理本身（"因为看到 <evidence>，推出 <fact>，进而检查 <下一步焦点>"）。每一步回答上一步提出的问题。所有机制细节/函数名/寄存器值都放这里——不要放进 `conclusion`。
-   - **`solution`**（始终必填）：简单问题——一句处置说明；复杂问题——按证据强度分层：(a) 内部/社区命中 → 采用案例的 solution；(b) git 技能查到 commit/issue → 给出参考修复并标注"参考社区 commit xxx"；(c) 都无 → 给规避建议（临时缓解、待收集信息、下一步方向），不臆造修复代码。
-   完整规则与示例见 `prompts/generate-report.md`。
+6. **根因验证** — 在核验调用栈完整性、模块一致性、源码映射后生成 `root_cause_analysis.json`；若不完整则再跑一轮。该节应由 **LLM 综合所有证据总结**，产出与 report.html 第 1/3/4 章一致的字段：
+   - **`conclusion`**（一句自然中文，高度抽象）：概括场景、缺陷大类与结论（推测 or 确认）。剔除函数名/寄存器/标志常量/地址等实现细节；社区 `verdict=confirmed` 时去掉"推测"、以"（社区补丁已确认）"收尾，否则以"（推测）"结尾。
+   - **`standard_solution`**（结构化对象）：`type` / `claim_tag` / `short`（要做什么·为什么·怎么做，通俗、书面、少术语）/ `basis`（修复依据）/ `fixed_in`（版本判定）/ `patch_list`（补丁 diff）/ `method_steps`（合入步骤）/ `detail`。
+   - **`temporary_workaround`**（结构化对象）：`type` / `summary` / `steps` / `risk` / `detail`。
+   - **`event_scene`**（事件时序图）：`participants`（对象泳道，具体到进程名+PID、CPU 序号、硬件名）/ `gvars`+`ginit`（全局变量列）/ `anchor` / `events`（含 用户态/内核态/硬件、`from`/`to`、`g` 全局变量变化、`dt_ms`）。
+   - **`propagation_chain`**（崩溃链路逐跳）：每跳给 栈帧↔源码（`src_dir`/`file`/`line`/`fn_ctx`/`stack`）、关键参数 `params`（`io`/`reg`/`formal`/`v`/`bad`，异常参数标红）、`detail`/`evidence`；最后一跳写明二进制↔源码行对照。
+   - **`reasoning_flow`**（三部分根因）：①崩溃特征分析（含函数栈）②崩溃链路分析 ③相关案例分析（内部案例 → 社区邮件/会议纪要/Bugzilla → 上游 commit → 源码对照 → 结论）；每步 `refs` 用 `anchor`（kb-internal/kb-mail/kb-meeting/kb-bugzilla/kb-commit）跳转到第 5 章对应案例卡。
+   - **`deep`**（根因结论详细）：`lead` / `mechanism` / `evidence` / `confidence` / `scope`。
+    完整规则与示例见 `prompts/generate-report.md`。
 7. **工作流追踪** — 基于**真实会话数据**生成 `workflow_trace.json`：
    a. 运行 `scripts/extract_workflow.py` 提取当前 opencode 会话的执行时间线（用 `opencode export <sessionID>` 获取真实工具调用、时间戳、耗时、状态与 agent 的推理链）。
    b. 读取提取出的 `timeline.json`，把连续相关的轮次聚合成 **5–8 个关键决策步骤**（不是每轮一步，也不是一个大杂烩阶段）。每步填写：`stage`（init/baseline_collection/crash_feature_extraction/log_detection/knowledge_retrieval/root_cause_validation/report_generation）、`decision`（决定了什么及为什么，从推理中提炼）、`observations`（工具输出的关键发现）、`judgment`（可选：由观察得出的结论及如何引向下一步）、`tools`（从时间线逐字复制真实工具条目——名称、标题、状态、耗时、起止时间戳；**不得编造工具、状态或时间戳**）、`status`（success/failed/partial/skipped）、`reason`（仅失败时）、`start_time`/`end_time`（取组内最早/最晚工具的时间）。
