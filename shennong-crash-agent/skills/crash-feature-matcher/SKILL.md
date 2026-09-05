@@ -382,6 +382,16 @@ See `src/crash_matcher/bug_types.py:BUG_KEY_TO_TYPE` for the complete mapping.
 
 ---
 
+## Community Retrieval Channels (rag_core / local grep)
+
+社区案例有两条获取通道，可互为兜底，结果需合并去重：
+
+1. **rag_core 语义检索（默认）**：`query_community_cases` 依赖 euler-copilot-rag（`[rag] base_url`）。按 `query_text` + `kernel_version` 走 L1/L2/L3 语义召回 + kernel_version 逻辑过滤 + 一手 diff verdict；RAG 未配置或无高置信命中时自动触发在线兜底（REST commits API + 邮件档案）。
+
+2. **本地源文件 grep（RAG 不可用 / 命中不足时）**：社区邮件、会议纪要、上游 commit 在本机保留一份本地副本，目录由环境变量 `SHENNONG_COMMUNITY_DIR` 指定（默认 `/data/shennong/community/`，子目录 `mails/`、`meetings/`、`commits/`）。用 `rg`/`grep` 以 `rip_function`、`bug_key`、调用栈顶层函数、模块名、内核版本等关键词在本地源文件中检索，摘取「关键片段 + 原文网址 + commit 号」作为社区案例。
+
+无论走哪条通道，每条社区案例 / 上游 commit 在报告里都需附：**原文网址（url）、关联 commit、关键片段（解释 + 原文）**。
+
 ## Community Retrieval Engine
 
 ### Retrieval Flow
