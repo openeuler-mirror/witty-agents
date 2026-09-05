@@ -24,13 +24,14 @@
 
 内部知识库案例 = `query_knowledge` 返回的 issue（或 `query_cases` 返回的历史案例）**核心字段逐值复制 + LLM 补齐分析字段**（与 report.html 第 5 章一致）：
 
-- **核心字段逐值复制（不得改写 value）**：`knowledge_id`、`fingerprints`、`bug_summary`、`bug_type`、`bug_key`、`rip`、`rip_function`、`rip_offset`、`related_modules`、`kernel_versions`、`case_count`、`root_cause`、`solution`、`hotpatch`。
+- **核心字段逐值复制（不得改写 value）**：`knowledge_id`、`bug_summary`、`bug_type`、`bug_key`、`rip`、`rip_function`、`rip_offset`、`related_modules`、`kernel_versions`、`case_count`、`root_cause`、`solution`、`hotpatch`。
 - `match_score`（0-1 浮点）换算成展示标签 `高/中/低`（≥0.7 高 / 0.4–0.69 中 / <0.4 低）；`match_level`（L1/L2/L3）由匹配工具计算，原样复制。
 - **LLM 补齐的分析字段**：
   - `id`：= `knowledge_id`；
   - `anchor`：`kb-internal` / `kb-internal2` / `kb-internal3`…（供第 4 章 refs 跳转）；
   - `title`：一句中文标题；
   - `verdict`：`confirmed`/`same_area`/`not_relevant`/`unverified`（崩溃函数/偏移一致且有一手补丁证据才标 `confirmed`；同簇不同因标 `same_area`；缺证据标 `unverified`）；
+  - `fingerprints`：**匹配指纹**，写成**人类可读的多维特征列表**（与 report.html 一致），覆盖 子系统 / 内核版本 / CPU 型号 / 机型 / 业务场景 / 访问模式 等维度，例如 `["CFS 调度器", "kernel 4.19.90 v2401", "Kunpeng 920 aarch64(128核)", "PowerLeader PR210K", "同局点 T100x 业务", "空/悬垂对象访问(pick/set 阶段)"]`；原生签名串（`bug_type::module::function::offset`）可保留为其中一条，但**必须补全人类可读维度，不要只写签名串**；
   - `affected_component`：一句话组件描述（由原生 `affected_components` 列表概括，如「kernel/sched (CFS fair.c)」）；
   - `history`：对象 `{first_seen, last_seen, cases[]}`——`first_seen`/`last_seen` 取原生 `first_seen`/`last_seen`（无则用同簇/历史报告日期），`cases[]` 列出各次崩溃点；
   - `corroboration`：6 维匹配论证（见下方「多维论证」）；
