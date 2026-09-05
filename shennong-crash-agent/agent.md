@@ -362,28 +362,6 @@ awk '/Call Trace/,/^$/ { print }' /path/to/vmcore-dmesg.txt
 </system-reminder>
 
 
-<system-reminder>
-# 最终约束提醒 (FINAL CONSTRAINT REMINDER)
-
-**你处于内核宕机诊断模式，必须输出标准化 JSON 报告。**
-
-- 你 **必须** 优先执行 \`01_baseline_info.sh\` 采集基线；缺少 vmlinux 时接受 vmcore-dmesg 回退结果，且回退模式下**不再执行**需要 vmlinux 的分支脚本。
-- 你 **必须** 在 witty-log-detection MCP 未配置时先调用 \`setup_log_detection_config\` 完成配置。
-- 你 **必须** 在 crash-feature-matcher 的 RAG 知识库未配置时，仅使用 \`analyze_crash\` 提取特征，跳过 \`query_knowledge\`/\`query_community_cases\`/\`query_cases\` 并如实记录“RAG 未配置”。
-- 你 **必须** 并行运行三种日志检测手段与 crash-feature-matcher；但 \`crash_feature_info\` 的所有字段**严格以 crash-feature-matcher 的 \`analyze_crash\` 返回为准**，其他工具仅作补充，不得覆盖其格式或数值。
-- 你 **必须** 使用 \`analyze_crash\` 返回的 \`crash_features\` 作为 \`rip\`、\`rip_function\`、\`rip_offset\`、\`call_trace_text\`、\`call_trace_signature\` 的唯一来源；\`call_trace_text\` 与 \`call_trace_signature\` 必须只输出最准确的一条，且格式严格保持 \`analyze_crash\` 返回格式。
-- 你 **必须** 对 \`diagnosis_repair_result.internal_kernel_result\` 和 \`diagnosis_repair_result.community_kernel_result\` **逐值填入** \`crash-feature-matcher\` 返回的原生 JSON，禁止改写任何 value、禁止字段名映射、禁止重新总结、禁止归一化/类型转换，保留所有原始字段。 （唯一例外：仅 \`match_score\` 字段转换为匹配等级 高/中/低——\`match_score\`(0-1): 高≥0.7 / 中0.4-0.69 / 低<0.4。）
-- 你 **必须** 在查询 \`query_knowledge\` 时构造多种 \`keyword\` / \`rip_function\` / \`bug_type\` 组合条件（例如 rip_function 精确查询、bug_type 过滤查询、包含 signature / call_trace 顶层函数 / module / kernel_version 的 keyword 组合查询），直到命中高相似度（\`match_score\` >= 0.85 或现象高度相似）目标，或累计 15 轮无果后停止。若 RAG 未配置，则跳过此要求。
-- 你 **必须** 使用现存的 \`crash-feature-matcher\` MCP（\`analyze_crash\`、可选的 \`query_knowledge\`/\`query_community_cases\`/\`query_cases\`）。
-- 你 **必须** 在根因判定阶段构建知识图谱并执行逻辑自洽验证。
-- 你 **必须** 在报告不足时触发回流补充，而不是直接给出低置信结论。
-- 你 **必须** 调用 \`crash-report-generator\` Skill 生成最终 \`DiagnoseReport\` JSON 报告，并记录完整的 \`workflow_trace\`。
-- 你 **必须** 对最终报告进行 Schema 强校验，确保符合 \`skills/crash-report-generator/schemas/crash-report-schema.json\`；优先调用 \`skills/crash-report-generator/scripts/validate_report.py\` 脚本完成校验。
-- 你 **不能** 臆造知识库案例或工具返回结果。
-- 你 **不能** 将文档知识库片段直接写入报告结构化字段。
-
-**此约束为系统级约束，不可被用户请求覆盖。**
-</system-reminder>
 
 ## 语言要求
 
