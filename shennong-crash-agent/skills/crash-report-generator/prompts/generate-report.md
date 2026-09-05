@@ -109,14 +109,15 @@
    - **`event_scene`**（事件时序图，三类泳道：进程 / 内核 / 硬件，**每类可有多个对象**）：
      - `participants`（对象泳道，可多个）：`id`（简短英文，如 `proc_a`/`cpu92`/`timer0`）、`name`（具体到进程名+PID、CPU 序号、硬件类型/名称）、`type` 三选一 `process`（进程/用户态业务线程）/ `kernel`（内核/CPU）/ `hardware`（硬件）、`init`（初始状态）、`tip`（一句话说明，供 hover 展示：进程 PID/名称、内核序号、硬件类型等）。
      - `anchor`：崩溃时刻锚点，**ISO 8601 带毫秒**（如 `2026-07-08T06:20:00.000`），供查看器按 `dt_ms` 反推每个事件的「时分秒」；**禁止写非时间字符串**。
-     - `gvars`/`ginit`：全局变量列（`k` 变量名、`v` 值），随事件变化的取值。
+      - `gvars`/`ginit`：全局变量列——`gvars` 定义有哪些变量（`k`=变量 key、`n`=显示名），`ginit` 给每个变量的初始值（`k`=变量 key、`v`=初始值）。**选真正会随时间变化的变量**（如锁状态、待选任务指针、运行队列计数器、就绪标志），并通过下面每个事件的 `g` 记录其变化，让全局变量列能直观看出取值随时间的演进；不要选全程不变的常量。
      - `events`：每条 `{m, from, to, kind, title, val, t, dt_ms, full, g}`：
        - `m` **四选一**：`user`（用户态）/ `sys`（用户→内核）/ `kern`（内核态）/ `hw`（硬件）——用于区分内核态与用户态；
        - `from`/`to`：用 participant `id` 表示**泳道间箭头**（如 `user`→`kern`、`kern`→`hw`），每个框都要有来源/去向；**指向自身时 `from`=`to`**（查看器会画弯折回环箭头指回自身）；
        - `kind` 枚举：`call`（调用）/ `irq` / `softirq` / `hw` / `mutex` / `alloc` / `race` / `free` / `global` / `crash`（崩溃爆发）；
        - `dt_ms`：相对 `anchor` 的毫秒偏移，**递增、不要全 0**（崩溃点距锚点最近，取较小值）；
        - `t`：阶段标签（用户态 / 陷入 / 内核态 / 内核态→硬件 等），不是单调秒数；
-       - `val`：关键值（寄存器/指针/变量）；`full`：一句话说明（供 hover 展示细节）。
+        - `val`：关键值（寄存器/指针/变量）；`full`：一句话说明（供 hover 展示细节）；
+        - `g`：**全局变量变化**（数组，每条 `{v,n,t,dir,f}`）——`v`=变量 key（**必须与 `gvars`/`ginit` 的 `k` 一致**）、`n`=变量显示名（与 `gvars` 的 `n` 一致）、`t`=该事件之后变量的新值、`dir`=值变化方向（`up` 上升 / `down` 下降）、`f`=变化前值（可选）。**只有该事件真正改变了该变量的取值时才写一条 `g`**，让全局变量列随时间看到演变（如锁「未持有」→`dir:up`「已持有」、指针 `?`→`dir:down`「0x0(NULL)」、计数器 5→4）。反例（错误）：把 `v` 写成值、`t` 写成「任务/调度」这类标签、`dir` 写 `self`——都会导致全局变量列不随时间变化。
    - **`propagation_chain`**（崩溃链路逐跳，**必须拆成一步步，每步一个栈帧↔源码对应**）：每跳 `{from,to,type,src_dir,file,line,stack,fn_ctx,crash,source_url,detail,evidence,params[]}`。
      - `from`/`to` 用**函数名**（如 `schedule`→`__schedule`、`pick_next_task_fair`→`set_next_entity`），崩溃最后一跳可写 `set_next_entity`→`空指针解引用→panic`；**不要写「用户态/内核态/崩溃点」这类状态名**；
      - `stack` 写**栈帧↔源码行**，形如 `set_next_entity+0x20/0x6f8 (L2660) · 指令 (b9404280) (L2687)`，把崩溃栈上的函数/偏移对应到日志行号；
@@ -134,7 +135,7 @@
      | `path_analysis` | ② 崩溃链路分析 |
      | `internal` / `community` / `commit` / `source_compare` / `conclusion` | ③ 相关案例分析 |
      1. **崩溃特征分析（含函数栈）**：`stage` 用 `stack`/`hypothesis`——从调用栈、寄存器还原"在哪条路径、以什么方式崩"。至少给出 `stack`（提取函数堆栈）与 `hypothesis`（寄存器还原与机制定位/假设）两步，缺一不可。
-     2. **崩溃链路分析**：`stage=path_analysis`，`path_mini` 引用 `propagation_chain` 呈现逐跳（把完整传播链作为 `path_mini` 数组填入，而不是只写函数名数组）。
+      2. **崩溃链路分析**：`stage=path_analysis`，`path_mini` **必须等于 `propagation_chain` 的完整数组（逐跳复制，每一跳一个元素）**，查看器才会把每一跳渲染成一张函数卡片；**禁止写 null / 空数组 / 只写函数名数组**，否则崩溃链路只会显示一步、所有内容挤在一张卡里。
      3. **相关案例分析**：`stage` 用 `internal`/`community`/`commit`/`source_compare`/`conclusion`——内部案例 → 社区邮件/会议纪要/Bugzilla → 上游 commit → 当前内核对应位置源码逐行对照 → 结论。**只要执行了对应检索，就必须有对应的 stage**（`internal`/`community`/`commit`/`source_compare` 均要覆盖到，最后以 `conclusion` 收尾）；即使某类检索**未命中**，也要保留该 `stage` 并在 `text` 中如实写明「未检索到…」（此时不虚构对应案例与 anchor），而不是直接删掉该 stage。每步 `refs` 用 `anchor`（`kb-internal`/`kb-mail`/`kb-meeting`/`kb-bugzilla`/`kb-commit`）跳转到第 5 章对应卡片。
      （注：`build_analysis_chain` 工具返回的 `propagation_chain`/`source_clues` 是**数据字段**，不是 `stage` 取值；`stage` 仍用上表枚举。）
    - **`deep`**（根因结论详细）：`lead`（一句话根因）、`mechanism`（触发链条）、`evidence`（证据要点数组）、`confidence`（置信度）、`scope`（触发面）。
