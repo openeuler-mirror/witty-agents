@@ -1,11 +1,9 @@
 #!/usr/bin/env python3
-"""Generate a standalone crash-report HTML from report.json.
+"""由 report.json 生成自包含的 crash-report HTML。
 
-Reads the bundled HTML template and inlines the report JSON payload so the
-result is a single self-contained HTML file (openable via file://, no local
-HTTP server required).
+读取内置 HTML 模板并把报告 JSON 内联进去，产物是单个自包含 HTML（可 file:// 打开，无需本地 HTTP 服务）。
 
-Usage:
+用法:
     python3 generate_report_html.py \
         --report report.json --output crash-report.html
 """
@@ -27,9 +25,9 @@ def load_json(path: Path):
 
 
 def dumps_js(data) -> str:
-    """Serialize to JSON and escape so it's safe to inline inside <script>."""
+    """序列化为 JSON 并转义，使其可安全内联进 <script>。"""
     s = json.dumps(data, ensure_ascii=False, separators=(",", ":"))
-    # Prevent "</script>" / "<!--" from closing the script tag early.
+    # 防止 "</script>" / "<!--" 提前关闭 script 标签。
     return s.replace("</", "<\\/").replace("<!", "<\\!")
 
 

@@ -1,11 +1,9 @@
 #!/usr/bin/env python3
-"""Extract a simplified execution timeline from an opencode session.
+"""从 opencode 会话提取简化的执行时间线。
 
-Runs `opencode export <sessionID>` and produces a compact JSON that the
-report-generating LLM can consume to build an honest workflow_trace — no
-more "LLM writes the trace from memory".
+运行 `opencode export <sessionID>`，产出报告生成 LLM 可直接消费的精简 JSON，用于构建诚实的 workflow_trace——不再“靠记忆写追踪”。
 
-Usage:
+用法:
     python3 extract_workflow.py                       # auto-detect session for cwd
     python3 extract_workflow.py --session ses_xxx     # explicit session ID
     python3 extract_workflow.py --cwd /path/to/dir    # match session for given dir
