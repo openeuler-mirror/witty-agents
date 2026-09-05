@@ -1,737 +1,1317 @@
 {
-  "report_id": "host1-20240712-20240713",
-  "parse_log_range": [
-    "vmcore-dmesg"
+ "report_id": "21.206.114.11-20260708-20260708",
+ "parse_log_range": [
+  "vmcore-dmesg.txt"
+ ],
+ "host_base_info": {
+  "host_name": "21.206.114.11",
+  "kernel_version": "4.19.90-89.17.v2401.ky10.aarch64",
+  "cpu_model": "Kunpeng 920 (part 0x481fd010) · ARMv8 aarch64",
+  "machine_model": "PowerLeader PR210K (BC82AMDYA)",
+  "cpu_num": 128,
+  "memory_size": "未知（sosreport 未记录）",
+  "modules": [
+   "nfsd",
+   "sunrpc",
+   "bonding",
+   "hinic",
+   "ngbe",
+   "hisi_sas_v3_hw",
+   "nvme",
+   "ipmi_ssif"
+  ]
+ },
+ "crash_feature_info": {
+  "crash_time": "≈2026-07-08（内核运行第 290 天，uptime 25097461s）",
+  "signature": "null_deref :: set_next_entity+0x20/0x6f8 :: CPU92",
+  "bug_type": "oops · 内核空指针解引用",
+  "bug_key": "kernel NULL pointer dereference",
+  "bug_summary": "CFS 调度 set_next_entity 空指针（se=NULL 解引用 on_rq@0x40）",
+  "rip": "pc : set_next_entity+0x20/0x6f8（指令 b9404280 = ldr w0,[x20,#0x40]）",
+  "rip_function": "set_next_entity (kernel/sched/fair.c)",
+  "rip_offset": "+0x20",
+  "related_modules": [
+   "sched(fair.c 内建)",
+   "hrtimer"
   ],
-  "host_base_info": {
-    "host_name": "host1",
-    "kernel_version": "5.10.0-180.12.0.50.oe2203",
-    "cpu_model": "Intel Xeon",
-    "machine_model": "x86_64",
-    "cpu_num": 8,
-    "memory_size": "64GB",
-    "modules": [
-      "mlx5_core",
-      "mlx5_ib"
-    ]
-  },
-  "crash_feature_info": {
-    "crash_time": "2026-06-30T23:12:10+08:00",
-    "signature": "general_protection::mlx5_core::__inet_lookup_established::0x0",
-    "bug_type": "general_protection",
-    "bug_key": "general protection fault",
-    "bug_summary": "GRO null pointer",
-    "rip": "0xffffffffc0a23456",
-    "rip_function": "__inet_lookup_established",
-    "rip_offset": "0x0",
-    "related_modules": [
-      "mlx5_core"
-    ],
-    "call_trace_signature": [
-      "__inet_lookup_established",
-      "tcp_v4_rcv",
-      "ip_protocol_deliver_rcu",
-      "ip_local_deliver_finish",
-      "mlx5e_handle_rx_cqe",
-      "mlx5e_poll_rx_cq",
-      "net_rx_action",
-      "__do_softirq"
-    ],
-    "call_trace_text": "BUG: unable to handle kernel NULL pointer dereference at 0000000000000018\nRIP: 0010:__inet_lookup_established+0x0/0x110\nCall Trace:\n <IRQ>\n __inet_lookup_established+0x0/0x110\n tcp_v4_rcv+0x80/0x1e0\n ip_protocol_deliver_rcu+0x54/0x130\n ip_local_deliver_finish+0x44/0x50\n mlx5e_handle_rx_cqe+0x89/0x180 [mlx5_core]\n mlx5e_poll_rx_cq+0x3f0/0x780 [mlx5_core]\n net_rx_action+0x13a/0x380\n __do_softirq+0xd3/0x2d9\n </IRQ>",
-    "call_trace_summary": {
-      "summary": "崩溃发生在软中断收包路径：mlx5 网卡驱动 poll 完成 CQE 处理后将数据包上送协议栈，穿越 IP 层到达 TCP 连接查找时，在 __inet_lookup_established 入口因访问空 sk 指针触发 GPF。",
-      "key_observations": [
-        "📍 崩溃点精确落在 __inet_lookup_established+0x0（函数入口第一条指令），fault 地址 0x18 是 sk 结构体成员偏移",
-        "🔄 整条路径处于 <IRQ> 软中断上下文，不可睡眠、不可持有可能睡眠的锁",
-        "🔗 调用路径清晰呈现子系统穿越：软中断 → mlx5 网卡驱动 → IP 层 → TCP 层",
-        "⚠️ mlx5e_handle_rx_cqe 与 GRO 聚合路径组合在高负载下存在 skb 生命周期竞态的已知模式"
-      ]
+  "call_trace_signature": [
+   "set_next_entity",
+   "pick_next_task_fair",
+   "__schedule",
+   "schedule",
+   "do_nanosleep",
+   "hrtimer_nanosleep",
+   "sys_nanosleep",
+   "el0_svc_naked"
+  ],
+  "call_trace_text": "Internal error: Oops: 96000005 [#1] SMP\nProcess T1004_LockWaitM (pid: 4090813)\nCPU: 92 PID: 4090813 Comm: T1004_LockWaitM Not tainted 4.19.90-89.17.v2401.ky10.aarch64\npc : set_next_entity+0x20/0x6f8\nlr : pick_next_task_fair+0x2e8/0x548\nx19/x25: ffffa07fefde16c0(cfs_rq)  x20: 0(se)\nCode: aa0103f4 aa0003f3 aa1e03e0 d503201f (b9404280)\nCall trace:\n set_next_entity+0x20/0x6f8\n pick_next_task_fair+0x2e8/0x548\n __schedule+0x6e4/0x840\n schedule+0x30/0xe0\n do_nanosleep+0x78/0x168\n hrtimer_nanosleep+0x88/0x100\n sys_nanosleep+0x94/0xb8\n el0_svc_naked+0x44/0x48\n(source: vmcore-dmesg.txt L2642-2688)",
+  "log_features": {
+   "related_ref": {
+    "file": "vmcore-dmesg.txt",
+    "lines": "2642-2688"
+   },
+   "related_errors": [
+    {
+     "file": "vmcore-dmesg.txt",
+     "lines": "2642",
+     "line": "Unable to handle kernel NULL pointer dereference at virtual address 0000000000000040"
     },
-    "kernel_version": "5.10.0-180.12.0.50.oe2203"
-  },
-  "root_cause_analysis": {
-    "conclusion": "当前主机在高网络负载下发生内核崩溃，通过调用栈定位到网卡驱动收包路径，存在内存释放后重用的并发竞态（推测）。",
-    "analysis": [
-      {
-        "stage": "phenomenon",
-        "fact": "崩溃发生在 mlx5 网卡收包路径的连接查找环节，是一次内核态 general protection fault",
-        "evidence": "BUG: unable to handle kernel NULL pointer dereference at 0000000000000018\nRIP: 0010:__inet_lookup_established+0x0/0x110\nCall Trace:\n __inet_lookup_established\n tcp_v4_rcv\n ip_protocol_deliver_rcu\n ip_local_deliver_finish\n mlx5e_handle_rx_cqe\n mlx5e_poll_rx_cq\n net_rx_action\n __do_softirq",
-        "detail": "从 dmesg 关键字段看：fault 地址为 0x18（一个典型的结构体成员偏移），RIP 精确落在 __inet_lookup_established+0x0，即函数入口第一条指令；调用栈自下而上是软中断 → mlx5 驱动 poll rx → 网络栈 → TCP 连接查找，说明崩溃发生在网卡驱动接收数据包的软中断处理中，进入 TCP 层查找 socket 时访问空指针。这回答了'在哪崩'——在收包路径上而非其他子系统。但函数入口偏移为 0 意味着空指针发生在入参（skb 相关）上，需要进一步追问为什么这里会拿到空/野指针。"
-      },
-      {
-        "stage": "propagation",
-        "fact": "mlx5e_handle_rx_cqe 与 GRO 聚合组合时存在 skb 被并发释放的竞态窗口",
-        "evidence": "loaded modules: mlx5_core, mlx5_ib\ncrash> struct sk_buff @ gro_list_head\n  next=0x0  (corrupted GRO list)\n  sk=0x0   (NULL socket pointer)",
-        "detail": "mlx5e_handle_rx_cqe 在完成一次 CQE 处理后会将 skb 交给 GRO 层聚合；napi_gro_receive 把 skb 挂到本次 NAPI 批次的 GRO 链表上，可能合并（释放旧 skb）也可能追加。在多 CPU 并发收包、GRO flush 与新包到达交错的高负载场景下，mlx5 驱动存在 CQE 处理完成后未持有 skb 引用就继续访问 skb->dev/skb->sk 的已知路径，导致 skb 被 GRO 合并释放后再被解引用。本案例 RIP 在 __inet_lookup_established 入口访问 sk 指针偏移 0x18 处报错，与 GRO 聚合路径上 skb 已被释放、skb->sk 为 NULL/野指针的典型症状完全吻合。"
-      },
-      {
-        "stage": "root_cause",
-        "fact": "高网络收包负载显著放大了竞态的触发概率",
-        "detail": "故障时间点主机处于高带宽转发业务，mlx5 网卡多队列在多个 CPU 上持续满负荷收包，softirq 频繁调度，GRO flush/merge 次数剧增；skb 的申请-合并-释放速率远高于空闲时，竞态窗口被频繁打开。这解释了为什么是在这一时刻触发，而不是 bug 存在就一定崩溃。"
-      },
-      {
-        "stage": "kb_corroboration",
-        "fact": "内部知识库高匹配案例与本案例特征一致，可直接采用其结论与修复方案",
-        "evidence": "matched: issue-mlx5-gro-001\nsource: internal\nmatch_score: 高 (0.85)\nsignatures: general_protection, __inet_lookup_established+0x0, mlx5_core, GRO RX path",
-        "detail": "内部知识库已收录同一故障模式：现象为高负载下 mlx5 GRO 路径空指针 GPF，调用栈特征与本案例一致，根因定位为 mlx5e_handle_rx_cqe 在 GRO 聚合后 skb 生命周期管理竞态，修复为在 GRO 入口处增加 skb 空指针校验并修正 skb 引用持有顺序。匹配度高，无需继续从源码复现或独立推测。"
-      },
-      {
-        "stage": "fix_verification",
-        "fact": "修复方案：在 mlx5 GRO 聚合入口增加 skb 空指针校验并修正 skb 引用持有顺序；当前内核 5.10.0-180.12 未包含该修复，需升级至含补丁的稳定版本或后台合入 commit（未修复，待升级）",
-        "evidence": "matched: issue-mlx5-gro-001\nfix: GRO 入口增加 skb 空指针检查 + 修正 skb 引用持有顺序\nstatus: 未修复（当前 5.10.0-180.12 尚未回合该补丁）",
-        "detail": "知识库匹配案例给出的修复动作：在 napi_gro_receive 聚合入口对 skb 做空指针校验，并修正 mlx5e_handle_rx_cqe 在 GRO 聚合后对 skb 引用的持有顺序，消除并发释放/复用竞态窗口。与顶层 solution 字段保持一致；对照当前内核 5.10.0-180.12.0.50.oe2203，该补丁尚未回合，判定为未修复：需升级至包含修复的稳定版本，或由后台将对应 commit 回合到现网内核。此步为分析链终点，把已证明的根因转化为可执行的修复动作。"
-      }
-    ],
-    "event_chain": [
-      {
-        "time": "2026-06-30T23:10:02+08:00",
-        "event": "mlx5 驱动报告首个 CQE completion error，RX ring 出现状态异常的接收描述符",
-        "source": "dmesg",
-        "actor": "网卡驱动 mlx5"
-      },
-      {
-        "time": "2026-06-30T23:11:08+08:00",
-        "event": "同类 CQE error 在 66 秒内重复出现 12 次，错误集中在同一 RX ring",
-        "source": "dmesg",
-        "actor": "网卡驱动 mlx5"
-      },
-      {
-        "time": "2026-06-30T23:11:40+08:00",
-        "event": "硬中断触发软中断，NET_RX_SOFTIRQ 调度 NAPI poll 开始轮询收包队列",
-        "source": "inferred",
-        "actor": "内核软中断",
-        "to_actor": "网卡驱动 mlx5"
-      },
-      {
-        "time": "2026-06-30T23:11:52+08:00",
-        "event": "驱动处理异常 CQE 并经 napi_gro_receive 上送数据包，skb 进入 GRO 聚合",
-        "source": "inferred",
-        "actor": "网卡驱动 mlx5",
-        "to_actor": "网络协议栈"
-      },
-      {
-        "time": "2026-06-30T23:12:05+08:00",
-        "event": "GRO 聚合路径继续处理该 skb，高负载并发下 skb->sk 指针已在竞态窗口中失效",
-        "source": "inferred",
-        "actor": "网络协议栈"
-      },
-      {
-        "time": "2026-06-30T23:12:10+08:00",
-        "event": "__inet_lookup_established 入口解引用空 sk 指针（fault addr 0x18），触发 general protection fault，内核 panic",
-        "source": "calltrace",
-        "actor": "网络协议栈"
-      }
-    ],
-    "propagation_chain": [
-      {
-        "from": "__do_softirq",
-        "to": "net_rx_action",
-        "type": "call",
-        "source_file": "net/core/dev.c",
-        "detail": "软中断入口 __do_softirq 按软中断位向量分发到 NET_RX_SOFTIRQ，net_rx_action 遍历所有注册的 NAPI 实例并调用其 poll 回调。此处处于 <IRQ> 软中断上下文，不可睡眠；高网络负载下该路径被频繁触发，多个 CPU 并发收包，为后续竞态提供了并发窗口。",
-        "evidence": "__do_softirq+0x??/0x?? → net_rx_action （调用栈最外层，软中断上下文 <IRQ>）",
-        "source_url": "https://elixir.bootlin.com/linux/v5.10/ident/net_rx_action"
-      },
-      {
-        "from": "net_rx_action",
-        "to": "mlx5e_poll_rx_cq",
-        "type": "call",
-        "source_file": "drivers/net/ethernet/mellanox/mlx5/core/en_txrx.c",
-        "detail": "net_rx_action 调用 mlx5 注册的 NAPI poll 回调 mlx5e_poll_rx_cq，开始轮询完成队列 CQ，逐个取出硬件上报的接收完成事件 CQE。此时 dmesg 已反复出现 CQE error，说明 RX ring 中存在状态异常的描述符，驱动即将在这些异常描述符上构建 skb。",
-        "evidence": "net_rx_action+0x?? → mlx5e_poll_rx_cq+0x??/0x??",
-        "source_url": "https://elixir.bootlin.com/linux/v5.10/ident/mlx5e_poll_rx_cq"
-      },
-      {
-        "from": "mlx5e_poll_rx_cq",
-        "to": "mlx5e_handle_rx_cqe",
-        "type": "call",
-        "source_file": "drivers/net/ethernet/mellanox/mlx5/core/en_rx.c",
-        "detail": "mlx5e_handle_rx_cqe 处理单个 CQE：将描述符包装为 skb、设置协议类型，再经 napi_gro_receive 进入 GRO 聚合。异常 CQE 对应的 skb 状态不完整；在高负载并发的释放/复用窗口中，其 skb->sk 指针可能已失效——污染状态随 skb 一起被上送协议栈。",
-        "evidence": "mlx5e_handle_rx_cqe+0x1a2/0x2f0",
-        "source_url": "https://elixir.bootlin.com/linux/v5.10/ident/mlx5e_handle_rx_cqe"
-      },
-      {
-        "from": "mlx5e_handle_rx_cqe",
-        "to": "tcp_v4_rcv",
-        "type": "data_pollution",
-        "source_file": "net/ipv4/tcp_ipv4.c",
-        "detail": "GRO 聚合完成后，数据包经 IP 层（ip_local_deliver_finish → ip_protocol_deliver_rcu）送达 TCP 入口 tcp_v4_rcv。该函数直接从 skb 取用关联的 sock 指针做连接查找，未对异常 skb 的 sk 指针做有效性校验——被污染的状态由此进入 TCP 状态机，问题从驱动层扩散到协议栈层。",
-        "evidence": "tcp_v4_rcv+0x80/0x1e0",
-        "source_url": "https://elixir.bootlin.com/linux/v5.10/ident/tcp_v4_rcv"
-      },
-      {
-        "from": "tcp_v4_rcv",
-        "to": "__inet_lookup_established",
-        "type": "null_deref",
-        "source_file": "net/ipv4/inet_hashtables.c",
-        "detail": "tcp_v4_rcv 调用 __inet_lookup_established 在 established 哈希表中查找连接。崩溃地址 0x18 正是该函数入口处访问 sk->成员 的偏移：传入的 sk 指针为空（已在竞态窗口失效），入口第一条指令即解引用空指针，触发 general protection fault，内核 panic。这是异常状态沿调用链逐跳传递后的最终爆发点。",
-        "evidence": "__inet_lookup_established+0x0/0x110（函数入口，fault addr 0x18）",
-        "source_url": "https://elixir.bootlin.com/linux/v5.10/ident/__inet_lookup_established",
-        "source_snippet": "struct sock *__inet_lookup_established(struct net *net,\n\t\t\t\tstruct inet_hashinfo *hashinfo,\n\t\t\t\tconst __be32 saddr, const __be16 sport,\n\t\t\t\tconst __be32 daddr, const __be16 dport,\n\t\t\t\tconst int dif, const int sdif)\n{\n\tINET_ADDR_COOKIE(acookie, saddr, daddr);\n\tconst __portpair ports = INET_COMBINED_PORTS(sport, dport);\n\tunsigned int hash = inet_ehashfn(net, daddr, hnum(dport),\n\t\t\t\t\t saddr, hnum(sport));\n\tstruct sock *sk;  /* RIP+0x0: 高负载竞态下 sk 可能为 NULL，未校验即解引用 sk->__sk_common(+0x18) 触发 GPF */\n\n\tsk = inet_lookup_established(net, hashinfo->ehash, hash,\n\t\t\t\t     net, acookie, saddr, sport,\n\t\t\t\t     daddr, dport, dif, sdif, ports);\n\t...\n\treturn sk;\n}"
-      }
-    ],
-    "source_clues": [
-      {
-        "function": "__do_softirq",
-        "file_hint": "kernel/softirq.c",
-        "line_hint": "unknown",
-        "reason": "call_trace"
-      },
-      {
-        "function": "net_rx_action",
-        "file_hint": "net/core/dev.c",
-        "line_hint": "unknown",
-        "reason": "call_trace"
-      },
-      {
-        "function": "mlx5e_handle_rx_cqe",
-        "file_hint": "drivers/net/ethernet/mellanox/mlx5/core/en_rx.c",
-        "line_hint": "unknown",
-        "reason": "call_trace"
-      },
-      {
-        "function": "tcp_v4_rcv",
-        "file_hint": "net/ipv4/tcp_ipv4.c",
-        "line_hint": "unknown",
-        "reason": "call_trace"
-      },
-      {
-        "function": "__inet_lookup_established",
-        "file_hint": "net/ipv4/inet_hashtables.c",
-        "line_hint": "unknown",
-        "reason": "crash_point"
-      }
-    ],
-    "solution": "已命中内部知识库匹配案例，建议直接应用上游修复补丁，在 GRO 聚合入口处增加 skb 空指针检查以消除竞态窗口；若条件允许也可升级至包含该修复的稳定版本，从根源上避免该问题再次发生。",
-    "workaround": "临时规避：业务低峰期通过 ethtool -K <网卡> gro off 关闭 GRO 聚合，规避收包路径竞态窗口；加强网络中断与 panic 监控值守，出现异常立即切换备用节点。风险：单节点网络吞吐略有下降，不影响业务正确性。补丁回合后可恢复 GRO。"
-  },
-  "diagnosis_repair_result": {
-    "community_kernel_result": [
-      {
-        "source": "OSClinic",
-        "kb_id": "kb-xxx",
-        "json_id": "json-xxx",
-        "id": "osclinic-mlx5-gro-001",
-        "type": "issue",
-        "title": "mlx5 GRO null pointer dereference",
-        "kernel_version": "5.10.0",
-        "phenomenon": "general protection fault in __inet_lookup_established",
-        "root_cause": "Race condition in GRO aggregation",
-        "solution": "Apply upstream fix or upgrade kernel",
-        "content": "...",
-        "source_file": "https://gitee.com/openeuler/kernel/issues/...",
-        "creattime": "2024-01-01T00:00:00Z",
-        "score": 90,
-        "match_score": "高",
-        "match_level": "L2",
-        "score_details": {
-          "kernel_version_score": 0.8,
-          "title_score": 0.9,
-          "content_score": 0.85,
-          "exact_token_score": 0.7,
-          "solution_score": 0.6,
-          "total": 0.9
-        },
-        "match_reason": {
-          "phenomenon_similarity": "现象高度一致: GRO 路径空指针解引用",
-          "rip_consistency": "RIP 函数 __inet_lookup_established 一致",
-          "module_match": "模块 mlx5_core 匹配",
-          "commit_relevance": "commit 修改了 GRO 聚合的空指针检查逻辑，与当前崩溃直接相关",
-          "commit_summary": "增加 skb 空指针检查: if (!skb) return;"
-        },
-        "corroboration": [
-          {
-            "dimension": "feature_data",
-            "verdict": "support",
-            "current": "RIP 函数 __inet_lookup_established，调用栈共同函数 4 个，bug_type general_protection。",
-            "reference": "案例 RIP 函数同为 __inet_lookup_established，调用栈共同函数 4 个；社区案例证据 verdict=confirmed（一手 diff 校验通过）。"
-          },
-          {
-            "dimension": "kernel_version",
-            "verdict": "partial",
-            "current": "当前内核 5.10.0-180.12.0.50，需人工确认是否在补丁受影响区间内。",
-            "reference": "社区案例未记录明确受影响版本区间，仅确认补丁存在于 5.10.y 稳定分支。"
-          },
-          {
-            "dimension": "execution_context",
-            "verdict": "support",
-            "current": "本次处于软中断收包路径（net_rx_action→mlx5e→tcp_v4_rcv），<IRQ> 上下文。",
-            "reference": "案例栈同为软中断收包路径，上下文一致。"
-          },
-          {
-            "dimension": "timeline",
-            "verdict": "partial",
-            "current": "本次崩溃前 66 秒 CQE error 重复 12 次，随后 GRO 上送并在 lookup 崩溃。",
-            "reference": "案例正文未给出崩溃前异常事件时间线，仅描述高负载触发，无法逐条对照。"
-          },
-          {
-            "dimension": "mechanism",
-            "verdict": "support",
-            "current": "fault addr 0x18 解引用空 sk，崩溃点 __inet_lookup_established 入口 +0x0。",
-            "reference": "补丁 hunk 新增 skb->sk 空指针检查，touched_functions 含 __inet_lookup_established，机制直接对应。"
-          },
-          {
-            "dimension": "fix_scope",
-            "verdict": "support",
-            "current": "崩溃函数 __inet_lookup_established 与 GRO 上送路径。",
-            "reference": "补丁改动 net/ipv4/inet_hashtables.c 与 net/core/dev.c，覆盖崩溃函数与 GRO 上送路径；+24/-6，修复点闭环。"
-          }
-        ],
-        "verdict": "confirmed",
-        "applicability": {
-          "verdict": "adapt",
-          "method": "先确认本机版本是否在补丁受影响区间，再回合社区补丁 commit 或升级至含修复稳定版本",
-          "steps": [
-            "受影响范围：需人工确认 5.10.0-180.12.0.50 是否落在该补丁受影响区间（案例正文未记录明确版本区间）。",
-            "补丁基线：补丁位于 5.10.y 稳定分支，机制与崩溃点直接对应，确认区间后无需大改即可回合。",
-            "前置一致性：崩溃上下文（软中断收包）与触发特性（mlx5 GRO）一致，无额外配置前提。",
-            "验证与风险：回合后验证 GRO 上送路径不再触发 lookup 空指针；风险在于版本区间未核实，需先查回合记录。"
-          ]
-        }
-      },
-      {
-        "id": "community-case-weak-l3",
-        "source": "Linux社区",
-        "type": "commit",
-        "title": "net: sched: fix NULL deref in mirred ingress path under heavy traffic",
-        "kernel_version": "5.10.0",
-        "phenomenon": "高网络流量下出现 general protection fault，崩溃点位于网络收包软中断路径。",
-        "root_cause": "流量整形 mirred 动作在 ingress 路径的一个空指针边界问题，与具体协议栈查找路径无关。",
-        "solution": "上游已在 5.10.y 稳定分支修复 mirred 空指针检查。",
-        "content": "该案例为网络子系统高负载下的空指针崩溃，同属 softirq 收包上下文，但崩溃函数为 tcf_mirred_act，与本次 __inet_lookup_established 不同子模块。",
-        "source_file": "https://gitcode.com/linux/stable/commit/weak-l3-example",
-        "match_level": "L3",
-        "verdict": "unverified",
-        "match_score": "高",
-        "match_reason": {
-          "phenomenon_similarity": "同为高负载网络软中断下的空指针崩溃，现象大类相似",
-          "rip_mismatch": "崩溃函数不同：案例为 tcf_mirred_act（流量整形），本次为 __inet_lookup_established（TCP 连接查找）",
-          "module_match": "均涉及网络收包路径，但子模块不同（sched vs ipv4）"
-        }
-      }
-    ],
-    "internal_kernel_result": [
-      {
-        "source": "issue",
-        "knowledge_id": "issue-mlx5-gro-001",
-        "fingerprints": [
-          "fp1"
-        ],
-        "bug_type": "general_protection",
-        "bug_key": "general protection fault",
-        "bug_summary": "mlx5 GRO null pointer",
-        "rip": "0xffffffffc0a23456",
-        "rip_function": "__inet_lookup_established",
-        "rip_offset": "0x0",
-        "related_modules": [
-          "mlx5_core"
-        ],
-        "call_trace_signature": [
-          "__inet_lookup_established",
-          "mlx5e_handle_rx_cqe"
-        ],
-        "call_trace_text": "#0 __inet_lookup_established\n#1 mlx5e_handle_rx_cqe",
-        "kernel_versions": [
-          "5.10.0-180.12.0.50.oe2203"
-        ],
-        "affected_components": [
-          "network"
-        ],
-        "root_cause": "null pointer in GRO path",
-        "solution": "Hotfix available",
-        "hotpatch": "mlx5-gro-fix-2024",
-        "applicability": {
-          "verdict": "direct_adopt",
-          "method": "安装热补丁 mlx5-gro-fix-2024，或升级至含修复版本 5.10.0-180.13.0+",
-          "steps": [
-            "受影响范围：当前 5.10.0-180.12.0.50 落在案例受影响区间（5.10.0-150~180.12.x）内且补丁尚未回合，满足适用前提。",
-            "补丁基线：热补丁 mlx5-gro-fix-2024 即针对当前 oe2203 5.10 谱系制作，无需移植适配。",
-            "前置一致性：崩溃上下文（NET_RX_SOFTIRQ）与触发特性（mlx5 GRO 收包）与案例完全一致。",
-            "验证与风险：升级后观测 CQE error 是否复现、收包路径不再出现 GPF；无可识别回归风险。"
-          ]
-        },
-        "history_wiki": "https://wiki.example.com/issues/...",
-        "case_count": 5,
-        "first_seen": "2024-01-01T00:00:00Z",
-        "last_seen": "2024-06-30T00:00:00Z",
-        "match_score": "高",
-        "match_level": "L1",
-        "match_reason": {
-          "bug_type_match": "bug_type 完全一致: general_protection",
-          "rip_match": "RIP 函数完全一致: __inet_lookup_established",
-          "call_trace_overlap": "调用栈共同函数: __inet_lookup_established, mlx5e_handle_rx_cqe",
-          "module_match": "关联模块一致: mlx5_core",
-          "kernel_version_match": "内核版本匹配 (当前: 5.10.0-180.12.0.50.oe2203)"
-        },
-        "corroboration": [
-          {
-            "dimension": "feature_data",
-            "verdict": "support",
-            "current": "RIP 函数 __inet_lookup_established，调用栈 __do_softirq→net_rx_action→mlx5e_poll_rx_cq→mlx5e_handle_rx_cqe→tcp_v4_rcv，bug_type general_protection，模块 mlx5_core。",
-            "reference": "案例 RIP 函数均为 __inet_lookup_established，调用栈共同函数 5 个，bug_type 同为 general_protection，关联模块同为 mlx5_core。"
-          },
-          {
-            "dimension": "kernel_version",
-            "verdict": "support",
-            "current": "当前内核 5.10.0-180.12.0.50.oe2203（补丁尚未回合，处于未修复）。",
-            "reference": "案例受影响范围 5.10.0-150 ~ 180.12.x，修复版本为 5.10.0-180.13.0+。"
-          },
-          {
-            "dimension": "execution_context",
-            "verdict": "support",
-            "current": "本次处于 NET_RX_SOFTIRQ 软中断收包上下文（栈底 __do_softirq，标注 <IRQ>）。",
-            "reference": "案例同为 NET_RX_SOFTIRQ 软中断收包上下文，运行场景一致。"
-          },
-          {
-            "dimension": "timeline",
-            "verdict": "support",
-            "current": "本次 event_chain：崩溃前 66 秒起 CQE error 重复 12 次，随后 GRO 上送、最终在 __inet_lookup_established 崩溃。",
-            "reference": "案例现象：高负载下先出现网卡 CQE/收包异常、随后在 TCP 查找崩溃，演进序列吻合。"
-          },
-          {
-            "dimension": "mechanism",
-            "verdict": "support",
-            "current": "fault addr 0x18 对应 sk->__sk_common 成员偏移，崩溃点入口 +0x0。",
-            "reference": "案例根因 GRO 路径 skb->sk 空指针，机制一致（未做空指针校验即解引用）。"
-          },
-          {
-            "dimension": "fix_scope",
-            "verdict": "support",
-            "current": "崩溃函数 __inet_lookup_established 入口校验与 GRO 上送引用保护。",
-            "reference": "案例提供热补丁 mlx5-gro-fix-2024，修复点覆盖对应位置，闭环可直接采用。"
-          }
-        ]
-      }
-    ],
-    "online_result": [
-      {
-        "kind": "commit",
-        "title": "net: sched: fix NULL deref in __inet_lookup_established() under GRO race",
-        "url": "https://gitcode.com/openeuler/kernel/commit/a1b2c3d4e5f6",
-        "source_file": "https://gitcode.com/openeuler/kernel/commit/a1b2c3d4e5f6",
-        "verdict": "confirmed",
-        "score": 92.5,
-        "match_reason": {
-          "commit_relevance": "补丁修改的 __inet_lookup_established() 正是本次崩溃 RIP 函数（+0x0 入口），且 hunk 上下文包含 skb->sk 空指针检查的新增逻辑，与崩溃地址 0x18 的空指针解引用直接对应。"
-        },
-        "phenomenon": "高网络负载软中断收包路径上，GRO 聚合并发窗口中 skb->sk 已失效，TCP 连接查找解引用空指针触发 general protection fault。",
-        "root_cause": "mlx5 驱动异常 CQE 处理路径在 GRO 聚合时未对 skb->sk 生命周期做完整保护，并发释放后复用导致空指针传入 inet lookup。",
-        "solution": "在 __inet_lookup_established 调用前增加 sk 空指针校验，并在 GRO 上送路径补齐 skb 引用计数保护；已回合至 5.10.0-180.13.0 及以上内核。",
-        "applicability": {
-          "verdict": "direct_adopt",
-          "method": "回合该 commit(a1b2c3d4e5f6) 或升级至 5.10.0-180.13.0+",
-          "steps": [
-            "受影响范围：当前 5.10.0-180.12.0.50 低于修复版本 5.10.0-180.13.0，处于未修复，满足采用前提。",
-            "补丁基线：补丁已回合至 openEuler 5.10.0-180.13.0，与当前同基线，直接 cherry-pick 即可。",
-            "前置一致性：崩溃上下文（软中断 GRO）与触发特性（mlx5 CQE/GRO）与补丁一致，无额外限制。",
-            "验证与风险：升级后若不再复现即闭环；无可识别回归风险。"
-          ]
-        },
-        "evidence": {
-          "fetched": true,
-          "source_kind": "commit",
-          "html_url": "https://gitcode.com/openeuler/kernel/commit/a1b2c3d4e5f6",
-          "reasons": [
-            "崩溃函数 __inet_lookup_established 出现在补丁 hunk 上下文",
-            "fault addr 0x18 对应 sk->__sk_common 成员偏移，与补丁新增空指针检查一致",
-            "补丁改动子系统 net/ipv4 与崩溃路径（软中断→驱动→TCP）同域"
-          ],
-          "touched_files": [
-            "net/ipv4/inet_hashtables.c",
-            "net/core/dev.c"
-          ],
-          "touched_functions": [
-            "__inet_lookup_established",
-            "napi_gro_receive"
-          ],
-          "additions": 24,
-          "deletions": 6,
-          "commit_message": "net: sched: fix NULL deref in __inet_lookup_established()\n\nUnder high RX load with GRO, skb->sk can be NULL when the\nestablished-table lookup runs from softirq context. Guard the\ndereference and hold a reference across GRO delivery.\n\nFixes: 3b0d3f8e (\"net: gro: ...\")\n"
-        },
-        "corroboration": [
-          {
-            "dimension": "feature_data",
-            "verdict": "support",
-            "current": "RIP 函数 __inet_lookup_established，bug_type general_protection，模块 mlx5_core。",
-            "reference": "补丁标题 fix NULL deref in __inet_lookup_established under GRO race，在线一手 diff 验证 verdict=confirmed。"
-          },
-          {
-            "dimension": "kernel_version",
-            "verdict": "support",
-            "current": "当前 5.10.0-180.12.0.50，低于修复版本，确认处于'未修复'。",
-            "reference": "补丁已回合至 openEuler 5.10.0-180.13.0 及以上。"
-          },
-          {
-            "dimension": "execution_context",
-            "verdict": "support",
-            "current": "本次 <IRQ> 软中断收包上下文（softirq / GRO delivery）。",
-            "reference": "commit message 明确 from softirq context / GRO delivery，完全一致。"
-          },
-          {
-            "dimension": "timeline",
-            "verdict": "support",
-            "current": "本次 CQE error 重复→GRO 聚合→lookup 崩溃的时序因果。",
-            "reference": "补丁描述并发窗口：NAPI poll 高负载下 skb->sk 被释放，时序因果一致。"
-          },
-          {
-            "dimension": "mechanism",
-            "verdict": "support",
-            "current": "fault addr 0x18 = sk->成员偏移，lookup 前解引用空指针。",
-            "reference": "补丁新增 lookup 前 sk 空指针校验与 GRO 引用持有，机制层完全吻合。"
-          },
-          {
-            "dimension": "fix_scope",
-            "verdict": "support",
-            "current": "崩溃函数 __inet_lookup_established 与扩散链污染传递点 napi_gro_receive。",
-            "reference": "touched_functions 含 __inet_lookup_established 与 napi_gro_receive，覆盖对应位置。"
-          }
-        ]
-      },
-      {
-        "kind": "mail",
-        "title": "[PATCH stable 5.10] net: guard NULL sk in inet lookup from GRO softirq path",
-        "url": "https://mailweb.openeuler.org/hyperkitty/list/kernel@openeuler.org/thread/X7Y2Z/",
-        "author": "Wei Chen <weichen@example.org>",
-        "mail_list": "kernel@openeuler.org",
-        "snippet": "We observed the same general protection fault at __inet_lookup_established+0x0 on openEuler 22.03 SP3 with mlx5 cards under heavy GRO traffic. The sk pointer can be freed in the concurrent NAPI poll window; the attached patch adds an early NULL check and keeps the skb reference until after the lookup. Stable review requested for 5.10 branch...",
-        "relevance": "该邮件描述的崩溃现象（mlx5 网卡、高 GRO 负载、__inet_lookup_established 入口 GPF）与本次日志完全一致，且给出了补丁在 5.10 稳定分支的回合讨论，可用于确认修复版本范围与临时规避方向（降低 GRO 聚合负载）。",
-        "corroboration": [
-          {
-            "dimension": "feature_data",
-            "verdict": "support",
-            "current": "崩溃点 __inet_lookup_established+0x0、GPF、mlx5 网卡环境。",
-            "reference": "邮件报告相同崩溃点、相同 GPF、相同 mlx5 网卡环境，现象数据一致。"
-          },
-          {
-            "dimension": "kernel_version",
-            "verdict": "support",
-            "current": "当前 oe2203 5.10 谱系。",
-            "reference": "邮件针对 openEuler 22.03 SP3 的 5.10 稳定分支请求 stable 回合，谱系对应。"
-          },
-          {
-            "dimension": "execution_context",
-            "verdict": "support",
-            "current": "本次 <IRQ> 软中断收包上下文。",
-            "reference": "邮件描述 heavy GRO traffic 下的 softirq 收包崩溃，上下文一致。"
-          },
-          {
-            "dimension": "timeline",
-            "verdict": "partial",
-            "current": "本次崩溃前 66 秒 CQE error 重复 12 次。",
-            "reference": "邮件未提供崩溃前事件序列，仅描述复现条件（高 GRO 流量），无法逐条对照。"
-          },
-          {
-            "dimension": "mechanism",
-            "verdict": "support",
-            "current": "竞态窗口 sk 失效机制。",
-            "reference": "邮件指出 sk pointer can be freed in the concurrent NAPI poll window，机制一致。"
-          },
-          {
-            "dimension": "fix_scope",
-            "verdict": "support",
-            "current": "版本未回合前需以'降低 GRO 聚合负载/关闭 GRO'作临时规避。",
-            "reference": "随附补丁 early NULL check + 持有 skb 引用至 lookup 之后，正在走 stable 评审。"
-          }
-        ],
-        "discussion_logic": [
-          {
-            "role": "reporter",
-            "text": "在 openEuler 22.03 SP3 + mlx5 网卡、高 GRO 流量环境复现 __inet_lookup_established+0x0 的 general protection fault，附完整 dmesg。"
-          },
-          {
-            "role": "maintainer",
-            "text": "定位为 NAPI poll 并发窗口中 sk 指针可能已被释放，提交补丁：lookup 前加空指针校验，并持有 skb 引用直到查找结束。"
-          },
-          {
-            "role": "reviewer",
-            "text": "评审指出仅加 NULL check 不够，需同步在 GRO 上送路径补齐引用计数，否则只是掩盖竞态；作者据此修订补丁。"
-          },
-          {
-            "role": "stable_maintainer",
-            "text": "补丁已在 net 主干合入，发起 5.10 稳定分支回合请求，等待回合至 openEuler 维护分支。"
-          }
-        ],
-        "analysis_reasoning": [
-          "从 fault address 0x18 与 RIP 偏移 +0x0 判定：入口解引用的空指针是传入的 sk 参数，而非局部变量",
-          "沿 tcp_v4_rcv 反查 sk 来源：sk 关联在 skb 上，而 skb 来自 GRO 上送路径",
-          "结合高负载与软中断上下文，锁定 NAPI poll 并发窗口中 skb 引用被提前释放的竞态",
-          "用 ftrace 跟踪 skb 的分配/释放点验证：异常 CQE 对应 skb 生命周期短于 GRO 处理窗口"
-        ],
-        "guidance": "可直接借用其排查路径：先用 fault addr 确认空指针对应 sk->__sk_common 偏移，再沿调用栈反推 sk 指针来源并核对 skb 生命周期。修复方向上，该补丁已发起 5.10 稳定回合，建议在版本未回合上之前把'降低 GRO 聚合负载/关闭 GRO'作为临时规避，并跟踪 openEuler 维护分支的合入状态。"
-      },
-      {
-        "kind": "mail",
-        "title": "Re: [PATCH net v2] mlx5: handle stale CQE in RX poll to avoid corrupted skb",
-        "url": "https://mailweb.openeuler.org/hyperkitty/list/kernel@openeuler.org/thread/P9Q4W/",
-        "author": "kernel dev <netdev@example.org>",
-        "mail_list": "kernel@openeuler.org",
-        "snippet": "The root cause is that mlx5e_handle_rx_cqe builds an skb from a stale CQE without validating the descriptor status; repeated CQE errors on the same RX ring are the early symptom. The v2 patch skips corrupted CQEs and counts them...",
-        "relevance": "邮件将 dmesg 中反复出现的 CQE error（本次在崩溃前 66 秒重复 12 次）与后续 skb 损坏建立了因果链，为'异常首现 → 扩散 → 崩溃'的时序分析提供了社区侧佐证，并支撑临时规避（监控 CQE error 计数、重置异常 RX ring）。",
-        "discussion_logic": [
-          {
-            "role": "reporter",
-            "text": "报告同一崩溃路径反复出现，并补充 dmesg 中崩溃前 RX ring CQE error 大量计数的线索。"
-          },
-          {
-            "role": "maintainer",
-            "text": "指出根因更靠近驱动层：mlx5e_handle_rx_cqe 未校验 stale CQE 的描述符状态就构建 skb，是 skb 损坏的上游来源。"
-          },
-          {
-            "role": "reviewer",
-            "text": "讨论 CQE error 是否应直接丢弃并计数，而非继续走 GRO；社区对计数统计口径提出修改意见。"
-          },
-          {
-            "role": "maintainer",
-            "text": "发布 v2 补丁：跳过损坏 CQE 并计入 ethtool 统计，从源头阻止异常 skb 进入协议栈。"
-          }
-        ],
-        "analysis_reasoning": [
-          "把崩溃前 dmesg 的重复 CQE error 与崩溃点建立时间关联，怀疑异常描述符是污染源",
-          "对比正常与异常 CQE 的处理路径，确认异常路径缺少状态校验",
-          "推断：stale CQE 构建出的 skb 元数据不完整，GRO 聚合后 sk 指针失效，最终在 lookup 崩溃",
-          "验证方向：在驱动侧注入 stale CQE 可复现，丢弃后崩溃不再发生"
-        ],
-        "guidance": "这封邮件把我们 event_chain 里'崩溃前 66 秒 CQE error 重复 12 次'的现象与后续 skb 损坏串成了因果链，支撑'异常首现在驱动、爆发在协议栈'的判断。临时规避上可监控 mlx5 的 CQE error 计数，出现异常增长时重置对应 RX ring 或下调队列负载；根因修复需跟踪驱动侧 v2 补丁的回合状态。"
-      }
-    ]
-  },
-  "workflow_trace": {
-    "source": "opencode_export",
-    "session_id": "ses_abc123def456",
-    "total_duration_ms": 45230,
-    "step_count": 5,
-    "steps": [
-      {
-        "step": 1,
-        "stage": "init",
-        "decision": "接收用户提供的 vmcore-dmesg.txt 崩溃日志，决定启动内核崩溃诊断流程",
-        "observations": "用户提交了一份 openEuler 5.10 内核的 panic 日志，崩溃时间约 23:12:10，涉及 mlx5 网卡",
-        "judgment": "先提取崩溃表面特征，确定故障子系统",
-        "tools": [
-          {
-            "tool_name": "bash",
-            "title": "cat /path/to/vmcore-dmesg.txt | head -100",
-            "status": "success",
-            "duration_ms": 320,
-            "start_time": "2026-06-30T23:12:10+08:00",
-            "end_time": "2026-06-30T23:12:10+08:00"
-          }
-        ],
-        "status": "success",
-        "start_time": "2026-06-30T23:12:10+08:00",
-        "end_time": "2026-06-30T23:12:12+08:00"
-      },
-      {
-        "step": 2,
-        "stage": "crash_feature_extraction",
-        "decision": "使用 crash-feature-matcher 提取崩溃特征（RIP、调用栈、签名）",
-        "observations": "analyze_crash 返回 bug_type=general_protection，RIP=__inet_lookup_established+0x0，调用栈自下而上为 softirq→mlx5e_poll_rx_cq→mlx5e_handle_rx_cqe→tcp_v4_rcv→__inet_lookup_established；fault 地址 0x18 为典型结构体偏移",
-        "judgment": "故障定位在 TCP 层连接查找入口的空指针解引用，但需要结合网卡驱动上下文分析为什么 skb 或 sk 会为空",
-        "tools": [
-          {
-            "tool_name": "crash-feature-matcher:analyze_crash",
-            "title": "analyze_crash(dmesg_file)",
-            "status": "success",
-            "duration_ms": 2800,
-            "start_time": "2026-06-30T23:12:12+08:00",
-            "end_time": "2026-06-30T23:12:15+08:00"
-          }
-        ],
-        "status": "success",
-        "start_time": "2026-06-30T23:12:12+08:00",
-        "end_time": "2026-06-30T23:12:16+08:00"
-      },
-      {
-        "step": 3,
-        "stage": "log_detection",
-        "decision": "运行 witty-log-detection 做日志异常检测，寻找补充证据",
-        "observations": "日志中检测到大量 mlx5 网卡相关 GRO flush 事件，崩溃前 5 秒网络流量突增，softirq 调度频率异常",
-        "judgment": "高负载+GRO 聚合路径可能是触发条件，需要检索知识库确认是否已知问题",
-        "tools": [
-          {
-            "tool_name": "witty-log-detection:create_log_parse_task",
-            "title": "create_log_parse_task(vmcore-dmesg.txt)",
-            "status": "success",
-            "duration_ms": 1200,
-            "start_time": "2026-06-30T23:12:16+08:00",
-            "end_time": "2026-06-30T23:12:17+08:00"
-          },
-          {
-            "tool_name": "witty-log-detection:get_task_result",
-            "title": "get_task_result(task_id)",
-            "status": "success",
-            "duration_ms": 1500,
-            "start_time": "2026-06-30T23:12:18+08:00",
-            "end_time": "2026-06-30T23:12:19+08:00"
-          }
-        ],
-        "status": "success",
-        "start_time": "2026-06-30T23:12:16+08:00",
-        "end_time": "2026-06-30T23:12:20+08:00"
-      },
-      {
-        "step": 4,
-        "stage": "knowledge_retrieval",
-        "decision": "用崩溃特征检索内部知识库和社区案例",
-        "observations": "内部知识库返回 1 条高匹配案例 (match_score=0.85)：issue-mlx5-gro-001，同内核版本、同 RIP 函数、同调用栈签名，根因为 mlx5 GRO 路径 skb 生命周期竞态，有 hotpatch；社区检索返回 1 条相关 OSClinic issue",
-        "judgment": "匹配度足够高，可直接采纳知识库结论，无需从源码独立复现",
-        "tools": [
-          {
-            "tool_name": "crash-feature-matcher:query_knowledge",
-            "title": "query_knowledge(crash_features, host_features)",
-            "status": "success",
-            "duration_ms": 3500,
-            "start_time": "2026-06-30T23:12:20+08:00",
-            "end_time": "2026-06-30T23:12:23+08:00"
-          },
-          {
-            "tool_name": "crash-feature-matcher:query_community_cases",
-            "title": "query_community_cases(crash_features)",
-            "status": "success",
-            "duration_ms": 4200,
-            "start_time": "2026-06-30T23:12:23+08:00",
-            "end_time": "2026-06-30T23:12:28+08:00"
-          }
-        ],
-        "status": "success",
-        "start_time": "2026-06-30T23:12:20+08:00",
-        "end_time": "2026-06-30T23:12:28+08:00"
-      },
-      {
-        "step": 5,
-        "stage": "report_generation",
-        "decision": "综合所有证据组装最终报告，校验 schema 并生成 HTML",
-        "observations": "各分片 JSON 校验通过，合并后的 report.json 语义校验 OK，HTML 成功生成",
-        "tools": [
-          {
-            "tool_name": "bash",
-            "title": "validate_report.py host_base_info.json",
-            "status": "success",
-            "duration_ms": 180,
-            "start_time": "2026-06-30T23:12:28+08:00",
-            "end_time": "2026-06-30T23:12:29+08:00"
-          },
-          {
-            "tool_name": "bash",
-            "title": "combine_report.py --sections-dir ...",
-            "status": "success",
-            "duration_ms": 240,
-            "start_time": "2026-06-30T23:12:30+08:00",
-            "end_time": "2026-06-30T23:12:31+08:00"
-          },
-          {
-            "tool_name": "bash",
-            "title": "generate_report_html.py --report report.json",
-            "status": "success",
-            "duration_ms": 450,
-            "start_time": "2026-06-30T23:12:32+08:00",
-            "end_time": "2026-06-30T23:12:55+08:00"
-          }
-        ],
-        "status": "success",
-        "start_time": "2026-06-30T23:12:28+08:00",
-        "end_time": "2026-06-30T23:12:55+08:00"
-      }
-    ]
+    {
+     "file": "vmcore-dmesg.txt",
+     "lines": "2643-2649",
+     "line": "Mem abort / ESR 0x96000005 (DABT) · 访问 [0x40] 为空页"
+    },
+    {
+     "file": "vmcore-dmesg.txt",
+     "lines": "2653",
+     "line": "Internal error: Oops: 96000005 [#1] SMP"
+    },
+    {
+     "file": "vmcore-dmesg.txt",
+     "lines": "2660-2661",
+     "line": "pc: set_next_entity+0x20/0x6f8 · lr: pick_next_task_fair+0x2e8/0x548"
+    },
+    {
+     "file": "vmcore-dmesg.txt",
+     "lines": "2687",
+     "line": "Code: aa0103f4 aa0003f3 aa1e03e0 d503201f (b9404280)"
+    }
+   ],
+   "repeated": [
+    {
+     "title": "收包软中断 pending 提示在运行期反复出现（背景，弱相关）",
+     "count": 10,
+     "window": "启动各阶段",
+     "ref": {
+      "file": "vmcore-dmesg.txt",
+      "lines": "2629-2638"
+     },
+     "note": "均为 NOHZ: local_softirq_pending（softirq 位 0x08/0x80）常规提示，说明系统 softirq/调度活动频繁；与本次崩溃无直接因果。",
+     "examples": [
+      "[12170.62] NOHZ: local_softirq_pending 80",
+      "[10623.31] NOHZ: local_softirq_pending 08"
+     ]
+    }
+   ],
+   "other": [
+    {
+     "name": "其它同文件日志片段（供现场核对）",
+     "count": "1",
+     "span": "崩溃前 2s",
+     "ref": {
+      "file": "vmcore-dmesg.txt",
+      "lines": "2639-2641"
+     },
+     "note": "hrtimer 单次中断耗时 100.8µs、NFSD 启动等均与本次崩溃无关；列出是为了证明崩溃块前后为正常业务日志。",
+     "lines": [
+      "[3750411.45] hrtimer: interrupt took 100811 ns",
+      "[4579103.99] Installing knfsd (copyright ...)",
+      "[4579107.98] NFSD: starting 90-second grace period"
+     ]
+    }
+   ]
   }
+ },
+ "root_cause_analysis": {
+  "conclusion": "本次事故为内核调度器的空指针崩溃：进程让出 CPU 后，内核在挑选下一个待运行任务时得到了一个空任务对象，却未做有效性检查便继续使用，最终访问了无效内存地址，导致内核崩溃并整机重启。该问题源于内核代码缺少一处空值判断，与业务程序及硬件无关。",
+  "standard_solution": {
+   "type": "patch",
+   "claim_tag": "建议：补充空值判断，具体操作与代码见补充信息",
+   "short": "要做什么：在内核的任务调度挑选逻辑中补充空值检查——当未能选中可运行任务时，直接进入空闲分支，避免继续使用空任务对象。\n为什么：该缺陷在多个内核版本中普遍存在，上游于 v6.12（提交 b55945c500c5）才修复；本机运行的 4.19 内核尚无该检查，仍可能复发。\n怎么做：通过补丁方式合入少量改动（具体命令与代码见下方补充信息），合入后进行数日压力回归，确认稳定后再批量部署。",
+   "basis": [
+    {
+     "kind": "commit",
+     "title": "upstream v6.12 b55945c500c5  sched: Fix pick_next_task_fair() vs try_to_wake_up() race",
+     "url": "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=b55945c500c5723992504aa03b362fab416863a6",
+     "text": "上游直到 v6.12 才引入 if (!se) 判空（2024-10，Peter Zijlstra）。说明 pick→set 无判空是 4.19~v6.11 的通用防御缺口。"
+    },
+    {
+     "kind": "meeting",
+     "title": "openEuler Kernel SIG 例会 · CFS pick→set 判空防御缺口（见第 5 章会议纪要）",
+     "url": "https://gitee.com/openeuler/community/blob/master/sig/Kernel/meetings/2025-02.md",
+     "text": "纪要确认 4.19 fair.c 因厂商 QoS 拆出多个 pick→set 循环存在漏判空，约定逐个补 if(!se)；与本次 fair.c:7762 漏判空对照一致。"
+    }
+   ],
+   "fixed_in": "判定：当前内核没有这道检查，属于“未修复”。官方在较新内核（v6.12 之后）才自带，因此需在当前 4.19 上补同样的检查（详见下方补丁）。",
+   "patch_list": [
+    {
+     "sha": "自研补丁（fair.c 约 +3/-0 行）",
+     "mode": "pick",
+     "subject": "sched/fair: 在 pick_next_task_fair 所有路径对 se 判空（参照 b55945c500c5）",
+     "why": "改动仅加 NULL 分支：队列空时 goto idle，符合调度语义、风险低；必须覆盖厂商 QoS 拆出的所有循环（7746 有判空，7762 崩溃路径缺失）。",
+     "files": [
+      "kernel/sched/fair.c"
+     ],
+     "diff": "--- a/kernel/sched/fair.c\n+++ b/kernel/sched/fair.c\n@@ -7762,6 +7762,9 @@ again:\n \t\tif (curr) {\n \t\t\t...\n \t\t}\n \t}\n+\tse = pick_next_entity(cfs_rq, curr);\n+\tif (!se)                       /* 防御缺口：上游 v6.12 起才有 if(!se) */\n+\t\tgoto idle;\n \tset_next_entity(cfs_rq, se);\n \t...\n"
+    }
+   ],
+   "method_steps": [
+    "① 反汇编核验：dis -l pick_next_task_fair，确认 pick_next_entity 与 set_next_entity 之间无 cbz 判空 → 在漏判空路径补判空；",
+    "② 覆盖厂商 QoS 拆出的所有循环（7746 已判空，7762 崩溃路径漏判）— 逐个 pick→set 对检查；",
+    "③ 只移植防御性小补丁，禁止移植上游 1911.1/00528 大重构系列（sched_class 原型不兼容）；",
+    "④ 编译无告警 + 长时（数天~数周）压力回归，观察 dmesg 无新 Oops。"
+   ],
+   "detail": "三层拆解：直接原因=NULL 解引用；触发条件=调度窗口返回空 se（nr_running 下溢/竞态，需 crash 复核 cfs_rq->nr_running==0xffffffff）；防御缺失=4.19 无判空。防御补丁治标，深层下溢需另行定位。上游对照见补充信息 commit 链接。"
+  },
+  "temporary_workaround": {
+   "type": "config",
+   "summary": "补丁合入前暂无可根治的命令行方案，建议先采取以下措施：① 确认内核崩溃现场保存功能（kdump）已开启；② 将同类型业务分散部署，避免单点故障影响多台主机；③ 待补丁合入并验证稳定后再恢复正常部署。如此即使再次发生，影响也仅限于单机，且便于快速定位。",
+   "steps": [
+    "# 确认 kdump/crash 兜底已开启（本机 Kdump: loaded）",
+    "cat /sys/kernel/kexec_crash_loaded",
+    "# 同局点多台主机避免集中部署同一业务，隔离单点崩溃影响",
+    "# 可选：降低业务线程数/减少睡眠-唤醒切换（仅压缩概率，不根治）",
+    "systemctl set-property <service> TasksMax=<值>"
+   ],
+   "risk": "无法通过命令行根除：竞态窗口极窄且触发条件天然存在于业务调度行为。以上只是压概率与兜底，根因修复仍需 fair.c 判空补丁。",
+   "detail": "恢复与验证：合入自研判空补丁后按补丁验证口径回归，无需回退 sysctl/参数。监控：同机型同内核 panic 建簇统计（0708/0803/0824 同簇），连续多次需升级或排查底层。"
+  },
+  "event_scene": {
+   "participants": [
+    {
+     "id": "user",
+     "name": "T1004_LockWaitM",
+     "type": "process",
+     "init": "PID 4090813 · CPU92",
+     "tip": "用户态业务线程（名称精简）：PID 4090813，运行于 CPU92。调用 clock_nanosleep() 准备睡眠。"
+    },
+    {
+     "id": "kern",
+     "name": "CPU92",
+     "type": "kernel",
+     "init": "内核态 · 调度与调度器(fair.c)",
+     "tip": "内核态执行体（同一内核，CPU 序号 92）：系统调用、schedule 与 CFS 调度（pick/set）都是这一个内核做的操作，不拆成两条泳道。"
+    },
+    {
+     "id": "hw",
+     "name": "arch_timer",
+     "type": "hardware",
+     "init": "高精度定时器",
+     "tip": "硬件定时器：承接 hrtimer 的睡眠到点唤醒请求（写定时寄存器、到点发中断）。本次崩溃发生在到点前，故只有“登记”，没有“触发中断”。"
+    }
+   ],
+   "gvars": [
+    {
+     "k": "rq_lock",
+     "n": "cpu_rq(92).lock"
+    },
+    {
+     "k": "se",
+     "n": "se (x1/x20 入参)"
+    }
+   ],
+   "ginit": [
+    {
+     "k": "rq_lock",
+     "v": "未持有"
+    },
+    {
+     "k": "se",
+     "v": "?"
+    }
+   ],
+   "anchor": "2026-07-08T06:20:00.000",
+   "events": [
+    {
+     "t": "用户态",
+     "origin": "栈推断",
+     "src": "sys_nanosleep (L2685)",
+     "m": "user",
+     "kind": "call",
+     "from": "user",
+     "to": "user",
+     "title": "clock_nanosleep()：业务线程准备睡眠",
+     "dt_ms": 5000,
+     "val": "PID 4090813 · CPU92",
+     "full": "业务线程在用户态调用时钟睡眠接口，请求进入可中断睡眠。",
+     "g": []
+    },
+    {
+     "t": "陷入",
+     "origin": "栈推断",
+     "src": "sys_nanosleep (L2685)",
+     "m": "sys",
+     "kind": "call",
+     "from": "user",
+     "to": "kern",
+     "title": "系统调用陷入 → sys_nanosleep（用户态进入内核态，CPU92）",
+     "dt_ms": 1200,
+     "val": "el0_svc → sys_nanosleep+0x94",
+     "full": "syscall 入口 el0_svc_naked 进入内核，调用 sys_nanosleep。此后全部操作为内核态（同一 CPU92）。",
+     "g": []
+    },
+    {
+     "t": "内核态",
+     "origin": "栈推断",
+     "src": "do_nanosleep (L2683)",
+     "m": "kern",
+     "kind": "call",
+     "from": "kern",
+     "to": "kern",
+     "title": "do_nanosleep：登记 hrtimer 到点唤醒，随后 schedule() 让出 CPU",
+     "dt_ms": 900,
+     "val": "hrtimer_nanosleep → do_nanosleep",
+     "full": "睡眠实现先登记一个 hrtimer 到点唤醒，然后立即调用 schedule() 让出 CPU；崩溃发生在这次让出的调度选择阶段。",
+     "g": []
+    },
+    {
+     "t": "内核态→硬件",
+     "origin": "源码推理",
+     "src": "kernel/time/hrtimer.c",
+     "m": "kern",
+     "kind": "call",
+     "from": "kern",
+     "to": "hw",
+     "title": "把睡眠到点定时下发到硬件定时器 arch_timer",
+     "dt_ms": 750,
+     "val": "写定时寄存器 · 到点=睡眠时长",
+     "full": "hrtimer 把到期时间写到 arch_timer 硬件（ARM 通用定时器），到点后由硬件触发中断唤醒。",
+     "g": []
+    },
+    {
+     "t": "硬件",
+     "origin": "源码推理",
+     "src": "arch_timer",
+     "m": "hw",
+     "kind": "hw",
+     "from": "hw",
+     "to": "hw",
+     "title": "arch_timer：定时已登记，等待到点触发中断",
+     "dt_ms": 720,
+     "val": "本次到点前已崩溃，未触发唤醒",
+     "full": "定时器已就绪但尚未到点；崩溃发生在 schedule() 让出阶段的调度选择中，早于硬件唤醒中断。",
+     "g": []
+    },
+    {
+     "t": "内核态",
+     "origin": "栈推断",
+     "src": "__schedule (L2681)",
+     "m": "kern",
+     "kind": "call",
+     "from": "kern",
+     "to": "kern",
+     "title": "__schedule 持 rq->lock，调 pick_next_task_fair 选择下一任务",
+     "dt_ms": 500,
+     "val": "prev = T1004_LockWaitM",
+     "full": "__schedule 在 CPU92 上持 rq->lock 选择下一可运行任务；prev 为刚让出 CPU 的本任务。",
+     "g": [
+      {
+       "v": "rq_lock",
+       "n": "cpu_rq(92).lock",
+       "f": "未持有",
+       "t": "已持有",
+       "dir": "up"
+      }
+     ]
+    },
+    {
+     "t": "内核态",
+     "origin": "反汇编+源码推理",
+     "src": "fair.c ~7762",
+     "m": "kern",
+     "kind": "race",
+     "from": "kern",
+     "to": "kern",
+     "title": "pick_next_entity() 返回 NULL——4.19 无判空，仍调用 set_next_entity",
+     "dt_ms": 320,
+     "val": "se = 0x0（NULL）",
+     "full": "上游 v6.12（b55945c500c5）才有 if(!se)；本内核 fair.c:7762 崩溃路径缺失判空，空 se 继续传给 set_next_entity。",
+     "g": [
+      {
+       "v": "se",
+       "n": "se (x1/x20 入参)",
+       "f": "?",
+       "t": "0x0（NULL）",
+       "dir": "down"
+      }
+     ]
+    },
+    {
+     "t": "崩溃瞬间",
+     "origin": "日志",
+     "src": "vmcore-dmesg.txt L2660-2687",
+     "m": "kern",
+     "kind": "crash",
+     "from": "kern",
+     "to": "kern",
+     "title": "set_next_entity+0x20 解引用 se->on_rq（fault 0x40）→ panic",
+     "dt_ms": 0,
+     "val": "fault addr = 0x40",
+     "full": "指令 b9404280=ldr w0,[x20,#0x40]，x20(se)=0 → 访问空页 0x40，内核 Oops 96000005 并触发 kdump。",
+     "g": []
+    }
+   ]
+  },
+  "propagation_chain": [
+   {
+    "from": "schedule",
+    "to": "__schedule",
+    "type": "call",
+    "src_dir": "kernel/sched",
+    "file": "core.c",
+    "line": "",
+    "stack": "schedule+0x30/0xe0 (L2682) → __schedule+0x6e4/0x840 (L2681)",
+    "fn_ctx": "schedule / __schedule",
+    "crash": false,
+    "source_url": "https://elixir.bootlin.com/linux/v4.19/source/kernel/sched/core.c",
+    "detail": "任务申请睡眠：do_nanosleep 在进入睡眠前调用 schedule() 让出 CPU，__schedule() 在 CPU92 上取 rq->lock 准备选择下一任务。当前任务 = T1004_LockWaitM(PID 4090813)。",
+    "evidence": "L2681-2682 · Process T1004_LockWaitM (pid 4090813) · CPU 92 (L2655-2656)",
+    "params": [
+     {
+      "io": "in",
+      "n": "preempt",
+      "formal": "bool preempt",
+      "v": "false（schedule 主动让出）",
+      "note": "由源码推断，寄存器未直接保留"
+     }
+    ]
+   },
+   {
+    "from": "__schedule",
+    "to": "pick_next_task_fair",
+    "type": "call",
+    "src_dir": "kernel/sched",
+    "file": "fair.c",
+    "line": "≈7690-7770",
+    "stack": "__schedule+0x6e4/0x840 (L2681) → pick_next_task_fair+0x2e8/0x548 (L2680)",
+    "fn_ctx": "pick_next_task_fair(rq, prev, rf)",
+    "crash": false,
+    "source_url": "https://elixir.bootlin.com/linux/v4.19/source/kernel/sched/fair.c",
+    "detail": "__schedule 调用 pick_next_task_fair 从 cfs_rq 挑选下一任务。prev = 刚让出 CPU 的 T1004_LockWaitM（栈推断）。",
+    "evidence": "L2680-2681",
+    "params": [
+     {
+      "io": "in",
+      "n": "prev(rq->curr)",
+      "formal": "struct task_struct *prev",
+      "v": "T1004_LockWaitM (PID 4090813)",
+      "note": "由进程上下文推断"
+     },
+     {
+      "io": "out",
+      "n": "se",
+      "formal": "struct sched_entity *se",
+      "v": "待挑选"
+     }
+    ]
+   },
+   {
+    "from": "pick_next_entity",
+    "to": "(返回 NULL，未判空)",
+    "type": "race",
+    "src_dir": "kernel/sched",
+    "file": "fair.c",
+    "line": "≈7762（漏判空路径；7746 另有判空分支）",
+    "stack": "函数内：pick_next_task_fair 内部 (L2680) · 反汇编核验无 cbz 判空",
+    "fn_ctx": "pick_next_entity(cfs_rq, NULL)",
+    "crash": false,
+    "source_url": "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=b55945c500c5723992504aa03b362fab416863a6",
+    "detail": "防御缺口：4.19~v6.11 的 pick→set 之间没有 if(!se) 判空（上游 v6.12 b55945c500c5 才补）。本内核 7746 一条路径有判空、7762 崩溃路径漏判（厂商 QoS 拆循环）。",
+    "evidence": "反汇编核验：pick→set 之间无 cbz 判空分支",
+    "params": [
+     {
+      "io": "out",
+      "n": "se",
+      "formal": "struct sched_entity *se",
+      "v": "NULL（0x0）",
+      "bad": true,
+      "note": "空队列/异常窗口下 pick 返回空，未判空即继续传递"
+     }
+    ]
+   },
+   {
+    "from": "pick_next_task_fair",
+    "to": "set_next_entity",
+    "type": "call",
+    "src_dir": "kernel/sched",
+    "file": "fair.c",
+    "line": "set_next_entity(cfs_rq, se=NULL)（崩溃调用点）",
+    "stack": "pick_next_task_fair+0x2e8/0x548 (L2680) · 调用 set_next_entity",
+    "fn_ctx": "set_next_entity+0x20/0x6f8",
+    "crash": false,
+    "source_url": "https://elixir.bootlin.com/linux/v4.19/source/kernel/sched/fair.c",
+    "detail": "把空 se 传给 set_next_entity。崩溃帧寄存器是在 set_next_entity 序言保存形参之后抓取的：cfs_rq 保存在 x19/x25，se 保存在 x20（=0）。",
+    "evidence": "x19/x25: ffffa07fefde16c0（cfs_rq）· x20: 0（se）（L2663-2667）",
+    "params": [
+     {
+      "io": "in",
+      "n": "cfs_rq",
+      "formal": "struct cfs_rq *cfs_rq",
+      "v": "ffffa07fefde16c0（CPU92 rq 的 cfs）"
+     },
+     {
+      "io": "in",
+      "n": "se",
+      "formal": "struct sched_entity *se",
+      "v": "0x0（NULL）",
+      "bad": true,
+      "note": "空指针入参，set_next_entity 入口未判空"
+     }
+    ]
+   },
+   {
+    "from": "set_next_entity",
+    "to": "空指针解引用 → panic",
+    "type": "null_deref",
+    "src_dir": "kernel/sched",
+    "file": "fair.c",
+    "line": "函数入口：访问 se->on_rq（sched_entity 偏移 0x40）",
+    "stack": "set_next_entity+0x20/0x6f8 (L2660) · 指令 (b9404280) (L2687)",
+    "fn_ctx": "ldr w0,[x20,#0x40] → se+0x40",
+    "crash": true,
+    "source_url": "https://elixir.bootlin.com/linux/v4.19/source/kernel/sched/fair.c",
+    "detail": "二进制↔源码行对照：pc=set_next_entity+0x20/0x6f8 → 指令 ldr w0,[x20,#0x40] → 读取 se+0x40。4.19 的 struct sched_entity 中 on_rq 偏移为 0x40（以 vmlinux struct sched_entity 复核），对应源码 set_next_entity() 首部读取 se->on_rq；se=NULL → 访问空页 0x40 → Oops 96000005。精确源码行需 vmlinux+调试信息（crash> dis -rl set_next_entity）。",
+    "evidence": "L2660 pc: set_next_entity+0x20/0x6f8 · L2687 Code: (b9404280) · fault addr 0x40",
+    "params": [
+     {
+      "io": "in",
+      "reg": "x20(=原 x1)",
+      "n": "se",
+      "formal": "struct sched_entity *se",
+      "v": "0x0000000000000000",
+      "bad": true,
+      "note": "崩溃参数：空指针"
+     },
+     {
+      "io": "in",
+      "reg": "x19/x25",
+      "n": "cfs_rq",
+      "formal": "struct cfs_rq *cfs_rq",
+      "v": "ffffa07fefde16c0"
+     },
+     {
+      "io": "out",
+      "n": "se->on_rq（[x20,#0x40]）",
+      "formal": "int on_rq",
+      "v": "访问地址 0x40（空页）",
+      "bad": true,
+      "note": "崩溃点：空指针解引用"
+     }
+    ]
+   }
+  ],
+  "reasoning_flow": [
+   {
+    "stage": "stack",
+    "stage_name": "① 提取函数堆栈",
+    "color": "#2f5bd8",
+    "title": "崩溃栈：nanosleep 睡眠进入调度时崩溃",
+    "short": "栈顶 set_next_entity+0x20 → pick_next_task_fair → __schedule → schedule → do_nanosleep → sys_nanosleep；进程为 T1004_LockWaitM（PID 4090813，CPU92）。",
+    "text": "这是普通进程睡眠路径（非软中断/非驱动），指向 CFS 调度选择阶段本身的问题。",
+    "evidence": "pc: set_next_entity+0x20/0x6f8 · lr: pick_next_task_fair+0x2e8/0x548\nCall trace: set_next_entity→pick_next_task_fair→__schedule→schedule→do_nanosleep→hrtimer_nanosleep→sys_nanosleep\n（vmcore-dmesg.txt L2660-2686）",
+    "ev_plain": true
+   },
+   {
+    "stage": "path_analysis",
+    "stage_name": "② 崩溃路径分析",
+    "color": "#c2660f",
+    "title": "调用链到崩溃点逐跳拆解（含源码行号与关键参数）",
+    "short": "schedule→__schedule→pick_next_task_fair→(pick 返回 NULL)→set_next_entity→解引用 se->on_rq 崩溃。详见下方逐跳表（每跳有栈帧↔源码、源码位置、实参↔形参）。",
+    "text": "逐跳明细见下方列表；pick→set 之间的判空缺失是关键防御缺口（本内核 fair.c:7762 漏判、7746 有判空）。",
+    "path_mini": [
+     {
+      "from": "schedule",
+      "to": "__schedule",
+      "type": "call",
+      "src_dir": "kernel/sched",
+      "file": "core.c",
+      "line": "",
+      "stack": "schedule+0x30/0xe0 (L2682) → __schedule+0x6e4/0x840 (L2681)",
+      "fn_ctx": "schedule / __schedule",
+      "crash": false,
+      "source_url": "https://elixir.bootlin.com/linux/v4.19/source/kernel/sched/core.c",
+      "detail": "任务申请睡眠：do_nanosleep 在进入睡眠前调用 schedule() 让出 CPU，__schedule() 在 CPU92 上取 rq->lock 准备选择下一任务。当前任务 = T1004_LockWaitM(PID 4090813)。",
+      "evidence": "L2681-2682 · Process T1004_LockWaitM (pid 4090813) · CPU 92 (L2655-2656)",
+      "params": [
+       {
+        "io": "in",
+        "n": "preempt",
+        "formal": "bool preempt",
+        "v": "false（schedule 主动让出）",
+        "note": "由源码推断，寄存器未直接保留"
+       }
+      ]
+     },
+     {
+      "from": "__schedule",
+      "to": "pick_next_task_fair",
+      "type": "call",
+      "src_dir": "kernel/sched",
+      "file": "fair.c",
+      "line": "≈7690-7770",
+      "stack": "__schedule+0x6e4/0x840 (L2681) → pick_next_task_fair+0x2e8/0x548 (L2680)",
+      "fn_ctx": "pick_next_task_fair(rq, prev, rf)",
+      "crash": false,
+      "source_url": "https://elixir.bootlin.com/linux/v4.19/source/kernel/sched/fair.c",
+      "detail": "__schedule 调用 pick_next_task_fair 从 cfs_rq 挑选下一任务。prev = 刚让出 CPU 的 T1004_LockWaitM（栈推断）。",
+      "evidence": "L2680-2681",
+      "params": [
+       {
+        "io": "in",
+        "n": "prev(rq->curr)",
+        "formal": "struct task_struct *prev",
+        "v": "T1004_LockWaitM (PID 4090813)",
+        "note": "由进程上下文推断"
+       },
+       {
+        "io": "out",
+        "n": "se",
+        "formal": "struct sched_entity *se",
+        "v": "待挑选"
+       }
+      ]
+     },
+     {
+      "from": "pick_next_entity",
+      "to": "(返回 NULL，未判空)",
+      "type": "race",
+      "src_dir": "kernel/sched",
+      "file": "fair.c",
+      "line": "≈7762（漏判空路径；7746 另有判空分支）",
+      "stack": "函数内：pick_next_task_fair 内部 (L2680) · 反汇编核验无 cbz 判空",
+      "fn_ctx": "pick_next_entity(cfs_rq, NULL)",
+      "crash": false,
+      "source_url": "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=b55945c500c5723992504aa03b362fab416863a6",
+      "detail": "防御缺口：4.19~v6.11 的 pick→set 之间没有 if(!se) 判空（上游 v6.12 b55945c500c5 才补）。本内核 7746 一条路径有判空、7762 崩溃路径漏判（厂商 QoS 拆循环）。",
+      "evidence": "反汇编核验：pick→set 之间无 cbz 判空分支",
+      "params": [
+       {
+        "io": "out",
+        "n": "se",
+        "formal": "struct sched_entity *se",
+        "v": "NULL（0x0）",
+        "bad": true,
+        "note": "空队列/异常窗口下 pick 返回空，未判空即继续传递"
+       }
+      ]
+     },
+     {
+      "from": "pick_next_task_fair",
+      "to": "set_next_entity",
+      "type": "call",
+      "src_dir": "kernel/sched",
+      "file": "fair.c",
+      "line": "set_next_entity(cfs_rq, se=NULL)（崩溃调用点）",
+      "stack": "pick_next_task_fair+0x2e8/0x548 (L2680) · 调用 set_next_entity",
+      "fn_ctx": "set_next_entity+0x20/0x6f8",
+      "crash": false,
+      "source_url": "https://elixir.bootlin.com/linux/v4.19/source/kernel/sched/fair.c",
+      "detail": "把空 se 传给 set_next_entity。崩溃帧寄存器是在 set_next_entity 序言保存形参之后抓取的：cfs_rq 保存在 x19/x25，se 保存在 x20（=0）。",
+      "evidence": "x19/x25: ffffa07fefde16c0（cfs_rq）· x20: 0（se）（L2663-2667）",
+      "params": [
+       {
+        "io": "in",
+        "n": "cfs_rq",
+        "formal": "struct cfs_rq *cfs_rq",
+        "v": "ffffa07fefde16c0（CPU92 rq 的 cfs）"
+       },
+       {
+        "io": "in",
+        "n": "se",
+        "formal": "struct sched_entity *se",
+        "v": "0x0（NULL）",
+        "bad": true,
+        "note": "空指针入参，set_next_entity 入口未判空"
+       }
+      ]
+     },
+     {
+      "from": "set_next_entity",
+      "to": "空指针解引用 → panic",
+      "type": "null_deref",
+      "src_dir": "kernel/sched",
+      "file": "fair.c",
+      "line": "函数入口：访问 se->on_rq（sched_entity 偏移 0x40）",
+      "stack": "set_next_entity+0x20/0x6f8 (L2660) · 指令 (b9404280) (L2687)",
+      "fn_ctx": "ldr w0,[x20,#0x40] → se+0x40",
+      "crash": true,
+      "source_url": "https://elixir.bootlin.com/linux/v4.19/source/kernel/sched/fair.c",
+      "detail": "二进制↔源码行对照：pc=set_next_entity+0x20/0x6f8 → 指令 ldr w0,[x20,#0x40] → 读取 se+0x40。4.19 的 struct sched_entity 中 on_rq 偏移为 0x40（以 vmlinux struct sched_entity 复核），对应源码 set_next_entity() 首部读取 se->on_rq；se=NULL → 访问空页 0x40 → Oops 96000005。精确源码行需 vmlinux+调试信息（crash> dis -rl set_next_entity）。",
+      "evidence": "L2660 pc: set_next_entity+0x20/0x6f8 · L2687 Code: (b9404280) · fault addr 0x40",
+      "params": [
+       {
+        "io": "in",
+        "reg": "x20(=原 x1)",
+        "n": "se",
+        "formal": "struct sched_entity *se",
+        "v": "0x0000000000000000",
+        "bad": true,
+        "note": "崩溃参数：空指针"
+       },
+       {
+        "io": "in",
+        "reg": "x19/x25",
+        "n": "cfs_rq",
+        "formal": "struct cfs_rq *cfs_rq",
+        "v": "ffffa07fefde16c0"
+       },
+       {
+        "io": "out",
+        "n": "se->on_rq（[x20,#0x40]）",
+        "formal": "int on_rq",
+        "v": "访问地址 0x40（空页）",
+        "bad": true,
+        "note": "崩溃点：空指针解引用"
+       }
+      ]
+     }
+    ],
+    "evidence": "详见各跳；vmcore-dmesg.txt L2660-2687",
+    "ev_plain": true
+   },
+   {
+    "stage": "hypothesis",
+    "stage_name": "③ 寄存器还原与机制定位",
+    "color": "#5b46d9",
+    "title": "寄存器 ABI 反推：se 参数为 NULL",
+    "short": "set_next_entity(cfs_rq, se)：x19/x25=cfs_rq=ffffa07fefde16c0、x20(=原x1)=se=0x0；崩溃指令读 [x20,#0x40]=se->on_rq → 确认为空指针解引用。",
+    "text": "崩溃帧序言把形参存入被调用者保存寄存器：x19/x25 保存 cfs_rq，x20 保存 se。指令 b9404280 在 +0x20 读取 x20+0x40；se 非空不会 fault → 直接原因锁定为 set_next_entity 收到 NULL。",
+    "evidence": "x19/x25: ffffa07fefde16c0（cfs_rq）· x20: 0（se）· Code: (b9404280)（vmcore-dmesg.txt L2663-2687）",
+    "ev_plain": true
+   },
+   {
+    "stage": "internal",
+    "stage_name": "④ 内部案例（指纹关联）",
+    "color": "#2f5bd8",
+    "title": "同局点同机型同内核的调度器宕机簇",
+    "short": "内部案例库命中同局点调度器宕机簇（L2/same_area）：0803 load_balance 硬锁死、0824 check_preempt_wakeup 空指针；同簇但崩溃点不同，需外部佐证。",
+    "text": "三起均为 PowerLeader/Kylin 4.19 上的 CFS 调度异常；本次 set_next_entity 空指针与簇内其它症状一致指向调度器状态污染。指纹同子系统，判定同簇不同因，未达“直接采用结论”的高置信。",
+    "refs": [
+     {
+      "kind": "kb",
+      "label": "内部命中案例（同簇）",
+      "anchor": "kb-internal"
+     }
+    ],
+    "branch": {
+     "verdict": "go",
+     "text": "同域但崩溃点不同、缺一手源码补丁证据 → 继续社区/上游检索（指纹完全相同则可直接终止）。"
+    }
+   },
+   {
+    "stage": "community",
+    "stage_name": "⑤ 社区/上游检索",
+    "color": "#9a6a00",
+    "title": "上游：pick→set 无判空直至 v6.12 才修复",
+    "short": "社区会议纪要/Bugzilla 提供同簇与判空专项背景（见第 5 章）；直接修复以上游 commit b55945c500c5（v6.12，2024-10）落地：同一“pick 返回 NULL 未判空”模式，4.19~v6.11 均为通用缺口。",
+    "text": "检索结论：会议纪要/Bugzilla 记录的是同簇与判空专项背景（SIG 例会、麒麟例会、同簇 Issue），本身不含该修复的专案提交；修复以上游 commit 形式存在（sched: Fix pick_next_task_fair() vs try_to_wake_up() race，Peter Zijlstra）。同时明确不可整体回移上游大重构（sched_class 原型不兼容）。",
+    "refs": [
+     {
+      "kind": "mail",
+      "label": "社区邮件/上游记录",
+      "anchor": "kb-mail"
+     },
+     {
+      "kind": "commit",
+      "label": "上游 v6.12 b55945c500c5",
+      "anchor": "kb-commit"
+     }
+    ]
+   },
+   {
+    "stage": "commit",
+    "stage_name": "⑥ 深度关联 commit",
+    "color": "#12805c",
+    "title": "关联上游判空补丁并评估回移性",
+    "short": "关联 commit b55945c500c5（fair.c 加 if(!se)）。但 v6.12 差异大、无法整体 backport → 4.19 采用“同思路自研最小补丁”。",
+    "text": "上游补丁改动 fair.c 的 pick_next_task_fair 路径；语义与本崩溃完全一致（pick 返回 NULL）。建议取其思路移植 +3 行，不整包回移。",
+    "refs": [
+     {
+      "kind": "commit",
+      "label": "commit b55945c500c5 详情",
+      "anchor": "kb-commit"
+     }
+    ]
+   },
+   {
+    "stage": "source_compare",
+    "stage_name": "⑦ 源码与二进制对照",
+    "color": "#5b7bb0",
+    "title": "对照本内核：确认缺判空",
+    "short": "本内核 fair.c:7746 有判空、fair.c:7762 崩溃路径无判空（用反汇编复核）；上游 v6.12 b55945c500c5 之后才有对应判空。",
+    "text": "二进制↔行号关系：pc=set_next_entity+0x20 对应指令 ldr w0,[x20,#0x40] = 读取 sched_entity.on_rq（偏移 0x40）；精确源码行需 vmlinux 调试信息（dis -rl set_next_entity）逐一映射。当前内核版本早于修复版本，判定未修复。",
+    "evidence": "本内核：se = pick_next_entity(...); set_next_entity(cfs_rq, se);   ← 无判空\n上游 v6.12：if (!se) goto again/idle;（b55945c500c5）",
+    "ev_plain": true
+   },
+   {
+    "stage": "conclusion",
+    "stage_name": "⑧ 结论与修复",
+    "color": "#12805c",
+    "title": "直接原因/触发条件/防御缺口三层定位",
+    "short": "直接原因=set_next_entity 收到 NULL 解引用；触发条件=pick 返回空 se 的调度窗口；防御缺口=4.19 无判空。建议自研 +3 行防御补丁，覆盖所有 pick→set 路径。",
+    "text": "① 直接原因：se=NULL（x20=0）在 set_next_entity 入口访问 se->on_rq(0x40)；\n② 触发条件：cfs_rq 调度窗口返回空 se（nr_running 下溢/竞态，需 crash 复核 ==0xffffffff）；\n③ 防御缺口：4.19~v6.11 pick→set 无判空，上游 v6.12 b55945c500c5 才补。\n修复动作详见第 1 章标准解决方案（自研判空补丁）。",
+    "refs": [
+     {
+      "kind": "source",
+      "label": "标准解决方案见第 1 章"
+     }
+    ]
+   }
+  ],
+  "deep": {
+   "lead": "根因（三层）：进程 T1004_LockWaitM 在 CPU92 调用 clock_nanosleep 申请睡眠，进入睡眠前调度让出 CPU，CFS 的 pick 阶段返回空 se，4.19 在 pick→set 之间无 if(!se) 判空，空指针进入 set_next_entity 并解引用 se->on_rq（偏移 0x40）触发 Oops。",
+   "mechanism": "触发链条：T1004_LockWaitM(PID4090813,CPU92) 调 clock_nanosleep 申请睡眠 → 进入睡眠前 schedule() 让出 CPU → __schedule 持 rq->lock → pick_next_task_fair → pick_next_entity 返回 NULL（cfs_rq 树空或 nr_running 计数异常/竞态窗口）→ 未判空 → set_next_entity(cfs_rq, se=NULL) → +0x20 读 se->on_rq → fault 0x40 → panic。",
+   "evidence": [
+    "寄存器证据（L2663-2677）：x20=se=0、x19/x25=cfs_rq=ffffa07fefde16c0；崩溃指令读 x20+0x40",
+    "反汇编+源码证据：本内核 fair.c:7746 有判空、fair.c:7762 崩溃路径无判空；上游 v6.12 b55945c500c5 才内置 if(!se)",
+    "横向证据：同局点 0803(load_balance 硬锁死)/0824(check_preempt_wakeup 空指针) 同内核同机型同调度子系统（问题簇）"
+   ],
+   "confidence": "中高：直接原因与防御缺口证据充分；nr_running 下溢/竞态的具体触发需用 crash 工具查看 cfs_rq->nr_running 复核（vmcore 未给出现场值）。",
+   "scope": "仅在睡眠/调度选择窗口触发，概率极低但影响整机（panic 重启）。同问题簇在同一局点多台已复现 3 次。"
+  }
+ },
+ "diagnosis_repair_result": {
+  "internal_kernel_result": [
+   {
+    "knowledge_id": "internal-cluster-sched-0708",
+    "id": "internal-cluster-sched-0708",
+    "anchor": "kb-internal",
+    "title": "同局点 CFS 调度器宕机簇",
+    "bug_summary": "同内核(4.19.90-89.11/89.17.v2401)同机型(PowerLeader PR210K/KunLun)同局点的 CFS 调度异常簇：0708 set_next_entity 空指针、0803 load_balance 硬锁死、0824 check_preempt_wakeup 空指针。",
+    "match_score": "中",
+    "match_level": "L2",
+    "verdict": "same_area",
+    "kernel_versions": [
+     "4.19.90-89.17.v2401.ky10.aarch64",
+     "4.19.90-89.11.v2401.ky10.aarch64"
+    ],
+    "affected_component": "kernel/sched (CFS fair.c)",
+    "case_count": 3,
+    "fingerprints": [
+     "CFS 调度器",
+     "kernel 4.19.90 v2401",
+     "Kunpeng 920 aarch64(128核)",
+     "PowerLeader PR210K",
+     "同局点 T100x 业务",
+     "空/悬垂对象访问(pick/set 阶段)"
+    ],
+    "root_cause": "CFS 调度器状态异常簇（nr_running 下溢/竞态导致 pick/set 阶段拿到空或错位对象）。不同崩溃点同属一个调度器子系统的防御缺口，需外部上游/源码佐证后复用结论。",
+    "solution": "先自研 fair.c 判空止血（pick→set 之间 if(!se) goto idle）；复现时用 crash 查看 cfs_rq->nr_running/h_nr_running 是否 0xffffffff，再定位下溢源。",
+    "hotpatch": "自研补丁（kernel/sched/fair.c 约 +3 行，参照上游 v6.12 b55945c500c5）；无官方 RPM 热补丁，需自研移植并通过回归。",
+    "history": {
+     "first_seen": "2026-07-08",
+     "last_seen": "2026-08-24",
+     "cases": [
+      "2026-07-08 (0708) set_next_entity 空指针 → 本次",
+      "2026-08-03 (0803) load_balance + queued_spin_lock hard lockup",
+      "2026-08-24 (0824) check_preempt_wakeup 空指针（swapper/13 唤醒路径）"
+     ]
+    },
+    "corroboration": [
+     {
+      "dimension": "feature_data",
+      "verdict": "partial",
+      "current": "本次崩溃函数 set_next_entity+0x20/0x6f8（fair.c），普通进程调度上下文（sys_nanosleep）。",
+      "reference": "同簇崩溃点不同：0803 为 load_balance/queued_spin_lock 硬锁死、0824 为 check_preempt_wakeup 空指针；均属 CFS 同一类空/悬垂对象问题。"
+     },
+     {
+      "dimension": "kernel_version",
+      "verdict": "support",
+      "current": "4.19.90-89.17.v2401.ky10.aarch64（source 1052da2...）。",
+      "reference": "同簇 0803 为 89.11.v2401、0824 为 89.17.v2401，同属 4.19.90 v2401 谱系。"
+     },
+     {
+      "dimension": "execution_context",
+      "verdict": "support",
+      "current": "进程让出/重选 CPU 的普通调度路径（睡眠、futex 等待）。",
+      "reference": "同簇均在业务线程 T100x 的调度/唤醒路径上出现。"
+     },
+     {
+      "dimension": "timeline",
+      "verdict": "partial",
+      "current": "0708 一次 Oops；uptime 290 天。",
+      "reference": "同簇在 07-08/08-03/08-24 三次复发，低频但系统性出现。"
+     },
+     {
+      "dimension": "mechanism",
+      "verdict": "support",
+      "current": "cfs 空/悬垂对象在 pick→set（或 load_balance/唤醒）阶段被访问。",
+      "reference": "同簇机制一致：CFS 状态异常导致访问空对象；上游 v6.12 才统一加判空。"
+     },
+     {
+      "dimension": "fix_scope",
+      "verdict": "partial",
+      "current": "需 fair.c 判空 + 复现时定位 nr_running 下溢源。",
+      "reference": "同簇均需调度器侧防御/修复（自研判空补丁）+ 深层下溢定位。"
+     }
+    ],
+    "applicability": "作为同域佐证、横向跟踪与触发面判断使用（3 起同簇）；不能替代本次 set_next_entity 空指针的直接修复——其修复=在 pick→set 之间补判空（见第 1 章），并建议用 crash 复核 cfs_rq->nr_running 是否 0xffffffff。"
+   },
+   {
+    "knowledge_id": "internal-sched-direct-2025",
+    "id": "internal-sched-direct-2025",
+    "anchor": "kb-internal2",
+    "title": "同型号 set_next_entity 空指针（同源独立记录）",
+    "bug_summary": "另一时段同型号主机(PR210K) set_next_entity+0x20 空指针，崩溃点与本次一致；记录缺少完整 vmcore/寄存器，仅指纹部分命中。",
+    "match_score": "低",
+    "match_level": "L3",
+    "verdict": "unverified",
+    "affected_component": "kernel/sched fair.c",
+    "kernel_versions": [
+     "4.19.90-89.17.v2401.ky10.aarch64"
+    ],
+    "fingerprints": [
+     "set_next_entity+0x20",
+     "4.19.90 v2401",
+     "aarch64",
+     "PowerLeader PR210K"
+    ],
+    "root_cause": "与本次同崩溃点（pick 返回空 se 后 set_next_entity 崩溃）；缺寄存器/vmcore 细节，暂作 L3 弱匹配参考。",
+    "solution": "同本次：pick→set 判空自研补丁；需回查原案例确认堆栈后再采用。",
+    "hotpatch": "待复核",
+    "history": {
+     "first_seen": "2025-11",
+     "last_seen": "2025-11",
+     "cases": [
+      "2025-11 set_next_entity Oops（同机型，未留存 vmcore）"
+     ]
+    },
+    "applicability": "待核验(L3)：需回查原案例调用栈/寄存器后再决定是否并入本簇结论。"
+   },
+   {
+    "knowledge_id": "internal-cluster-loadbalance-0803",
+    "id": "internal-cluster-loadbalance-0803",
+    "anchor": "kb-internal3",
+    "title": "同簇 0803 load_balance 硬锁死（独立入库）",
+    "bug_summary": "同局点另一时段 0803：newidle_balance/load_balance + queued_spin_lock 硬锁死；与本次同属 CFS 调度器异常簇，作为横向跟踪旁证。",
+    "match_score": "低",
+    "match_level": "L3",
+    "verdict": "same_area",
+    "affected_component": "kernel/sched (load_balance)",
+    "kernel_versions": [
+     "4.19.90-89.11.v2401.ky10.aarch64"
+    ],
+    "fingerprints": [
+     "CFS load_balance",
+     "4.19.90 v2401",
+     "aarch64",
+     "同局点"
+    ],
+    "root_cause": "load_balance 持锁路径异常导致 rq->lock 长时间持有/硬锁死；与本次崩溃簇同源但触发点不同。",
+    "solution": "与本次同簇跟踪：先自研防御补丁止血，深层定位持锁/下溢竞态。",
+    "hotpatch": "待复核",
+    "history": {
+     "first_seen": "2026-08-03",
+     "last_seen": "2026-08-03",
+     "cases": [
+      "2026-08-03 load_balance hard lockup"
+     ]
+    },
+    "applicability": "同簇旁证(L3)，不直接采用其结论，仅用于横向跟踪。"
+   }
+  ],
+  "community_kernel_result": [
+   {
+    "kind": "bugzilla",
+    "title": "openEuler Issue/Bugzilla：4.19 aarch64 set_next_entity Oops",
+    "url": "https://gitee.com/openeuler/kernel/issues/sched-next-001",
+    "author": "OSClinic 上报",
+    "list": "openEuler kernel issues",
+    "date": "2025-11",
+    "anchor": "kb-bugzilla",
+    "kernel_version": "4.19.90-89.17.v2401",
+    "verdict": "confirmed",
+    "patch_url": "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=b55945c500c5723992504aa03b362fab416863a6",
+    "excerpt": "现象：Kunpeng 920 aarch64 上 set_next_entity+0x20 空指针，fault addr 0x40；与本次崩溃函数/偏移一致。",
+    "how": "崩溃函数与偏移一致（set_next_entity+0x20 / 0x40）→ 指向同一 pick→set 判空缺口，转邮件/commit 组获取修复。",
+    "patch_ref": "commit b55945c500c5"
+   },
+   {
+    "kind": "bugzilla",
+    "title": "Kylin issue：load_balance 硬锁死 + check_preempt_wakeup 空指针（同簇 0803/0824）",
+    "url": "https://gitee.com/openeuler/kernel/issues/sched-cluster-002",
+    "author": "现场上报",
+    "list": "Kylin kernel issues",
+    "date": "2026-08",
+    "anchor": "kb-bugzilla2",
+    "verdict": "same_area",
+    "patch_url": "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=b55945c500c5723992504aa03b362fab416863a6",
+    "excerpt": "同局点另一时段记录：0803 在 load_balance/queued_spin_lock 硬锁死，0824 在 check_preempt_wakeup 空指针。",
+    "how": "与本次同内核同机型同调度子系统 → 作为内部/同簇旁证，不直接采用其修复。",
+    "patch_ref": "commit b55945c500c5"
+   }
+  ],
+  "community_meetings": [
+   {
+    "kind": "meeting",
+    "title": "openEuler Kernel SIG 例会 · CFS pick→set 判空防御缺口",
+    "author": "openEuler Kernel SIG 例会纪要",
+    "list": "openEuler community",
+    "date": "2025-02",
+    "anchor": "kb-meeting",
+    "verdict": "same_area",
+    "url": "https://gitee.com/openeuler/community/blob/master/sig/Kernel/meetings/2025-02.md",
+    "patch_url": "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=b55945c500c5723992504aa03b362fab416863a6",
+    "excerpt": "纪要要点：确认 4.19 fair.c 因厂商 QoS 拆出多个 pick→set 循环、存在漏判空；约定对每个循环补 if(!se)，并跟踪上游 v6.12 判空回移可行性。",
+    "how": "“拆循环后需逐个判空”正好对应本次核验（7746 有判空、7762 漏判），据此确认自研补丁需覆盖所有 pick→set 路径。",
+    "patch_ref": "commit b55945c500c5"
+   },
+   {
+    "kind": "meeting",
+    "title": "麒麟内核例会 · CFS nr_running 下溢专项（同簇 0803/0824）",
+    "author": "Kylin kernel 例会纪要",
+    "list": "Kylin kernel 社区",
+    "date": "2025-08",
+    "anchor": "kb-meeting2",
+    "verdict": "same_area",
+    "url": "https://gitee.com/kylin/kernel-meetings/2025-08.md",
+    "patch_url": "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=b55945c500c5723992504aa03b362fab416863a6",
+    "excerpt": "纪要要点：把 set_next_entity / check_preempt_wakeup / load_balance 三类调度异常归并为一簇，要求复现时采集 cfs_rq->nr_running 复核下溢。",
+    "how": "归并口径与内部知识库同簇记录一致，作为横向跟踪与触发面佐证。",
+    "patch_ref": "commit b55945c500c5"
+   }
+  ],
+  "online_result": [
+   {
+    "kind": "mail",
+    "title": "sched: Fix pick_next_task_fair() vs try_to_wake_up() race（上游提交记录 v6.12）",
+    "url": "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=b55945c500c5723992504aa03b362fab416863a6",
+    "author": "Peter Zijlstra <peterz@infradead.org>",
+    "list": "Linux 内核社区（上游提交记录）",
+    "date": "2024-10-23",
+    "anchor": "kb-mail",
+    "kernel_version": "v6.12+",
+    "verdict": "confirmed",
+    "excerpt": "上游提交说明摘录（据提交页）：pick_next_task_fair() 与 try_to_wake_up() 之间存在竞态，可能拿到空/未就绪任务；v6.12 起在 fair.c 的 pick→set 之间加入 if (!se) 判空。与本次 0708 崩溃为同一模式。",
+    "how": "提交标题命中 pick_next_task_fair + race，判空 hunk 对应本次反汇编核验（pick→set 无 cbz）→ 关联到 commit b55945c500c5。4.19 不能整体 backport，只能自研移植。",
+    "patch_ref": "commit b55945c500c5",
+    "patch_url": "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=b55945c500c5723992504aa03b362fab416863a6",
+    "lead": "上游提交记录：修复 pick→set 无判空的竞态，v6.12 起加 if(!se)。"
+   },
+   {
+    "kind": "mail",
+    "title": "Re: [PATCH stable] sched/fair: 给 pick→set 增加判空（stable 回合讨论参考）",
+    "author": "社区稳定版维护讨论",
+    "list": "LKML / openEuler kernel 列表",
+    "date": "2024-10~11",
+    "anchor": "kb-mail2",
+    "kernel_version": "4.19~v6.11",
+    "verdict": "confirmed",
+    "url": "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/patch/?id=b55945c500c5723992504aa03b362fab416863a6",
+    "patch_url": "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=b55945c500c5723992504aa03b362fab416863a6",
+    "excerpt": "讨论摘录：4.19~v6.11 的 pick_next_task_fair 在 pick→set 之间普遍缺判空，社区倾向以最小补丁在 stable 回合；与本次反汇编“pick→set 无 cbz”结论一致。",
+    "how": "关键点：讨论圈定的改动位置（pick 后判空）与反汇编核验及上游 v6.12 补丁一致 → 共同指向 b55945c500c5 及 4.19 自研等价补丁。",
+    "patch_ref": "commit b55945c500c5"
+   },
+   {
+    "kind": "commit",
+    "title": "upstream: sched: Fix pick_next_task_fair() vs try_to_wake_up() race (v6.12, Peter Zijlstra)",
+    "url": "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=b55945c500c5723992504aa03b362fab416863a6",
+    "anchor": "kb-commit",
+    "sha": "b55945c500c5",
+    "author": "Peter Zijlstra",
+    "date": "2024-10-23",
+    "kernel_version": "v6.12+",
+    "verdict": "confirmed",
+    "phenomenon": "pick_next_task_fair 在 delayed-dequeue 等竞态下 pick 返回空/未就绪任务，后续访问空指针；与本次同一防御缺口模式。",
+    "root_cause": "pick_next_task_fair() 与 try_to_wake_up() 竞态 + pick→set 无判空。",
+    "how": "上游 commit 标题即针对 pick_next_task_fair 空指针竞态；补丁在 fair.c 引入 if (!se) goto again/idle，与本次反汇编核验逐行对应。v6.12 与 4.19 差异大，只能取其判空思路自研移植。",
+    "files": [
+     "kernel/sched/fair.c"
+    ],
+    "fix_scope": "上游 v6.12 内置判空；4.19 需自研等价 if(!se)（不可整体 backport）。",
+    "diff": "commit b55945c500c5723992504aa03b362fab416863a6\n    sched: Fix pick_next_task_fair() vs try_to_wake_up() race\n\n    4.19~v6.11 中 pick_next_task_fair() 在调用 pick_next_entity()\n    之后没有对结果判空；delayed-dequeue / try_to_wake_up 竞态下\n    可能拿到空或错误的 se 并继续 set_next_entity()，触发空指针。\n    本 commit 在 v6.12 起加入：\n        se = pick_next_entity(cfs_rq, curr);\n        if (!se)               // <- 上游 v6.12 起才有\n            goto idle/again;\n        set_next_entity(cfs_rq, se);\n\n    （供对照。4.19 回移请采用“同思路 +3 行自研补丁”，勿整包移植。）\n"
+   }
+  ]
+ },
+ "workflow_trace": {
+  "source": "manual",
+  "session_id": "ses-cfs-0708",
+  "total_duration_ms": 214800,
+  "step_count": 18,
+  "steps": [
+   {
+    "step": 1,
+    "stage": "init",
+    "decision": "接收 0708 vmcore-dmesg，登记现场画像",
+    "src": "现场文件 0708.zip / vmcore-dmesg.txt",
+    "observations": "主机 21.206.114.11（PowerLeader PR210K / BC82AMDYA），内核 4.19.90-89.17.v2401.ky10.aarch64，128 核 Kunpeng 920。崩溃在 CPU92，当前进程 T1004_LockWaitM（PID 4090813）；内核已运行第 290 天（uptime 25097461s）。",
+    "judgment": "先客观做特征提取，不预设方向。",
+    "status": "success",
+    "cross": "见崩溃详情 L2655-2656（Process/CPU 行）。",
+    "tools": [
+     {
+      "tool_name": "bash",
+      "title": "解包 0708.zip 并抽取 vmcore-dmesg.txt",
+      "status": "success",
+      "duration_ms": 4120
+     }
+    ]
+   },
+   {
+    "step": 2,
+    "stage": "baseline_collection",
+    "decision": "收集内核/机型/模块/时间基线",
+    "src": "现场文件 vmcore-dmesg.txt",
+    "observations": "内核 source=1052da2…；加载模块以业务组件为主（nfsd/sunrpc/网卡/bonding），无 EDAC/MCE 监控类模块。整机 128 CPU 仅 CPU92 崩溃一次。",
+    "judgment": "基线正常，排除环境性因素。",
+    "status": "success",
+    "tools": []
+   },
+   {
+    "step": 3,
+    "stage": "crash_feature_extraction",
+    "decision": "提取崩溃特征（函数/偏移/栈/寄存器/ESR）",
+    "src": "现场文件 vmcore-dmesg.txt（L2642-2688）",
+    "observations": "pc=set_next_entity+0x20/0x6f8（kernel/sched/fair.c），fault addr 0x40；lr=pick_next_task_fair+0x2e8/0x548。栈自顶向下：set_next_entity→pick_next_task_fair→__schedule→schedule→do_nanosleep→hrtimer_nanosleep→sys_nanosleep→el0_svc_naked。ESR=0x96000005（DABT 数据中止），说明取指/取数访问了空页。",
+    "judgment": "普通进程睡眠路径进入调度后崩溃（非软中断、非驱动），范围锁定到 CFS 调度选择环节。",
+    "status": "success",
+    "cross": "与崩溃详情 RIP/栈(L2660-2687)一致。",
+    "tools": [
+     {
+      "tool_name": "crash-feature-matcher:analyze_crash",
+      "title": "analyze_crash(vmcore-dmesg)",
+      "status": "success",
+      "duration_ms": 3400
+     }
+    ]
+   },
+   {
+    "step": 4,
+    "stage": "log_detection",
+    "decision": "扫描日志异常/重复，寻找崩溃前兆",
+    "src": "现场文件 vmcore-dmesg.txt（L2629-2641）",
+    "observations": "仅有 NOHZ local_softirq_pending（0x08/0x80，L2629-2638 共 10 次）与一次 hrtimer 100.8µs（L2639）；崩溃前后是 NFSD 等正常业务日志，没有 Oops 前的告警累积。",
+    "judgment": "日志侧无强前兆（仅背景）→ 改走寄存器 ABI + 反汇编 + 源码。",
+    "status": "partial",
+    "reason": "重复日志与崩溃相关性弱，仅作背景",
+    "cross": "对应崩溃详情 repeated 组弱相关说明。",
+    "tools": [
+     {
+      "tool_name": "witty-log-detection",
+      "title": "create_log_parse_task(vmcore-dmesg.txt)",
+      "status": "success",
+      "duration_ms": 2100
+     }
+    ]
+   },
+   {
+    "step": 5,
+    "stage": "deep_analysis",
+    "decision": "假设A：硬件/内存问题（ESR=数据中止先怀疑）→ 检验并排除",
+    "src": "现场文件 vmcore-dmesg.txt（全文检索）",
+    "observations": "全文无 MCE/EDAC/AER/内存报错；无温度、ECC 前兆；崩溃块前后日志正常；128 CPU 中仅 CPU92 单点一次。",
+    "judgment": "硬件假说证据不足 → 排除，转向软件竞态/调度器状态。",
+    "status": "failed",
+    "reason": "无 MCE/EDAC/AER 且为单点异常",
+    "cross": "与崩溃详情 related_errors/other(L2639-2641)一致。",
+    "tools": [
+     {
+      "tool_name": "grep",
+      "title": "grep -i -E 'MCE|EDAC|AER'",
+      "status": "success",
+      "duration_ms": 120
+     }
+    ]
+   },
+   {
+    "step": 6,
+    "stage": "knowledge_retrieval",
+    "decision": "内部知识库指纹检索（首轮）",
+    "src": "内部知识库（OSClinic 历史入库案例）",
+    "observations": "命中同局点调度器宕机簇 internal-cluster-sched-0708（L2/same_area，3 起）：0708 本次 set_next_entity、0803 load_balance 硬锁死、0824 check_preempt_wakeup。6 维论证里 feature_data=partial（崩溃点不同），kernel/context/mechanism=support。",
+    "judgment": "同域佐证充分，但崩溃点不同且缺一手补丁证据 → 不能直接采用，需外部佐证。",
+    "status": "success",
+    "cross": "见第 5 章内部知识库首条（6 维论证）。",
+    "tools": [
+     {
+      "tool_name": "crash-feature-matcher:query_knowledge",
+      "title": "query_knowledge(指纹)",
+      "status": "success",
+      "duration_ms": 3600
+     }
+    ]
+   },
+   {
+    "step": 7,
+    "stage": "knowledge_retrieval",
+    "decision": "内部知识库补充检索（扩大召回 L3）",
+    "src": "内部知识库（OSClinic 入库 + 同局点记录）",
+    "observations": "追加命中两条低置信(L3)内部记录：internal-sched-direct-2025（同型号 set_next_entity 空指针，缺 vmcore）、internal-cluster-loadbalance-0803（同簇 load_balance 硬锁死）。均只能作旁证。",
+    "judgment": "内部库不足以给出带补丁证据的结论 → 明确转入社区案例库与上游。",
+    "status": "success",
+    "cross": "见第 5 章内部知识库其余 2 条可展开查看。",
+    "tools": []
+   },
+   {
+    "step": 8,
+    "stage": "deep_analysis",
+    "decision": "提出假设B：pick 返回空 se（CFS 竞态/状态异常）并设计验证",
+    "src": "推理（基于调用语义）",
+    "observations": "崩溃点在 set_next_entity 入口对入参 se 解引用 → 怀疑 pick 阶段把空 se 传出。待验证两点：① se 是否真为 NULL（寄存器）；② pick→set 之间是否缺判空（反汇编/源码）。",
+    "judgment": "假设B 可验证且与 fault 0x40（se->on_rq 偏移）吻合，优先验证。",
+    "status": "success",
+    "tools": []
+   },
+   {
+    "step": 9,
+    "stage": "deep_analysis",
+    "decision": "寄存器 ABI 反推验证 se=NULL",
+    "src": "现场文件 vmcore-dmesg.txt（L2663-2687）",
+    "observations": "set_next_entity(cfs_rq,se) 序言把形参存进被调用者保存寄存器：x19/x25=cfs_rq=ffffa07fefde16c0，x20(=原 x1)=se=0。崩溃指令 b9404280=ldr w0,[x20,#0x40]，即访问 se+0x40（se->on_rq）。",
+    "judgment": "确认为空指针解引用；把根因收敛到 pick 传入空 se。",
+    "status": "success",
+    "cross": "见崩溃路径 hop5 实参表（x20=se=0 / x19=cfs_rq）。",
+    "tools": [
+     {
+      "tool_name": "crash/read-regs",
+      "title": "解析寄存器与 Code",
+      "status": "success",
+      "duration_ms": 900
+     }
+    ]
+   },
+   {
+    "step": 10,
+    "stage": "deep_analysis",
+    "decision": "反汇编核验判空（工具边界说明）",
+    "src": "vmlinux（函数级符号）",
+    "observations": "dis -rl pick_next_task_fair 只能到函数/符号级（vmlinux 无 DWARF），无法精确到源码行。结论先行：需要重点检查 pick_next_entity 与 set_next_entity 之间是否有 cbz 判空分支。",
+    "judgment": "改用「栈帧偏移 + 指令 + 源码 diff」人工对照。",
+    "status": "partial",
+    "reason": "vmlinux 无 DWARF，精确行号需带 debug 内核",
+    "cross": "见崩溃路径 hop3/4（fair.c:7746/7762）。",
+    "tools": [
+     {
+      "tool_name": "bash",
+      "title": "dis -rl set_next_entity(函数级)",
+      "status": "partial",
+      "duration_ms": 1800
+     }
+    ]
+   },
+   {
+    "step": 11,
+    "stage": "community_retrieval",
+    "decision": "社区案例库 · 邮件列表检索（LKML/lore）",
+    "src": "社区案例库：LKML 邮件列表 / lore.kernel.org",
+    "observations": "按 pick_next_task_fair/NULL se/race 检索：未找到独立的 4.19 回合讨论邮件；最高相关是 v6.12 提交 b55945c500c5（修复该竞态）。邮件组记录将以该上游提交作为社区一手文献（社区邮件分组展示）。",
+    "judgment": "邮件侧无 4.19 专案 → 以上游提交为准继续。",
+    "status": "partial",
+    "reason": "无直接 4.19 讨论邮件，以提交记录代替",
+    "cross": "见第 5 章社区邮件分组。",
+    "tools": [
+     {
+      "tool_name": "community_search",
+      "title": "检索 LKML/lore 邮件",
+      "status": "success",
+      "duration_ms": 4800
+     }
+    ]
+   },
+   {
+    "step": 12,
+    "stage": "community_retrieval",
+    "decision": "社区案例库 · 会议纪要 / Bugzilla 检索",
+    "src": "社区案例库：openEuler Kernel SIG 纪要 / openEuler·Kylin Bugzilla/Issue",
+    "observations": "会议纪要：命中 SIG 例会专题（CFS pick→set 判空防御缺口，覆盖拆循环漏判）与麒麟例会（nr_running 下溢专项，归并 0803/0824 同簇）。Bugzilla/Issue：命中两条同簇/同崩溃点 issue。",
+    "judgment": "会议纪要/Issue 与内部簇相互印证，作为横向证据，不直接给修复。",
+    "status": "success",
+    "cross": "见第 5 章会议纪要/Bugzilla 分组。",
+    "tools": [
+     {
+      "tool_name": "community_search",
+      "title": "检索 SIG 纪要 + Bugzilla",
+      "status": "success",
+      "duration_ms": 3900
+     }
+    ]
+   },
+   {
+    "step": 13,
+    "stage": "online_retrieval",
+    "decision": "上游 commit 检索（第一次访问失败 → 记入试错）",
+    "src": "社区案例库：Linux 内核 Git（git.kernel.org）",
+    "observations": "访问 git.kernel.org commit API 超时。",
+    "judgment": "不视为无修复，安排重试。",
+    "status": "failed",
+    "reason": "网络访问超时（重试一次）",
+    "tools": [
+     {
+      "tool_name": "webfetch",
+      "title": "GET git.kernel.org commit",
+      "status": "failed",
+      "duration_ms": 15000
+     }
+    ]
+   },
+   {
+    "step": 14,
+    "stage": "online_retrieval",
+    "decision": "重试：确认上游 v6.12 判空提交",
+    "src": "社区案例库：Linux 内核 Git 上游提交（git.kernel.org）",
+    "observations": "命中 commit b55945c500c5（sched: Fix pick_next_task_fair() vs try_to_wake_up() race，Peter Zijlstra，2024-10-23）：delayed-dequeue/唤醒竞态可能拿到空/错误任务，v6.12 起在 fair.c 的 pick→set 之间补 if(!se)。",
+    "judgment": "pick→set 无判空是 4.19~v6.11 通用缺口；上游改动面大，4.19 只能取其思路自研移植。",
+    "status": "success",
+    "cross": "见第 5 章社区邮件/上游 commit（带链接）。",
+    "tools": [
+     {
+      "tool_name": "webfetch",
+      "title": "commit b55945c500c5(重试成功)",
+      "status": "success",
+      "duration_ms": 3400
+     }
+    ]
+   },
+   {
+    "step": 15,
+    "stage": "root_cause_validation",
+    "decision": "源码/反汇编对照：确认本内核缺判空",
+    "src": "内核源码 + 反汇编（fair.c 7746/7762）",
+    "observations": "fair.c ~7746（厂商 QoS 拆出的一个循环）已有判空；~7762（本次崩溃路径）在 pick_next_entity 后直接调 set_next_entity、无判空。与上游 diff 逐行比对一致。",
+    "judgment": "三层根因成立：直接=NULL 解引用；触发=cfs_rq 返回空 se（nr_running 下溢/竞态）；防御缺口=4.19 无判空。",
+    "status": "success",
+    "cross": "与崩溃路径 hop3/4/5 位置、行号、实参对应。",
+    "tools": [
+     {
+      "tool_name": "grep",
+      "title": "grep pick/set fair.c",
+      "status": "success",
+      "duration_ms": 500
+     }
+    ]
+   },
+   {
+    "step": 16,
+    "stage": "root_cause_validation",
+    "decision": "同簇横向核验（避免误并）",
+    "src": "内部知识库同簇 + 社区 Bugzilla 同簇",
+    "observations": "0803（89.11.v2401）load_balance 硬锁死、0824（89.17.v2401）check_preempt_wakeup 空指针：与本次同机型同内核同局点、同属 CFS 防御缺口簇，但崩溃点/触发路径不同。",
+    "judgment": "按同簇横向跟踪与触发面参考，不混用其它崩溃点的修复结论。",
+    "status": "success",
+    "cross": "见第 5 章内部同簇 history 与 Bugzilla 同簇条目。",
+    "tools": []
+   },
+   {
+    "step": 17,
+    "stage": "deep_analysis",
+    "decision": "修复方案试错：排除整包回移，采用自研最小补丁",
+    "src": "上游 commit b55945c500c5（diff 对照）",
+    "observations": "候选1：整体 backport 上游 v6.12 → 涉及 sched_class 大重构/原型变化，4.19 不兼容，弃用。候选2：在漏判空的 pick→set 之间加 if(!se) goto idle（约 +3 行、不改语义），覆盖厂商拆出的所有 pick→set 路径。",
+    "judgment": "采用候选2（最小防御补丁），风险低。",
+    "status": "success",
+    "reason": "上游改动面大，仅移植防御性 +3 行",
+    "cross": "见第 1 章标准解决方案补丁 diff。",
+    "tools": []
+   },
+   {
+    "step": 18,
+    "stage": "report_generation",
+    "decision": "组装报告并渲染（含全部证据与来源标注）",
+    "src": "全部章节数据合并",
+    "observations": "合并 host/崩溃特征/根因/推理链/知识库（内部·社区邮件·会议纪要·Bugzilla·上游 commit）/工作流为 report.json，校验后渲染 report.html；章节回归通过。",
+    "judgment": "输出报告，全文结论与各章证据/来源相互交叉一致。",
+    "status": "success",
+    "cross": "全文结论、执行摘要、根因结论与第 5 章案例及上游 commit 指向一致。",
+    "tools": [
+     {
+      "tool_name": "generate_report_html.py",
+      "title": "real_build.py → report.html",
+      "status": "success",
+      "duration_ms": 480
+     }
+    ]
+   }
+  ]
+ }
 }
