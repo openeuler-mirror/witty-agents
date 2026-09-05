@@ -8,11 +8,11 @@ allowed-tools: Bash(python3:*) Bash(pip:*) Bash(cat:*) Bash(ls:*) Bash(rg:*) Bas
 
 # crash-report-generator
 
-This skill defines the canonical JSON schema and generation prompt for kernel crash analysis reports. When crash-related inputs are provided, the final answer must be a single JSON object matching `schemas/crash-report-schema.json`.
+本技能定义了内核宕机诊断报告的规范 JSON Schema 与生成提示词。当收到崩溃相关输入时，最终产物必须是符合 `schemas/crash-report-schema.json` 的单个 JSON 对象。
 
-## Required Output Format
+## 输出格式要求
 
-The final report must be a single JSON object with these top-level sections:
+最终报告必须是一个 JSON 对象，包含以下顶层章节：
 
 - `report_id`
 - `parse_log_range`
@@ -22,50 +22,50 @@ The final report must be a single JSON object with these top-level sections:
 - `diagnosis_repair_result`（内部知识库 / 社区邮件·会议纪要·Bugzilla / 上游 commit 三组）
 - `workflow_trace`
 
-See the full schema in `schemas/crash-report-schema.json` and an example in `sample-crash-report.json`.
+完整定义见 `schemas/crash-report-schema.json`，示例见 `sample-crash-report.json`。
 
-The standalone HTML (`crash-report.html`) presents the report in seven sections: 执行摘要 → 崩溃详情（含日志特征）→ 事件时序图（对象泳道 + 全局变量列）→ 根因分析（三部分）→ 知识库匹配（三组）→ 诊断工作流追踪。
+独立 HTML（`crash-report.html`）将报告呈现为七个章节：执行摘要 → 崩溃详情（含日志特征）→ 事件时序图（对象泳道 + 全局变量列）→ 根因分析（三部分）→ 知识库匹配（三组）→ 诊断工作流追踪。
 
-## Rules for `diagnosis_repair_result`
+## `diagnosis_repair_result` 的填写规则
 
-- `internal_kernel_result` is the **byte-for-byte** native JSON array returned by `crash-feature-matcher:query_knowledge` / `query_cases`.
-- `community_kernel_result` is the **byte-for-byte** native JSON array returned by `crash-feature-matcher:query_community_cases`.
-- Do **not** rename fields, rewrite values, summarize, normalize numbers, convert types, or drop fields.
-- Other top-level objects must still conform to `additionalProperties: false`.
+- `internal_kernel_result` 必须是 `crash-feature-matcher:query_knowledge` / `query_cases` 返回的原生 JSON 数组的**逐字节**复制。
+- `community_kernel_result` 必须是 `crash-feature-matcher:query_community_cases` 返回的原生 JSON 数组的**逐字节**复制。
+- **不得**重命名字段、改写值、重新总结、归一化数值、转换类型或删除字段。
+- 其余顶层对象仍须满足 `additionalProperties: false`。
 
-## Community Case Retrieval (dual channel)
+## 社区案例检索（双通道）
 
-社区案例两种获取方式，可互为兜底，结果需合并去重：
+社区案例有两种获取方式，可互为兜底，结果需合并去重：
 
 1. **rag_core 语义检索**：`crash-feature-matcher:query_community_cases`（依赖 RAG 配置），返回 L1/L2/L3 社区案例与一手 evidence / verdict。
-2. **本地源文件 grep**：社区邮件、会议纪要、上游 commit 在本机保留一份本地副本（`$SHENNONG_COMMUNITY_DIR`，默认 `/data/shennong/community/`，子目录 `mails/`、`meetings/`、`commits/`）。当 RAG 未配置或无高置信命中时，用 `rg`/`grep` 以 `rip_function`、`bug_key`、调用栈顶层函数、模块名、内核版本等关键词在本地源文件检索，摘取「关键片段 + 原文网址 + commit 号」作为社区案例。
+2. **本地源文件综合检索（grep + find）**：社区邮件、会议纪要、上游 commit 在本机保留一份本地副本（`$SHENNONG_COMMUNITY_DIR`，默认 `/data/shennong/community/`，子目录 `mails/`、`meetings/`、`commits/`）。当 RAG 未配置或无高置信命中时，用 `find` 定位相关文件、再以 `rg`/`grep` 按 `rip_function`、`bug_key`、调用栈顶层函数、模块名、内核版本等关键词综合检索，摘取「关键片段 + 原文网址 + commit 号」作为社区案例，**从中挑选最符合的 Top 3-4 条**进入报告。
 
 无论走哪条通道，每条社区案例 / 上游 commit 在报告里都需附：**原文网址（url）、关联 commit、关键片段（解释 + 原文）**。
 
-## Generation Workflow (Incremental)
+## 生成工作流（分片增量式）
 
-The report should be built incrementally, section by section, saved to a local temporary directory, and only combined after each section is validated.
+报告应逐节增量生成，每节保存到本地临时目录，逐节校验通过后再合并。
 
-1. **Create a temporary directory** (e.g., `/tmp/shennong_report_YYYYMMDD_HHMMSS`).
-2. **Host baseline** — generate `host_base_info.json` using `bash`/`crash` tools or directly from `analyze_crash` `host_features`: hostname, kernel version, CPU model, machine model, CPU count (use `0` if unknown), memory size (convert MB to a human-readable string such as `"64GB"` or `"{MB}MB"`), loaded modules. This section should be **script/tool generated**, not rewritten by the LLM.
-3. **Crash feature extraction** — generate `crash_feature_info.json` using `crash-feature-matcher` MCP tools (`analyze_crash`, `query_knowledge`, `query_cases`). If `crash_time` is not a valid ISO 8601 timestamp, derive it from the log or use `"unknown"`; do not leave it empty. This section should be **script/tool generated**, not rewritten by the LLM.
-4. **Log anomaly detection** — use `witty-log-detection` MCP tools (`create_log_parse_task`, `get_task_result`) for supplementary evidence.
-5. **Community case retrieval** — generate `diagnosis_repair_result.json` using `crash-feature-matcher:query_community_cases`. Keep internal and community cases byte-for-byte identical to the original JSON, **except** `match_score`: convert it into 匹配等级 高/中/低 (`match_score`(0-1): 高≥0.7 / 中0.4-0.69 / 低<0.4). This section should be **script/tool generated**, not rewritten by the LLM.
-6. **Root cause validation** — generate `root_cause_analysis.json` after verifying call trace completeness, module consistency, and source-code mapping. If incomplete, run a second round. This section should be **LLM summarization** based on all collected evidence, producing three fields:
-   - **`conclusion`** (one natural Chinese sentence, highly abstracted): Summarize the scenario, general defect category, and conclusion (speculative? real defect vs. expected action). **STRIP** all implementation details: no function names, register names, flag constants, mechanism internals (e.g., "exception table", "single-step", "fixup", "NMI", "GRO"), no specific addresses/offsets/paths. Examples:
-     - Simple (sysrq): "当前主机发生内核 panic，通过日志及调用栈表明，该故障由人工通过 sysrq 手动触发，并非内核缺陷。"
-     - Complex: "当前主机在高网络负载下发生内核崩溃，通过调用栈定位到网卡驱动收包路径，存在内存释放后重用的并发竞态（推测）。"
-   - **`analysis`** (ordered array, optional; leave empty `[]` for simple cases): For complex cases, produce a **reasoning chain** (3–7 steps) mirroring how a human analyst works — not a wall of text and not a list of disconnected facts. Each step `{ stage, fact, evidence?, detail }` is one link in the deduction: `stage` (required, enum) marks the analysis phase and drives the HTML narrative grouping — in order: `phenomenon` (crash surface: panic log/RIP/**call trace**, the trace is the first evidence) → `log_location` (key log segments, first anomaly, dmesg window) → `source_analysis` (source-code logic at the located positions) → `propagation` (event sequence & corruption-propagation chain: who polluted whom) → `root_cause` (essential defect mechanism) → `kb_corroboration` (internal KB match + community verdict + mail-thread corroboration) → `fix_verification` (already-fixed version judgment + fix method). Multiple steps may share a stage; a stage may be skipped only when genuinely inapplicable. `fact` is the intermediate conclusion this step proves (a claim, not an observation); `evidence` (optional) is raw supporting data — key call-stack frames (3–6 frames, one per line), register values, dmesg lines, disassembly, struct fields, source lines, diff hunks, monospace-friendly and newline-separated; `detail` is the reasoning itself ("because we see <evidence>, we deduce <fact>, leading to examine <next focus>"). Each step answers a question raised by the previous. All mechanism details/function names/register values belong here — not in `conclusion`.
-   - **`solution`** (always required): For simple cases — one short sentence on handling. For complex cases — tier by evidence: (a) internal/community match → adopt case solution; (b) git-skill commit/issue found → reference fix marked "参考社区 commit xxx"; (c) neither → give mitigation advice (temporary mitigations, info to collect, next steps), do not fabricate fix code.
-   Follow the full rules and examples in `prompts/generate-report.md`.
-7. **Workflow trace** — generate `workflow_trace.json` based on **real session data**:
-   a. Run `scripts/extract_workflow.py` to extract the execution timeline from the current opencode session (uses `opencode export <sessionID>` to get real tool calls, timestamps, durations, statuses, and the agent's reasoning chain).
-   b. Read the extracted `timeline.json` and group consecutive related turns into **5–8 key decision steps** (not one turn per step, not one big merged stage). For each step fill in: `stage` (init/baseline_collection/crash_feature_extraction/log_detection/knowledge_retrieval/root_cause_validation/report_generation), `decision` (what was decided and why, distilled from reasoning), `observations` (key findings from tool outputs), `judgment` (optional: conclusion drawn that leads to the next step), `tools` (copy real tool entries verbatim from timeline — name, title, status, duration_ms, start/end timestamps; **do NOT fabricate tools, statuses, or timestamps**), `status` (success/failed/partial/skipped), `reason` (only on failure), `start_time`/`end_time` (from earliest/last tool in the group).
-   c. Top-level fields: `source="opencode_export"`, `session_id`, `total_duration_ms`, `step_count` (= number of steps), `steps[]`.
-   d. **Fallback**: if the extract script fails (e.g. opencode CLI not available), set `source="manual"` and use the same step structure, but note in `reason` that timestamps/tools are approximated.
-   e. Honesty rule: every tool listed in `steps[].tools` MUST exist in the timeline with matching status; timestamps MUST come from the export; if a tool failed, mark the step `failed`/`partial` and explain in `reason`.
-8. **Section validation** — validate each section against `schemas/crash-report-schema.json` before combining. Fix any errors before proceeding.
-9. **Combine sections** — use `scripts/combine_report.py` to assemble the final report:
+1. **创建临时目录**（如 `/tmp/shennong_report_YYYYMMDD_HHMMSS`）。
+2. **主机基线** — 用 `bash`/`crash` 工具或直接取 `analyze_crash` 的 `host_features` 生成 `host_base_info.json`：主机名、内核版本、CPU 型号、机型、CPU 核数（未知填 `0`）、内存大小（把 MB 换算成人类可读字符串，如 `"64GB"` 或 `"{MB}MB"`）、已加载模块。该节应由**脚本/工具生成**，不得由 LLM 改写。
+3. **崩溃特征提取** — 用 `crash-feature-matcher` MCP 工具（`analyze_crash`、`query_knowledge`、`query_cases`）生成 `crash_feature_info.json`。若 `crash_time` 不是合法 ISO 8601 时间戳，则从日志推导或填 `"unknown"`，不得留空。该节应由**脚本/工具生成**，不得由 LLM 改写。
+4. **日志异常检测** — 用 `witty-log-detection` MCP 工具（`create_log_parse_task`、`get_task_result`）补充证据。
+5. **社区案例检索** — 用 `crash-feature-matcher:query_community_cases` 生成 `diagnosis_repair_result.json`。内部与社区案例须与原 JSON 逐字节一致，**仅** `match_score` 例外：转换成匹配等级 高/中/低（`match_score`(0-1)：高≥0.7 / 中0.4-0.69 / 低<0.4）。该节应由**脚本/工具生成**，不得由 LLM 改写。
+6. **根因验证** — 在核验调用栈完整性、模块一致性、源码映射后生成 `root_cause_analysis.json`；若不完整则再跑一轮。该节应由 **LLM 综合所有证据总结**，产出以下字段：
+   - **`conclusion`**（一句自然中文，高度抽象）：概括场景、缺陷大类与结论（是推测还是真实缺陷、还是预期动作）。**剔除**所有实现细节：不出现函数名、寄存器名、标志常量、机制内部细节（如"exception table"、"single-step"、"fixup"、"NMI"、"GRO"），不出现具体地址/偏移/路径。示例：
+     - 简单（sysrq）："当前主机发生内核 panic，通过日志及调用栈表明，该故障由人工通过 sysrq 手动触发，并非内核缺陷。"
+     - 复杂："当前主机在高网络负载下发生内核崩溃，通过调用栈定位到网卡驱动收包路径，存在内存释放后重用的并发竞态（推测）。"
+   - **`analysis`**（有序数组，可选；简单问题留空 `[]`）：复杂问题给出**推理链**（3–7 步），模仿人类分析师的思路，而非一坨文字或一堆孤立事实。每一步 `{ stage, fact, evidence?, detail }` 是推理的一个环节：`stage`（必填，枚举）标注分析阶段并驱动 HTML 叙事分组，顺序为：`phenomenon`（崩溃表象：panic 日志/RIP/**调用栈**，栈是第一份证据）→ `log_location`（关键日志片段、异常首现点、dmesg 窗口）→ `source_analysis`（定位处对应源码逻辑）→ `propagation`（事件序列与污染扩散链：谁污染了谁）→ `root_cause`（缺陷本质机制）→ `kb_corroboration`（内部知识库命中 + 社区 verdict + 邮件讨论佐证）→ `fix_verification`（是否已修复的版本判定 + 修复方法）。同阶段可有多步；阶段仅在确实不适用时才跳过。`fact` 是本步证明的中间结论（是论断而非观察）；`evidence`（可选）是原始支撑数据——关键调用栈帧（3–6 帧，一行一帧）、寄存器值、dmesg 行、反汇编、结构体字段、源码行、diff 片段，用等宽字体、以换行分隔；`detail` 是推理本身（"因为看到 <evidence>，推出 <fact>，进而检查 <下一步焦点>"）。每一步回答上一步提出的问题。所有机制细节/函数名/寄存器值都放这里——不要放进 `conclusion`。
+   - **`solution`**（始终必填）：简单问题——一句处置说明；复杂问题——按证据强度分层：(a) 内部/社区命中 → 采用案例的 solution；(b) git 技能查到 commit/issue → 给出参考修复并标注"参考社区 commit xxx"；(c) 都无 → 给规避建议（临时缓解、待收集信息、下一步方向），不臆造修复代码。
+   完整规则与示例见 `prompts/generate-report.md`。
+7. **工作流追踪** — 基于**真实会话数据**生成 `workflow_trace.json`：
+   a. 运行 `scripts/extract_workflow.py` 提取当前 opencode 会话的执行时间线（用 `opencode export <sessionID>` 获取真实工具调用、时间戳、耗时、状态与 agent 的推理链）。
+   b. 读取提取出的 `timeline.json`，把连续相关的轮次聚合成 **5–8 个关键决策步骤**（不是每轮一步，也不是一个大杂烩阶段）。每步填写：`stage`（init/baseline_collection/crash_feature_extraction/log_detection/knowledge_retrieval/root_cause_validation/report_generation）、`decision`（决定了什么及为什么，从推理中提炼）、`observations`（工具输出的关键发现）、`judgment`（可选：由观察得出的结论及如何引向下一步）、`tools`（从时间线逐字复制真实工具条目——名称、标题、状态、耗时、起止时间戳；**不得编造工具、状态或时间戳**）、`status`（success/failed/partial/skipped）、`reason`（仅失败时）、`start_time`/`end_time`（取组内最早/最晚工具的时间）。
+   c. 顶层字段：`source="opencode_export"`、`session_id`、`total_duration_ms`、`step_count`（=步骤数）、`steps[]`。
+   d. **兜底**：若提取脚本失败（如 opencode CLI 不可用），设 `source="manual"` 并沿用同样的步骤结构，但在 `reason` 中注明时间戳/工具是近似值。
+   e. 诚实规则：`steps[].tools` 中列出的每个工具必须真实存在于时间线且状态一致；时间戳必须来自导出；工具失败则把步骤标为 `failed`/`partial` 并在 `reason` 中解释。
+8. **逐节校验** — 合并前先对每节对照 `schemas/crash-report-schema.json` 校验，发现错误先修正。
+9. **合并分片** — 用 `scripts/combine_report.py` 组装最终报告：
 
    ```bash
    bash skills/crash-report-generator/run_python.sh skills/crash-report-generator/scripts/combine_report.py \
@@ -74,9 +74,8 @@ The report should be built incrementally, section by section, saved to a local t
        --validate
    ```
 
-10. **Final schema validation** — run `validate_report.py` on the combined report. If it fails, fix the offending section and re-combine.
-
-11. **Generate the standalone HTML report** — run `scripts/generate_report_html.py` to produce a self-contained `crash-report.html` that inlines `report.json` (no local HTTP server needed, open via file://):
+10. **最终 schema 校验** — 对合并后的报告运行 `validate_report.py`；失败则修正对应分片并重新合并。
+11. **生成独立 HTML 报告** — 运行 `scripts/generate_report_html.py` 产出内联 `report.json` 的自包含 `crash-report.html`（无需本地 HTTP 服务，可直接 file:// 打开）：
 
     ```bash
     bash skills/crash-report-generator/run_python.sh skills/crash-report-generator/scripts/generate_report_html.py \
@@ -84,9 +83,9 @@ The report should be built incrementally, section by section, saved to a local t
         --output crash-report.html
     ```
 
-## Validation Commands
+## 校验命令
 
-强烈推荐使用本 Skill 提供的校验脚本进行强校验：
+强烈推荐使用本技能提供的校验脚本做强校验：
 
 ```bash
 # 校验单个报告文件
@@ -122,10 +121,10 @@ bash skills/crash-report-generator/run_python.sh skills/crash-report-generator/s
 npm exec --offline -- shennong-setup install
 ```
 
-## Rules
+## 规则
 
-- Return only the JSON object; do not wrap it in markdown unless asked.
-- All timestamps must be ISO 8601 with timezone.
-- `match_score` values must be floats between 0 and 1.
-- Do not add fields not defined in the schema.
-- If any required field cannot be filled, use `null` only where the schema permits it; otherwise mark the stage as `insufficient` and explain in `reason`.
+- 只返回 JSON 对象；除非明确要求，否则不要用 markdown 包裹。
+- 所有时间戳必须为带时区的 ISO 8601。
+- `match_score` 必须是 0 到 1 之间的浮点数。
+- 不得添加 schema 未定义的字段。
+- 若某必填字段无法填写，仅允许在 schema 允许的位置用 `null`；否则把该阶段标为 `insufficient` 并在 `reason` 中说明。
