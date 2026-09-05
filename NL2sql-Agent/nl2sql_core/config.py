@@ -109,6 +109,56 @@ def load_datasources() -> dict[str, Any]:
     return _load_yaml("datasources.yaml").get("datasources", {})
 
 
+def load_runtime_settings() -> dict[str, Any]:
+    path = DATA_DIR / "runtime_settings.json"
+    if not path.exists():
+        return {}
+    try:
+        import json
+
+        return json.loads(path.read_text(encoding="utf-8")) or {}
+    except Exception:
+        return {}
+
+
+def merge_datasource_config(ds: dict[str, Any], runtime: dict[str, Any] | None = None) -> dict[str, Any]:
+    """运行时设置只补缺省，不覆盖 datasources.yaml 已写项。"""
+    cfg = dict(ds or {})
+    runtime = runtime if runtime is not None else load_runtime_settings()
+    t = str(cfg.get("type") or "").lower()
+    if t in ("elasticsearch", "es"):
+        if not cfg.get("hosts") and runtime.get("es_hosts"):
+            cfg["hosts"] = runtime["es_hosts"]
+        if not (cfg.get("username") or "").strip() and "es_username" in runtime:
+            cfg["username"] = runtime.get("es_username") or ""
+            cfg["password"] = runtime.get("es_password") or ""
+        if not cfg.get("default_index") and runtime.get("es_default_index"):
+            cfg["default_index"] = runtime["es_default_index"]
+        cfg.setdefault("verify_certs", False)
+    elif t in ("opengauss", "postgres", "postgresql"):
+        if not cfg.get("host") and runtime.get("og_host"):
+            cfg["host"] = runtime["og_host"]
+        if not cfg.get("port") and runtime.get("og_port"):
+            cfg["port"] = runtime["og_port"]
+        if not cfg.get("database") and runtime.get("og_database"):
+            cfg["database"] = runtime["og_database"]
+        if not (cfg.get("username") or "").strip() and runtime.get("og_username"):
+            cfg["username"] = runtime.get("og_username") or ""
+            cfg["password"] = runtime.get("og_password") or ""
+        elif not (cfg.get("password") or "").strip() and runtime.get("og_password"):
+            cfg["password"] = runtime.get("og_password") or ""
+    elif t == "hbase":
+        if not cfg.get("host") and runtime.get("hbase_host"):
+            cfg["host"] = runtime["hbase_host"]
+        if not cfg.get("rest_port") and runtime.get("hbase_rest_port"):
+            cfg["rest_port"] = runtime["hbase_rest_port"]
+        if not cfg.get("thrift_port") and runtime.get("hbase_thrift_port"):
+            cfg["thrift_port"] = runtime["hbase_thrift_port"]
+        if not cfg.get("rest_url") and runtime.get("hbase_rest_url"):
+            cfg["rest_url"] = runtime["hbase_rest_url"]
+    return cfg
+
+
 def ensure_data_dir() -> Path:
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     return DATA_DIR

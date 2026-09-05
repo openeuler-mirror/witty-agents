@@ -58,5 +58,5 @@ fi
 
 echo "启动 Web: http://127.0.0.1:${NL2SQL_WEB_PORT:-8199}"
 echo "健康检查: curl -s http://127.0.0.1:${NL2SQL_WEB_PORT:-8199}/api/health"
-echo "下一步: 配置 LLM/rag → 同步规则（见 README）→ 导入业务数据"
+echo "下一步: 浏览器打开 Web → 选一个数据源并「测试当前数据源」→ 同步规则（见 README / docs/TEST.md）"
 exec bash "$ROOT/scripts/start_web.sh"

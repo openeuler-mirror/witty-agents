@@ -42,14 +42,29 @@ async def main() -> None:
     parser.add_argument("--skip-start", action="store_true")
     parser.add_argument("--skip-bootstrap", action="store_true")
     parser.add_argument("--reuse-kb", action="store_true", help="不新建 KB，复用已有 kb_id/同名库")
+    parser.add_argument("--from-db", action="store_true", help="从真实库生成规则后再同步")
+    parser.add_argument("--from-guide", action="store_true", help="用 FIELD-GUIDE bootstrap（默认）")
+    parser.add_argument("--no-llm", action="store_true")
     args = parser.parse_args()
 
     ds = load_datasources().get(args.database_id) or {}
     kb_name = args.kb_name or str(ds.get("rules_kb_name") or f"nl2sql-rules-{args.database_id}")
 
     if not args.skip_bootstrap:
-        boot = bootstrap(args.database_id)
-        print(json.dumps({"bootstrap": boot}, ensure_ascii=False, indent=2))
+        if args.from_db:
+            from nl2sql_core.rules.init import init_from_datasource, write_bundle
+
+            bundle = await init_from_datasource(
+                args.database_id,
+                include_llm_domain=not args.no_llm,
+            )
+            path = write_bundle(bundle)
+            print(json.dumps({"init_from_db": {"counts": bundle.get("counts"), "path": str(path), "warnings": bundle.get("warnings")}}, ensure_ascii=False, indent=2))
+            store = RuleStore(args.database_id)
+            store._save(list(bundle.get("rules") or []))
+        else:
+            boot = bootstrap(args.database_id)
+            print(json.dumps({"bootstrap": boot}, ensure_ascii=False, indent=2))
 
     if not args.skip_start:
         subprocess.run(["bash", str(ROOT / "scripts" / "start_rag_core.sh")], check=False)

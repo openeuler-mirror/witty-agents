@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 
 
 RuleType = Literal["ddl", "mapping", "example", "experience"]
-Dialect = Literal["elasticsearch", "opengauss", "shared"]
+Dialect = Literal["elasticsearch", "opengauss", "hbase", "shared"]
 RuleScope = Literal["schema", "dialect", "domain"]
 
 

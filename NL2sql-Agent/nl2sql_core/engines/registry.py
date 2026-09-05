@@ -6,10 +6,14 @@ from nl2sql_core.engines.elasticsearch_engine import ElasticsearchEngine
 from nl2sql_core.engines.hbase_engine import HBaseEngine
 from nl2sql_core.engines.kafka_engine import KafkaEngine
 from nl2sql_core.engines.mock_engine import MockEngine
+from nl2sql_core.engines.opengauss_engine import OpenGaussEngine
 
 
 _REGISTRY: dict[str, Any] = {
     "elasticsearch": ElasticsearchEngine(),
+    "opengauss": OpenGaussEngine(),
+    "postgres": OpenGaussEngine(),
+    "postgresql": OpenGaussEngine(),
     "hbase": HBaseEngine(),
     "kafka": KafkaEngine(),
     "mock": MockEngine(),

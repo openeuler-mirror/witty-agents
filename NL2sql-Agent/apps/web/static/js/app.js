@@ -48,19 +48,75 @@ document.getElementById("qa-clarify-input")?.addEventListener("keydown", (e) => 
   }
 });
 
+/** @type {Record<string, {type?: string, enabled?: boolean}>} */
+let datasourceMap = {};
+
+function currentDatasourceId() {
+  return (
+    document.getElementById("qa-ds")?.value ||
+    document.getElementById("settings-ds")?.value ||
+    localStorage.getItem("nl2sql_datasource") ||
+    ""
+  );
+}
+
+function engineKind(type) {
+  const t = String(type || "").toLowerCase();
+  if (t === "elasticsearch" || t === "es") return "es";
+  if (t === "opengauss" || t === "postgres" || t === "postgresql") return "og";
+  if (t === "hbase") return "hb";
+  if (t === "mock") return "mock";
+  return "";
+}
+
+function applySettingsEngineCard() {
+  const id = currentDatasourceId();
+  const kind = engineKind((datasourceMap[id] || {}).type);
+  ["card-es", "card-og", "card-hb", "card-mock"].forEach((cid) => {
+    const el = document.getElementById(cid);
+    if (el) el.classList.toggle("hidden", cid !== "card-" + kind);
+  });
+}
+
+function onDatasourceChange(value) {
+  if (!value) return;
+  localStorage.setItem("nl2sql_datasource", value);
+  ["qa-ds", "rules-ds", "cons-ds", "settings-ds"].forEach((id) => {
+    const el = document.getElementById(id);
+    if (el && el.value !== value && [...el.options].some((o) => o.value === value)) {
+      el.value = value;
+    }
+  });
+  applySettingsEngineCard();
+  const msg = document.getElementById("current-ds-msg");
+  if (msg) msg.textContent = "";
+  refreshHealth();
+}
+
 async function refreshHealth() {
   const badge = document.getElementById("health-badge");
+  const ds = currentDatasourceId();
   try {
     const ctrl = new AbortController();
-    const t = setTimeout(() => ctrl.abort(), 5000);
-    const r = await fetch(API + "/api/health", { signal: ctrl.signal });
+    const t = setTimeout(() => ctrl.abort(), 12000);
+    const q = ds ? "?datasource_id=" + encodeURIComponent(ds) : "";
+    const r = await fetch(API + "/api/health" + q, { signal: ctrl.signal });
     clearTimeout(t);
     const d = await r.json();
-    const es = d.elasticsearch && d.elasticsearch.ok ? "ES✓" : "ES✗";
     const rag = d.rag_core && d.rag_core.ok ? "RAG✓" : "RAG✗";
-    const rules = d.local_rules ? "Rules✓" : "Rules·";
-    badge.textContent = es + " · " + rag + " · " + rules;
-    badge.className = "badge " + (d.elasticsearch && d.elasticsearch.ok ? "ok" : "bad");
+    const cur = d.current || {};
+    const type = cur.type || (datasourceMap[ds] || {}).type || "";
+    if (ds) {
+      const mark = cur.ok ? "✓" : "✗";
+      const via = cur.via ? " · " + cur.via : (cur.error ? " · " + cur.error : "");
+      badge.textContent = ds + "（" + (type || "?") + "）" + mark + " · " + rag;
+      badge.title = via.replace(/^ · /, "");
+      badge.className = "badge " + (cur.ok ? "ok" : "bad");
+    } else {
+      badge.textContent = rag;
+      badge.className = "badge " + (d.rag_core && d.rag_core.ok ? "ok" : "bad");
+    }
+    applySettingsEngineCard();
   } catch (e) {
     badge.textContent = "服务异常/超时";
     badge.className = "badge bad";
@@ -80,15 +136,26 @@ async function loadSettings() {
   document.getElementById("s-es-user").value = d.es_username || "";
   document.getElementById("s-es-pass").value = d.es_password || "";
   document.getElementById("s-es-index").value = d.es_default_index || "*";
+  const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v == null ? "" : v; };
+  set("s-og-host", d.og_host || "127.0.0.1");
+  set("s-og-port", d.og_port || 5434);
+  set("s-og-db", d.og_database || "postgres");
+  set("s-og-user", d.og_username || "gaussdb");
+  set("s-og-pass", d.og_password || "");
+  set("s-hb-host", d.hbase_host || "127.0.0.1");
+  set("s-hb-rest", d.hbase_rest_port || 16080);
+  set("s-hb-thrift", d.hbase_thrift_port || 9090);
+  set("s-hb-url", d.hbase_rest_url || "");
 }
 
 /** 从 configs/datasources.yaml（经 /api/datasources）填充下拉，客户新增库无需改前端枚举。 */
 async function loadDatasources() {
-  const ids = ["qa-ds", "rules-ds", "cons-ds"];
+  const ids = ["qa-ds", "rules-ds", "cons-ds", "settings-ds"];
   try {
     const r = await fetch(API + "/api/datasources");
     const d = await r.json();
     const map = d.datasources || {};
+    datasourceMap = map;
     const entries = Object.entries(map)
       .filter(([, cfg]) => cfg && cfg.enabled !== false)
       .sort(([a], [b]) => a.localeCompare(b));
@@ -101,12 +168,11 @@ async function loadDatasources() {
     }
     const preferred =
       localStorage.getItem("nl2sql_datasource") ||
-      (map["local-es"] && map["local-es"].enabled !== false ? "local-es" : entries[0][0]);
+      (map["demo-es"] && map["demo-es"].enabled !== false ? "demo-es" : entries[0][0]);
     const opts = entries
       .map(([id, cfg]) => {
         const type = cfg.type || "?";
-        const label = id === preferred ? `${id}（${type}）` : `${id}（${type}）`;
-        return `<option value="${escapeHtml(id)}">${escapeHtml(label)}</option>`;
+        return `<option value="${escapeHtml(id)}">${escapeHtml(`${id}（${type}）`)}</option>`;
       })
       .join("");
     ids.forEach((id) => {
@@ -114,8 +180,10 @@ async function loadDatasources() {
       if (!el) return;
       el.innerHTML = opts;
       if (map[preferred]) el.value = preferred;
-      el.onchange = () => localStorage.setItem("nl2sql_datasource", el.value);
+      el.onchange = () => onDatasourceChange(el.value);
     });
+    applySettingsEngineCard();
+    refreshHealth();
   } catch (e) {
     ids.forEach((id) => {
       const el = document.getElementById(id);
@@ -136,6 +204,15 @@ async function saveSettings() {
     es_username: document.getElementById("s-es-user").value.trim(),
     es_password: document.getElementById("s-es-pass").value,
     es_default_index: document.getElementById("s-es-index").value.trim() || "*",
+    og_host: (document.getElementById("s-og-host")?.value || "").trim(),
+    og_port: Number(document.getElementById("s-og-port")?.value || 5434),
+    og_database: (document.getElementById("s-og-db")?.value || "").trim(),
+    og_username: (document.getElementById("s-og-user")?.value || "").trim(),
+    og_password: document.getElementById("s-og-pass")?.value || "",
+    hbase_host: (document.getElementById("s-hb-host")?.value || "").trim(),
+    hbase_rest_port: Number(document.getElementById("s-hb-rest")?.value || 16080),
+    hbase_thrift_port: Number(document.getElementById("s-hb-thrift")?.value || 9090),
+    hbase_rest_url: (document.getElementById("s-hb-url")?.value || "").trim(),
   };
   const r = await fetch(API + "/api/settings", {
     method: "POST",
@@ -147,17 +224,24 @@ async function saveSettings() {
   refreshHealth();
 }
 
-async function testEs() {
-  const ds = document.getElementById("qa-ds")?.value || "local-es";
+async function testCurrentDatasource() {
+  const ds = currentDatasourceId();
+  if (!ds) return alert("请选择数据源");
+  const msg = document.getElementById("current-ds-msg");
+  if (msg) msg.textContent = "测试中…";
   const r = await fetch(API + "/api/datasources/test", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ datasource_id: ds }),
   });
   const d = await r.json();
-  document.getElementById("es-test-msg").textContent = d.ok
-    ? `连接成功（${ds}）`
-    : `失败（${ds}）: ` + (d.error || "");
+  const extra = d.via ? ` via ${d.via}` : "";
+  const text = d.ok
+    ? `连接成功：${ds}${extra}`
+    : `连接失败：${ds}\n` + (d.error || JSON.stringify(d));
+  if (msg) msg.textContent = text.replace(/\n/g, " ");
+  else alert(text);
+  refreshHealth();
 }
 
 function escapeHtml(s) {
@@ -600,6 +684,54 @@ async function importRulesFile(ev) {
   }
 }
 
+let lastInitBundlePath = "";
+
+async function initRulesFromDb() {
+  const ds = document.getElementById("rules-ds").value;
+  document.getElementById("rules-msg").textContent = "正在从数据源抽样并生成规则包（可能需一两分钟）…";
+  const r = await fetch(API + "/api/rules/init/preview", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ database_id: ds, include_llm_domain: true }),
+  });
+  const d = await r.json();
+  if (!r.ok) {
+    document.getElementById("rules-msg").textContent = d.detail || "生成失败";
+    return;
+  }
+  lastInitBundlePath = d.bundle_path || "";
+  draftRules = d.rules || [];
+  renderDraftRules();
+  document.getElementById("rules-msg").textContent =
+    `规则包 ${d.counts ? JSON.stringify(d.counts) : ""} 已写入 ${lastInitBundlePath}；可改勾选后点「确认入库规则包」`;
+}
+
+async function commitInitBundle() {
+  const ds = document.getElementById("rules-ds").value;
+  let rules;
+  try {
+    rules = collectSelectedDraft();
+  } catch (e) {
+    return alert(e.message);
+  }
+  const body = lastInitBundlePath && !rules.length
+    ? { from_file: lastInitBundlePath, database_id: ds }
+    : { database_id: ds, bundle: { database_id: ds, rules: rules.length ? rules : draftRules } };
+  if (!(body.from_file || (body.bundle && body.bundle.rules && body.bundle.rules.length))) {
+    return alert("请先生成规则包，或勾选草稿规则");
+  }
+  document.getElementById("rules-msg").textContent = "正在写入 rag-core…";
+  const r = await fetch(API + "/api/rules/init/commit", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  const d = await r.json();
+  document.getElementById("rules-msg").textContent = r.ok ? JSON.stringify(d) : (d.detail || "入库失败");
+  loadRules();
+  refreshHealth();
+}
+
 async function bootstrapRules() {
   document.getElementById("rules-msg").textContent = "初始化中…";
   const r = await fetch(API + "/api/rules/bootstrap", { method: "POST" });
@@ -662,7 +794,6 @@ async function runConsistency() {
   out.innerHTML = html;
 }
 
-refreshHealth();
 loadSettings();
 loadDatasources();
 setInterval(refreshHealth, 15000);

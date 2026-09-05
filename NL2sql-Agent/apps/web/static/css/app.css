@@ -60,3 +60,6 @@ th{background:#21262d;color:#58a6ff;position:sticky;top:0;z-index:1}
 .btn-toggle{width:100%;border:1px solid #30363d}
 .btn-toggle.on{background:#12261e;color:#7ee787;border-color:#238636}
 .btn-toggle.off{background:#21262d;color:#8b949e;border-color:#30363d}
+.health-table td.ok{color:#7ee787}
+.health-table td.bad{color:#ffa198}
+.health-table .btn{padding:4px 10px;font-size:12px}

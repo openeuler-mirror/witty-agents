@@ -64,6 +64,8 @@ def _as_dialect(value: str | None, fallback: str) -> Dialect:
         return "elasticsearch"
     if v in ("opengauss", "postgres", "postgresql"):
         return "opengauss"
+    if v == "hbase":
+        return "hbase"
     if v == "shared":
         return "shared"
     # 未知引擎：按 shared，避免误打成 ES
@@ -116,10 +118,15 @@ def load_rule_files(database_id: str, dialect: str | None = None) -> list[Rule]:
         "opengauss": "opengauss",
         "postgres": "opengauss",
         "postgresql": "opengauss",
-    }.get(eng, eng if eng in ("elasticsearch", "opengauss") else "")
+        "hbase": "hbase",
+    }.get(eng, eng if eng in ("elasticsearch", "opengauss", "hbase") else "")
     if dialect_name:
         dialect_file = RULES_FIXTURES / "dialects" / f"{dialect_name}.json"
-        default_dial: Dialect = "elasticsearch" if dialect_name == "elasticsearch" else "opengauss"
+        default_dial: Dialect = {
+            "elasticsearch": "elasticsearch",
+            "opengauss": "opengauss",
+            "hbase": "hbase",
+        }.get(dialect_name) or "shared"
         rules.extend(
             load_json_rules(
                 dialect_file,

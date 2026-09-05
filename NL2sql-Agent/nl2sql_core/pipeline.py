@@ -6,7 +6,7 @@ from typing import Any, Awaitable, Callable, Optional
 
 EventCallback = Callable[[str, dict[str, Any]], Awaitable[None] | None]
 
-from nl2sql_core.config import LLMSettings, load_app_settings, load_datasources
+from nl2sql_core.config import LLMSettings, load_app_settings, load_datasources, merge_datasource_config
 from nl2sql_core.engines.registry import get_engine
 from nl2sql_core.generate.query_generator import generate_query
 from nl2sql_core.generate.retry_feedback import build_retry_feedback, should_retry
@@ -48,19 +48,8 @@ def _runtime_settings() -> dict[str, Any]:
 
 
 def _merge_es_config(cfg: dict[str, Any]) -> dict[str, Any]:
-    """运行时 ES 设置只补全缺省项，不覆盖 datasources.yaml 里已写的 hosts 等。"""
-    runtime = _runtime_settings()
-    out = dict(cfg)
-    if out.get("type") != "elasticsearch":
-        return out
-    if not out.get("hosts") and runtime.get("es_hosts"):
-        out["hosts"] = runtime["es_hosts"]
-    if not (out.get("username") or "").strip() and "es_username" in runtime:
-        out["username"] = runtime.get("es_username") or ""
-        out["password"] = runtime.get("es_password") or ""
-    if not out.get("default_index") and runtime.get("es_default_index"):
-        out["default_index"] = runtime["es_default_index"]
-    return out
+    """兼容旧名：按数据源 type 合并运行时连接配置。"""
+    return merge_datasource_config(cfg)
 
 
 def _llm_from_runtime() -> LLMClient:
@@ -297,10 +286,12 @@ class NL2SQLPipeline:
                         }
                     else:
                         exec_mode = gen_mode
-                        if isinstance(generated, dict):
+                        if engine_type == "hbase":
+                            exec_mode = "scan"
+                        elif isinstance(generated, dict):
                             exec_mode = "dsl"
                         elif isinstance(generated, str) and generated.strip().startswith("{"):
-                            exec_mode = "dsl"
+                            exec_mode = "dsl" if engine_type in ("elasticsearch", "es") else "scan"
                         result = await engine.execute(generated, config, mode=exec_mode)
                         steps[-1].detail = {"attempt": attempt, "row_count": result.row_count}
                     steps[-1].status = "done"
@@ -390,6 +381,8 @@ class NL2SQLPipeline:
             await emit("step", step=steps[-1].model_dump())
             try:
                 if gen_mode == "ir" and isinstance(generated, dict):
+                    if engine_type not in ("elasticsearch", "es"):
+                        raise ValueError(f"IR 执行目前仅支持 Elasticsearch，当前引擎={engine_type}")
                     current_ir = parse_ir(generated)
                     display_query = format_ir_for_display(current_ir)
                     result = await execute_ir_on_es(current_ir, engine, config)
