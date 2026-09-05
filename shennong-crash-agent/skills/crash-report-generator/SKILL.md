@@ -28,7 +28,7 @@ allowed-tools: Bash(python3:*) Bash(pip:*) Bash(cat:*) Bash(ls:*) Bash(rg:*) Bas
 
 ## `diagnosis_repair_result` 的填写规则
 
-- `internal_kernel_result` 的**核心字段**（`knowledge_id`/`fingerprints`/`bug_summary`/`root_cause`/`solution`/`hotpatch`/`kernel_versions`/`case_count`/`match_level` 等）必须逐值复制 `crash-feature-matcher:query_knowledge` / `query_cases` 返回的原生 JSON，再由 LLM 补齐分析字段（`id`/`anchor`/`title`/`verdict`/`affected_component`/`history`/`corroboration`/`applicability`，`match_score` 换算成 高/中/低），禁止改写核心字段的 value。
+- `internal_kernel_result` 的**核心字段**（`knowledge_id`/`bug_summary`/`root_cause`/`solution`/`hotpatch`/`kernel_versions`/`case_count`/`match_level` 等）必须逐值复制 `crash-feature-matcher:query_knowledge` / `query_cases` 返回的原生 JSON，再由 LLM 补齐分析字段（`id`/`anchor`/`title`/`verdict`/`fingerprints`/`affected_component`/`history`/`corroboration`/`applicability`，`match_score` 换算成 高/中/低），禁止改写核心字段的 value；`fingerprints`（匹配指纹）由 LLM 写成人类可读的多维特征列表（子系统/内核版本/CPU/机型/业务/访问模式），不要只写签名串。
 - `community_kernel_result` 必须是 `crash-feature-matcher:query_community_cases` 返回的原生 JSON 数组的**逐字节**复制。
 - **不得**重命名字段、改写值、重新总结、归一化数值、转换类型或删除字段。
 - **未命中即留空，禁止幻想**：内部案例 / 社区邮件 / 会议纪要 / Bugzilla / 上游 commit 每个分类只有工具真实返回匹配时才填，未检索到就写空数组 `[]`，不得编造标题、url、snippet、verdict、evidence 等任何内容（空分类显示「未检索到…」属正常）。

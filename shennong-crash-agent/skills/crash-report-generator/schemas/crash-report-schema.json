@@ -790,7 +790,8 @@
                 "type": "array",
                 "items": {
                   "type": "string"
-                }
+                },
+                "description": "匹配指纹：人类可读的多维特征列表（子系统/内核版本/CPU 型号/机型/业务场景/访问模式等），不要只写签名串。"
               },
               "root_cause": {
                 "type": "string"
