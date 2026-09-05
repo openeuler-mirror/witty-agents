@@ -484,7 +484,17 @@ async function getShennongPrompt(model, outputLanguage = "zh") {
   void model;
   const extraPrompt = await getSharedEnvPrompt();
   const langPrompt = buildGlobalLanguageInstruction(outputLanguage);
-  return SHENNONG_SYSTEM_PROMPT + `
+  let prompt = SHENNONG_SYSTEM_PROMPT;
+  try {
+    const { readFileSync } = await import("node:fs");
+    const { fileURLToPath } = await import("node:url");
+    const { dirname, join } = await import("node:path");
+    const agentMd = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "..", "agent.md"), "utf8");
+    if (agentMd && agentMd.trim().length > 100) prompt = agentMd;
+  } catch (_e) {
+    // keep embedded fallback when agent.md is unavailable
+  }
+  return prompt + `
 
 ${langPrompt}
 

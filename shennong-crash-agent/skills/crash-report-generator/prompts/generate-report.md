@@ -94,7 +94,7 @@
       - `related_ref`（对象：file/lines）与 `related_errors`（数组：file/lines/line/relevance）——与崩溃直接相关的报错行（一般为 `强相关`）；
       - `repeated`（数组：title/count/window/ref{file,lines}/note/examples[]/relevance）——重复出现的可疑日志；`relevance` 必须如实标注：直接触发崩溃的重复日志标 `强相关`，同子系统/上下文相关但非直接原因的标 `一般相关`，背景噪声/无关的标 `弱相关`；
       - `other`（数组：name/count/span/ref/note/lines[]/relevance）——其它关联异常特征，同样标注 `relevance`。
-6. **`root_cause_analysis.json`**（LLM 综合多源证据总结），字段与 report.html 第 1/3/4 章一致：
+6. **`root_cause_analysis.json`**（LLM 综合多源证据总结），字段与 report.html 第 1/3/4 章一致。**`conclusion` / `event_scene` / `propagation_chain` / `reasoning_flow` / `deep` 均为必填（schema 强校验），缺一不可**：
    - **`conclusion`**（**一句到三句**自然中文，叙事化、通俗、书面、少术语，**尽量短**）：用「发生了什么 → 为什么 → 与业务/硬件是否有关」讲清场景与缺陷大类即可，**只保留结论，不写技术细节**。**禁止**出现函数名、寄存器名、标志常量、十六进制值、地址/偏移、内核版本号、commit 号、进程名/PID；所有专业细节（哪个函数、哪条指令、哪个版本修复）一律放到 `deep`/`propagation_chain`。社区 `verdict=confirmed` 时以「（社区补丁已确认）」收尾，否则以「（推测）」结尾。
       - 合格示例：「本次事故为内核调度器的空指针崩溃：进程让出 CPU 后，内核在挑选下一个待运行任务时得到了一个空任务对象，却未做有效性检查便继续使用，最终访问了无效内存地址，导致内核崩溃并整机重启。该问题源于内核代码缺少一处空值判断，与业务程序及硬件无关。」
       - 反例（过细，禁止）：「…业务进程执行 nanosleep 被唤醒、进入 CFS 公平调度器…访问地址 0x40…上游 v6.12 才通过重构闭环…4.19 厂商二次改造…」——这些函数名/地址/版本号都要移出 conclusion。
@@ -106,7 +106,7 @@
       - `rollback`（回退方案，**必填**）：说明补丁/配置合入失败或引发回归时的回退动作（如卸载热补丁、还原 sysctl/启动参数、回滚到原内核包、重启回退等），给出可执行命令或步骤；若为纯配置/命令行修复，给出还原命令。
       - `verification`（验证方案，**必填**）：说明合入后如何验证修复生效（编译无告警、长时压力回归、观察 dmesg 无新 Oops、监控同类 panic 建簇统计、验证触发路径不再崩溃等），给出具体验证口径。
    - **`temporary_workaround`**（结构化对象）：`type`（`config`=命令行/配置规避、`none`=无有效临时规避方案）、`summary`、`steps`（命令/操作）、`risk`、`detail`。**无有效方案时** `type` 取 `none`、`summary` 写「无」、`steps` 置空。有方案时 `steps` 必须给出**可直接执行**的命令/操作，优先考虑：① 内核/系统配置（`sysctl` / `echo > /proc/sys/...` / 内核启动参数）；② 服务与资源控制（`systemctl set-property <svc> TasksMax=<n>`、`taskset`/`numactl` 绑核、`cgroup` 限流）；③ 换机/分散部署/流量切走（同局点避免同业务集中）；④ 关闭触发特性（`modprobe.blacklist` / 特性开关降级）；⑤ 压概率（降低并发、延长周期、避开触发路径）。`risk` 说明无法根治的原因与回退方式。
-   - **`event_scene`**（事件时序图，三类泳道：进程 / 内核 / 硬件，**每类可有多个对象**）：
+   - **`event_scene`**（事件时序图，**必填**，三类泳道：进程 / 内核 / 硬件，**每类可有多个对象**）：
      - `participants`（对象泳道，可多个）：`id`（简短英文，如 `proc_a`/`cpu92`/`timer0`）、`name`（具体到进程名+PID、CPU 序号、硬件类型/名称）、`type` 三选一 `process`（进程/用户态业务线程）/ `kernel`（内核/CPU）/ `hardware`（硬件）、`init`（初始状态）、`tip`（一句话说明，供 hover 展示：进程 PID/名称、内核序号、硬件类型等）。
      - `anchor`：崩溃时刻锚点，**ISO 8601 带毫秒**（如 `2026-07-08T06:20:00.000`），供查看器按 `dt_ms` 反推每个事件的「时分秒」；**禁止写非时间字符串**。
       - `gvars`/`ginit`：全局变量列——`gvars` 定义有哪些变量（`k`=变量 key、`n`=显示名），`ginit` 给每个变量的初始值（`k`=变量 key、`v`=初始值）。**选真正会随时间变化的变量**（如锁状态、待选任务指针、运行队列计数器、就绪标志），并通过下面每个事件的 `g` 记录其变化，让全局变量列能直观看出取值随时间的演进；不要选全程不变的常量。
