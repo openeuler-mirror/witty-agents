@@ -1607,8 +1607,11 @@ function renderRootCause(report){
   PARTS.forEach(P=>{
     const steps=buckets[P.key];
     if(!steps.length) return;
+    const isChain=P.key==='chain';
+    const count=isChain && pc.length ? pc.length : steps.length;
+    const unit=isChain ? '步' : '个环节';
     h+=`<details class="rf-part" style="border:1px solid ${P.color}44;border-left:4px solid ${P.color};background:${P.color}0a;border-radius:8px;margin:14px 0 6px">`;
-    h+=`<summary style="padding:12px 16px"><span class="rf-part-no" style="background:${P.color}">${P.no}</span><span style="font-size:15px;font-weight:700;color:#1c2733">${esc(P.title)}</span><span class="mg-count" style="margin-left:8px">${steps.length} 个环节</span></summary>`;
+    h+=`<summary style="padding:12px 16px"><span class="rf-part-no" style="background:${P.color}">${P.no}</span><span style="font-size:15px;font-weight:700;color:#1c2733">${esc(P.title)}</span><span class="mg-count" style="margin-left:8px">${count} ${unit}</span></summary>`;
     h+=`<div class="rf-part-body"><div class="rf-part-desc">${esc(P.desc)}</div>`;
     h+=`<div class="rf-chain">${steps.map((s,i)=>rfStep(s,i+1)).join('')}</div>`;
     h+=`</div></details>`;
