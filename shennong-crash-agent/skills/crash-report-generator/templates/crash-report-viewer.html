@@ -1559,8 +1559,8 @@ function renderRootCause(report){
   const ra=report.root_cause_analysis||{};
   const flow=Array.isArray(ra.reasoning_flow)?ra.reasoning_flow:[];
   const partOf=st=>{
-    if(st==='stack'||st==='hypothesis') return 'feature';
-    if(st==='path_analysis') return 'chain';
+    if(st==='stack'||st==='hypothesis'||st==='crash_feature') return 'feature';
+    if(st==='path_analysis'||st==='propagation') return 'chain';
     return 'case';
   };
   const PARTS=[

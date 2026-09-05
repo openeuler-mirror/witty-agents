@@ -1,7 +1,8 @@
 """深度分析链构建 — 从宕机特征提取事件时间线、崩溃传播链与源码线索。
 
 为 LLM 的 analysis[] 推理提供结构化输入, 支撑 "先分析后判定" 的诊断流程。
-输出供 stage=propagation / source_analysis 的 analysis 步骤消费。
+输出为数据字段 (event_timeline / propagation_chain / source_clues), 供根因推理使用;
+注意这些是数据字段, 不是 reasoning_flow 的 stage 取值 (stage 用 stack/hypothesis/path_analysis/internal/community/commit/source_compare/conclusion)。
 """
 
 import logging
