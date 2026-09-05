@@ -106,15 +106,7 @@
       "type": "array",
       "description": "List of log sources analyzed (e.g., vmcore, vmcore-dmesg, dmesg).",
       "items": {
-        "type": "string",
-        "enum": [
-          "vmcore",
-          "vmcore-dmesg",
-          "dmesg",
-          "syslog",
-          "kdump",
-          "var-log-messages"
-        ]
+        "type": "string"
       }
     },
     "host_base_info": {
@@ -364,7 +356,8 @@
                   "call",
                   "uaf_free",
                   "data_pollution",
-                  "null_deref"
+                  "null_deref",
+                  "race"
                 ],
                 "description": "关系类型：call=普通调用，uaf_free=调用方释放了被调用方使用的内存，data_pollution=调用方写入/传递了被污染的数据，null_deref=被调用方解引用空指针"
               },
@@ -570,7 +563,10 @@
                 "type": "string"
               },
               "applicability": {
-                "$ref": "#/$defs/applicability"
+                "type": [
+                  "string",
+                  "object"
+                ]
               },
               "match_score": {
                 "type": "string",
@@ -656,7 +652,10 @@
                 "type": "string"
               },
               "applicability": {
-                "$ref": "#/$defs/applicability"
+                "type": [
+                  "string",
+                  "object"
+                ]
               },
               "match_score": {
                 "type": "string",
@@ -883,9 +882,7 @@
               "stage",
               "decision",
               "tools",
-              "status",
-              "start_time",
-              "end_time"
+              "status"
             ],
             "additionalProperties": false,
             "properties": {
@@ -904,7 +901,8 @@
                   "online_retrieval",
                   "deep_analysis",
                   "root_cause_validation",
-                  "report_generation"
+                  "report_generation",
+                  "community_retrieval"
                 ],
                 "description": "Which diagnosis stage this step belongs to."
               },
@@ -928,8 +926,7 @@
                   "required": [
                     "tool_name",
                     "title",
-                    "status",
-                    "start_time"
+                    "status"
                   ],
                   "additionalProperties": false,
                   "properties": {
@@ -946,7 +943,8 @@
                         "success",
                         "failed",
                         "timeout",
-                        "skipped"
+                        "skipped",
+                        "partial"
                       ]
                     },
                     "exit_code": {
@@ -1003,7 +1001,13 @@
                 "description": "与上文交叉验证说明（引用章节/行号/案例锚点）。"
               }
             }
-          }
+          },
+          "required": [
+            "step",
+            "stage",
+            "decision",
+            "status"
+          ]
         }
       }
     }
