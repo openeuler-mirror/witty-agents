@@ -8,17 +8,33 @@
 2. 所有必填字段必须存在；不得添加 schema 未定义的字段。
 3. 所有时间戳必须使用带时区的 ISO 8601（如 `2026-06-30T23:12:05+08:00`）。
 4. `report_id` 格式：`<hostname>-<start_date>-<end_date>`，日期为 `yyyyMMdd`。
-5. `diagnosis_repair_result` 条目必须**逐字节**复制 `crash-feature-matcher` 返回的原生 JSON：
-   - `internal_kernel_result` = `query_knowledge` 返回的精确条目（必须显式传入 `crash_features` 与 `host_features`）。
+5. `diagnosis_repair_result` 条目取自 `crash-feature-matcher` 返回的原生 JSON（**内部案例核心字段逐值复制 + 补齐分析字段**，社区/邮件/纪要/commit 逐字节复制）：
+   - `internal_kernel_result` = `query_knowledge` 返回的 issue（或 `query_cases` 返回的历史案例）**核心字段逐值复制 + LLM 补齐分析字段**（见下方「内部案例条目细化」），必须显式传入 `crash_features` 与 `host_features`。
    - `community_kernel_result` = `query_community_cases` 返回的精确条目（必须传入 `crash_features`）。
    - `community_meetings` = 社区会议纪要条目（`kind="meeting"`，含 url/excerpt/how/patch_ref/patch_url/verdict 等）。
    - `online_result` = `query_upstream_online` 构造的条目（仅调用过才填；否则空数组）。两类：
      - **commit/issue 条目**（`commits[*]`）：逐字节复制原生 JSON，补 `"kind": "commit"`（issue/PR 时 `"issue"`）与 `"url"`。不得臆造/覆盖 `verdict`、`evidence`。
-     - **mail 条目**（`patch_mails[*]`）：产出 `{ "kind":"mail", "title", "url", "author", "mail_list", "snippet", "discussion_logic", "analysis_reasoning", "guidance" }`。不要只倒原文，要抽象出社区交流主线与分析方法论；见下方 mail 细化规则。
+     - **mail 条目**（`patch_mails[*]`）：产出 `{ "kind":"mail", "title", "url", "author", "list", "date", "anchor", "kernel_version", "verdict", "excerpt", "how", "patch_ref", "patch_url", "lead" }`，字段结构与社区会议纪要/Bugzilla 卡片一致（见下方「社区案例条目细化」）。不要只倒原文，要把社区交流主线与分析方法论浓缩进 `how`，原文摘录放 `excerpt`。
    - 只把 `match_score`（0-1 浮点）换算成展示标签：高 ≥ 0.7 / 中 0.4–0.69 / 低 < 0.4（不要用原始 `score`，那是 0-100）。
    - `match_level`（L1/L2/L3）与 `verdict`（confirmed/same_area/not_relevant/unverified）由匹配工具计算，原样复制，不得覆盖。
    - 原样复制 `evidence`（commit message 摘录、issue 摘录、改动文件、校验论据），它驱动「上游一手证据」卡片。
    - **未命中即留空，禁止幻想**：`internal_kernel_result` / `community_kernel_result` / `community_meetings` / `online_result` 每个分类只有在对应工具**真实返回匹配**时才填；未检索到就写空数组 `[]`，不得编造标题、url、snippet、verdict、evidence 等任何内容。空分类在报告里会显示「未检索到…」，属正常状态，不要为了填满而虚构条目。
+
+### 内部案例（internal_kernel_result）条目细化
+
+内部知识库案例 = `query_knowledge` 返回的 issue（或 `query_cases` 返回的历史案例）**核心字段逐值复制 + LLM 补齐分析字段**（与 report.html 第 5 章一致）：
+
+- **核心字段逐值复制（不得改写 value）**：`knowledge_id`、`fingerprints`、`bug_summary`、`bug_type`、`bug_key`、`rip`、`rip_function`、`rip_offset`、`related_modules`、`kernel_versions`、`case_count`、`root_cause`、`solution`、`hotpatch`。
+- `match_score`（0-1 浮点）换算成展示标签 `高/中/低`（≥0.7 高 / 0.4–0.69 中 / <0.4 低）；`match_level`（L1/L2/L3）由匹配工具计算，原样复制。
+- **LLM 补齐的分析字段**：
+  - `id`：= `knowledge_id`；
+  - `anchor`：`kb-internal` / `kb-internal2` / `kb-internal3`…（供第 4 章 refs 跳转）；
+  - `title`：一句中文标题；
+  - `verdict`：`confirmed`/`same_area`/`not_relevant`/`unverified`（崩溃函数/偏移一致且有一手补丁证据才标 `confirmed`；同簇不同因标 `same_area`；缺证据标 `unverified`）；
+  - `affected_component`：一句话组件描述（由原生 `affected_components` 列表概括，如「kernel/sched (CFS fair.c)」）；
+  - `history`：对象 `{first_seen, last_seen, cases[]}`——`first_seen`/`last_seen` 取原生 `first_seen`/`last_seen`（无则用同簇/历史报告日期），`cases[]` 列出各次崩溃点；
+  - `corroboration`：6 维匹配论证（见下方「多维论证」）；
+  - `applicability`：一句采用前提（见下方「采用前提」）。
 
 ### 社区案例检索（双通道，可互为兜底，结果合并去重）
 
@@ -27,16 +43,23 @@
 
 无论走哪条通道，每条社区案例 / 上游 commit 在报告里都需附：**原文网址（url）、关联 commit、关键片段（解释 + 原文）**。
 
-### mail 条目细化
+### 社区案例（邮件 / 会议纪要 / Bugzilla）条目细化
 
-- `discussion_logic`（`{role, text}` 数组，2–5 轮）：按时间顺序的讨论主线。`role` ∈ reporter / maintainer / reviewer / stable_maintainer / community。每条 `text` 一句中文概括该角色做了什么；只抽象 snippet/标题能佐证的内容；无法判断发言者用 `community`；严禁编造 snippet 里没有的轮次或人物。
-- `analysis_reasoning`（中文字符串数组，2–5 步）：社区从现象到根因的诊断思路链，是读者可借鉴的分析方法论。
-- `guidance`（必填，1–3 句中文）：这些交流/思路对本次崩溃的指导——可借鉴的排查思路、可验证的假设、可采用的修复/规避方向，或线程中尚未定论、需要我们自查的点。要具体可执行，禁止空话。
-- 保留 `snippet` 作原文摘录（报告中折叠展示）；snippet 为空/噪声或邮件无关时直接丢弃，不要凑数。
+这三类卡片共用同一字段结构（与 report.html 第 5 章一致，`kind` 决定归入哪个子分组）：
+
+- `kind`：`mail`（社区邮件）/ `meeting`（会议纪要）/ `bugzilla`（Bugzilla/Issue），决定归入「社区邮件 / 会议纪要 / Bugzilla」三个子分组之一。
+- `title` / `url` / `author` / `list`（邮件列表/仓库名）/ `date` / `kernel_version`：来源元信息；`url` 为**原文网址**，必填。
+- `verdict`：`confirmed` / `same_area` / `not_relevant` / `unverified`，由匹配工具计算，原样复制，不得覆盖。
+- `excerpt`：**关键片段原文**（报告中折叠展示）。只摘录与崩溃直接相关的段落、去掉无关噪声；原文为空/噪声或与崩溃无关时直接丢弃，不要凑数。
+- `how`：**关键信息如何指向补丁**——说明这段摘录/讨论是如何推导出下方「关联 commit」的，即"为什么这条资料值得采信、它如何支撑本次根因"。
+- `patch_ref` / `patch_url`：**关联 commit**（短号 + 完整链接），指向真正修复崩溃路径的补丁。
+- `lead`：一句话摘要（可选），放在卡片正文开头。
+
+**邮件条目要点**：不要只倒原文，要在 `how` 里抽象出社区交流主线（谁在什么阶段做了什么）与从现象到根因的诊断思路；`excerpt` 只保留能佐证结论的原文。无法判断发言者时不要编造人名/讨论轮次。
 
 ### 多维论证（corroboration）
 
-被采用的内部/社区/在线 commit-issue 案例必填（mail 可选）。六个维度各给诚实 verdict（support/partial/mismatch）并同时填 `current`（本次崩溃该维度实际数据）与 `reference`（参考案例同维度数据），各 1–2 句中文：
+内部知识库案例（`internal_kernel_result`）必填（社区邮件/会议纪要/Bugzilla/上游 commit 用 `how` 表达关联依据，不填此结构）。六个维度各给诚实 verdict（support/partial/mismatch）并同时填 `current`（本次崩溃该维度实际数据）与 `reference`（参考案例同维度数据），各 1–2 句中文：
 
 1. `feature_data` — 特征对照：RIP 函数是否相同、共同调用栈函数、bug_type/bug_key、相关模块、错误关键词。
 2. `kernel_version` — 当前内核是否在案例受影响范围、修复/回合版本。
@@ -47,15 +70,15 @@
 
 **致命指纹 vs 佐证**：`feature_data` 与 `mechanism` 是致命指纹，对不上就判 mismatch，其余维度再像也不能判 support；`execution_context`/`timeline` 是佐证；`kernel_version`/`fix_scope` 喂给 applicability 的"能否落地"判断。**诚实规则**：矛盾维度必 mismatch 并说明差异；缺证据维度必 partial 并说明缺什么；不得省略维度、不得无数据全标 support。
 
-### 适用条件（applicability）
+### 采用前提（applicability）
 
-对每个推荐其 `solution` 的采用案例，写结构化对象（非字符串）：
+对每个内部/社区/在线案例，用**一句自然中文（字符串）**写明「该案例的结论能否直接用于本次崩溃、如何采用/需注意什么」（与 report.html 第 5 章一致）：
 
-- `verdict`（必填）：`direct_adopt`=可直接采用 / `adapt`=需适配后采用 / `borrow`=仅思路借鉴 / `not_applicable`=不适用。由下面判断链得出，不是只看 match_score。
-- `method`（必填）：一句具体动作——回合某 commit(带 sha) / 移植适配该补丁 / 安装热补丁 xxx / 升级至某版本 / 临时规避。
-- `steps`（必填，2–5 条顺序判断链）：①受影响范围（是否在受影响/修复区间、是否已回合）②补丁基线（能否直接回合还是需移植）③前置一致性（上下文/模块/配置/触发特性）④验证与风险。至少 2 条，每条禁止空话。
+- 可直接采用 → 写明「可直接采用其修复/结论」及采用动作（回合某 commit(带 sha)、移植适配补丁、安装热补丁、升级至某版本等）；
+- 需适配 / 仅借鉴 → 写明「需适配后采用 / 仅作思路借鉴」及差异点（受影响区间、补丁基线、上下文一致性）；
+- 不适用 / 待核验 → 写明「不适用 / 待核验」及一句理由。
 
-`same_area`/`not_relevant`/低置信/`unverified` 案例：`verdict=not_applicable`（一句理由）或不填；mail 不填。
+`same_area`/`not_relevant`/低置信/`unverified` 案例通常写「同簇旁证(L3)，不直接采用其结论，仅用于横向跟踪」「待核验(L3)：需回查原案例调用栈/寄存器后再决定是否并入结论」之类的一句话；社区邮件条目可不填。不得为了填满而编造。
 
 ## 填表工作流（分片、逐节）
 
@@ -72,8 +95,10 @@
       - `repeated`（数组：title/count/window/ref{file,lines}/note/examples[]/relevance）——重复出现的可疑日志；`relevance` 必须如实标注：直接触发崩溃的重复日志标 `强相关`，同子系统/上下文相关但非直接原因的标 `一般相关`，背景噪声/无关的标 `弱相关`；
       - `other`（数组：name/count/span/ref/note/lines[]/relevance）——其它关联异常特征，同样标注 `relevance`。
 6. **`root_cause_analysis.json`**（LLM 综合多源证据总结），字段与 report.html 第 1/3/4 章一致：
-   - **`conclusion`**（一句自然中文，叙事化、通俗、书面、少术语）：用「发生了什么 → 为什么 → 结论（与业务/硬件是否有关）」讲清场景、缺陷大类与结论（推测 or 确认）。**禁止**出现函数名、寄存器名、标志常量、十六进制值、机制内部细节、地址/偏移。当社区 `verdict=confirmed` 时去掉"推测"、以"（社区补丁已确认）"收尾；否则以"（推测）"结尾。
-    - **`standard_solution`**（结构化对象）：`type`（patch/config/upgrade/none，**四选一**）、`claim_tag`、`short`（**必须分「要做什么 / 为什么 / 怎么做」三句**，通俗、书面、少术语，不用函数名/寄存器/十六进制）、`basis`（修复依据，数组 `{kind,title,url,text}`，来自社区邮件/会议纪要/上游 bugfix）、`fixed_in`（修复版本判定）、`patch_list`（数组 `{sha,mode,subject,why,files[],diff}`）、`method_steps`（合入步骤）、`detail`（完整说明）、`rollback`（回退方案）、`verification`（验证方案）。
+   - **`conclusion`**（**一句到三句**自然中文，叙事化、通俗、书面、少术语，**尽量短**）：用「发生了什么 → 为什么 → 与业务/硬件是否有关」讲清场景与缺陷大类即可，**只保留结论，不写技术细节**。**禁止**出现函数名、寄存器名、标志常量、十六进制值、地址/偏移、内核版本号、commit 号、进程名/PID；所有专业细节（哪个函数、哪条指令、哪个版本修复）一律放到 `deep`/`propagation_chain`。社区 `verdict=confirmed` 时以「（社区补丁已确认）」收尾，否则以「（推测）」结尾。
+      - 合格示例：「本次事故为内核调度器的空指针崩溃：进程让出 CPU 后，内核在挑选下一个待运行任务时得到了一个空任务对象，却未做有效性检查便继续使用，最终访问了无效内存地址，导致内核崩溃并整机重启。该问题源于内核代码缺少一处空值判断，与业务程序及硬件无关。」
+      - 反例（过细，禁止）：「…业务进程执行 nanosleep 被唤醒、进入 CFS 公平调度器…访问地址 0x40…上游 v6.12 才通过重构闭环…4.19 厂商二次改造…」——这些函数名/地址/版本号都要移出 conclusion。
+    - **`standard_solution`**（结构化对象）：`type`（patch/config/upgrade/none，**四选一**）、`claim_tag`、`short`（**必须分「要做什么 / 为什么 / 怎么做」三句，每句一到两句话，通俗、书面、少术语，只写"补一个空值检查/合入少量补丁/回归验证"这个层级**，不用函数名/寄存器/十六进制/具体文件行/循环位置）、`basis`（修复依据，数组 `{kind,title,url,text}`，来自社区邮件/会议纪要/上游 bugfix）、`fixed_in`（修复版本判定）、`patch_list`（数组 `{sha,mode,subject,why,files[],diff}`）、`method_steps`（合入步骤）、`detail`（完整说明）、`rollback`（回退方案）、`verification`（验证方案）。专业细节（函数名、文件行、补丁代码、循环位置）一律放到 `patch_list`/`method_steps`/`detail`，`short` 里只保留结论性表述。
       - `patch_list[].mode` **三选一**：`full`（整体合入）、`part`（局部合入/最小改动）、`pick`（取其思路改造/自研移植）。
       - `patch_list[].diff` **必须给出可直接合入的具体补丁示例**（diff 格式，含文件与 `+/-` 行）。自研/移植补丁也要给适配本内核的示意补丁代码，**禁止留空**；确实只能参考上游思路时 `mode=pick`，`diff` 仍须写「适配本内核的示意补丁」而非空串。
       - `type=patch` 时**必须**至少一条 `patch_list`。
@@ -84,15 +109,25 @@
    - **`event_scene`**（事件时序图，三类泳道：进程 / 内核 / 硬件，**每类可有多个对象**）：
      - `participants`（对象泳道，可多个）：`id`（简短英文，如 `proc_a`/`cpu92`/`timer0`）、`name`（具体到进程名+PID、CPU 序号、硬件类型/名称）、`type` 三选一 `process`（进程/用户态业务线程）/ `kernel`（内核/CPU）/ `hardware`（硬件）、`init`（初始状态）、`tip`（一句话说明，供 hover 展示：进程 PID/名称、内核序号、硬件类型等）。
      - `anchor`：崩溃时刻锚点，**ISO 8601 带毫秒**（如 `2026-07-08T06:20:00.000`），供查看器按 `dt_ms` 反推每个事件的「时分秒」；**禁止写非时间字符串**。
-     - `gvars`/`ginit`：全局变量列（`k` 变量名、`v` 值），随事件变化的取值。
+      - `gvars`/`ginit`：全局变量列——`gvars` 定义有哪些变量（`k`=变量 key、`n`=显示名），`ginit` 给每个变量的初始值（`k`=变量 key、`v`=初始值）。**选真正会随时间变化的变量**（如锁状态、待选任务指针、运行队列计数器、就绪标志），并通过下面每个事件的 `g` 记录其变化，让全局变量列能直观看出取值随时间的演进；不要选全程不变的常量。
      - `events`：每条 `{m, from, to, kind, title, val, t, dt_ms, full, g}`：
        - `m` **四选一**：`user`（用户态）/ `sys`（用户→内核）/ `kern`（内核态）/ `hw`（硬件）——用于区分内核态与用户态；
        - `from`/`to`：用 participant `id` 表示**泳道间箭头**（如 `user`→`kern`、`kern`→`hw`），每个框都要有来源/去向；**指向自身时 `from`=`to`**（查看器会画弯折回环箭头指回自身）；
        - `kind` 枚举：`call`（调用）/ `irq` / `softirq` / `hw` / `mutex` / `alloc` / `race` / `free` / `global` / `crash`（崩溃爆发）；
        - `dt_ms`：相对 `anchor` 的毫秒偏移，**递增、不要全 0**（崩溃点距锚点最近，取较小值）；
        - `t`：阶段标签（用户态 / 陷入 / 内核态 / 内核态→硬件 等），不是单调秒数；
-       - `val`：关键值（寄存器/指针/变量）；`full`：一句话说明（供 hover 展示细节）。
-   - **`propagation_chain`**（崩溃链路逐跳）：每跳 `{from,to,type,src_dir,file,line,stack,fn_ctx,crash,source_url,detail,evidence,params[]}`。**必须**给出栈帧 ↔ 源码（目录/文件/行号/函数）、关键参数 `params`（`{io,reg,n,formal,v,bad,note}`，异常参数 `bad=true` 标红）。**每一跳都应尽量给出 `source_url`**（如 elixir.bootlin.com 对应版本源码链接、上游 commit/patch 链接），指向该函数/文件的在线源码，便于读者跳转对照。精确行号需 vmlinux 调试信息或本地源码树，`dis -rl` 无法给出行号时注明边界。最后一跳必须写明崩溃爆发的直接原因（含二进制↔源码行对照）。
+        - `val`：关键值（寄存器/指针/变量）；`full`：一句话说明（供 hover 展示细节）；
+        - `g`：**全局变量变化**（数组，每条 `{v,n,t,dir,f}`）——`v`=变量 key（**必须与 `gvars`/`ginit` 的 `k` 一致**）、`n`=变量显示名（与 `gvars` 的 `n` 一致）、`t`=该事件之后变量的新值、`dir`=值变化方向（`up` 上升 / `down` 下降）、`f`=变化前值（可选）。**只有该事件真正改变了该变量的取值时才写一条 `g`**，让全局变量列随时间看到演变（如锁「未持有」→`dir:up`「已持有」、指针 `?`→`dir:down`「0x0(NULL)」、计数器 5→4）。反例（错误）：把 `v` 写成值、`t` 写成「任务/调度」这类标签、`dir` 写 `self`——都会导致全局变量列不随时间变化。
+   - **`propagation_chain`**（崩溃链路逐跳，**必须拆成一步步，每步一个栈帧↔源码对应**）：每跳 `{from,to,type,src_dir,file,line,stack,fn_ctx,crash,source_url,detail,evidence,params[]}`。
+     - `from`/`to` 用**函数名**（如 `schedule`→`__schedule`、`pick_next_task_fair`→`set_next_entity`），崩溃最后一跳可写 `set_next_entity`→`空指针解引用→panic`；**不要写「用户态/内核态/崩溃点」这类状态名**；
+     - `stack` 写**栈帧↔源码行**，形如 `set_next_entity+0x20/0x6f8 (L2660) · 指令 (b9404280) (L2687)`，把崩溃栈上的函数/偏移对应到日志行号；
+     - `src_dir`/`file`/`line` 给**源码目录/文件/行号或函数**（如 `kernel/sched` / `fair.c` / `≈7762`）；
+     - `fn_ctx` 写**函数签名或指令↔源码行**（如 `set_next_entity(cfs_rq, se)` 或 `ldr w0,[x20,#0x40] → se->on_rq`）；
+     - `source_url` 给**在线源码/commit/patch 链接**（如 `https://elixir.bootlin.com/linux/v4.19/source/kernel/sched/fair.c`），便于跳转对照；
+     - `params` 给**寄存器值 ↔ 实际变量/形参**的对应关系，每条 `{io,reg,n,formal,v,bad,note}`：`reg`=寄存器（如 `x20(=原 x1)`）、`n`=变量名（如 `se`）、`formal`=形参类型（如 `struct sched_entity *se`）、`v`=实际值（如 `0x0`）、`bad`=是否异常参数（异常 `true` 标红）、`note`=一句话说明；**每个有实参/寄存器的跳都要给 `params`，不能只给崩溃那一跳**；
+     - `detail`/`evidence` 写该跳的解释与证据（含行号/寄存器/反汇编）；
+     - 最后一跳 `crash=true`，写明崩溃爆发的直接原因（含二进制↔源码行对照）。
+     精确行号需 vmlinux 调试信息或本地源码树；`dis -rl` 无法给出行号时注明工具边界。
    - **`reasoning_flow`**（三部分根因，每步 `{stage,stage_name,color,title,short,text,evidence,ev_plain,path_mini,refs[],branch}`）。`stage` **必须**用以下枚举，否则报告第 4 章三部分会渲染不完整：
      | `stage` | 归属部分 |
      |---|---|
@@ -100,7 +135,7 @@
      | `path_analysis` | ② 崩溃链路分析 |
      | `internal` / `community` / `commit` / `source_compare` / `conclusion` | ③ 相关案例分析 |
      1. **崩溃特征分析（含函数栈）**：`stage` 用 `stack`/`hypothesis`——从调用栈、寄存器还原"在哪条路径、以什么方式崩"。至少给出 `stack`（提取函数堆栈）与 `hypothesis`（寄存器还原与机制定位/假设）两步，缺一不可。
-     2. **崩溃链路分析**：`stage=path_analysis`，`path_mini` 引用 `propagation_chain` 呈现逐跳（把完整传播链作为 `path_mini` 数组填入，而不是只写函数名数组）。
+      2. **崩溃链路分析**：`stage=path_analysis`，`path_mini` **必须等于 `propagation_chain` 的完整数组（逐跳复制，每一跳一个元素）**，查看器才会把每一跳渲染成一张函数卡片；**禁止写 null / 空数组 / 只写函数名数组**，否则崩溃链路只会显示一步、所有内容挤在一张卡里。
      3. **相关案例分析**：`stage` 用 `internal`/`community`/`commit`/`source_compare`/`conclusion`——内部案例 → 社区邮件/会议纪要/Bugzilla → 上游 commit → 当前内核对应位置源码逐行对照 → 结论。**只要执行了对应检索，就必须有对应的 stage**（`internal`/`community`/`commit`/`source_compare` 均要覆盖到，最后以 `conclusion` 收尾）；即使某类检索**未命中**，也要保留该 `stage` 并在 `text` 中如实写明「未检索到…」（此时不虚构对应案例与 anchor），而不是直接删掉该 stage。每步 `refs` 用 `anchor`（`kb-internal`/`kb-mail`/`kb-meeting`/`kb-bugzilla`/`kb-commit`）跳转到第 5 章对应卡片。
      （注：`build_analysis_chain` 工具返回的 `propagation_chain`/`source_clues` 是**数据字段**，不是 `stage` 取值；`stage` 仍用上表枚举。）
    - **`deep`**（根因结论详细）：`lead`（一句话根因）、`mechanism`（触发链条）、`evidence`（证据要点数组）、`confidence`（置信度）、`scope`（触发面）。
