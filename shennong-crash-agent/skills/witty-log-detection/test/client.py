@@ -127,7 +127,7 @@ async def main() -> None:
     js = {
         "task_type": "log_detection_base_on_llm",
         "query": "我的网卡掉了帮我分析下异常",
-        "file_path_list": ["/home/zjq/euler-copilot-rag/witty_log_detection/test/test.log"],
+        "file_path_list": ["test/test.log"],
         "anomaly_keywords": ["disconnected"],
         "max_anomaly_log_count": 64
     }

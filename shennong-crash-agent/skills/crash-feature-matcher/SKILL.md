@@ -13,7 +13,7 @@ tools: [Bash, Read]
 mcp:
   crash-feature-matcher:
     type: stdio
-    command: "/root/.config/opencode/skills/crash-feature-matcher/run_mcp.sh"
+    command: "./run_mcp.sh"
     args: []
 allowed-tools: Bash(python3:*) Bash(pip:*) Bash(curl:*) Bash(crash:*) Bash(cat:*) Bash(ls:*) Bash(rg:*) Bash(bash:*)
 ---
