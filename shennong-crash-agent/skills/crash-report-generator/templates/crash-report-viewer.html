@@ -1531,6 +1531,21 @@ function rfStep(step,no){
   const stageName=step.stage_name||step.phase||step.tag||'分析';
   const short=step.short||'';
   const hasExtra=!!(step.text||step.evidence);
+  if(path){
+    /* 崩溃链路分析：去掉"1"步骤圆点与卡片包裹，直接平铺 标题/摘要 + 逐跳卡片 */
+    let h='<div class="rf-chain-flat">';
+    if(step.title) h+=`<div class="rf-title" style="margin-top:2px">${esc(step.title)}</div>`;
+    if(short) h+=`<div class="rf-text">${rich(short)}</div>`;
+    if(step.path_mini) h+=pathMini(step.path_mini);
+    if(hasExtra){
+      let body='';
+      if(step.text) body+=`<div class="sol-full">${rich(step.text)}</div>`;
+      if(step.evidence) body+=`<pre class="rf-evid rf-evidence${step.ev_plain?' plain':''}">${rich(step.evidence)}</pre>`;
+      h+=`<details class="rf-detail"><summary>查看详细内容</summary><div class="rf-detail-body">${body}</div></details>`;
+    }
+    h+='</div>';
+    return h;
+  }
   let h=`<div class="rf-step${final?' is-final':''}">`;
   h+=`<div class="rf-step-dot"><div class="rf-step-dot-inner" style="background:${final?'#12805c':color}">${final?'✓':no}</div></div>`;
   h+=`<div class="rf-step-card${final?' is-final':''}">`;
