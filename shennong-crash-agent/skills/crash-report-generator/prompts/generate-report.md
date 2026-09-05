@@ -72,13 +72,23 @@
      - `repeated`（数组：title/count/window/ref{file,lines}/note/examples[]）——重复出现的强相关可疑日志；
      - `other`（数组：name/count/span/ref/note/lines[]）——其它关联异常特征。
 6. **`root_cause_analysis.json`**（LLM 综合多源证据总结），字段与 report.html 第 1/3/4 章一致：
-   - **`conclusion`**（一句自然中文，高度抽象）：概括场景、缺陷大类、结论（推测 or 确认）。剔除实现细节——不出现函数名、寄存器名、标志常量、机制内部细节、地址/偏移。当社区 `verdict=confirmed` 时去掉"推测"、以"（社区补丁已确认）"收尾；否则以"（推测）"结尾。
-   - **`standard_solution`**（结构化对象）：`type`（patch/config/upgrade/none，**四选一**）、`claim_tag`、`short`（「要做什么/为什么/怎么做」，通俗、书面、少术语）、`basis`（修复依据，数组 `{kind,title,url,text}`，来自社区邮件/会议纪要/上游 bugfix）、`fixed_in`（修复版本判定）、`patch_list`（数组 `{sha,mode,subject,why,files[],diff}`）、`method_steps`（合入步骤）、`detail`。专业细节收进可展开的补充信息。
+   - **`conclusion`**（一句自然中文，叙事化、通俗、书面、少术语）：用「发生了什么 → 为什么 → 结论（与业务/硬件是否有关）」讲清场景、缺陷大类与结论（推测 or 确认）。**禁止**出现函数名、寄存器名、标志常量、十六进制值、机制内部细节、地址/偏移。当社区 `verdict=confirmed` 时去掉"推测"、以"（社区补丁已确认）"收尾；否则以"（推测）"结尾。
+   - **`standard_solution`**（结构化对象）：`type`（patch/config/upgrade/none，**四选一**）、`claim_tag`、`short`（**必须分「要做什么 / 为什么 / 怎么做」三句**，通俗、书面、少术语，不用函数名/寄存器/十六进制）、`basis`（修复依据，数组 `{kind,title,url,text}`，来自社区邮件/会议纪要/上游 bugfix）、`fixed_in`（修复版本判定）、`patch_list`（数组 `{sha,mode,subject,why,files[],diff}`）、`method_steps`（合入步骤）、`detail`。专业细节收进可展开的补充信息。
      - `patch_list[].mode` **三选一**：`full`（整体合入）、`part`（局部合入/最小改动）、`pick`（取其思路改造/自研移植）。
      - `patch_list[].diff` **必须给出可直接合入的具体补丁示例**（diff 格式，含文件与 `+/-` 行）。自研/移植补丁也要给适配本内核的示意补丁代码，**禁止留空**；确实只能参考上游思路时 `mode=pick`，`diff` 仍须写「适配本内核的示意补丁」而非空串。
      - `type=patch` 时**必须**至少一条 `patch_list`。
    - **`temporary_workaround`**（结构化对象）：`type`（`config`=命令行/配置规避、`none`=无有效临时规避方案）、`summary`、`steps`（命令/操作）、`risk`、`detail`。**无有效方案时** `type` 取 `none`、`summary` 写「无」、`steps` 置空。有方案时 `steps` 必须给出**可直接执行**的命令/操作，优先考虑：① 内核/系统配置（`sysctl` / `echo > /proc/sys/...` / 内核启动参数）；② 服务与资源控制（`systemctl set-property <svc> TasksMax=<n>`、`taskset`/`numactl` 绑核、`cgroup` 限流）；③ 换机/分散部署/流量切走（同局点避免同业务集中）；④ 关闭触发特性（`modprobe.blacklist` / 特性开关降级）；⑤ 压概率（降低并发、延长周期、避开触发路径）。`risk` 说明无法根治的原因与回退方式。
-   - **`event_scene`**（事件时序图）：`participants`（对象泳道，具体到进程名+PID、CPU 序号、硬件名）、`gvars`/`ginit`（全局变量列：k 变量名、v 值）、`anchor`（时刻锚点，可选）、`events`（每条带 `m` 用户态/内核态/硬件、`from`/`to`、`kind`、`title`、`val`、`full`、`g` 全局变量变化、`dt_ms` 相对崩溃的毫秒偏移）。
+   - **`event_scene`**（事件时序图，三类泳道：进程 / 内核 / 硬件，**每类可有多个对象**）：
+     - `participants`（对象泳道，可多个）：`id`（简短英文，如 `proc_a`/`cpu92`/`timer0`）、`name`（具体到进程名+PID、CPU 序号、硬件类型/名称）、`type` 三选一 `process`（进程/用户态业务线程）/ `kernel`（内核/CPU）/ `hardware`（硬件）、`init`（初始状态）、`tip`（一句话说明，供 hover 展示：进程 PID/名称、内核序号、硬件类型等）。
+     - `anchor`：崩溃时刻锚点，**ISO 8601 带毫秒**（如 `2026-07-08T06:20:00.000`），供查看器按 `dt_ms` 反推每个事件的「时分秒」；**禁止写非时间字符串**。
+     - `gvars`/`ginit`：全局变量列（`k` 变量名、`v` 值），随事件变化的取值。
+     - `events`：每条 `{m, from, to, kind, title, val, t, dt_ms, full, g}`：
+       - `m` **四选一**：`user`（用户态）/ `sys`（用户→内核）/ `kern`（内核态）/ `hw`（硬件）——用于区分内核态与用户态；
+       - `from`/`to`：用 participant `id` 表示**泳道间箭头**（如 `user`→`kern`、`kern`→`hw`），每个框都要有来源/去向；**指向自身时 `from`=`to`**（查看器会画弯折回环箭头指回自身）；
+       - `kind` 枚举：`call`（调用）/ `irq` / `softirq` / `hw` / `mutex` / `alloc` / `race` / `free` / `global` / `crash`（崩溃爆发）；
+       - `dt_ms`：相对 `anchor` 的毫秒偏移，**递增、不要全 0**（崩溃点距锚点最近，取较小值）；
+       - `t`：阶段标签（用户态 / 陷入 / 内核态 / 内核态→硬件 等），不是单调秒数；
+       - `val`：关键值（寄存器/指针/变量）；`full`：一句话说明（供 hover 展示细节）。
    - **`propagation_chain`**（崩溃链路逐跳）：每跳 `{from,to,type,src_dir,file,line,stack,fn_ctx,crash,source_url,detail,evidence,params[]}`。**必须**给出栈帧 ↔ 源码（目录/文件/行号/函数）、关键参数 `params`（`{io,reg,n,formal,v,bad,note}`，异常参数 `bad=true` 标红）。精确行号需 vmlinux 调试信息或本地源码树，`dis -rl` 无法给出行号时注明边界。最后一跳必须写明崩溃爆发的直接原因（含二进制↔源码行对照）。
    - **`reasoning_flow`**（三部分根因，每步 `{stage,stage_name,color,title,short,text,evidence,ev_plain,path_mini,refs[],branch}`）。`stage` **必须**用以下枚举，否则报告第 4 章三部分会渲染不完整：
      | `stage` | 归属部分 |
