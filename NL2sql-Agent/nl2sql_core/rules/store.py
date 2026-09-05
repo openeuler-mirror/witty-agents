@@ -20,6 +20,8 @@ def normalize_dialect(engine_type: str | None) -> str:
         return "elasticsearch"
     if t in ("opengauss", "postgres", "postgresql"):
         return "opengauss"
+    if t == "hbase":
+        return "hbase"
     return t or "shared"
 
 

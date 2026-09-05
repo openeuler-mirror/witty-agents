@@ -47,15 +47,19 @@ SYSTEM_IR = """
 }
 
 IR 语义：
-- from = 结果主表（以召回 schema/domain 规则为准）。
-- where = 只作用于主表的条件。
+- from = 结果主表（通常是人员主档）。
+- where = 只作用于主表的条件（如年龄 csrq、性别 xb）。
 - semi_joins = 半连接：主表.local_key 必须出现在「从表 where 过滤后的 foreign_key 集合」中；
   **多个 semi_joins 之间是 AND（交集）**。
-- 同一 semi_join 内多个 where：默认 and；若为「或」关系必须放在 **同一个** semi_join，并设 "where_op":"or"。
+- 同一 semi_join 内多个 where：默认 and；若为「或」关系（如车次 G% 或 D% 或 K%）必须放在 **同一个** semi_join，并设 "where_op":"or"。
 - **严禁**把本应 OR 的条件拆成多个 semi_joins（那会变成错误的 AND 交集，结果常为空）。
-- between 的 value 必须是二元数组；in 的 value 必须是数组。
+- between 的 value 必须是二元数组，如 ["1976-07-20","1996-07-20"]。
+- in 的 value 必须是数组。
 - 跨索引关联一律用 semi_joins，禁止写 JOIN / EXISTS / IN (SELECT ...)。
-- 业务字段含义、别名、可忽略条件等一律以召回的 domain/schema 规则为准，不要臆造。
+- 本库无酒店/航班等表时：忽略该条件，但保留其它有效条件。
+- 购票表 ticket_sales 本身就是火车售票：问「坐火车」时可只约束站点，不必再拆多个车次前缀；
+  若要约束车次，用同一个 semi_join + where_op=or + 多条 like 'G%'/'D%'/'C%'/'Z%'/'T%'/'K%'。
+- 问「坐飞机/大巴」：忽略交通方式，只保留城市等有效条件。
 """
 
 SYSTEM_SQL = """
@@ -72,10 +76,31 @@ SYSTEM_SQL = """
 """
 
 
+SYSTEM_HBASE = """
+【本引擎请输出 HBase Scan 计划（不要输出 SQL）】
+输出必须是严格 JSON，不要 Markdown：
+{
+  "mode": "scan",
+  "query": {
+    "table": "namespace:table 或 table",
+    "families": ["cf"],
+    "prefix": null,
+    "filters": [ {"col":"cf:qualifier","op":"=|!=|like","value":"..."} ],
+    "limit": 50
+  },
+  "reason": "简短说明"
+}
+- 只读 Scan/Get。禁止 put/delete/admin。
+- 不要写 JOIN / SELECT。
+"""
+
+
 def _system_for_dialect(dialect: str) -> str:
     d = normalize_dialect(dialect)
     if d in ("elasticsearch", "es"):
         return SYSTEM_BASE + SYSTEM_IR
+    if d == "hbase":
+        return SYSTEM_BASE + SYSTEM_HBASE
     return SYSTEM_BASE + SYSTEM_SQL
 
 
@@ -143,7 +168,28 @@ async def generate_query(
             "raw": raw,
         }
 
-    mode = mode or "dsl"
+    if dial == "hbase":
+        query = data.get("query")
+        if isinstance(query, str):
+            try:
+                query = json.loads(query)
+            except json.JSONDecodeError:
+                pass
+        if not isinstance(query, dict):
+            query = {
+                k: data[k]
+                for k in ("table", "families", "filters", "limit", "prefix")
+                if k in data
+            }
+        return {
+            "mode": "scan",
+            "query": query,
+            "index": (query or {}).get("table") if isinstance(query, dict) else "",
+            "reason": data.get("reason", ""),
+            "raw": raw,
+        }
+
+    mode = mode or "sql"
     query = data.get("query")
     index = data.get("index") or data.get("table") or data.get("from") or ""
     if mode == "sql" and not isinstance(query, str):

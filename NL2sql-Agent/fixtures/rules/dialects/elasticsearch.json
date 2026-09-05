@@ -3,30 +3,30 @@
     "rule_type": "experience",
     "scope": "dialect",
     "dialect": "elasticsearch",
-    "description": "Elasticsearch 引擎：跨索引关联请用查询计划 IR 的 semi_joins（系统会多步执行：先查从表键、再回表主索引），不要写多表 JOIN / EXISTS / IN (SELECT …)。"
-  },
-  {
-    "rule_type": "experience",
-    "scope": "dialect",
-    "dialect": "elasticsearch",
     "description": "Elasticsearch SQL 方言：禁止 SELECT DISTINCT（引擎不支持会直接报错）；禁止 EXISTS、WITH、窗口函数；需要去重时用 GROUP BY 关键字段，或直接 SELECT + LIMIT，不要写 DISTINCT。"
   },
   {
     "rule_type": "experience",
     "scope": "dialect",
     "dialect": "elasticsearch",
-    "description": "Elasticsearch SQL 方言：默认只读 SELECT；结果加 LIMIT（建议 ≤50）；优先 keyword/等值；IR 编译出的单表 SQL 走 ES _sql。"
+    "description": "Elasticsearch SQL 方言：默认只读 SELECT；结果加 LIMIT（建议 ≤50）；优先 keyword/等值；优先走 ES SQL（_sql），复杂检索可用 Query DSL。"
   },
   {
     "rule_type": "experience",
     "scope": "dialect",
     "dialect": "elasticsearch",
-    "description": "Elasticsearch：默认返回全部字段。主表查询优先 select=[\"*\"]；仅当用户明确要求某些列时才做列投影。不要擅自只选部分列（易选错列名导致整列为空）。"
+    "description": "Elasticsearch SQL 方言：原生不支持 IN (SELECT …) 子查询与多表 JOIN；跨索引关联可写成 IN (SELECT …)，由执行层拆成两段；次数类在内层 GROUP BY 关联键 HAVING COUNT(*) > N。半连接时若外层已有 WHERE 过滤，优先把业务条件写在外层，避免内层 LIMIT 截断导致空交集。"
   },
   {
     "rule_type": "experience",
     "scope": "dialect",
     "dialect": "elasticsearch",
-    "description": "Elasticsearch：执行报错或 0 行时，根据召回的 domain/mapping 规则修正字段名与别名，不要臆造索引中不存在的列。"
+    "description": "Elasticsearch SQL 方言：默认返回全部字段。单表列表/筛选查询优先写 SELECT * FROM <index> WHERE ... LIMIT N；不要擅自只选部分列（易选错列名导致整列为空，如把人员主档的 XM 用到其它索引）。仅当用户明确要求某些列时才做列投影。DSL 默认不要设置 _source（省略则返回全部 _source 字段）。"
+  },
+  {
+    "rule_type": "experience",
+    "scope": "dialect",
+    "dialect": "elasticsearch",
+    "description": "Elasticsearch SQL 方言：执行报错或 0 行时，根据召回的 domain/mapping 规则修正字段名与别名，不要臆造索引中不存在的列（例如不存在的业务布尔标记字段）。"
   }
 ]

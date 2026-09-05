@@ -16,6 +16,32 @@ datasources:
     enabled: true
     rules_kb_id: ""
     rules_kb_name: nl2sql-rules-local-es
+  local-opengauss:
+    id: local-opengauss
+    type: opengauss
+    host: 127.0.0.1
+    port: 5434
+    database: postgres
+    username: gaussdb
+    password: ""
+    readonly: true
+    max_size: 100
+    timeout_sec: 15
+    enabled: true
+    rules_kb_id: ""
+    rules_kb_name: nl2sql-rules-local-opengauss
+  local-hbase:
+    id: local-hbase
+    type: hbase
+    host: 127.0.0.1
+    rest_port: 16080
+    thrift_port: 9090
+    master_ipc_port: 16000
+    zookeeper_port: 2181
+    timeout_sec: 8
+    enabled: true
+    rules_kb_id: ""
+    rules_kb_name: nl2sql-rules-local-hbase
   mock:
     id: mock
     type: mock

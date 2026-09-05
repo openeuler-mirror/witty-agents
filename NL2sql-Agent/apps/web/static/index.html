@@ -3,13 +3,13 @@
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>NL2SQL</title>
-<link rel="stylesheet" href="/static/css/app.css?v=20260901p">
+<link rel="stylesheet" href="/static/css/app.css?v=20260905d">
 </head>
 <body>
 <div class="header">
   <div>
     <h1>NL2SQL</h1>
-    <div class="sub">Web :8199 · ES :9200 · rag-core :19988</div>
+    <div class="sub">自包含 Demo · Web :8199 · 当前数据源可切换 ES / OpenGauss / HBase · rag-core :19988</div>
   </div>
   <div id="health-badge" class="badge">检查中…</div>
 </div>
@@ -28,7 +28,7 @@
           <select id="qa-ds"><option value="">加载中…</option></select>
         </div>
         <div class="col"><label>模式</label>
-          <select id="qa-mode"><option value="auto">auto</option><option value="sql">sql</option><option value="dsl">dsl</option></select>
+          <select id="qa-mode"><option value="auto">auto</option><option value="sql">sql</option><option value="dsl">dsl</option><option value="scan">scan</option></select>
         </div>
         <div class="col"><label>使用 LLM</label>
           <select id="qa-llm"><option value="1">是</option><option value="0">否（手写查询）</option></select>
@@ -37,6 +37,7 @@
           <button type="button" id="qa-clarify-toggle" class="btn btn-toggle on" onclick="toggleInteractiveClarify()" title="开：多轮追问；关：模型自行理解问句">开 · 多轮追问</button>
         </div>
         <div class="col qa-toolbar-actions">
+          <button class="btn btn-default" type="button" onclick="testCurrentDatasource()">测试当前数据源</button>
           <button class="btn btn-default" type="button" onclick="clearChat()">清空会话</button>
         </div>
       </div>
@@ -51,7 +52,7 @@
       <label class="muted" style="display:block;margin-top:8px">可选：直接执行查询（跳过澄清与 LLM）</label>
       <textarea id="qa-exec" rows="2" placeholder="SELECT ... 或 DSL JSON"></textarea>
       <div class="composer row" style="margin-top:10px">
-        <div class="col"><textarea id="qa-input" rows="2" placeholder="输入自然语言查询"></textarea></div>
+        <div class="col"><textarea id="qa-input" rows="2" placeholder="例如：40-60岁 去过成都的重点关注人员"></textarea></div>
         <button class="btn btn-primary" type="button" id="qa-send" onclick="sendQuery()">发送</button>
       </div>
     </div>
@@ -61,7 +62,7 @@
   <div id="tab-rules" class="tab-pane hidden">
     <div class="card">
       <h3>自然语言生成规则（F1）</h3>
-      <p class="muted">生成 domain / dialect / 别名类规则；不含海量字段 mapping。生成后可编辑、勾选，再增量导入现有 KB。</p>
+      <p class="muted">生成 domain / dialect / 别名类规则；不含海量字段 mapping。也可「从数据源生成规则包」落盘 JSON，确认后再入库（不必只靠本页）。</p>
       <div class="row">
         <div class="col"><label>数据源</label>
           <select id="rules-ds"><option value="">加载中…</option></select>
@@ -77,6 +78,8 @@
         <label class="btn btn-default file-btn">上传 JSON
           <input type="file" id="rules-file" accept=".json,application/json" hidden onchange="importRulesFile(event)">
         </label>
+        <button class="btn btn-default" type="button" onclick="initRulesFromDb()">从数据源生成规则包</button>
+        <button class="btn btn-default" type="button" onclick="commitInitBundle()">确认入库规则包</button>
         <button class="btn btn-default" type="button" onclick="bootstrapRules()">FIELD-GUIDE 初始化</button>
         <button class="btn btn-default" type="button" onclick="loadRules()">刷新列表</button>
         <button class="btn btn-default" type="button" onclick="loadSchema()">拉取 Schema</button>
@@ -116,6 +119,19 @@
   <!-- 设置 -->
   <div id="tab-settings" class="tab-pane hidden">
     <div class="card">
+      <h3>当前数据源</h3>
+      <p class="muted">只显示并探测你选中的那一个库，不会同时测 ES / OpenGauss / HBase。</p>
+      <div class="row">
+        <div class="col"><label>数据源</label>
+          <select id="settings-ds"><option value="">加载中…</option></select>
+        </div>
+      </div>
+      <div class="btn-group">
+        <button class="btn btn-default" type="button" onclick="testCurrentDatasource()">测试当前数据源</button>
+        <span id="current-ds-msg" class="muted"></span>
+      </div>
+    </div>
+    <div class="card">
       <h3>LLM</h3>
       <div class="row">
         <div class="col"><label>Base URL</label><input id="s-llm-url"></div>
@@ -123,18 +139,37 @@
         <div class="col"><label>Model</label><input id="s-llm-model"></div>
       </div>
     </div>
-    <div class="card">
-      <h3>Elasticsearch</h3>
+    <div id="card-es" class="card hidden">
+      <h3>Elasticsearch 连接</h3>
       <div class="row">
         <div class="col"><label>Hosts</label><input id="s-es-hosts" value="http://127.0.0.1:9200"></div>
         <div class="col"><label>Username</label><input id="s-es-user"></div>
         <div class="col"><label>Password</label><input id="s-es-pass" type="password"></div>
         <div class="col"><label>Default index</label><input id="s-es-index" value="*"></div>
       </div>
-      <div class="btn-group">
-        <button class="btn btn-default" type="button" onclick="testEs()">测试 ES</button>
-        <span id="es-test-msg" class="muted"></span>
+    </div>
+    <div id="card-og" class="card hidden">
+      <h3>OpenGauss 连接</h3>
+      <div class="row">
+        <div class="col"><label>Host</label><input id="s-og-host" value="127.0.0.1"></div>
+        <div class="col"><label>Port</label><input id="s-og-port" value="5434"></div>
+        <div class="col"><label>Database</label><input id="s-og-db" value="postgres"></div>
+        <div class="col"><label>Username</label><input id="s-og-user" value="gaussdb"></div>
+        <div class="col"><label>Password</label><input id="s-og-pass" type="password"></div>
       </div>
+    </div>
+    <div id="card-hb" class="card hidden">
+      <h3>HBase 连接</h3>
+      <div class="row">
+        <div class="col"><label>Host</label><input id="s-hb-host" value="127.0.0.1"></div>
+        <div class="col"><label>REST 端口</label><input id="s-hb-rest" value="16080"></div>
+        <div class="col"><label>Thrift 端口</label><input id="s-hb-thrift" value="9090"></div>
+        <div class="col"><label>REST URL（可选）</label><input id="s-hb-url" placeholder="http://127.0.0.1:16080"></div>
+      </div>
+    </div>
+    <div id="card-mock" class="card hidden">
+      <h3>Mock</h3>
+      <p class="muted">演示引擎，无真实连接参数。</p>
     </div>
     <div class="card">
       <h3>rag-core（可选同步）</h3>
@@ -150,6 +185,6 @@
     </div>
   </div>
 </div>
-<script src="/static/js/app.js?v=20260901p"></script>
+<script src="/static/js/app.js?v=20260905d"></script>
 </body>
 </html>

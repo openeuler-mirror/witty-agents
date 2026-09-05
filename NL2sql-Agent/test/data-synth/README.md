@@ -22,7 +22,7 @@
 ## 用法
 
 ```bash
-cd /home/zls/nl2sql/data-synth
+cd test/data-synth   # 在 NL2sql-Agent 仓库根目录下
 pip install pyyaml
 
 python3 generate.py --rows-per-table 100000

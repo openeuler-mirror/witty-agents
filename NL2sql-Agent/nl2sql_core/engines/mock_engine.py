@@ -13,6 +13,25 @@ class MockEngine:
     async def test_connection(self, config: dict[str, Any]) -> bool:
         return True
 
+    async def ping(self, config: dict[str, Any]) -> dict[str, Any]:
+        return {"ok": True, "via": "mock"}
+
+    async def sample_values(
+        self,
+        config: dict[str, Any],
+        *,
+        names: list[str],
+        sample_rows: int = 5,
+        top_terms: int = 20,
+        deadline_monotonic: float | None = None,
+    ) -> dict[str, Any]:
+        return {
+            "person_info_es": {
+                "rows": [{"XM": "张三", "XB": "男", "SFZH": "110101199001011234"}],
+                "terms": {"XB": ["男", "女"]},
+            }
+        }
+
     async def fetch_schema(self, config: dict[str, Any]) -> SchemaSummary:
         return SchemaSummary(
             indexes=[

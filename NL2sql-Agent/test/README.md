@@ -13,7 +13,7 @@ test/
     └── scripts/
 ```
 
-主程序仍在上级目录（`NL2SQL-Agent-publish/`）；本目录只放测试侧工具与配置原料。
+主程序仍在上级目录；**功能/一致性怎么点、怎么调 API** 见 [../docs/TEST.md](../docs/TEST.md)。本目录只放测试侧工具与配置原料。
 
 ## 推荐流程
 
@@ -36,7 +36,8 @@ python3 scripts/sync_rules_to_rag.py
 
 # 4. 将返回的 kb_id 写入上级 configs/datasources.yaml（demo-es 条目，见 configs 示例）
 
-# 5. 用 queries/test_queries.json 做 Web 或一致性测试
+# 5. 用 queries/test_queries.json 做 Web 问答或一致性（见上级 docs/TEST.md）
+#    数据源 id 以 configs/datasources.yaml 为准（常见 local-es；demo-es 需自行加条目）
 ```
 
 ## 与主仓库 scripts 的区别

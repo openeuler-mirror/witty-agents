@@ -23,12 +23,27 @@ class ElasticsearchEngine:
     id = "elasticsearch"
 
     async def test_connection(self, config: dict[str, Any]) -> bool:
+        detail = await self.ping(config)
+        return bool(detail.get("ok"))
+
+    async def ping(self, config: dict[str, Any]) -> dict[str, Any]:
         host = self._primary_host(config)
-        async with httpx.AsyncClient(
-            timeout=config.get("timeout_sec", 30), verify=config.get("verify_certs", False)
-        ) as client:
-            r = await client.get(f"{host}/", auth=self._auth(config))
-            return r.status_code == 200
+        try:
+            async with httpx.AsyncClient(
+                timeout=float(config.get("timeout_sec") or 10),
+                verify=config.get("verify_certs", False),
+            ) as client:
+                r = await client.get(f"{host}/", auth=self._auth(config))
+                if r.status_code != 200:
+                    return {"ok": False, "error": f"HTTP {r.status_code}", "via": host}
+                ver = ""
+                try:
+                    ver = str((r.json().get("version") or {}).get("number") or "")
+                except Exception:
+                    pass
+                return {"ok": True, "via": host, "version": ver}
+        except Exception as e:
+            return {"ok": False, "error": str(e), "via": host}
 
     async def fetch_schema(self, config: dict[str, Any]) -> SchemaSummary:
         host = self._primary_host(config)
@@ -52,6 +67,99 @@ class ElasticsearchEngine:
             ]
             indexes.append(SchemaIndex(name=idx_name, fields=fields))
         return SchemaSummary(indexes=indexes)
+
+    async def sample_values(
+        self,
+        config: dict[str, Any],
+        *,
+        names: list[str],
+        sample_rows: int = 5,
+        top_terms: int = 20,
+        deadline_monotonic: float | None = None,
+    ) -> dict[str, Any]:
+        """每索引抽若干文档，并对 keyword 字段做 terms 聚合。超时则返回已抽到的。"""
+        import time
+
+        host = self._primary_host(config)
+        timeout = float(config.get("timeout_sec") or 30)
+        auth = self._auth(config)
+        verify = config.get("verify_certs", False)
+        out: dict[str, Any] = {}
+        keyword_cap = int(config.get("keyword_fields_per_object") or 8)
+
+        async with httpx.AsyncClient(timeout=timeout, verify=verify) as client:
+            for idx in names:
+                if deadline_monotonic is not None and time.monotonic() >= deadline_monotonic:
+                    break
+                entry: dict[str, Any] = {"rows": [], "terms": {}}
+                try:
+                    r = await client.post(
+                        f"{host}/{idx}/_search",
+                        json={"size": max(1, sample_rows), "query": {"match_all": {}}},
+                        auth=auth,
+                    )
+                    if r.status_code < 300:
+                        hits = (r.json().get("hits") or {}).get("hits") or []
+                        for h in hits:
+                            src = h.get("_source") or {}
+                            if isinstance(src, dict):
+                                entry["rows"].append(self._clip_row(src))
+                except Exception:
+                    pass
+
+                kw_fields: list[str] = []
+                try:
+                    mr = await client.get(f"{host}/{idx}/_mapping", auth=auth)
+                    if mr.status_code < 300:
+                        body = mr.json().get(idx) or next(iter(mr.json().values()), {})
+                        props = (
+                            (body.get("mappings") or {}).get("properties")
+                            or {}
+                        )
+                        for fname, node in props.items():
+                            if isinstance(node, dict) and node.get("type") == "keyword":
+                                kw_fields.append(fname)
+                            if len(kw_fields) >= keyword_cap:
+                                break
+                except Exception:
+                    pass
+
+                aggs = {
+                    f"t_{i}": {"terms": {"field": f, "size": max(1, top_terms)}}
+                    for i, f in enumerate(kw_fields)
+                }
+                if aggs and (deadline_monotonic is None or time.monotonic() < deadline_monotonic):
+                    try:
+                        ar = await client.post(
+                            f"{host}/{idx}/_search",
+                            json={"size": 0, "aggs": aggs},
+                            auth=auth,
+                        )
+                        if ar.status_code < 300:
+                            raw_aggs = ar.json().get("aggregations") or {}
+                            for i, f in enumerate(kw_fields):
+                                buckets = (raw_aggs.get(f"t_{i}") or {}).get("buckets") or []
+                                vals = [b.get("key") for b in buckets if b.get("key") not in (None, "")]
+                                if vals:
+                                    entry["terms"][f] = [str(v) for v in vals[:top_terms]]
+                    except Exception:
+                        pass
+                out[idx] = entry
+        return out
+
+    @staticmethod
+    def _clip_row(src: dict[str, Any], *, max_fields: int = 40, max_len: int = 80) -> dict[str, Any]:
+        clipped: dict[str, Any] = {}
+        for i, (k, v) in enumerate(src.items()):
+            if i >= max_fields:
+                break
+            if v is None:
+                continue
+            s = v if isinstance(v, (int, float, bool)) else str(v)
+            if isinstance(s, str) and len(s) > max_len:
+                s = s[:max_len] + "…"
+            clipped[k] = s
+        return clipped
 
     async def execute(
         self,

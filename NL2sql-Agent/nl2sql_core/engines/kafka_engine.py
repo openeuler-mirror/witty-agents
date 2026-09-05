@@ -16,6 +16,17 @@ class KafkaEngine:
     async def fetch_schema(self, config: dict[str, Any]) -> SchemaSummary:
         return SchemaSummary(notes=["Kafka 引擎尚未实现（通常不作 NL 查询目标）"])
 
+    async def sample_values(
+        self,
+        config: dict[str, Any],
+        *,
+        names: list[str],
+        sample_rows: int = 5,
+        top_terms: int = 20,
+        deadline_monotonic: float | None = None,
+    ) -> dict[str, Any]:
+        return {}
+
     async def execute(
         self,
         query: str | dict[str, Any],

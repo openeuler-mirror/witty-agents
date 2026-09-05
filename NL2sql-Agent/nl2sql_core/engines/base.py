@@ -20,3 +20,15 @@ class QueryEngine(Protocol):
     ) -> QueryResult: ...
 
     async def fetch_schema(self, config: dict[str, Any]) -> SchemaSummary: ...
+
+    async def sample_values(
+        self,
+        config: dict[str, Any],
+        *,
+        names: list[str],
+        sample_rows: int = 5,
+        top_terms: int = 20,
+        deadline_monotonic: float | None = None,
+    ) -> dict[str, Any]:
+        """每表抽样行 + keyword 高频值。引擎未实现则返回空 dict。"""
+        ...

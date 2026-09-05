@@ -4,10 +4,10 @@
 
 ## 健康与配置
 
-- `GET /api/health`
+- `GET /api/health?datasource_id=local-es`：只探测**当前**数据源 + rag-core（不传 id 则不测业务库）
 - `GET|POST /api/settings`
 - `GET /api/datasources`
-- `POST /api/datasources/test` body: `{ "datasource_id": "local-es" }`
+- `POST /api/datasources/test` body: `{ "datasource_id": "local-es" }`（一次测一个）
 - `GET /api/schema/{datasource_id}`
 
 ## 查询
@@ -48,11 +48,24 @@
 - `GET /api/rules?database_id=local-es`
 - `POST /api/rules` 单条 upsert
 - `POST /api/rules/search` `{ database_id, query, rule_type?, top_k }`
-- `POST /api/rules/bootstrap`
+- `POST /api/rules/bootstrap`  FIELD-GUIDE → 本地缓存（旧入口）
+- `POST /api/rules/init/preview` `{ "database_id", "include_llm_domain": true }`  
+  → 从真实库拉 schema/抽样，生成规则包 JSON 并落盘 `data/rules/init_bundles/`  
+  返回 `bundle_path` + `rules`。**不写 rag-core。**
+- `POST /api/rules/init/commit` `{ "from_file": "..." }` 或 `{ "bundle": { "database_id", "rules": [...] } }`  
+  → 写入 rag-core，默认新建 KB 并回写 `rules_kb_id`  
+  可选 `recreate_kb` / `persist_kb` / `kb_name`
 - `POST /api/rules/generate_from_nl` `{ database_id, user_text, include_schema? }`  
   → 仅 domain/dialect/别名，不做海量字段 mapping
 - `POST /api/rules/import` `{ database_id, rules, sync_rag? }`  
   → 本地 + 增量 upsert 现有 rag KB（无 KB 才创建）
+
+不启 Web 时用 CLI：
+
+```bash
+PYTHONPATH=. python3 scripts/init_rules_from_db.py --database-id local-es
+PYTHONPATH=. python3 scripts/init_rules_from_db.py --commit --from-file data/rules/init_bundles/init_local-es_xxx.json
+```
 
 ## 一致性
 

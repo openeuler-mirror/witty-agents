@@ -23,3 +23,14 @@ pipeline:
   max_query_attempts: 3   # LLM 生成 SQL 失败或 0 行时可重试次数（含首次）
   retry_on_empty: true    # 执行成功但 0 行时是否带反馈重试
   rules_top_k: 50         # rag-core 召回规则条数上限（最终送入生成的条数）
+
+# 从真实库冷启动规则（CLI / API / Skill 共用）
+rules_init:
+  max_objects: 80
+  sample_rows: 5
+  top_terms: 20
+  sample_timeout_sec: 90
+  schema_hint_max_chars: 24000
+  max_examples: 12
+  max_domain: 40
+  keyword_fields_per_object: 8

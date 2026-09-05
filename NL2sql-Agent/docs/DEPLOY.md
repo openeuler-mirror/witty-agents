@@ -1,7 +1,7 @@
 # NL2SQL 部署指南
 
-本文说明如何部署 **Elasticsearch**、对接 **rag-core**，并启动 **NL2SQL**（Web/API）。  
-业务明细数据、API Key **均不在本仓库**；由部署方自行配置与导入（见 [TEST.md](./TEST.md)）。
+部署 **业务库**、对接 **rag-core**，并启动 **NL2SQL**（Web/API）。  
+业务明细、API Key **不在本仓库**；测试步骤见 [TEST.md](./TEST.md)。
 
 ## 1. 环境要求
 
@@ -9,15 +9,17 @@
 |------|------|
 | OS | Linux x86_64 / aarch64 |
 | Python | 3.10+ |
-| Docker | 可选；用于 compose 拉起 ES 7.10.2（aarch64 若拉镜像失败请自备 ES） |
-| rag-core | **必须另外部署**的 HTTP 服务（默认 `:19988`）；本仓库不内嵌 |
+| Docker | 可选；compose 拉 ES 7.10.2，或 `scripts/start_opengauss.sh` |
+| Java 11+ | 可选；仅 `scripts/start_hbase.sh` 需要 |
+| rag-core | **必须另外部署**的 HTTP 服务（默认 `:19988`） |
 | LLM | OpenAI 兼容 API（Base URL + API Key + Model） |
-
-端口约定：
+| 业务库 | 按要测的源：ES / OpenGauss / 原生 HBase REST（非 Phoenix） |
 
 | 服务 | 默认端口 |
 |------|----------|
 | Elasticsearch | 9200 |
+| OpenGauss | 5434（映射容器 5432） |
+| HBase REST | 16080 |
 | rag-core | 19988（若在 9988，可用脚本代理） |
 | NL2SQL Web/API | 8199 |
 
@@ -30,8 +32,6 @@ cd witty-agents/NL2sql-Agent
 
 ## 3. 一键启动（推荐）
 
-先准备 `.env`，并确认 rag-core 健康：
-
 ```bash
 chmod +x scripts/*.sh
 cp -n .env.example .env
@@ -41,74 +41,90 @@ curl -s http://127.0.0.1:19988/health_check
 ./scripts/start_all.sh
 ```
 
-该脚本依次：
+该脚本依次：检查/尝试 ES → 检查 rag-core → 创建 `.venv` 并启动 Web。  
+**不会**自动起 OpenGauss / HBase；需要时另跑：
 
-1. **ES**：若 `9200` 不可用，则尝试 `docker compose -f deploy/docker-compose.yml up -d`；失败只告警（可用自备 ES）  
-2. **rag-core**：检查健康；若仅有其它端口上游，尝试 `ncat` 代理到 `19988`；失败默认告警并继续起 Web（`REQUIRE_RAG=1` 可改为硬失败）  
-3. **NL2SQL**：创建 `.venv`、安装依赖、启动 `uvicorn`（8199）
+```bash
+./scripts/start_opengauss.sh
+./scripts/start_hbase.sh
+```
+
+然后把账号写进 `configs/datasources.yaml`（OG 的 `password` 必填）。
 
 常用开关：
 
 ```bash
-SKIP_ES=1 ./scripts/start_all.sh                    # 已有 ES
-SKIP_RAG=1 ./scripts/start_all.sh                   # 稍后配 rag
-REQUIRE_RAG=1 ./scripts/start_all.sh                # 无 rag 则退出
+SKIP_ES=1 ./scripts/start_all.sh
+SKIP_RAG=1 ./scripts/start_all.sh
+REQUIRE_RAG=1 ./scripts/start_all.sh
 RAG_UPSTREAM=http://127.0.0.1:9988 ./scripts/start_all.sh
 ```
 
-单独脚本：
-
-```bash
-./scripts/start_es.sh
-./scripts/start_rag_core.sh
-./scripts/start_web.sh
-```
+单独脚本：`start_es.sh` / `start_rag_core.sh` / `start_web.sh`。
 
 ## 4. 分项说明
 
-### 4.1 Elasticsearch
+### 4.1 数据源（一次只用一个）
 
-**方式 A（本仓库 Compose）**
+编辑 `configs/datasources.yaml`。Web 下拉来自该文件；健康检查只 ping **当前选中**的 `datasource_id`。
 
 ```bash
-./scripts/start_es.sh
+curl -s 'http://127.0.0.1:8199/api/health?datasource_id=local-es'
+curl -s -X POST http://127.0.0.1:8199/api/datasources/test \
+  -H 'Content-Type: application/json' \
+  -d '{"datasource_id":"local-opengauss"}'
+```
+
+设置页全局 hosts **不会覆盖** yaml 里已写的连接项。
+
+### 4.2 Elasticsearch
+
+```bash
+./scripts/start_es.sh          # 或自备集群后 SKIP_ES=1
 curl -s http://127.0.0.1:9200
 ```
 
-**方式 B（已有集群）**
+### 4.3 OpenGauss
 
-修改 `configs/datasources.yaml` 中数据源的 `hosts`。  
-Web「设置」中的 ES hosts **不会覆盖** yaml 里已写的 hosts。  
-启动时加 `SKIP_ES=1`。
+兼容 PostgreSQL 协议，依赖 `psycopg2`（见 `requirements.txt`）。用**正版 OpenGauss**，不要用普通 Postgres 冒充验收。
 
-### 4.2 rag-core
+```bash
+./scripts/start_opengauss.sh
+# 把 yaml 中 local-opengauss.password 改成脚本提示的密码
+```
 
-本仓库**不内嵌** rag-core。请使用已有实例：
+已有实例：只改 yaml 的 host/port/database/username/password。
+
+### 4.4 HBase（原生表 + REST）
+
+```bash
+./scripts/start_hbase.sh
+curl -s http://127.0.0.1:16080/version
+```
+
+二进制默认装到仓库 `.opt/`（已 gitignore）。现场已有 REST 时，改 yaml 的 `host` / `rest_port`（或 `rest_url`）。
+
+### 4.5 rag-core
+
+本仓库不内嵌 rag-core。
 
 ```bash
 curl -s http://127.0.0.1:19988/health_check
 ```
 
-配置 `configs/rag_core.yaml` 或 `.env` 中的 `NL2SQL_RAG_BASE_URL` / `NL2SQL_RAG_ACCESS_KEY`。
+配置 `configs/rag_core.yaml` 或 `.env` 的 `NL2SQL_RAG_BASE_URL` / `NL2SQL_RAG_ACCESS_KEY`。
 
-上游在 `9988` 时：
-
-```bash
-RAG_UPSTREAM=http://127.0.0.1:9988 ./scripts/start_rag_core.sh
-```
-
-### 4.3 同步规则（首次必做）
-
-Web 起来后：
+### 4.6 同步规则（每个数据源各做一次）
 
 ```bash
 source .venv/bin/activate
 export PYTHONPATH=.
 python3 scripts/sync_rules_to_rag.py --database-id local-es
-# 已有 KB：加 --reuse-kb
 ```
 
-### 4.4 仅启动 Web
+现场空规则：见 [TEST.md](./TEST.md)「冷启动」。
+
+### 4.7 仅启动 Web
 
 ```bash
 python3 -m venv .venv && source .venv/bin/activate
@@ -118,20 +134,17 @@ cp -n .env.example .env
 ```
 
 浏览器：`http://127.0.0.1:8199`  
-健康：`curl -s http://127.0.0.1:8199/api/health`
-
-OpenCode Skill（可选）：`./scripts/register_opencode.sh`（需 Web 已在 8199 运行）。
+OpenCode：`./scripts/register_opencode.sh`（需 Web 已在 8199）。Skill **不会**改用 OpenCode 会话模型，LLM 仍读 `.env` / 设置页。
 
 ## 5. 配置检查清单
 
-- [ ] ES `9200` 可访问  
+- [ ] 当前要测的库可连（Web「测试当前数据源」）  
 - [ ] rag-core 健康，`access_key` 正确  
 - [ ] `.env` 已填 LLM  
-- [ ] 已 `sync_rules_to_rag`  
+- [ ] 该数据源已 sync 或冷启动 commit  
 - [ ] 业务数据已导入（见 [TEST.md](./TEST.md)）  
-- [ ] `/api/health` 符合预期  
 
 ## 6. 安全注意
 
-- 不要提交 `.env`、`data/runtime_settings.json` 或真实 API Key  
+- 不要提交 `.env`、`data/runtime_settings.json`、真实密码  
 - 默认查询只读；勿对生产库开放写权限  

@@ -6,7 +6,7 @@ import uuid
 from pathlib import Path
 from typing import Any, Optional
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -23,6 +23,7 @@ from nl2sql_core.config import (
     load_app_settings,
     load_datasources,
     load_rag_settings,
+    merge_datasource_config,
 )
 from nl2sql_core.engines.registry import get_engine, list_engines
 from nl2sql_core.eval.consistency import run_consistency
@@ -30,6 +31,7 @@ from nl2sql_core.llm.client import LLMClient
 from nl2sql_core.pipeline import NL2SQLPipeline
 from nl2sql_core.rag_client import RagClient
 from nl2sql_core.rules.bootstrap import bootstrap
+from nl2sql_core.rules.init import commit_bundle, init_from_datasource, write_bundle
 from nl2sql_core.rules.nl_generate import generate_rules_from_nl
 from nl2sql_core.rules.schema import Rule
 from nl2sql_core.rules.store import RuleStore, normalize_dialect
@@ -69,6 +71,15 @@ class RuntimeSettings(BaseModel):
     es_username: str = ""
     es_password: str = ""
     es_default_index: str = "*"
+    og_host: str = "127.0.0.1"
+    og_port: int = 5434
+    og_database: str = "postgres"
+    og_username: str = "gaussdb"
+    og_password: str = ""
+    hbase_host: str = "127.0.0.1"
+    hbase_rest_port: int = 16080
+    hbase_thrift_port: int = 9090
+    hbase_rest_url: str = ""
 
 
 class RuleUpsertRequest(BaseModel):
@@ -112,6 +123,20 @@ class ConsistencyRequest(BaseModel):
     mode: str = "auto"
 
 
+class RulesInitPreviewRequest(BaseModel):
+    database_id: str = "local-es"
+    include_llm_domain: bool = True
+
+
+class RulesInitCommitRequest(BaseModel):
+    database_id: str = ""
+    from_file: str = ""
+    bundle: dict[str, Any] | None = None
+    recreate_kb: bool = True
+    persist_kb: bool = True
+    kb_name: str = ""
+
+
 def _load_runtime() -> dict[str, Any]:
     if SETTINGS_FILE.exists():
         return json.loads(SETTINGS_FILE.read_text(encoding="utf-8"))
@@ -135,19 +160,8 @@ def _llm() -> LLMClient:
 
 
 def _es_cfg(ds: dict[str, Any]) -> dict[str, Any]:
-    """运行时设置仅补全缺省；不覆盖数据源已配置的 hosts。"""
-    runtime = _load_runtime()
-    cfg = dict(ds)
-    if cfg.get("type") == "elasticsearch":
-        if not cfg.get("hosts") and runtime.get("es_hosts"):
-            cfg["hosts"] = runtime["es_hosts"]
-        if not (cfg.get("username") or "").strip():
-            cfg["username"] = runtime.get("es_username") or ""
-        if not (cfg.get("password") or "").strip():
-            cfg["password"] = runtime.get("es_password") or ""
-        if not cfg.get("default_index"):
-            cfg["default_index"] = runtime.get("es_default_index") or "*"
-    return cfg
+    """兼容旧名：合并运行时连接配置。"""
+    return merge_datasource_config(ds, _load_runtime())
 
 
 def _sse(event: str, data: dict[str, Any]) -> str:
@@ -159,8 +173,28 @@ async def index():
     return FileResponse(STATIC_DIR / "index.html")
 
 
+async def _ping_datasource(ds_id: str, ds: dict[str, Any], runtime: dict[str, Any]) -> dict[str, Any]:
+    et = str(ds.get("type") or "mock")
+    item: dict[str, Any] = {"id": ds_id, "type": et, "ok": False}
+    try:
+        engine = get_engine(et)
+        ping = getattr(engine, "ping", None)
+        cfg = merge_datasource_config(ds, runtime)
+        cfg = dict(cfg)
+        cfg["timeout_sec"] = min(int(cfg.get("timeout_sec") or 8), 5)
+        if callable(ping):
+            detail = await asyncio.wait_for(ping(cfg), timeout=6)
+            item.update(detail if isinstance(detail, dict) else {"ok": bool(detail)})
+        else:
+            item["ok"] = bool(await asyncio.wait_for(engine.test_connection(cfg), timeout=6))
+    except Exception as e:
+        item["ok"] = False
+        item["error"] = str(e)
+    return item
+
+
 @app.get("/api/health")
-async def health():
+async def health(datasource_id: str = Query("", description="只探测当前数据源；空则不测业务库")):
     app_s = load_app_settings()
     rag_s = load_rag_settings()
     runtime = _load_runtime()
@@ -171,20 +205,24 @@ async def health():
     rag = RagClient(rag_s)
     rag_h = await rag.health()
 
-    es_ok = False
-    es_err = None
-    try:
-        cfg = _es_cfg(load_datasources().get("local-es", {"type": "elasticsearch"}))
-        es_ok = await get_engine("elasticsearch").test_connection(cfg)
-    except Exception as e:
-        es_err = str(e)
+    current: dict[str, Any] | None = None
+    ds_id = (datasource_id or "").strip()
+    if ds_id:
+        if ds_id == "mock":
+            current = {"id": "mock", "type": "mock", "ok": True, "via": "mock"}
+        else:
+            ds = (load_datasources() or {}).get(ds_id)
+            if not ds:
+                raise HTTPException(404, f"未知数据源: {ds_id}")
+            current = await _ping_datasource(ds_id, ds, runtime)
 
     return {
         "ok": True,
         "app": {"name": app_s.name, "port": app_s.port, "kg_enabled": app_s.kg_enabled},
         "engines": list_engines(),
         "rag_core": {"base_url": rag_s.base_url, **rag_h},
-        "elasticsearch": {"ok": es_ok, "error": es_err},
+        "datasource_id": ds_id or None,
+        "current": current,
         "runtime_settings_loaded": bool(runtime),
         "local_rules": (ensure_data_dir() / "rules" / "local-es.json").exists(),
     }
@@ -206,12 +244,22 @@ async def get_settings():
         "es_username": runtime.get("es_username") or "",
         "es_password": runtime.get("es_password") or "",
         "es_default_index": runtime.get("es_default_index") or "*",
+        "og_host": runtime.get("og_host") or "127.0.0.1",
+        "og_port": runtime.get("og_port") or 5434,
+        "og_database": runtime.get("og_database") or "postgres",
+        "og_username": runtime.get("og_username") or "gaussdb",
+        "og_password": runtime.get("og_password") or "",
+        "hbase_host": runtime.get("hbase_host") or "127.0.0.1",
+        "hbase_rest_port": runtime.get("hbase_rest_port") or 16080,
+        "hbase_thrift_port": runtime.get("hbase_thrift_port") or 9090,
+        "hbase_rest_url": runtime.get("hbase_rest_url") or "",
     }
 
 
 @app.post("/api/settings")
 async def save_settings(body: RuntimeSettings):
-    data = body.model_dump()
+    prev = _load_runtime()
+    data = {**prev, **body.model_dump()}
     _save_runtime(data)
     return {"ok": True}
 
@@ -229,9 +277,14 @@ async def test_datasource(body: DatasourceTestRequest):
     ds = load_datasources().get(body.datasource_id)
     if not ds:
         raise HTTPException(404, f"未知数据源: {body.datasource_id}")
-    cfg = _es_cfg(ds)
+    cfg = merge_datasource_config(ds, _load_runtime())
     engine = get_engine(cfg.get("type", "mock"))
     try:
+        ping = getattr(engine, "ping", None)
+        if callable(ping):
+            detail = await ping(cfg)
+            if isinstance(detail, dict):
+                return {"type": cfg.get("type"), **detail}
         ok = await engine.test_connection(cfg)
         return {"ok": ok, "type": cfg.get("type")}
     except NotImplementedError as e:
@@ -403,6 +456,53 @@ async def search_rules(body: RuleSearchRequest):
 @app.post("/api/rules/bootstrap")
 async def rules_bootstrap(database_id: str = "local-es"):
     return bootstrap(database_id)
+
+
+@app.post("/api/rules/init/preview")
+async def rules_init_preview(body: RulesInitPreviewRequest):
+    try:
+        bundle = await init_from_datasource(
+            body.database_id,
+            include_llm_domain=body.include_llm_domain,
+            llm=_llm(),
+        )
+        path = write_bundle(bundle)
+        return {
+            "ok": True,
+            "bundle_path": str(path),
+            "counts": bundle.get("counts"),
+            "warnings": bundle.get("warnings"),
+            "engine": bundle.get("engine"),
+            "database_id": bundle.get("database_id"),
+            "generated_at": bundle.get("generated_at"),
+            "rules": bundle.get("rules") or [],
+        }
+    except Exception as e:
+        raise HTTPException(500, str(e)) from e
+
+
+@app.post("/api/rules/init/commit")
+async def rules_init_commit(body: RulesInitCommitRequest):
+    try:
+        src: Any = body.bundle
+        if body.from_file:
+            src = body.from_file
+        if src is None:
+            raise HTTPException(400, "需要 from_file 或 bundle")
+        if isinstance(src, dict) and body.database_id:
+            src = dict(src)
+            src.setdefault("database_id", body.database_id)
+        result = await commit_bundle(
+            src,
+            recreate_kb=body.recreate_kb,
+            persist_kb=body.persist_kb,
+            kb_name=body.kb_name or None,
+        )
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(500, str(e)) from e
 
 
 @app.post("/api/rules/generate_from_nl")

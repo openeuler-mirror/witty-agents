@@ -1,0 +1,20 @@
+[
+  {
+    "rule_type": "experience",
+    "scope": "dialect",
+    "dialect": "hbase",
+    "description": "HBase 方言：不要输出标准 SQL/JOIN。输出 JSON scan 计划：table、可选 families、filters（col/op/value）、limit。只读 Get/Scan，禁止 put/delete/admin。"
+  },
+  {
+    "rule_type": "experience",
+    "scope": "dialect",
+    "dialect": "hbase",
+    "description": "HBase 方言：表名用 namespace:table；列用 columnFamily:qualifier。rowkey 等值用 prefix；无法表达的复杂聚合请说明能力边界，不要编造 SQL。"
+  },
+  {
+    "rule_type": "experience",
+    "scope": "dialect",
+    "dialect": "hbase",
+    "description": "HBase 方言：默认 limit≤50。filters 只做客户端等值/like 过滤（REST 简化）。跨表关联本引擎不支持，应拆成多次 scan 或告知用户。"
+  }
+]
