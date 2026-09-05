@@ -1,8 +1,8 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "crash-report-schema.json",
-  "title": "Kernel Crash Analysis Report",
-  "description": "Schema for the final kernel crash diagnosis report produced by the Witty Diagnosis Agent.",
+  "title": "内核崩溃分析报告",
+  "description": "神农诊断 Agent 产出的最终内核崩溃诊断报告 Schema。",
   "type": "object",
   "required": [
     "report_id",
@@ -100,11 +100,11 @@
   "properties": {
     "report_id": {
       "type": "string",
-      "description": "Report identifier in the format <hostname>-<start_date>-<end_date>."
+      "description": "报告标识，格式为 <hostname>-<start_date>-<end_date>。"
     },
     "parse_log_range": {
       "type": "array",
-      "description": "List of log sources analyzed (e.g., vmcore, vmcore-dmesg, dmesg).",
+      "description": "已分析日志来源列表（如 vmcore、vmcore-dmesg、dmesg）。",
       "items": {
         "type": "string"
       }
@@ -168,11 +168,11 @@
       "properties": {
         "crash_time": {
           "type": "string",
-          "description": "Crash time in ISO 8601 with timezone if available; otherwise a non-empty string such as 'unknown'."
+          "description": "崩溃时间：可用时为带时区的 ISO 8601，否则为 'unknown' 之类的非空字符串。"
         },
         "signature": {
           "type": "string",
-          "description": "Deterministic fingerprint in the form bug_type::module::rip_function::rip_offset."
+          "description": "确定性指纹，形式为 bug_type::module::rip_function::rip_offset。"
         },
         "bug_type": {
           "type": "string"
@@ -857,16 +857,16 @@
             "opencode_export",
             "manual"
           ],
-          "description": "Data source of the trace. 'opencode_export' means extracted from opencode session export; 'manual' means LLM-summarized without export data."
+          "description": "追踪数据来源：'opencode_export' 表示从 opencode 会话导出提取；'manual' 表示无导出数据的 LLM 总结。"
         },
         "session_id": {
           "type": "string",
-          "description": "opencode session ID when source=opencode_export, for traceability."
+          "description": "source=opencode_export 时的 opencode 会话 ID，用于溯源。"
         },
         "total_duration_ms": {
           "type": "integer",
           "minimum": 0,
-          "description": "Total diagnosis session duration in milliseconds."
+          "description": "诊断会话总耗时（毫秒）。"
         },
         "step_count": {
           "type": "integer",
@@ -874,7 +874,7 @@
         },
         "steps": {
           "type": "array",
-          "description": "Key decision steps in the diagnosis process. Each step groups related tool calls under one decision point, recording what the agent thought, what it did, what it observed, and the judgment made.",
+          "description": "诊断过程中的关键决策步骤。每步把相关工具调用归到一个决策点下，记录 agent 的思考、所做、所见与所得判断。",
           "items": {
             "type": "object",
             "required": [
@@ -904,23 +904,23 @@
                   "report_generation",
                   "community_retrieval"
                 ],
-                "description": "Which diagnosis stage this step belongs to."
+                "description": "本步所属诊断阶段。"
               },
               "decision": {
                 "type": "string",
-                "description": "The key decision or thought at this point: what the agent decided to do and why. Concise, 1-3 sentences."
+                "description": "此刻的关键决策或思考：agent 决定做什么及为什么（简洁，1-3 句）。"
               },
               "observations": {
                 "type": "string",
-                "description": "Key findings or results observed from the tool outputs in this step. What was learned that informs the next step."
+                "description": "本步工具输出中观察到的关键发现/结果；学到什么并如何指引下一步。"
               },
               "judgment": {
                 "type": "string",
-                "description": "The conclusion or judgment made based on observations, and why this leads to the next step. Optional."
+                "description": "基于观察得出的结论/判断，及其如何引向下一步（可选）。"
               },
               "tools": {
                 "type": "array",
-                "description": "Tools called in this decision step.",
+                "description": "本决策步骤调用的工具。",
                 "items": {
                   "type": "object",
                   "required": [
@@ -935,7 +935,7 @@
                     },
                     "title": {
                       "type": "string",
-                      "description": "Human-readable summary: command, file path, or action."
+                      "description": "人类可读摘要：命令、文件路径或动作。"
                     },
                     "status": {
                       "type": "string",
@@ -982,7 +982,7 @@
               },
               "reason": {
                 "type": "string",
-                "description": "Failure reason if status is failed/partial/skipped."
+                "description": "status 为 failed/partial/skipped 时的失败原因。"
               },
               "start_time": {
                 "type": "string",

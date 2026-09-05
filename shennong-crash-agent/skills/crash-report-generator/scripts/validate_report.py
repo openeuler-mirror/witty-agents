@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
-"""Validate a Shennong crash diagnosis report against the canonical JSON schema.
+"""对照规范 JSON Schema 校验神农内核宕机诊断报告。
 
 Usage:
     python3 validate_report.py --report report.json [--schema schema.json]
     python3 validate_report.py --report report.json --output validated.json
 
-Exit codes:
-    0 - report is valid
-    1 - schema error or report missing
-    2 - report validation failed
+退出码:
+    0 - 报告有效
+    1 - schema 错误或报告缺失
+    2 - 报告校验失败
 """
 
 from __future__ import annotations
@@ -47,7 +47,7 @@ def validate_schema(report: Any, schema: Any) -> list[str]:
 
 
 def validate_semantics(report: Any) -> list[str]:
-    """Additional checks that go beyond the JSON schema."""
+    """JSON Schema 之外的额外语义检查。"""
     errors: list[str] = []
 
     if not isinstance(report, dict):

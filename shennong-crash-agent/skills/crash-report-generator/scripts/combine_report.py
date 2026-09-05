@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Combine per-section JSON files into a full DiagnoseReport.
+"""把各分片 JSON 合并为完整 DiagnoseReport。
 
-Usage:
+用法:
     python3 combine_report.py --sections-dir ./report_sections --output report.json
     python3 combine_report.py \
         --report-id host-20240712-20240713 \
@@ -13,8 +13,7 @@ Usage:
         --workflow-trace workflow_trace.json \
         --output report.json
 
-The script will validate the assembled report against the canonical JSON schema
-if `--validate` is provided (requires jsonschema).
+若提供 `--validate`，脚本会按规范 JSON Schema 校验合并后的报告（需 jsonschema）。
 """
 
 from __future__ import annotations
