@@ -154,6 +154,11 @@ function main() {
 
     const packageName = `@openeuler/agent-shennong-crash-${options.variant}`
     const packageRoot = join(projectDir, "node_modules", ...packageName.split("/"))
+    const packageCacheKey = packageName.replace(/^@/, "").replace(/\//g, "-")
+    const venvCacheRoot = environment.SHENNONG_VENV_CACHE
+      ? resolve(environment.SHENNONG_VENV_CACHE)
+      : join(homeDir, ".cache", "witty-agents")
+    const venvRoot = join(venvCacheRoot, packageCacheKey, "venvs")
     assert(existsSync(packageRoot), `installed package is missing: ${packageRoot}`)
     assert(!existsSync(join(packageRoot, ".venvs")), "npm install unexpectedly created Python environments")
 
@@ -162,12 +167,12 @@ function main() {
     ], { cwd: projectDir, env: environment })
     serviceStarted = true
 
-    const markerPath = join(packageRoot, ".venvs", "setup-complete.json")
+    const markerPath = join(venvRoot, "setup-complete.json")
     assert(existsSync(markerPath), "setup completion marker is missing")
     const markerBeforeRepeat = readFileSync(markerPath, "utf8")
     for (const name of VENV_NAMES) {
       assert(
-        existsSync(join(packageRoot, ".venvs", name, "bin", "python")),
+        existsSync(join(venvRoot, name, "bin", "python")),
         `Python environment is missing: ${name}`,
       )
     }
