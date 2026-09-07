@@ -507,6 +507,11 @@ function checkSetup(options) {
 }
 
 function setupFingerprints(metadata) {
+  const contentManifestName = metadata.contentManifest || "package-content-manifest.json"
+  const contentManifest = resolveRegularPackageFile(
+    contentManifestName,
+    "package content manifest",
+  ).absolutePath
   const venvHashes = VENVS.map((venv) => {
     const files = [venv.requirements]
     if (venv.pyproject && existsSync(venv.pyproject)) {
@@ -516,6 +521,7 @@ function setupFingerprints(metadata) {
   })
   return {
     pythonDepsSha256: createHash("sha256").update(venvHashes.join("\n")).digest("hex"),
+    contentManifestSha256: sha256(contentManifest),
     wheelManifestSha256: metadata.variant === "offline" ? sha256(WHEEL_MANIFEST_FILE) : null,
   }
 }
