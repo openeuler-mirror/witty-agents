@@ -104,7 +104,7 @@ function prepareAssets() {
   }
   run(process.execPath, [
     "scripts/prepare-ocr-models.mjs",
-    `--cache-dir=${process.env.OCR_MODEL_CACHE_DIR || "/srv/witty-agents-jenkins/ocr-model-cache"}`,
+    `--cache-dir=${process.env.OCR_MODEL_CACHE_DIR || "/home/witty-agents-jenkins/ocr-model-cache"}`,
   ])
 }
 

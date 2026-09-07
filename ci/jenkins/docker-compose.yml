@@ -23,7 +23,7 @@ services:
       WITTY_AGENTS_SCRIPT_PATH: "${WITTY_AGENTS_SCRIPT_PATH:-Jenkinsfile}"
       WITTY_AGENTS_GIT_CREDENTIAL_ID: "${WITTY_AGENTS_GIT_CREDENTIAL_ID:-}"
     volumes:
-      - "${JENKINS_DATA_ROOT:-/srv/witty-agents-jenkins}/home:/var/jenkins_home"
+      - "${JENKINS_DATA_ROOT:-/home/witty-agents-jenkins}/home:/var/jenkins_home"
       - /var/run/docker.sock:/var/run/docker.sock
     secrets:
       - jenkins-admin-password
@@ -37,4 +37,3 @@ services:
 secrets:
   jenkins-admin-password:
     file: "${JENKINS_ADMIN_PASSWORD_SOURCE:-./secrets/admin-password}"
-

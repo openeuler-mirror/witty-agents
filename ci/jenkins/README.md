@@ -118,7 +118,7 @@ bash ci/jenkins/bootstrap.sh
 
 脚本会依次完成：
 
-1. 创建 `/srv/witty-agents-jenkins/` 持久化目录；
+1. 创建 `/home/witty-agents-jenkins/` 持久化目录；
 2. 生成只保存在服务器上的 Jenkins 初始密码；
 3. 构建带 Pipeline、Git 和 Docker 插件的 Jenkins Controller；
 4. 启动 `witty-agents-jenkins` 容器；
@@ -214,7 +214,7 @@ witty-agent-package-ci
 
 ```text
 witty-agents-ci-runtime:oe2403sp4-node20-py311
-/srv/witty-agents-jenkins/
+/home/witty-agents-jenkins/
 ```
 
 如果需要临时回滚，保留 Script Path 为 `Jenkinsfile`，只把 Branch Specifier 切换到
@@ -237,9 +237,9 @@ docker compose \
 bash ci/jenkins/bootstrap.sh
 ```
 
-`down` 不会删除 `/srv/witty-agents-jenkins/home`，因此 Job、用户、凭据和构建记录仍然
+`down` 不会删除 `/home/witty-agents-jenkins/home`，因此 Job、用户、凭据和构建记录仍然
 保留。迁移服务器时，在 Jenkins 停止状态下备份整个
-`/srv/witty-agents-jenkins/`，在新服务器恢复到相同路径后再启动。
+`/home/witty-agents-jenkins/`，在新服务器恢复到相同路径后再启动。
 
 npm Token、Git 私钥和其他凭据保存在 Jenkins Home 中。迁移备份必须按敏感数据管理，
 不能放进 Git 仓库。
