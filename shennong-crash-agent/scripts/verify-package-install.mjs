@@ -26,6 +26,7 @@ function parseArgs(argv) {
   const options = {
     artifact: null,
     variant: null,
+    packageStyle: process.env.PACKAGE_STYLE || "organization",
     python: process.env.PYTHON_BIN || "python3.11",
     report: null,
   }
@@ -39,6 +40,10 @@ function parseArgs(argv) {
       options.variant = argv[++index]
     } else if (arg.startsWith("--variant=")) {
       options.variant = arg.slice("--variant=".length)
+    } else if (arg === "--package-style") {
+      options.packageStyle = argv[++index]
+    } else if (arg.startsWith("--package-style=")) {
+      options.packageStyle = arg.slice("--package-style=".length)
     } else if (arg === "--python") {
       options.python = argv[++index]
     } else if (arg.startsWith("--python=")) {
@@ -53,6 +58,9 @@ function parseArgs(argv) {
   }
   if (!options.artifact || !["online", "offline"].includes(options.variant)) {
     throw new Error("--artifact and --variant=online|offline are required")
+  }
+  if (!["organization", "plain"].includes(options.packageStyle)) {
+    throw new Error("--package-style must be organization or plain")
   }
   options.artifact = resolve(options.artifact)
   options.report = resolve(options.report || `install-flow-${options.variant}.json`)
@@ -152,7 +160,10 @@ function main() {
     )
     assert(readFileSync(configPath, "utf8") === initialConfig, "npm install changed OpenCode configuration")
 
-    const packageName = `@openeuler/agent-shennong-crash-${options.variant}`
+    const packageBaseName = options.packageStyle === "organization"
+      ? "@openeuler/agent-shennong-crash"
+      : "openeuler-agent-shennong-crash"
+    const packageName = `${packageBaseName}-${options.variant}`
     const packageRoot = join(projectDir, "node_modules", ...packageName.split("/"))
     const packageCacheKey = packageName.replace(/^@/, "").replace(/\//g, "-")
     const venvCacheRoot = environment.SHENNONG_VENV_CACHE

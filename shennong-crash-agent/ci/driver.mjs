@@ -127,6 +127,7 @@ function verifyInstall(variant, options) {
   const args = [
     "scripts/verify-package-install.mjs",
     `--variant=${variant}`,
+    `--package-style=${options.packageStyle}`,
     `--artifact=${join(ARTIFACT_DIR, report.filename)}`,
     `--python=${process.env.PYTHON_BIN || "python3.11"}`,
     `--report=${join(REPORT_DIR, `install-flow-${variant}.json`)}`,
