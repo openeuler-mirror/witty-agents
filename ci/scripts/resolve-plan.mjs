@@ -124,6 +124,7 @@ function selectAgents(options, registry, enabledAgents) {
     path === "Jenkinsfile"
     || path === "ci/agents.json"
     || path.startsWith("ci/scripts/")
+    || path.startsWith("ci/jenkins/")
   ))
   const onlyDocumentation = detected.files.length > 0 && detected.files.every((path) => (
     path === "README.md" || path.startsWith("docs/")

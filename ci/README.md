@@ -1,5 +1,8 @@
 # Witty Agents 仓库级 Jenkins Pipeline
 
+新服务器从零部署 Jenkins、自动创建 Job，以及 Jenkins 如何读取本仓库的完整说明见
+[`ci/jenkins/README.md`](jenkins/README.md)。
+
 ## 1. 当前能力
 
 仓库根目录的 `Jenkinsfile` 是统一入口。它负责：
@@ -19,9 +22,27 @@ SCM/人工触发
 目录发生变更时，Pipeline 会在 Resolve Build Plan 阶段给出明确错误，不会用无关 Agent
 的绿色结果掩盖未验证改动。
 
-## 2. Jenkins Job 配置
+## 2. Jenkins 如何读取代码仓
 
-Job 类型使用 **Pipeline script from SCM**：
+Jenkins 不会读取操作者手工进入的本地目录。Job 通过 SCM 配置与 Git 仓库建立关联，
+每次构建时自动将目标分支 checkout 到 Jenkins 管理的 workspace，再读取该版本中的
+根目录 `Jenkinsfile`。
+
+```text
+Job 的 Pipeline from SCM 配置
+→ Repository URL 确定仓库
+→ Branch Specifier 确定分支
+→ Script Path 定位 Jenkinsfile
+→ Jenkins 自动 checkout 到 workspace
+→ 执行 Jenkinsfile
+```
+
+仓库服务器上第一次执行 `git clone`，只是为了取得 `ci/jenkins/` 中的部署文件；Jenkins
+服务启动后，Job 会独立通过 SCM 拉取构建代码，不依赖这份初始化 clone 目录。
+
+### 手工创建 Job
+
+Job 推荐名称为 `witty-agent-package-ci`，类型使用 **Pipeline script from SCM**：
 
 | 配置 | 值 |
 |---|---|
@@ -29,6 +50,9 @@ Job 类型使用 **Pipeline script from SCM**：
 | Branch Specifier | CI 联调分支 |
 | Script Path | `Jenkinsfile` |
 | Lightweight checkout | 可开启 |
+
+新服务器使用 `ci/jenkins/bootstrap.sh` 时，上述 Job 和 SCM 字段会自动创建，无需再次
+手工填写。仓库、分支和可选 Git 凭据 ID 从 `ci/jenkins/.runtime.env` 读取。
 
 不要再把新 Job 的 Script Path 设置为 `Jenkinsfile.shennong`；该文件仅作为旧版
 Shennong 专用基线保留。
@@ -51,7 +75,7 @@ PUBLISH=false`，同时把新参数登记到 Job。第一次结束后再进入 *
 | `TARGET_ARCH` | `native` | 使用当前原生节点；离线包不允许跨架构冒充 |
 | `PYTHON_BIN` | `python3.11` | 支持 Python 3.11/3.12 |
 | `PYPI_INDEX_URL` | 华为云 PyPI 镜像 | online setup 和 offline wheel 构建使用的索引；必要时可切回官方源 |
-| `OCR_MODEL_CACHE_DIR` | `/home/shennong-jenkins/ocr-model-cache` | LFS 服务不可用时的可信 OCR 缓存 |
+| `OCR_MODEL_CACHE_DIR` | `/srv/witty-agents-jenkins/ocr-model-cache` | LFS 服务不可用时的可信 OCR 缓存 |
 | `RUN_REAL_INSTALL_VALIDATION` | `true` | 运行完整安装、setup、configure、remove 和卸载 |
 | `STRICT_OFFLINE_NETWORK_CHECK` | `true` | offline 必须进入断网 namespace |
 | `PUBLISH` | `false` | 是否发布；联调阶段不要勾选 |

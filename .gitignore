@@ -10,3 +10,6 @@ shennong-crash-agent/node_modules/
 shennong-crash-agent/.ci-npm-cache/
 shennong-crash-agent/**/*.db-wal
 shennong-crash-agent/**/*.db-shm
+ci/jenkins/.runtime.env
+ci/jenkins/secrets/
+ci/jenkins/.jenkins-data/

@@ -1,9 +1,9 @@
 pipeline {
     agent {
         docker {
-            image 'shennong-oe2403sp4-acceptance:runtime-v2'
+            image 'witty-agents-ci-runtime:oe2403sp4-node20-py311'
             label 'built-in'
-            args '--user 0:0 --cap-add SYS_ADMIN --cap-add NET_ADMIN --security-opt seccomp=unconfined -v /home/shennong-jenkins/cache/npm:/root/.npm -v /home/shennong-jenkins/cache/pip:/root/.cache/pip -v /home/shennong-jenkins/ocr-model-cache:/home/shennong-jenkins/ocr-model-cache:ro'
+            args '--user 0:0 --cap-add SYS_ADMIN --cap-add NET_ADMIN --security-opt seccomp=unconfined -v /srv/witty-agents-jenkins/cache/npm:/root/.npm -v /srv/witty-agents-jenkins/cache/pip:/root/.cache/pip -v /srv/witty-agents-jenkins/ocr-model-cache:/srv/witty-agents-jenkins/ocr-model-cache:ro'
         }
     }
 
@@ -51,7 +51,7 @@ pipeline {
         )
         string(
             name: 'OCR_MODEL_CACHE_DIR',
-            defaultValue: '/home/shennong-jenkins/ocr-model-cache',
+            defaultValue: '/srv/witty-agents-jenkins/ocr-model-cache',
             description: 'Trusted OCR model cache used when the Git LFS service is unavailable.'
         )
         booleanParam(
@@ -104,7 +104,7 @@ pipeline {
                     env.PYTHON_BIN = params.PYTHON_BIN?.trim() ?: 'python3.11'
                     env.PYPI_INDEX_URL = params.PYPI_INDEX_URL?.trim() ?: 'https://mirrors.huaweicloud.com/repository/pypi/simple'
                     env.PIP_INDEX_URL = env.PYPI_INDEX_URL
-                    env.OCR_MODEL_CACHE_DIR = params.OCR_MODEL_CACHE_DIR?.trim() ?: '/home/shennong-jenkins/ocr-model-cache'
+                    env.OCR_MODEL_CACHE_DIR = params.OCR_MODEL_CACHE_DIR?.trim() ?: '/srv/witty-agents-jenkins/ocr-model-cache'
                     env.RUN_REAL_INSTALL_VALIDATION = String.valueOf(params.RUN_REAL_INSTALL_VALIDATION == null ? true : params.RUN_REAL_INSTALL_VALIDATION)
                     env.STRICT_OFFLINE_NETWORK_CHECK = String.valueOf(params.STRICT_OFFLINE_NETWORK_CHECK == null ? true : params.STRICT_OFFLINE_NETWORK_CHECK)
                     env.PUBLISH = String.valueOf(params.PUBLISH == null ? false : params.PUBLISH)
