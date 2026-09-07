@@ -207,8 +207,8 @@ Script Path：WITTY_AGENTS_SCRIPT_PATH
 witty-agent-package-ci
 ```
 
-然后在 **Configure → Pipeline** 中确认 Script Path 是根目录 `Jenkinsfile`，而不是
-旧的 `Jenkinsfile.shennong`。改名不会改变历史构建和 Artifacts。
+然后在 **Configure → Pipeline** 中确认 Script Path 是根目录 `Jenkinsfile`。改名不会
+改变历史构建和 Artifacts。
 
 运行镜像和缓存目录也应使用通用名称：
 
@@ -217,8 +217,8 @@ witty-agents-ci-runtime:oe2403sp4-node20-py311
 /srv/witty-agents-jenkins/
 ```
 
-如果暂时需要回滚旧版 Shennong 专用流水线，只修改 Job 的 Script Path 为
-`Jenkinsfile.shennong`；不要删除通用流水线文件。
+如果需要临时回滚，保留 Script Path 为 `Jenkinsfile`，只把 Branch Specifier 切换到
+最近一次验证通过的分支或提交，避免在 Jenkins 页面中维护另一份脚本。
 
 ## 7. 停止、重启和迁移
 
@@ -243,4 +243,3 @@ bash ci/jenkins/bootstrap.sh
 
 npm Token、Git 私钥和其他凭据保存在 Jenkins Home 中。迁移备份必须按敏感数据管理，
 不能放进 Git 仓库。
-

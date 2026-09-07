@@ -54,8 +54,7 @@ Job 推荐名称为 `witty-agent-package-ci`，类型使用 **Pipeline script fr
 新服务器使用 `ci/jenkins/bootstrap.sh` 时，上述 Job 和 SCM 字段会自动创建，无需再次
 手工填写。仓库、分支和可选 Git 凭据 ID 从 `ci/jenkins/.runtime.env` 读取。
 
-不要再把新 Job 的 Script Path 设置为 `Jenkinsfile.shennong`；该文件仅作为旧版
-Shennong 专用基线保留。
+Job 的 Script Path 统一设置为仓库根目录 `Jenkinsfile`。
 
 从旧 Jenkinsfile 首次切换时，页面可能仍只显示旧参数。保存 Script Path 后先点一次
 **Build Now**：新版 Pipeline 会按安全默认值执行 `auto + online + organization +
@@ -223,5 +222,6 @@ aarch64 offline 包必须在原生 openEuler aarch64 Jenkins 节点构建。`TAR
 
 ## 9. 回滚
 
-新 Pipeline 不删除旧 `Jenkinsfile.shennong`。若首次联调异常，将 Job 的 Script Path
-临时改回 `Jenkinsfile.shennong` 即可恢复旧版 Shennong 专用流程；构建记录和产物不受影响。
+若新 Pipeline 联调异常，先将 Job 的 Branch Specifier 临时切回最近一次验证通过的
+Git 分支或提交；修复完成后再切回联调分支。不要在 Jenkins 页面中直接维护另一份
+Pipeline 脚本，避免页面配置与仓库代码出现两个版本。
