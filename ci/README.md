@@ -89,6 +89,9 @@ PUBLISH=false`，同时把新参数登记到 Job。第一次结束后再进入 *
 | organization | `@openeuler/agent-shennong-crash-online` | `@openeuler/agent-shennong-crash-offline` |
 | plain | `openeuler-agent-shennong-crash-online` | `openeuler-agent-shennong-crash-offline` |
 
+上表是本地构建产物名。公开 npm 只发布 online 内容，registry 包名统一为
+`witty-agent-shennong`；offline tgz 仅作为 Jenkins Artifact 或文件交付。
+
 ## 4. 推荐的首次手工联调顺序
 
 所有联调构建都保持 `PUBLISH=false`。

@@ -15,6 +15,7 @@ import {
 import { arch, tmpdir } from "node:os"
 import { dirname, join, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
+import { prepareRegistryPackage } from "../lib/registry-package.mjs"
 
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url))
 const REPO_ROOT = resolve(SCRIPT_DIR, "../..")
@@ -22,6 +23,7 @@ const DEFAULT_REPORT = join(REPO_ROOT, "shennong-crash-agent", "artifacts", "onl
 const DEFAULT_OUTPUT = join(REPO_ROOT, "ci-artifacts", "npm-publish-smoke-summary.json")
 const POLL_ATTEMPTS = 24
 const POLL_INTERVAL_MS = 5_000
+const REGISTRY_PACKAGE_NAME = "witty-agent-shennong"
 
 function parseArgs(argv) {
   const options = { report: DEFAULT_REPORT, output: DEFAULT_OUTPUT }
@@ -225,11 +227,19 @@ async function main() {
   const report = JSON.parse(readFileSync(reportPath, "utf8"))
   const sourcePath = join(dirname(reportPath), report.filename)
   const actualArchitecture = validateInputs(report, sourcePath, expectedArchitecture, distTag, registry)
-  const expectedIntegrity = sha512Integrity(sourcePath)
-  const coordinate = `${report.packageName}@${report.version}`
   const outputRoot = dirname(output)
   mkdirSync(outputRoot, { recursive: true })
   const workingRoot = mkdtempSync(join(tmpdir(), "witty-agents-npm-publish-"))
+  const registryPackage = prepareRegistryPackage({
+    sourcePath,
+    registryPackageName: REGISTRY_PACKAGE_NAME,
+    workingRoot,
+  })
+  if (registryPackage.version !== report.version) {
+    throw new Error("registry package version does not match the validated source artifact")
+  }
+  const expectedIntegrity = sha512Integrity(registryPackage.path)
+  const coordinate = `${registryPackage.packageName}@${registryPackage.version}`
 
   const registryUrl = new URL(registry)
   const registryPath = registryUrl.pathname.endsWith("/")
@@ -259,7 +269,7 @@ async function main() {
       npmOutput(["dist-tag", "add", coordinate, distTag, "--registry", registry], environment)
     } else if (current.state === "not-found") {
       const publishArgs = [
-        "publish", sourcePath,
+        "publish", registryPackage.path,
         "--ignore-scripts",
         "--tag", distTag,
         "--registry", registry,
@@ -270,10 +280,10 @@ async function main() {
     }
 
     await waitForIntegrity(coordinate, expectedIntegrity, registry, environment)
-    await waitForTag(report.packageName, report.version, distTag, registry, environment)
+    await waitForTag(registryPackage.packageName, registryPackage.version, distTag, registry, environment)
     const download = await downloadAndVerify(
       coordinate,
-      sourcePath,
+      registryPackage.path,
       expectedIntegrity,
       registry,
       environment,
@@ -286,13 +296,16 @@ async function main() {
     const summary = {
       status: "passed",
       action,
-      packageName: report.packageName,
-      version: report.version,
+      packageName: registryPackage.packageName,
+      version: registryPackage.version,
       distTag,
       registry,
       builtOnArchitecture: actualArchitecture,
+      sourcePackageName: report.packageName,
       sourceFilename: report.filename,
       sourceSha256: report.sha256,
+      registryFilename: registryPackage.filename,
+      registrySha256: registryPackage.sha256,
       integrity: expectedIntegrity,
       downloadedFilename: download.filename,
       downloadedSha256: download.sha256,

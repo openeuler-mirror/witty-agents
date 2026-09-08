@@ -73,7 +73,18 @@ async function installVariant(variant, configPath, environment) {
       : []),
     tgz,
   ]
-  execFileSync("npm", installArgs, { cwd: project, stdio: "inherit", env: environment })
+  const installResult = spawnSync("npm", installArgs, {
+    cwd: project,
+    encoding: "utf8",
+    env: environment,
+  })
+  process.stdout.write(installResult.stdout || "")
+  process.stderr.write(installResult.stderr || "")
+  assert(installResult.status === 0, `${variant}: npm install failed`)
+  assert(
+    `${installResult.stdout}\n${installResult.stderr}`.includes("npm exec -- shennong-setup install"),
+    `${variant}: npm install did not show the setup next-step hint`,
+  )
   assert(
     readFileSync(configPath, "utf8") === configBeforeInstall,
     `${variant}: npm install unexpectedly changed OpenCode configuration`,

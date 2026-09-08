@@ -222,7 +222,9 @@ witty-agents-ci-runtime:oe2403sp4-node20-py311
 
 ## 7. x86 与 ARM 在线包发布验收
 
-正式流水线仍要求从官方 `master` 同时发布 online 和 offline 两个包。若只需要验证某台
+正式流水线仍要求从官方 `master` 构建并检查 online 和 offline 两个本地产物，但只把
+online 内容以 `witty-agent-shennong` 发布到 npm；offline tgz 留在 Jenkins Artifacts。
+若只需要验证某台
 原生 x86 或 ARM Jenkins 节点能否完成“构建 online 包 → 发布 npm → 从 npm 下载并
 核对”的链路，可另建一个手工 Pipeline Job，并将 **Script Path** 设置为：
 
@@ -232,7 +234,7 @@ ci/jenkins/Jenkinsfile.online-publish-smoke
 
 这个 Job 不配置定时触发，只在人工确认后发布，而且有三层限制：
 
-- 只接受 Shennong 的 unscoped online 包；
+- 只接受 Shennong 的 unscoped online 本地产物，发布时转换为 `witty-agent-shennong`；
 - 版本必须是 prerelease，例如 `0.10.5-ci.aarch64.0`；
 - dist-tag 不能是 `latest`，例如 ARM 使用 `arm-test`。
 
@@ -251,7 +253,8 @@ ci/jenkins/Jenkinsfile.online-publish-smoke
 npm 地址固定为官方 registry，凭据固定读取 Jenkins Secret Text `npm-token`。每次发布
 必须使用尚未占用的新版本号，并勾选 `CONFIRM_PUBLIC_PUBLISH`。Job 会依次执行
 代码检查、online 打包、包门禁、安装流程、npm 发布、注册表可见性等待和真实回下载。
-最后比较构建包与下载包的 SHA-256；两者一致才算通过。结果保存在：
+发布前会从已通过门禁的 online 本地产物生成仅改 npm 包名的 registry 候选包，随后比较
+registry 候选包与回下载包的 SHA-256；两者一致才算通过。结果保存在：
 
 ```text
 ci-artifacts/npm-publish-smoke-summary.json

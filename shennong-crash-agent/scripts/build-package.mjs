@@ -456,6 +456,9 @@ function writeStagePackageJson(stageDir, basePackage, variant, packageStyle, pac
     ],
     shennongVariant: variant,
     wittyPackageStyle: packageStyle,
+    scripts: {
+      postinstall: "node bin/postinstall.mjs",
+    },
     ...(variant === "offline"
       ? { bundledDependencies: Object.keys(basePackage.dependencies || {}) }
       : {}),

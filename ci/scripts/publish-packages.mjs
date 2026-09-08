@@ -2,9 +2,11 @@
 
 import { createHash } from "node:crypto"
 import { execFileSync, spawnSync } from "node:child_process"
-import { chmodSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs"
+import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs"
+import { tmpdir } from "node:os"
 import { dirname, join, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
+import { prepareRegistryPackage } from "../lib/registry-package.mjs"
 
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url))
 const REPO_ROOT = resolve(SCRIPT_DIR, "../..")
@@ -66,43 +68,59 @@ function main() {
   chmodSync(npmrc, 0o600)
   const environment = { ...process.env, NPM_CONFIG_USERCONFIG: npmrc }
   const published = []
+  const skipped = []
+  const workingRoot = mkdtempSync(join(tmpdir(), "witty-agents-registry-package-"))
 
   try {
     npmOutput(["whoami", "--registry", registry], environment)
     for (const agent of plan.agents) {
       for (const variant of agent.variants) {
+        const registryPackageName = agent.registryPackages?.[variant]
+        if (agent.registryPackages && !registryPackageName) {
+          skipped.push({ agent: agent.id, variant, reason: "not distributed through the npm registry" })
+          console.log(`SKIP: ${agent.id}/${variant} is a local artifact and is not published to npm`)
+          continue
+        }
         const reportPath = join(REPO_ROOT, agent.directory, "artifacts", `${variant}-package-report.json`)
         const report = JSON.parse(readFileSync(reportPath, "utf8"))
         if (report.variant !== variant || report.packageStyle !== plan.packageStyle) {
           throw new Error(`${agent.id}/${variant}: artifact metadata does not match the build plan`)
         }
         const tgzPath = join(REPO_ROOT, agent.directory, "artifacts", report.filename)
-        const expectedIntegrity = sha512Integrity(tgzPath)
-        const currentIntegrity = existingIntegrity(report.packageName, report.version, registry, environment)
+        const target = registryPackageName
+          ? prepareRegistryPackage({ sourcePath: tgzPath, registryPackageName, workingRoot })
+          : { path: tgzPath, packageName: report.packageName, version: report.version, sourcePackageName: report.packageName }
+        if (target.version !== report.version) {
+          throw new Error(`${agent.id}/${variant}: registry candidate version mismatch`)
+        }
+        const expectedIntegrity = sha512Integrity(target.path)
+        const currentIntegrity = existingIntegrity(target.packageName, target.version, registry, environment)
         let action = "published"
         if (currentIntegrity) {
           if (currentIntegrity !== expectedIntegrity) {
-            throw new Error(`${report.packageName}@${report.version} already exists with different content`)
+            throw new Error(`${target.packageName}@${target.version} already exists with different content`)
           }
           action = "verified-existing"
         } else {
-          const args = ["publish", tgzPath, "--ignore-scripts", "--tag", distTag, "--registry", registry]
-          if (report.packageName.startsWith("@")) args.push("--access", "public")
+          const args = ["publish", target.path, "--ignore-scripts", "--tag", distTag, "--registry", registry]
+          if (target.packageName.startsWith("@")) args.push("--access", "public")
           execFileSync("npm", args, { cwd: REPO_ROOT, env: environment, stdio: "inherit" })
           const publishedIntegrity = npmOutput([
-            "view", `${report.packageName}@${report.version}`, "dist.integrity", "--registry", registry,
+            "view", `${target.packageName}@${target.version}`, "dist.integrity", "--registry", registry,
           ], environment)
           if (publishedIntegrity !== expectedIntegrity) {
-            throw new Error(`${report.packageName}@${report.version}: registry integrity verification failed`)
+            throw new Error(`${target.packageName}@${target.version}: registry integrity verification failed`)
           }
         }
         published.push({
           agent: agent.id,
           variant,
           packageStyle: plan.packageStyle,
-          packageName: report.packageName,
-          version: report.version,
-          filename: report.filename,
+          packageName: target.packageName,
+          version: target.version,
+          filename: target.path.split("/").at(-1),
+          sourcePackageName: report.packageName,
+          sourceFilename: report.filename,
           integrity: expectedIntegrity,
           action,
         })
@@ -114,11 +132,13 @@ function main() {
       registry,
       distTag,
       packages: published,
+      skipped,
       publishedAt: new Date().toISOString(),
     }, null, 2)}\n`)
     console.log(`Published or verified ${published.length} package(s)`)
   } finally {
     rmSync(npmrc, { force: true })
+    rmSync(workingRoot, { recursive: true, force: true })
   }
 }
 

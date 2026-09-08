@@ -1,5 +1,6 @@
 # Knowledge, rules, prompts and schemas required by both package variants.
 agent.md
+bin/postinstall.mjs
 skills/crash-feature-matcher/SKILL.md
 skills/crash-feature-matcher/mcp_config.json
 skills/crash-feature-matcher/run_mcp.sh

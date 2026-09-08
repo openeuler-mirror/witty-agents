@@ -83,6 +83,13 @@ function loadEnabledAgents(registry) {
     if (config.schemaVersion !== 1 || config.id !== entry.id) {
       throw new Error(`invalid Agent CI configuration: ${entry.configPath}`)
     }
+    if (config.registryPackages) {
+      for (const [variant, packageName] of Object.entries(config.registryPackages)) {
+        if (!config.variants.includes(variant) || !/^[a-z0-9][a-z0-9._-]*$/.test(packageName)) {
+          throw new Error(`${config.id}: invalid npm registry package mapping: ${variant} -> ${packageName}`)
+        }
+      }
+    }
     return { ...config, configPath: entry.configPath }
   })
 }
@@ -192,6 +199,7 @@ function main() {
       driver: agent.driver,
       configPath: agent.configPath,
       variants,
+      registryPackages: agent.registryPackages || null,
     }
   })
   if (options.publish && agents.length === 0) {

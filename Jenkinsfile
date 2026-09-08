@@ -67,7 +67,7 @@ pipeline {
         booleanParam(
             name: 'PUBLISH',
             defaultValue: false,
-            description: 'Publish selected packages. Requires official master and all variants.'
+            description: 'Publish configured registry packages (currently online only). Requires official master and all local variants to pass.'
         )
         string(
             name: 'NPM_CREDENTIAL_ID',

@@ -57,7 +57,7 @@
 已发布的 npm 包最短三步（详见「安装」）：
 
 ```bash
-npm install @openeuler/agent-shennong-crash-online   # ① 装包
+npm install witty-agent-shennong --foreground-scripts # ① 从 npm 装在线包并显示下一步提示
 npm exec --offline -- shennong-setup install         # ② 装 Python 依赖
 npm exec --offline -- shennong-configure             # ③ 登记 OpenCode 插件 + MCP
 # 重启 opencode 后：@ shennong <vmcore 路径 / 日志路径>
@@ -73,16 +73,18 @@ npm exec --offline -- shennong-configure             # ③ 登记 OpenCode 插�
 在线包：
 
 ```bash
-npm install @openeuler/agent-shennong-crash-online
+npm install witty-agent-shennong --foreground-scripts
 ```
 
-离线 Python 依赖包：
+离线 Python 依赖包由 Jenkins 按目标平台生成并以 tgz 文件分发：
 
 ```bash
-npm install @openeuler/agent-shennong-crash-offline
+npm install /path/to/openeuler-agent-shennong-crash-offline-<version>.tgz --offline --foreground-scripts
 ```
 
 `npm install` 只安装插件、Skill 和命令文件，不修改 Python 环境和 OpenCode 配置。
+安装脚本只打印后续的 `shennong-setup`、`shennong-configure` 命令；npm 默认可能收起
+依赖包的生命周期输出，需要明确看到提示时使用 `--foreground-scripts`。
 
 #### openEuler 系统运行库
 
@@ -468,9 +470,10 @@ npm run pack:variant -- --variant=online --out-dir=artifacts
 npm run pack:variant -- --variant=offline --out-dir=artifacts
 ```
 
-源码基座包名为 `@openeuler/agent-shennong-crash`。为让 npm 上的两个产物可并存，
-发布包名分别为 `@openeuler/agent-shennong-crash-online` 和
-`@openeuler/agent-shennong-crash-offline`；对应 tgz 文件名由 npm 生成。
+源码基座包名为 `@openeuler/agent-shennong-crash`。本地构建仍生成带 online/offline
+后缀的两个独立 tgz，便于区分内容和验收。公开 npm 只发布 online 内容，发布前由
+流水线把候选包名转换为 `witty-agent-shennong`；offline 包体积大且绑定操作系统、
+CPU 架构和 Python ABI，只作为 Jenkins Artifact 或受控文件分发，不上传 npm。
 在线包在脚本内强制不超过
 10 MiB；离线包不设置体积上限，但会将体积、平台、wheel 数量和 SHA256
 写入 `artifacts/*-package-report.json`。
@@ -551,8 +554,9 @@ shennong-crash-agent/
 
 ## 版本
 
-- `0.10.5`
-- npm 包：`@openeuler/agent-shennong-crash-online` / `@openeuler/agent-shennong-crash-offline`
+- `0.10.4`
+- npm 在线包：`witty-agent-shennong`
+- 本地构建产物：带 online/offline 后缀的独立 tgz
 
 ## 常见问题
 
