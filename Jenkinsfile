@@ -91,6 +91,8 @@ pipeline {
         NPM_CONFIG_AUDIT = 'false'
         NPM_CONFIG_FUND = 'false'
         NPM_CONFIG_CACHE = '/root/.npm'
+        PACKAGE_VERSION_OVERRIDE = ''
+        ALLOW_PACKAGE_VERSION_OVERRIDE = 'false'
     }
 
     stages {

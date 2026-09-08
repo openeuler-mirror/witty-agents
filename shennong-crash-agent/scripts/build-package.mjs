@@ -44,6 +44,7 @@ function parseArgs(argv) {
   const options = {
     variant: null,
     packageStyle: process.env.PACKAGE_STYLE || "organization",
+    packageVersion: process.env.PACKAGE_VERSION_OVERRIDE || null,
     outputDir: DEFAULT_OUTPUT_DIR,
     python: process.env.PYTHON_BIN || null,
   }
@@ -58,6 +59,10 @@ function parseArgs(argv) {
       options.packageStyle = arg.slice("--package-style=".length)
     } else if (arg === "--package-style") {
       options.packageStyle = argv[++index]
+    } else if (arg.startsWith("--version=")) {
+      options.packageVersion = arg.slice("--version=".length)
+    } else if (arg === "--version") {
+      options.packageVersion = argv[++index]
     } else if (arg.startsWith("--out-dir=")) {
       options.outputDir = resolve(PROJECT_ROOT, arg.slice("--out-dir=".length))
     } else if (arg === "--out-dir") {
@@ -76,6 +81,12 @@ function parseArgs(argv) {
   }
   if (!["organization", "plain"].includes(options.packageStyle)) {
     throw new Error("--package-style must be organization or plain")
+  }
+  if (options.packageVersion && process.env.ALLOW_PACKAGE_VERSION_OVERRIDE !== "true") {
+    throw new Error("package version override requires ALLOW_PACKAGE_VERSION_OVERRIDE=true")
+  }
+  if (options.packageVersion && !/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/.test(options.packageVersion)) {
+    throw new Error("--version must be a valid semantic version")
   }
   return options
 }
@@ -419,7 +430,7 @@ function resolvePackageBaseName(basePackage, packageStyle) {
   return packageName
 }
 
-function writeStagePackageJson(stageDir, basePackage, variant, packageStyle) {
+function writeStagePackageJson(stageDir, basePackage, variant, packageStyle, packageVersion) {
   const {
     scripts: _baseScripts,
     devDependencies: _baseDevDependencies,
@@ -430,6 +441,7 @@ function writeStagePackageJson(stageDir, basePackage, variant, packageStyle) {
   const packageJson = {
     ...publishableBase,
     name: `${packageBaseName}-${variant}`,
+    version: packageVersion || basePackage.version,
     description: `${basePackage.description} (${variant} package)`,
     files: [
       "dist",
@@ -499,7 +511,13 @@ function main() {
     lfsPointerWarnings: contentManifest.lfsPointerWarnings,
   }
   writeFileSync(join(stageDir, "package-variant.json"), `${JSON.stringify(variantMetadata, null, 2)}\n`)
-  writeStagePackageJson(stageDir, basePackage, options.variant, options.packageStyle)
+  writeStagePackageJson(
+    stageDir,
+    basePackage,
+    options.variant,
+    options.packageStyle,
+    options.packageVersion,
+  )
 
   const { npm: npmResult, tgzPath } = packStage(stageDir, options.outputDir)
   validatePackedFiles(npmResult, [
@@ -531,6 +549,8 @@ function main() {
     packageStyle: options.packageStyle,
     packageName: npmResult.name,
     version: npmResult.version,
+    sourceVersion: basePackage.version,
+    versionOverrideApplied: Boolean(options.packageVersion),
     filename: npmResult.filename,
     size: actualSize,
     unpackedSize: npmResult.unpackedSize,

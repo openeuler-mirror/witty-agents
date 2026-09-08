@@ -70,7 +70,20 @@ function verifyVariant(variant, basePackage, packageStyle) {
     report.packageName === resolveExpectedPackageName(basePackage, variant, packageStyle),
     `${variant}: package name mismatch: ${report.packageName}`,
   )
-  assert(report.version === basePackage.version, `${variant}: package version mismatch`)
+  const versionOverride = process.env.PACKAGE_VERSION_OVERRIDE || ""
+  if (versionOverride) {
+    assert(
+      process.env.ALLOW_PACKAGE_VERSION_OVERRIDE === "true",
+      `${variant}: package version override is not allowed in this build`,
+    )
+    assert(report.sourceVersion === basePackage.version, `${variant}: source version mismatch`)
+    assert(report.versionOverrideApplied === true, `${variant}: version override was not recorded`)
+  } else {
+    assert(report.sourceVersion === basePackage.version, `${variant}: source version mismatch`)
+    assert(report.versionOverrideApplied === false, `${variant}: unexpected version override metadata`)
+  }
+  const expectedVersion = versionOverride || basePackage.version
+  assert(report.version === expectedVersion, `${variant}: package version mismatch`)
   assert(existsSync(tgzPath), `${variant}: tgz is missing: ${tgzPath}`)
   assert(statSync(tgzPath).size === report.size, `${variant}: tgz size does not match report`)
   assert(sha256(tgzPath) === report.sha256, `${variant}: tgz checksum does not match report`)

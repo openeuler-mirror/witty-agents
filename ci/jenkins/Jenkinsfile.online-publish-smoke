@@ -1,0 +1,195 @@
+pipeline {
+    agent {
+        docker {
+            image 'witty-agents-ci-runtime:oe2403sp4-node20-py311'
+            label 'built-in'
+            args '--user 0:0 -v /home/witty-agents-jenkins/cache/npm:/root/.npm -v /home/witty-agents-jenkins/cache/pip:/root/.cache/pip -v /home/witty-agents-jenkins/ocr-model-cache:/home/witty-agents-jenkins/ocr-model-cache:ro'
+        }
+    }
+
+    options {
+        timestamps()
+        disableConcurrentBuilds()
+        buildDiscarder(logRotator(numToKeepStr: '10', artifactNumToKeepStr: '10'))
+        timeout(time: 120, unit: 'MINUTES')
+    }
+
+    parameters {
+        choice(
+            name: 'EXPECTED_ARCH',
+            choices: ['aarch64', 'x86_64'],
+            description: 'The native architecture of this Jenkins build node.'
+        )
+        string(
+            name: 'PACKAGE_VERSION_OVERRIDE',
+            defaultValue: '0.10.5-ci.aarch64.0',
+            description: 'A unique prerelease version used only for the public-registry smoke test.'
+        )
+        string(
+            name: 'PYTHON_BIN',
+            defaultValue: 'python3.11',
+            description: 'Python executable used by the online installation validation.'
+        )
+        string(
+            name: 'PYPI_INDEX_URL',
+            defaultValue: 'https://mirrors.huaweicloud.com/repository/pypi/simple',
+            description: 'Python index used by the online setup validation.'
+        )
+        string(
+            name: 'OCR_MODEL_CACHE_DIR',
+            defaultValue: '/home/witty-agents-jenkins/ocr-model-cache',
+            description: 'Trusted OCR model cache used when Git LFS is unavailable.'
+        )
+        booleanParam(
+            name: 'RUN_REAL_INSTALL_VALIDATION',
+            defaultValue: true,
+            description: 'Run install, setup, configure, remove, stop and uninstall before publishing.'
+        )
+        booleanParam(
+            name: 'CONFIRM_PUBLIC_PUBLISH',
+            defaultValue: false,
+            description: 'Required acknowledgement that this run may publish a public npm prerelease.'
+        )
+    }
+
+    environment {
+        GIT_LFS_SKIP_SMUDGE = '1'
+        NPM_CONFIG_AUDIT = 'false'
+        NPM_CONFIG_FUND = 'false'
+        NPM_CONFIG_CACHE = '/root/.npm'
+        AGENT = 'shennong-crash'
+        VARIANT = 'online'
+        PACKAGE_STYLE = 'plain'
+        PUBLISH = 'false'
+        STRICT_OFFLINE_NETWORK_CHECK = 'false'
+        ALLOW_PACKAGE_VERSION_OVERRIDE = 'true'
+    }
+
+    stages {
+        stage('Confirm Safe Smoke Publish') {
+            steps {
+                script {
+                    if (!params.CONFIRM_PUBLIC_PUBLISH) {
+                        error('CONFIRM_PUBLIC_PUBLISH must be checked for this public npm smoke test.')
+                    }
+                    env.TARGET_ARCH = params.EXPECTED_ARCH
+                    env.PACKAGE_VERSION_OVERRIDE = params.PACKAGE_VERSION_OVERRIDE?.trim()
+                    env.NPM_DIST_TAG = env.TARGET_ARCH == 'aarch64' ? 'arm-test' : 'x86-test'
+                    env.NPM_REGISTRY = 'https://registry.npmjs.org/'
+                    env.PYTHON_BIN = params.PYTHON_BIN?.trim() ?: 'python3.11'
+                    env.PYPI_INDEX_URL = params.PYPI_INDEX_URL?.trim() ?: 'https://mirrors.huaweicloud.com/repository/pypi/simple'
+                    env.PIP_INDEX_URL = env.PYPI_INDEX_URL
+                    env.OCR_MODEL_CACHE_DIR = params.OCR_MODEL_CACHE_DIR?.trim() ?: '/home/witty-agents-jenkins/ocr-model-cache'
+                    env.RUN_REAL_INSTALL_VALIDATION = String.valueOf(params.RUN_REAL_INSTALL_VALIDATION == null ? true : params.RUN_REAL_INSTALL_VALIDATION)
+                    currentBuild.description = "${env.TARGET_ARCH} online ${env.PACKAGE_VERSION_OVERRIDE} -> ${env.NPM_DIST_TAG}"
+                }
+                sh '''
+                    set -eu
+                    rm -rf ci-artifacts
+                    mkdir -p ci-artifacts
+                    git config --global --add safe.directory "$WORKSPACE"
+
+                    case "$(uname -m)" in
+                      x86_64) actual_arch=x86_64 ;;
+                      aarch64|arm64) actual_arch=aarch64 ;;
+                      *) echo "Unsupported native architecture: $(uname -m)" >&2; exit 1 ;;
+                    esac
+                    test "$actual_arch" = "$TARGET_ARCH" || {
+                      echo "EXPECTED_ARCH=$TARGET_ARCH, but this node is $actual_arch" >&2
+                      exit 1
+                    }
+
+                    node -e '
+                      const version = process.env.PACKAGE_VERSION_OVERRIDE || ""
+                      const tag = process.env.NPM_DIST_TAG || ""
+                      const architecture = process.env.TARGET_ARCH || ""
+                      const semver = /^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)-[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*$/
+                      if (!semver.test(version)) throw new Error("PACKAGE_VERSION_OVERRIDE must be a prerelease semantic version")
+                      if (!tag || tag === "latest") throw new Error("NPM_DIST_TAG must be set and cannot be latest")
+                      const architectureId = architecture === "aarch64" ? "aarch64" : "x86-64"
+                      if (!version.includes(`-ci.${architectureId}.`)) {
+                        throw new Error(`PACKAGE_VERSION_OVERRIDE must contain -ci.${architectureId}. for ${architecture}`)
+                      }
+                    '
+                    node -e 'const major=Number(process.versions.node.split(".")[0]); if (major < 20) throw new Error(`Node.js 20+ required, got ${process.version}`)'
+                    printf 'Native architecture: %s\nSmoke version: %s\nDist-tag: %s\n' "$actual_arch" "$PACKAGE_VERSION_OVERRIDE" "$NPM_DIST_TAG"
+                '''
+            }
+        }
+
+        stage('Resolve Online Build Plan') {
+            steps {
+                sh '''
+                    node ci/scripts/resolve-plan.mjs \
+                      --agent=shennong-crash \
+                      --variant=online \
+                      --package-style=plain \
+                      --target-arch="$TARGET_ARCH" \
+                      --publish=false \
+                      --output=ci-artifacts/build-plan.json
+                '''
+            }
+        }
+
+        stage('Prepare Shennong') {
+            steps {
+                sh 'node ci/scripts/run-agent-phase.mjs --phase=prepare'
+                sh 'node ci/scripts/run-agent-phase.mjs --phase=prepare-assets'
+            }
+        }
+
+        stage('Install and Validate Build Dependencies') {
+            steps {
+                sh 'node ci/scripts/run-agent-phase.mjs --phase=install-dependencies'
+                sh 'node ci/scripts/run-agent-phase.mjs --phase=validate'
+            }
+        }
+
+        stage('Build Online Package') {
+            steps {
+                sh 'node ci/scripts/run-agent-phase.mjs --phase=build'
+            }
+        }
+
+        stage('Package Gates') {
+            steps {
+                sh 'node ci/scripts/run-agent-phase.mjs --phase=artifact-gates'
+                sh 'node ci/scripts/run-agent-phase.mjs --phase=install-contract'
+            }
+        }
+
+        stage('Real Online Install Flow') {
+            when { expression { env.RUN_REAL_INSTALL_VALIDATION == 'true' } }
+            steps {
+                sh 'node ci/scripts/run-agent-phase.mjs --phase=real-install'
+            }
+        }
+
+        stage('Publish and Download from npm') {
+            steps {
+                script {
+                    withCredentials([string(credentialsId: 'npm-token', variable: 'NPM_TOKEN')]) {
+                        sh '''
+                            set +x
+                            node ci/scripts/publish-smoke-package.mjs \
+                              --report=shennong-crash-agent/artifacts/online-package-report.json \
+                              --output=ci-artifacts/npm-publish-smoke-summary.json
+                        '''
+                    }
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            sh 'find ci-artifacts -maxdepth 2 -type f -name ".npmrc*" -delete 2>/dev/null || true'
+            archiveArtifacts(
+                artifacts: 'ci-artifacts/**,shennong-crash-agent/artifacts/**,shennong-crash-agent/ci-reports/*.json',
+                allowEmptyArchive: true,
+                fingerprint: true
+            )
+            sh 'chown -R 1000:1000 "$WORKSPACE" 2>/dev/null || true'
+        }
+    }
+}

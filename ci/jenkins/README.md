@@ -220,7 +220,49 @@ witty-agents-ci-runtime:oe2403sp4-node20-py311
 如果需要临时回滚，保留 Script Path 为 `Jenkinsfile`，只把 Branch Specifier 切换到
 最近一次验证通过的分支或提交，避免在 Jenkins 页面中维护另一份脚本。
 
-## 7. 停止、重启和迁移
+## 7. x86 与 ARM 在线包发布验收
+
+正式流水线仍要求从官方 `master` 同时发布 online 和 offline 两个包。若只需要验证某台
+原生 x86 或 ARM Jenkins 节点能否完成“构建 online 包 → 发布 npm → 从 npm 下载并
+核对”的链路，可另建一个手工 Pipeline Job，并将 **Script Path** 设置为：
+
+```text
+ci/jenkins/Jenkinsfile.online-publish-smoke
+```
+
+这个 Job 不配置定时触发，只在人工确认后发布，而且有三层限制：
+
+- 只接受 Shennong 的 unscoped online 包；
+- 版本必须是 prerelease，例如 `0.10.5-ci.aarch64.0`；
+- dist-tag 不能是 `latest`，例如 ARM 使用 `arm-test`。
+
+发布 Job 必须指向已经复核、只有受信任维护者能写入的分支或提交，并限制 Job 的构建
+权限。`npm-token` 建议使用只允许发布该测试包的 granular token；不要让发布 Job 直接
+运行来自外部 PR 的未复核 Jenkinsfile 或脚本。
+
+两台 Jenkins 使用同一份脚本，选择对应的节点架构并填写匹配的预发布版本。dist-tag 由
+流水线按架构自动设置，不能在构建页面中改成其他地址或标签：
+
+| 构建节点 | `EXPECTED_ARCH` | 版本示例 | dist-tag 示例 |
+|---|---|---|---|
+| x86_64 | `x86_64` | `0.10.5-ci.x86-64.0` | `x86-test` |
+| ARM64 | `aarch64` | `0.10.5-ci.aarch64.0` | `arm-test` |
+
+npm 地址固定为官方 registry，凭据固定读取 Jenkins Secret Text `npm-token`。每次发布
+必须使用尚未占用的新版本号，并勾选 `CONFIRM_PUBLIC_PUBLISH`。Job 会依次执行
+代码检查、online 打包、包门禁、安装流程、npm 发布、注册表可见性等待和真实回下载。
+最后比较构建包与下载包的 SHA-256；两者一致才算通过。结果保存在：
+
+```text
+ci-artifacts/npm-publish-smoke-summary.json
+ci-artifacts/npm-download/
+shennong-crash-agent/artifacts/online-package-report.json
+```
+
+这里分别在两种架构运行，是为了验证两台原生 Jenkins 节点和各自的构建发布链路。
+online 包不携带 Python wheels，不应解释为存在两种正式的架构专用 online 包。
+
+## 8. 停止、重启和迁移
 
 停止服务：
 
