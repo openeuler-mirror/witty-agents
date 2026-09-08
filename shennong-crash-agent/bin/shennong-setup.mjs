@@ -275,6 +275,40 @@ function findPython(expectedPlatform, explicitPython) {
   return null
 }
 
+function verifySystemRuntimeLibraries(python) {
+  if (python.info.system !== "linux") {
+    return
+  }
+  const libraries = [
+    "libGL.so.1",
+    "libgthread-2.0.so.0",
+    "libXext.so.6",
+    "libXrender.so.1",
+    "libSM.so.6",
+  ]
+  const program = [
+    "import ctypes, json",
+    `libraries = ${JSON.stringify(libraries)}`,
+    "missing = []",
+    "for library in libraries:",
+    "    try:",
+    "        ctypes.CDLL(library)",
+    "    except OSError:",
+    "        missing.append(library)",
+    "print(json.dumps(missing))",
+  ].join("\n")
+  const missing = JSON.parse(execFileSync(python.command, ["-c", program], {
+    encoding: "utf8",
+  }).trim())
+  if (missing.length > 0) {
+    throw new Error(
+      `missing Linux runtime libraries: ${missing.join(", ")}; ` +
+      "on openEuler install them before setup with: " +
+      "sudo dnf install -y libglvnd-glx glib2 libXext libXrender libSM"
+    )
+  }
+}
+
 function getPackageMetadata() {
   if (!existsSync(VARIANT_FILE)) {
     throw new Error(`package variant metadata is missing: ${VARIANT_FILE}`)
@@ -494,6 +528,7 @@ function checkSetup(options) {
       : "Python 3.11 or 3.12"
     throw new Error(`compatible Python not found; expected ${expected}`)
   }
+  verifySystemRuntimeLibraries(python)
   console.log(JSON.stringify({
     package: metadata.packageName,
     version: metadata.packageVersion,

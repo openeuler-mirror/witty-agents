@@ -15,6 +15,11 @@ openai==1.93.0
 # Image Processing & OCR
 Pillow==10.4.0
 opencv-python==4.9.0.80
+# PaddleOCR 2.9.1 requires opencv-contrib-python and Albumentations 1.4.10
+# requires opencv-python-headless. Keep all three distributions on the same
+# validated release to avoid mixed cv2 binaries in the environment.
+opencv-contrib-python==4.9.0.80
+opencv-python-headless==4.9.0.80
 
 # Configuration & Validation
 PyYAML==6.0.2

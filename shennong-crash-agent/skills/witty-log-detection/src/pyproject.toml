@@ -24,6 +24,8 @@ dependencies = [
   # Image Processing & OCR
   "Pillow==10.4.0",
   "opencv-python==4.9.0.80",
+  "opencv-contrib-python==4.9.0.80",
+  "opencv-python-headless==4.9.0.80",
 
   # Configuration & Validation
   "PyYAML==6.0.2",

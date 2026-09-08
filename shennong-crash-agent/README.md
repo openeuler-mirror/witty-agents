@@ -103,6 +103,10 @@ sudo dnf install -y \
 基础镜像或系统安装介质中。已在 openEuler 24.03 LTS SP4 x86_64、CPython 3.11
 环境通过 `--network none` 安装和运行验证。
 
+`shennong-setup check/install` 会在创建 Python 环境之前检查这些动态库。缺失时会
+直接列出库名和上述 `dnf` 命令，避免 Python 依赖全部下载完成后才在 `import cv2`
+阶段失败。setup 不会自行调用 `sudo` 或修改系统 RPM。
+
 ### 第二步：显式安装 Python 依赖
 
 项目本地安装后执行：
@@ -479,9 +483,12 @@ openEuler 架构和 Python 3.11 环境中生成。可用 `--python=/path/to/pyth
 wheel 清单闭合、SHA256、Python ABI、操作系统、CPU 架构、SOABI 与 libc。
 任何一项不完整都会让 `shennong-setup check` 和发布门禁失败。
 
-离线依赖解析还会读取 `packaging/offline-constraints.txt`。该文件将
-PaddleOCR 的 OpenCV 扩展依赖与项目现有 `opencv-python==4.9.0.80`
-保持一致，避免 pip 在多个几十 MiB 的候选 wheel 之间反复回溯下载。
+PaddleOCR 2.9.1 会直接依赖 `opencv-python`、`opencv-contrib-python`，同时其固定的
+Albumentations 1.4.10 又依赖 `opencv-python-headless`。当前 requirements 与
+`packaging/offline-constraints.txt` 将三者统一锁定在 `4.9.0.80`，避免混装
+4.9/4.11 的 `cv2` 二进制文件，也避免 pip 在多个几十 MiB 的候选 wheel 之间反复
+回溯下载。非 headless OpenCV 仍要求系统提供 `libGL.so.1`，不能由 Python wheel
+替代。
 
 OCR 模型文件使用 Git LFS 管理，根目录 `.gitattributes` 会将 `*.pdiparams` 交给
 LFS filter。构建离线包前必须先执行 `git lfs pull`，并确认仓库服务端已启用 LFS；

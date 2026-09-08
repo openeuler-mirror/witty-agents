@@ -304,6 +304,13 @@ printf '%s\n' "$*" >> "$SETUP_PYTHON_LOG"
 if [ "$1" = "-c" ]; then
   case "$2" in
     *platform.python_version*) printf '%s\n' '${pythonInfoJson}' ;;
+    *ctypes.CDLL*)
+      if [ "$SETUP_MISSING_RUNTIME" = "1" ]; then
+        printf '%s\n' '["libGL.so.1"]'
+      else
+        printf '%s\n' '[]'
+      fi
+      ;;
     *sys.prefix*) exit 0 ;;
     *importlib.import_module*)
       if [ "$SETUP_FAIL_IMPORT" = "1" ]; then exit 42; fi
@@ -382,6 +389,22 @@ server.listen(0, "127.0.0.1", () => {
   const command = [
     "exec", "--offline", "--", "shennong-setup", "install", `--python=${setupPython}`,
   ]
+  const missingRuntime = spawnSync("npm", [
+    "exec", "--offline", "--", "shennong-setup", "check", `--python=${setupPython}`,
+  ], {
+    cwd: installation.project,
+    encoding: "utf8",
+    env: { ...setupEnvironment, SETUP_MISSING_RUNTIME: "1" },
+  })
+  assert(missingRuntime.status !== 0, "setup: missing Linux runtime library was not rejected")
+  assert(
+    `${missingRuntime.stdout}\n${missingRuntime.stderr}`.includes("sudo dnf install -y libglvnd-glx"),
+    "setup: missing Linux runtime library did not produce an actionable openEuler command",
+  )
+  assert(
+    !readFileSync(setupLog, "utf8").includes("-m pip install"),
+    "setup: Python dependencies were installed before the Linux runtime preflight passed",
+  )
   execFileSync("npm", command, {
     cwd: installation.project,
     stdio: "inherit",
