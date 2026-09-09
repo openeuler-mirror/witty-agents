@@ -12,13 +12,14 @@ from nl2sql_core.generate.query_generator import generate_query
 from nl2sql_core.generate.retry_feedback import build_retry_feedback, should_retry
 from nl2sql_core.ir.compile_sql import format_ir_for_display
 from nl2sql_core.ir.executor_es import execute_ir_on_es
+from nl2sql_core.ir.sanitize import sanitize_ir, schema_to_field_map
 from nl2sql_core.ir.schema import QueryIR, parse_ir
 from nl2sql_core.kg import verify as kg_verify
 from nl2sql_core.llm.client import LLMClient
 from nl2sql_core.models import PipelineResult, PipelineStep, QueryResult
+from nl2sql_core.result_sort import sort_result_rows
 from nl2sql_core.rules.store import RuleStore, normalize_dialect
 from nl2sql_core.safety import assert_readonly_sql
-
 
 def _rule_type_histogram(rules: list[dict[str, Any]]) -> dict[str, int]:
     hist: dict[str, int] = {}
@@ -167,8 +168,10 @@ class NL2SQLPipeline:
                     error=steps[-1].message,
                 )
             schema_hint = ""
+            schema_field_map: dict[str, set[str]] = {}
             try:
                 summary = await engine.fetch_schema(config)
+                schema_field_map = schema_to_field_map(summary)
                 compact = []
                 for idx in summary.indexes:
                     fields = [f"{f.name}:{f.type}" for f in idx.fields[:40]]
@@ -176,6 +179,7 @@ class NL2SQLPipeline:
                 schema_hint = json.dumps(compact, ensure_ascii=False)[:6000]
             except Exception:
                 schema_hint = ""
+                schema_field_map = {}
 
             max_attempts = max(1, int(self.app.max_query_attempts))
             retry_feedback = ""
@@ -203,7 +207,11 @@ class NL2SQLPipeline:
                     current_ir = gen.get("ir")
                     if current_ir is None and gen_mode == "ir" and isinstance(generated, dict):
                         current_ir = parse_ir(generated)
+                    sanitize_warnings: list[str] = []
                     if gen_mode == "ir" and current_ir is not None:
+                        current_ir, sanitize_warnings = sanitize_ir(
+                            current_ir, schema_field_map
+                        )
                         display_query = format_ir_for_display(current_ir)
                         generated = current_ir.model_dump(by_alias=True)
                     else:
@@ -214,7 +222,10 @@ class NL2SQLPipeline:
                         config = dict(config)
                         config["target_index"] = gen["index"]
                     steps[-1].status = "done"
-                    steps[-1].message = gen.get("reason") or f"mode={gen_mode}"
+                    msg = gen.get("reason") or f"mode={gen_mode}"
+                    if sanitize_warnings:
+                        msg = f"{msg}；IR清洗: {'; '.join(sanitize_warnings[:3])}"
+                    steps[-1].message = msg
                     steps[-1].detail = {
                         "attempt": attempt,
                         "mode": gen_mode,
@@ -222,13 +233,25 @@ class NL2SQLPipeline:
                         "reason": gen.get("reason"),
                         "retry_feedback_used": bool(retry_feedback),
                         "ir": current_ir.model_dump(by_alias=True) if current_ir else None,
+                        "sanitize_warnings": sanitize_warnings,
                     }
                     await emit("step", step=steps[-1].model_dump())
                     await emit("sql", query=display_query, mode=gen_mode, index=gen.get("index"))
                 except Exception as e:
                     steps[-1].status = "error"
                     steps[-1].message = str(e)
+                    last_exec_error = str(e)
+                    attempt_records.append({"attempt": attempt, "phase": "generate", "error": str(e)})
                     await emit("step", step=steps[-1].model_dump())
+                    if attempt < max_attempts:
+                        retry_feedback = build_retry_feedback(
+                            natural_query=natural_query,
+                            generated=display_query or generated or "",
+                            error=str(e),
+                            attempt=attempt,
+                        )
+                        await emit("retry", feedback=retry_feedback[:500], attempt=attempt)
+                        continue
                     await emit("error", message=str(e))
                     return PipelineResult(query=natural_query, rules=rules, steps=steps, error=str(e))
 
@@ -384,6 +407,13 @@ class NL2SQLPipeline:
                     if engine_type not in ("elasticsearch", "es"):
                         raise ValueError(f"IR 执行目前仅支持 Elasticsearch，当前引擎={engine_type}")
                     current_ir = parse_ir(generated)
+                    # execute_query 路径也做同样清洗（若能取到 schema）
+                    try:
+                        summary = await engine.fetch_schema(config)
+                        fmap = schema_to_field_map(summary)
+                    except Exception:
+                        fmap = {}
+                    current_ir, _sw = sanitize_ir(current_ir, fmap)
                     display_query = format_ir_for_display(current_ir)
                     result = await execute_ir_on_es(current_ir, engine, config)
                 else:
@@ -411,6 +441,7 @@ class NL2SQLPipeline:
                 )
 
         assert result is not None
+        sort_result_rows(result)
         kg_status = kg_verify(result, rules)
         steps.append(
             PipelineStep(

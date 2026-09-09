@@ -25,7 +25,7 @@
 ## 快速开始
 
 ```bash
-git clone https://atomgit.com/zou-liushi/witty-agents.git
+git clone https://atomgit.com/openeuler/witty-agents.git
 cd witty-agents/NL2sql-Agent
 
 chmod +x scripts/*.sh

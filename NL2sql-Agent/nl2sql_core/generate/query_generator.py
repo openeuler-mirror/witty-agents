@@ -19,7 +19,7 @@ SYSTEM_BASE = """你是 NL2SQL 助手。
 
 通用约束：
 - 只读查询。
-- LIMIT 遵循召回规则；未说明时默认不超过 50。
+- LIMIT 固定与数据源 max_size 一致（当前为 100）；引擎会统一 LIMIT=100 并在缺省时补 ORDER BY，不要写更小的 LIMIT。
 - 列名必须以 Schema/召回规则为准。
 - 默认返回全部字段（select 用 ["*"]），仅当用户明确只要某几列时才投影。
 """
@@ -42,7 +42,8 @@ SYSTEM_IR = """
       "limit": 10000
     }
   ],
-  "limit": 50,
+  "limit": 100,
+  "order_by": ["idcardno"],
   "reason": "简短说明（引用规则要点）"
 }
 
@@ -86,7 +87,7 @@ SYSTEM_HBASE = """
     "families": ["cf"],
     "prefix": null,
     "filters": [ {"col":"cf:qualifier","op":"=|!=|like","value":"..."} ],
-    "limit": 50
+    "limit": 100
   },
   "reason": "简短说明"
 }

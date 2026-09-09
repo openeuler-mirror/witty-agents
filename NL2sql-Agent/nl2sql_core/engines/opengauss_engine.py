@@ -165,8 +165,10 @@ class OpenGaussEngine:
             raise ValueError("OpenGauss 需要 SQL 字符串")
         sql = query.strip().rstrip(";")
         assert_readonly_sql(sql)
-        if not re.search(r"\blimit\b", sql, re.I):
-            sql = f"{sql} LIMIT {clamp_size(int(config.get('max_size') or 100))}"
+        from nl2sql_core.sql_stabilize import stabilize_select_sql
+
+        max_size = clamp_size(int(config.get("max_size") or 100))
+        sql, _stabilize_warnings = stabilize_select_sql(sql, max_size)
         start = time.time()
 
         def _run() -> tuple[list[str], list[list[Any]]]:

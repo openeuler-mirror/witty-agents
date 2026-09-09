@@ -9,7 +9,7 @@
     "rule_type": "experience",
     "scope": "dialect",
     "dialect": "elasticsearch",
-    "description": "Elasticsearch SQL 方言：默认只读 SELECT；结果加 LIMIT（建议 ≤50）；优先 keyword/等值；优先走 ES SQL（_sql），复杂检索可用 Query DSL。"
+    "description": "Elasticsearch SQL 方言：默认只读 SELECT；引擎统一 LIMIT=max_size（当前 100）并在缺省时补 ORDER BY；不要写很小的 LIMIT；优先 keyword/等值；优先走 ES SQL（_sql），复杂检索可用 Query DSL。"
   },
   {
     "rule_type": "experience",

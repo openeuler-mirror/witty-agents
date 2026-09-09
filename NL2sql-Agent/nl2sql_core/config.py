@@ -42,7 +42,7 @@ class AppSettings(BaseModel):
     timeout_sec: int = 30
     max_query_attempts: int = 3
     retry_on_empty: bool = True
-    rules_top_k: int = 50
+    rules_top_k: int = 100
 
 
 class RagSettings(BaseModel):
@@ -73,7 +73,7 @@ def load_app_settings() -> AppSettings:
         timeout_sec=int(safety.get("timeout_sec", 30)),
         max_query_attempts=int(pipeline.get("max_query_attempts", 3)),
         retry_on_empty=bool(pipeline.get("retry_on_empty", True)),
-        rules_top_k=max(1, min(int(pipeline.get("rules_top_k", 50)), 200)),
+        rules_top_k=max(1, min(int(pipeline.get("rules_top_k", 100)), 200)),
     )
 
 
