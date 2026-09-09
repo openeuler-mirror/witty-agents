@@ -10,9 +10,20 @@ from nl2sql_core.ir.compile_sql import (
 )
 from nl2sql_core.ir.schema import QueryIR
 from nl2sql_core.models import QueryResult
+from nl2sql_core.safety import clamp_size
+from nl2sql_core.sql_stabilize import default_order_cols_for_index
 
 # 单次 IN 字面量上限，避免请求过大
 _IN_CHUNK = 800
+
+
+def _normalize_ir(ir: QueryIR, config: dict[str, Any]) -> QueryIR:
+    max_size = clamp_size(int(config.get("max_size") or 100))
+    # 最终结果统一为数据源 max_size（当前 100），避免模型写 50 导致截断抖动
+    order_by = list(ir.order_by or [])
+    if not order_by:
+        order_by = default_order_cols_for_index(ir.from_index, ir.select)
+    return ir.model_copy(update={"limit": max_size, "order_by": order_by})
 
 
 def _extract_id_set(result: QueryResult, foreign_key: str) -> set[str]:
@@ -42,6 +53,7 @@ async def execute_ir_on_es(
     warnings: list[str] = []
     step_sqls: list[str] = []
     step_meta: list[dict[str, Any]] = []
+    ir = _normalize_ir(ir, config)
 
     if not ir.semi_joins:
         sql = compile_outer_sql(ir, None, join_key=None)
@@ -54,7 +66,10 @@ async def execute_ir_on_es(
     for i, sj in enumerate(ir.semi_joins, 1):
         sql = compile_semi_join_sql(sj)
         step_sqls.append(sql)
-        sub = await engine.execute(sql, config, mode="sql")
+        # 半连接需要较大 key 集合，勿用展示用 max_size=100 截断
+        sj_cap = max(1000, min(int(sj.limit or 10000), 50000))
+        sj_cfg = {**config, "max_size": sj_cap}
+        sub = await engine.execute(sql, sj_cfg, mode="sql")
         ids = _extract_id_set(sub, sj.foreign_key)
         step_meta.append(
             {"step": i, "role": "semi_join", "index": sj.index, "sql": sql, "keys": len(ids)}
@@ -118,7 +133,7 @@ async def _outer_with_ids(
             raw={"empty_join": True},
         )
 
-    ids = list(id_set)
+    ids = sorted(id_set, key=str)
     # 分块 IN，合并结果（按 join_key+整行去重）
     merged_cols: list[str] | None = None
     merged_rows: list[list[Any]] = []
@@ -144,10 +159,20 @@ async def _outer_with_ids(
                 continue
             seen.add(key)
             merged_rows.append(row)
-            if len(merged_rows) >= ir.limit:
-                break
-        if len(merged_rows) >= ir.limit:
-            break
+
+    # 合并后再按 IR order_by / 行内容稳定排序，再截断
+    if merged_rows and merged_cols and ir.order_by:
+        col_idx = {c.lower(): i for i, c in enumerate(merged_cols)}
+        keys = [col_idx[o.lower()] for o in ir.order_by if o.lower() in col_idx]
+
+        def _row_key(row: list[Any]) -> tuple:
+            cells = []
+            for i in keys or range(len(merged_cols)):
+                v = row[i] if i < len(row) else None
+                cells.append((1, "") if v is None else (0, str(v)))
+            return tuple(cells)
+
+        merged_rows.sort(key=_row_key)
 
     return QueryResult(
         columns=merged_cols or [],

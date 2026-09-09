@@ -7,6 +7,7 @@ from typing import Any
 import httpx
 
 from nl2sql_core.models import QueryResult, SchemaField, SchemaIndex, SchemaSummary
+from nl2sql_core.sql_stabilize import stabilize_dsl, stabilize_select_sql
 
 
 def strip_unsupported_es_sql(sql: str) -> str:
@@ -200,10 +201,12 @@ class ElasticsearchEngine:
                 repaired = repair_sql(sql)
                 if repaired != sql:
                     warnings.append("已自动纠正字段别名")
+                stable, sw = stabilize_select_sql(repaired, max_size)
+                warnings.extend(sw)
                 return await self._execute_sql(
                     client,
                     host,
-                    repaired,
+                    stable,
                     auth=auth,
                     max_size=max_size,
                     start=start,
@@ -224,7 +227,8 @@ class ElasticsearchEngine:
             )
             if isinstance(index, list):
                 index = ",".join(str(x) for x in index)
-            dsl.setdefault("size", max_size)
+            dsl, dw = stabilize_dsl(dsl, max_size)
+            warnings.extend(dw)
             # 不强制业务字段白名单；由 LLM/规则在 DSL 中自行指定 _source
             r = await client.post(f"{host}/{index}/_search", json=dsl, auth=auth)
             if r.status_code >= 400:
@@ -417,10 +421,15 @@ class ElasticsearchEngine:
                     hit_ids.add(str(row[0]))
 
         lim = max_size
-        m_lim = re.search(r"\bLIMIT\s+(\d+)", outer_rest, re.I)
-        if m_lim:
-            lim = int(m_lim.group(1))
-        filtered = [row for row in outer.rows if row and str(row[id_idx]) in hit_ids][:lim]
+        filtered = [row for row in outer.rows if row and str(row[id_idx]) in hit_ids]
+        # 稳定排序后再截断，避免无序截断抖动
+        filtered.sort(
+            key=lambda row: tuple(
+                (1, "") if (i >= len(row) or row[i] is None) else (0, str(row[i]))
+                for i in range(len(outer.columns or []))
+            )
+        )
+        filtered = filtered[:lim]
         warnings = [
             "ES 不支持 IN(SELECT)，已按「外层候选 → 内层过滤」拆分执行",
             f"外层候选 {len(cand_ids)} 个关联键，内层命中 {len(hit_ids)} 个",
@@ -489,10 +498,11 @@ class ElasticsearchEngine:
             outer_sql = f"{outer_sql} {outer_rest}"
         elif not re.search(r"\bLIMIT\b", outer_sql, re.I):
             outer_sql = f"{outer_sql} LIMIT {max_size}"
+        outer_run, sw = stabilize_select_sql(repair_sql(outer_sql), max_size)
         result = await self._execute_sql(
             client,
             host,
-            repair_sql(outer_sql),
+            outer_run,
             auth=auth,
             max_size=max_size,
             start=start,
@@ -501,6 +511,7 @@ class ElasticsearchEngine:
         result.warnings = [
             f"ES 不支持 IN(SELECT)，已拆成两段执行（内层命中 {len(ids)} 个关联键）",
             f"subSQL: {run_sub[:200]}",
+            *sw,
         ]
         if result.row_count == 0 and ids:
             result.warnings.append(

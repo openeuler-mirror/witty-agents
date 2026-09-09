@@ -50,7 +50,7 @@ class QueryIR(BaseModel):
     select: list[str] = Field(default_factory=lambda: ["*"])
     where: list[Pred] = Field(default_factory=list)
     semi_joins: list[SemiJoin] = Field(default_factory=list)
-    limit: int = 50
+    limit: int = 100
     order_by: list[str] = Field(default_factory=list)
     reason: str = ""
 
@@ -67,7 +67,7 @@ class QueryIR(BaseModel):
     @field_validator("limit")
     @classmethod
     def _limit_ok(cls, v: int) -> int:
-        return max(1, min(int(v), 500))
+        return max(1, min(int(v), 100))
 
 
 def parse_ir(data: dict[str, Any]) -> QueryIR:
@@ -86,10 +86,39 @@ def parse_ir(data: dict[str, Any]) -> QueryIR:
     return merge_or_semi_joins(ir)
 
 
+def _join_preds(sj: SemiJoin) -> list[Pred]:
+    if sj.where_or_groups:
+        out: list[Pred] = []
+        for g in sj.where_or_groups:
+            out.extend(g)
+        return out
+    return list(sj.where or [])
+
+
+def _should_merge_group_as_or(group: list[SemiJoin]) -> bool:
+    """
+    仅当连续半连接像「同一维度的模式备选」(like/in) 时合并为 OR。
+
+    等值条件（如 tag_name='A' 与 tag_name='B'）必须保留为多次求交（AND），
+    不能并成 OR。
+    """
+    if len(group) <= 1:
+        return False
+    for sj in group:
+        preds = _join_preds(sj)
+        if not preds:
+            # 空 where 不参与 OR 合并
+            return False
+        ops = {(p.op or "=").lower() for p in preds}
+        if not ops.issubset({"like", "in"}):
+            return False
+    return True
+
+
 def merge_or_semi_joins(ir: QueryIR) -> QueryIR:
     """
-    合并「同 index + 同关联键、仅 where 不同」的连续半连接为 where_op=or。
-    避免模型把 G%/D%/K% 拆成多个求交 semi_join 导致空结果。
+    合并「同 index + 同关联键、且均为 like/in 备选」的连续半连接为 where_op=or。
+    等值多值半连接保持独立（求交），避免双标签等被误并成 OR。
     """
     if len(ir.semi_joins) <= 1:
         return ir
@@ -111,12 +140,12 @@ def merge_or_semi_joins(ir: QueryIR) -> QueryIR:
                 j += 1
             else:
                 break
-        if len(group) == 1:
-            merged.append(cur)
+        if len(group) == 1 or not _should_merge_group_as_or(group):
+            merged.extend(group)
         else:
             groups = [list(g.where) for g in group if g.where]
             if not groups:
-                merged.append(cur)
+                merged.extend(group)
             else:
                 merged.append(
                     SemiJoin(

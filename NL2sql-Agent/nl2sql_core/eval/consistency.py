@@ -7,12 +7,16 @@ from nl2sql_core.pipeline import NL2SQLPipeline
 
 
 def _row_key(columns: list[str], row: list[Any]) -> str:
-    """整行规范化作为行身份（不绑定具体业务证件字段名）。"""
-    parts = []
+    """整行规范化作为行身份（不绑定具体业务证件字段名）。
+
+    按列名排序后再序列化，避免同数据仅因 SELECT 列顺序不同导致 Jaccard 偏低。
+    """
+    pairs = []
     for i, c in enumerate(columns):
         v = row[i] if i < len(row) else None
-        parts.append(f"{c}={'' if v is None else v}")
-    return "|".join(parts)
+        pairs.append((str(c), "" if v is None else str(v)))
+    pairs.sort(key=lambda x: x[0])
+    return "|".join(f"{c}={v}" for c, v in pairs)
 
 
 def _keyset(columns: list[str], rows: list[list[Any]]) -> set[str]:

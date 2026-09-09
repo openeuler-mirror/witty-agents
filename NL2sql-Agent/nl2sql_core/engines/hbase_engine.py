@@ -170,7 +170,7 @@ class HBaseEngine:
         table = str(plan.get("table") or "").strip()
         if not table:
             raise ValueError("scan 计划缺少 table")
-        limit = int(plan.get("limit") or config.get("max_size") or 50)
+        limit = int(plan.get("limit") or config.get("max_size") or 100)
         timeout = float(config.get("timeout_sec") or 30)
         base = rest_base(config)
         prefix = plan.get("prefix") or plan.get("row_prefix") or "*"

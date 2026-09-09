@@ -23,5 +23,7 @@ class LLMClient:
                 {"role": "system", "content": system},
                 {"role": "user", "content": user},
             ],
+            # DashScope / Qwen3 非流式必须关闭 thinking，否则 400
+            extra_body={"enable_thinking": False},
         )
         return (resp.choices[0].message.content or "").strip()
