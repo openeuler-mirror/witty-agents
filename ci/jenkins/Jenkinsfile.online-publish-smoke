@@ -8,6 +8,7 @@ pipeline {
     }
 
     options {
+        skipDefaultCheckout(true)
         timestamps()
         disableConcurrentBuilds()
         buildDiscarder(logRotator(numToKeepStr: '10', artifactNumToKeepStr: '10'))
@@ -66,6 +67,15 @@ pipeline {
     }
 
     stages {
+        stage('Checkout Source') {
+            steps {
+                deleteDir()
+                withEnv(['GIT_LFS_SKIP_SMUDGE=1']) {
+                    checkout scm
+                }
+            }
+        }
+
         stage('Confirm Safe Smoke Publish') {
             steps {
                 script {
