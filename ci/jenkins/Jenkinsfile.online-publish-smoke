@@ -70,6 +70,11 @@ pipeline {
         stage('Checkout Source') {
             steps {
                 deleteDir()
+                sh '''
+                    git init .
+                    git config --local filter.lfs.smudge 'git-lfs smudge --skip -- %f'
+                    git config --local filter.lfs.process 'git-lfs filter-process --skip'
+                '''
                 withEnv(['GIT_LFS_SKIP_SMUDGE=1']) {
                     checkout scm
                 }
