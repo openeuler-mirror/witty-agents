@@ -38,7 +38,7 @@
 @media print{.stack-row{break-inside:avoid}.reasoning>li{break-inside:avoid}.crash-facts{break-inside:avoid}}
 
 /* A compact, unified first-screen overview. */
-.topbar{height:60px}.layout{padding-top:25px}.overview-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:0 0 20px;padding:20px 28px;background:#f0f4f1;border-radius:12px}.overview-heading h1{font-size:27px;letter-spacing:-.5px;margin-top:5px}.overview-heading .subline{margin:6px 0 0;font-size:12px;gap:14px}.overview-tools{display:flex;align-items:flex-end;flex-direction:column;gap:7px}.overview-heading .eyebrow{font-size:10px}.hero{padding:23px 25px}.hero h2{font-size:23px;max-width:none}.hero-copy{font-size:14px;margin:9px 0 17px;max-width:none;line-height:1.8}.facts{padding-top:15px;grid-template-columns:.95fr 1.15fr 1.15fr}.fact-label{font-size:11px;margin-bottom:5px}.fact-value{font-size:13px}.fact-note{font-size:11px}.fact-note a{margin:0}.overview-treatment{margin-top:18px;border-top:1px solid #dce5de;padding-top:14px}.treatment-heading{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}.treatment-heading>h3{font-size:15px}.treatment-heading>span{font-size:10px;color:#839086}.overview-treatment .plan{gap:18px;grid-template-columns:1.15fr 1fr}.overview-treatment .plan-card{border:1px solid #dbe5de;border-radius:7px;padding:13px 14px;background:#f7faf8}.overview-treatment .plan-card.secondary{background:#fbfcfb}.overview-treatment .small-label{font-size:10px;letter-spacing:0;margin-bottom:4px}.overview-treatment .plan-card h3{font-size:14px;margin-bottom:6px}.overview-treatment .plan-card p{font-size:12px;line-height:1.7;margin-bottom:7px}.overview-treatment .reading-group{margin-top:10px;padding:0;border:0;background:transparent}.overview-treatment summary{font-size:11px;padding:8px 0}.overview-treatment .reading-group>details:last-child{border-top:1px solid #e0e8e2}.overview-treatment .notice{margin-top:10px;font-size:11px!important}.overview-treatment .detail-body p{font-size:12px}.overview-treatment .detail-body{font-size:12px}
+.topbar{height:60px}.layout{padding-top:25px}.overview-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:0 0 20px;padding:20px 28px;background:#f0f4f1;border-radius:12px}.overview-heading h1{font-size:27px;letter-spacing:-.5px;margin-top:5px}.overview-heading .subline{margin:6px 0 0;font-size:12px;gap:14px}.overview-tools{display:flex;align-items:flex-end;flex-direction:column;gap:7px}.overview-heading .eyebrow{font-size:10px}.hero{padding:23px 25px}.hero h2{font-size:23px;max-width:none}.hero-copy{font-size:14px;margin:9px 0 17px;max-width:none;line-height:1.8}.facts{padding-top:15px;grid-template-columns:.95fr 1.15fr 1.15fr}.fact-label{font-size:11px;margin-bottom:5px}.fact-value{font-size:13px}.fact-note{font-size:11px}.fact-note a{margin:0}.overview-treatment{margin-top:18px;border-top:1px solid #dce5de;padding-top:14px}.treatment-heading{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}.treatment-heading>h3{font-size:15px}.treatment-heading>span{font-size:10px;color:#839086}.overview-treatment .plan{display:grid;grid-template-columns:1fr;gap:18px}.overview-treatment .plan-card{border:1px solid #dbe5de;border-radius:7px;padding:13px 14px;background:#f7faf8}.overview-treatment .plan-card.secondary{background:#fbfcfb}.overview-treatment .small-label{font-size:10px;letter-spacing:0;margin-bottom:4px}.overview-treatment .plan-card h3{font-size:14px;margin-bottom:6px}.overview-treatment .plan-card p{font-size:12px;line-height:1.7;margin-bottom:7px}.overview-treatment .reading-group{margin-top:10px;padding:0;border:0;background:transparent}.overview-treatment summary{font-size:11px;padding:8px 0}.overview-treatment .reading-group>details:last-child{border-top:1px solid #e0e8e2}.overview-treatment .notice{margin-top:10px;font-size:11px!important}.overview-treatment .detail-body p{font-size:12px}.overview-treatment .detail-body{font-size:12px}
 .crash-facts>div:nth-last-child(2){border-bottom:1px solid #e3e9e5}.crash-facts>div:last-child{grid-column:1/-1;border-right:0;border-bottom:0;background:#fafcfb}.crash-facts>div:last-child .source-label{display:block;margin-bottom:0}
 @media(max-width:600px){.topbar{height:52px}.layout{padding-top:8px}.overview-heading{align-items:flex-start;gap:8px}.overview-heading h1{font-size:21px;overflow-wrap:anywhere}.overview-heading .subline{font-size:10px;gap:2px 8px}.overview-tools .status{font-size:10px}.overview-tools .text-button{font-size:10px}.hero{padding:18px 16px}.hero h2{font-size:20px}.hero-copy{font-size:13px}.facts{grid-template-columns:1fr;gap:10px}.fact-label{margin-bottom:3px}.fact,.fact:first-child{padding:0 0 10px}.overview-treatment .plan{grid-template-columns:1fr;gap:10px}.treatment-heading{align-items:flex-start}.treatment-heading>span{max-width:115px;text-align:right}.overview-treatment .plan-card{padding:12px}.crash-facts>div:last-child{grid-column:auto}}
 @media print{.overview-tools{display:none}.overview-heading h1{font-size:22px}.hero{padding:18px}.overview-treatment .plan{grid-template-columns:1.15fr 1fr}}
@@ -53,13 +53,15 @@
 .tag-blue{background:#d9edf7;color:#31708f}
 .tag-yellow{background:#fcf8e3;color:#8a6d3b}
 .tag-gray{background:#eee;color:#666}
+.reason{font-style:italic;color:var(--muted);display:block;margin-top:2px;font-size:12px}
+.mc-kind{display:inline-block;font-size:11px;font-weight:600;padding:1px 8px;border-radius:4px;background:#eef2f7;color:#475569;border:1px solid #dbe2ea;margin-right:6px;vertical-align:middle}
 </style></head>
 <body>
 <a class="skip-link" href="#overview">跳到报告正文</a>
 <div class="shell">
 <header class="topbar"><div class="brand"><span class="brand-icon" aria-hidden="true">⌁</span>故障分析<span style="color:#bdc8c1;font-weight:400">/</span><span style="font-weight:400;color:#6c777e;font-size:13px">诊断报告</span></div><div class="top-meta" id="top-meta">现场记录</div></header>
 <div class="layout">
-<aside class="sidebar"><div class="nav-label">本次分析</div><nav aria-label="报告目录"><a class="active" href="#overview"><span>01</span>故障总览</a><a href="#features"><span>02</span>宕机特征</a><a href="#evidence"><span>03</span>判断依据</a><a href="#mechanism"><span>04</span>故障机制</a><a href="#appendix"><span>05</span>技术附件</a></nav><div class="side-note"><b>先了解结论，再查看证据</b>日志、源码与参考材料<br>可按需展开阅读。</div></aside>
+<aside class="sidebar"><div class="nav-label">本次分析</div><nav aria-label="报告目录"><a class="active" href="#overview"><span>01</span>故障总览</a><a href="#features"><span>02</span>宕机特征</a><a href="#mechanism"><span>03</span>故障机制</a><a href="#evidence"><span>04</span>判断依据</a><a href="#appendix"><span>05</span>技术附件</a></nav><div class="side-note"><b>先了解结论，再查看证据</b>日志、源码与参考材料<br>可按需展开阅读。</div></aside>
 <main class="main" id="main"></main>
 </div>
 <footer class="footer"><p>本页依据原始 Agent 报告重新编排，未重新执行诊断。<br>诊断判断与实际修复、业务恢复状态分别展示；未提供的信息不作推定。</p><div class="footer-actions"><button class="text-button" id="print-report" type="button">打印 / 保存 PDF</button><button class="text-button" id="download-data" type="button">导出原始数据</button></div></footer>
@@ -161,13 +163,8 @@ function renderOverview(){
     if(toArr(ss.method_steps).length){
       det += `<h4>合入步骤</h4><ol>${toArr(ss.method_steps).map(s=>`<li>${linkify(s)}</li>`).join('')}</ol>`;
     }
+    if(toArr(ss.basis).length) det += `<h4>修复依据</h4><ul class="reference-list">${toArr(ss.basis).map(b=>{const lbl=b.title||b.text||'';const lnk=b.url?`<a href="${esc(b.url)}" target="_blank" rel="noopener noreferrer">${esc(lbl)} ↗</a>`:esc(lbl);return `<li>${lnk}${(has(b.text)&&b.title)?`<p class="muted">${linkify(b.text)}</p>`:''}</li>`;}).join('')}</ul>`;
     if(has(det)) h += `<details><summary>修复细节与补丁摘录<span class="chevron" aria-hidden="true"></span></summary><div class="detail-body">${det}</div></details>`;
-
-    let vv = '';
-    if(has(ss.verification)) vv += `<h4>验证目标</h4><p>${linkify(ss.verification)}</p>`;
-    if(has(ss.rollback)) vv += `<h4>回退准备</h4><p>${linkify(ss.rollback)}</p>`;
-    if(toArr(ss.basis).length) vv += `<h4>修复依据</h4><ul>${toArr(ss.basis).map(b=>`<li>${linkify(b.text||b.title||'')}</li>`).join('')}</ul>`;
-    if(has(vv)) h += `<details><summary>验证与回退要求<span class="chevron" aria-hidden="true"></span></summary><div class="detail-body">${vv}</div></details>`;
     h += `</div>`;
   }
   h += `</article>`;
@@ -220,6 +217,27 @@ function renderFeatures(){
   h += `<div class="section-heading"><span class="section-no">02</span><h2 id="features-title">宕机现场有哪些特征</h2></div>`;
   h += `<p class="section-intro">先看现场发生了什么：异常、RIP 与主调用栈直接展示。</p>`;
 
+  /* 主机与运行环境（折叠） */
+  {
+    const envDefs = [];
+    const pushEnv = (k,v)=>{ if(has(v)) envDefs.push([k,String(v)]); };
+    pushEnv('主机', host.host_name);
+    pushEnv('内核版本', host.kernel_version);
+    pushEnv('CPU', host.cpu_model);
+    if(host.cpu_num!=null) pushEnv('CPU 数量', host.cpu_num);
+    pushEnv('内存', host.memory_size);
+    pushEnv('机型', host.machine_model);
+    pushEnv('现场进程', sceneContext());
+    pushEnv('崩溃位置', cf.rip_function ? (cf.rip_function+(cf.rip_offset?('+'+cf.rip_offset):'')) : '');
+    pushEnv('报告 ID', R.report_id);
+    if(envDefs.length){
+      h += `<div class="reading-group"><details><summary>主机与运行环境<span class="chevron" aria-hidden="true"></span></summary><div class="detail-body"><dl class="env-grid">`;
+      envDefs.forEach(([k,v])=>{ h += `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`; });
+      if(toArr(host.modules).length) h += `<dt>加载模块</dt><dd>${toArr(host.modules).length} 个</dd>`;
+      h += `</dl></div></details></div>`;
+    }
+  }
+
   const rows = [];
   const bt = cf.bug_type || '';
   rows.push(['异常类型', bt ? bt.replace(/_/g,' ') : '内核崩溃']);
@@ -237,76 +255,25 @@ function renderFeatures(){
   if(other.length) h += `<div><dt>其他异常信息</dt><dd>${other.map(o=>esc(o)).join('；')}</dd></div>`;
   h += `</dl>`;
 
-  /* 主调用栈 */
-  const stackFrames = buildStackFrames();
-  if(stackFrames.length){
-    h += `<h3 class="subsection-title">现场主调用栈</h3><div class="stack-view"><div class="stack-legend"><span>栈顶 / RIP 在上 · 调用由下向上 ↑</span><span>右侧为该层在本次故障中的作用</span></div><ol class="stack-frames">`;
-    stackFrames.forEach(f=>{
-      const cls = f.crash ? 'stack-row crash' : (f.focus ? 'stack-row focus' : 'stack-row');
-      const roleTitle = firstSentence(f.role) || fnName(f.fn);
-      h += `<li class="${cls}"><div class="stack-frame"><span>${esc(f.label)}</span><code>${esc(f.fn)}</code></div><span class="stack-pointer" aria-hidden="true">→</span><div class="stack-explain"><b>${esc(roleTitle)}</b>${has(f.role)?`<p>${linkify(f.role)}</p>`:''}${f.src?`<div class="source-route">${esc(f.src)}</div>`:''}</div></li>`;
-    });
-    h += `</ol></div>`;
-  }
   if(has(cf.call_trace_text)){
-    h += `<h3 class="subsection-title">原始崩溃日志</h3><div class="crash-log"><pre><code>${esc(cf.call_trace_text)}</code></pre></div>`;
+    h += `<details class="reading-group"><summary>原始崩溃日志<span class="chevron" aria-hidden="true"></span></summary><div class="detail-body"><div class="crash-log"><pre><code>${esc(cf.call_trace_text)}</code></pre></div></div></details>`;
+    h += `<details class="reading-group"><summary>如何阅读这段日志<span class="chevron" aria-hidden="true"></span></summary><div class="detail-body"><ul>`;
+    h += `<li><b>第 1 行「Unable to handle kernel ... at 0x...」</b>：崩溃类型（如空指针解引用）与故障地址——即内核访问到的无效内存地址。</li>`;
+    h += `<li><b>pc（程序计数器）</b>：CPU 崩时正在执行的那条指令的地址，格式是「函数名+偏移/总长」——函数名=崩溃所在的函数；+偏移=崩在距该函数开头多少字节处的那条指令；/总长=该函数的字节总数。这一行直接定位到「崩在哪个函数的哪条指令」。</li>`;
+    h += `<li><b>lr（Link Register）</b>：链接寄存器（返回地址），即调用崩溃函数的上层函数，用于还原调用关系。</li>`;
+    h += `<li><b>x0 ~ x29</b>：通用寄存器现场值，用于还原崩溃瞬间的参数与指针（如某个寄存器为 0 往往就是空指针）。</li>`;
+    h += `<li><b>Call trace</b>：调用栈，从崩溃点向上追溯到系统调用入口，看清完整调用链路。</li>`;
+    h += `<li><b>Code: (...)</b>：崩溃指令的机器码，括号内的那一条就是触发异常的实际指令。</li>`;
+    h += `</ul></div></details>`;
   }
   h += `</section>`;
   return h;
 }
 
-/* 从 'set_next_entity+0x20/0x6f8' 之类提取纯函数名 */
-function fnName(raw){ return String(raw||'').replace(/\(.*$/,'').split('+')[0].trim(); }
-
-/* 主调用栈：优先 call_trace_signature（栈顶 RIP 在上），逐层说明从 propagation_chain 匹配 */
-function buildStackFrames(){
-  const chain = Array.isArray(ra.propagation_chain) ? ra.propagation_chain : [];
-  const hopDetail = {};
-  chain.forEach(c=>{
-    [c.to, c.from].forEach(k=>{
-      const n = fnName(k);
-      if(n && hopDetail[n]==null && has(c.detail)) hopDetail[n]=c.detail;
-    });
-  });
-  const sig = cf.call_trace_signature;
-  if(Array.isArray(sig) && sig.length){
-    return sig.map((s,i)=>{
-      const name = fnName(s);
-      // 无匹配跳时的位置兜底说明（保证每帧都有描述，不因 propagation_chain 不全而留空）
-      let role = hopDetail[name] || '';
-      if(!has(role)){
-        role = i===0 ? '崩溃帧：程序计数器在此访问无效内存，触发内核异常。'
-             : i===1 ? '直接调用路径：调用上方崩溃函数的上一层。'
-             : i===sig.length-1 ? '系统调用入口：用户态经此陷入内核。'
-             : '调用链中间帧：由下方调用向上传递。';
-      }
-      return {
-        label: i===0 ? 'RIP · 崩溃点' : (i===1 ? '直接调用路径' : '调用路径'),
-        fn: s,
-        role: role,
-        src: '',
-        crash: i===0,
-        focus: i===1,
-      };
-    });
-  }
-  if(chain.length){
-    return chain.slice().reverse().map((c,i)=>({
-      label: i===0 ? 'RIP · 崩溃点' : (i===1 ? '直接调用路径' : '调用路径'),
-      fn: c.stack || ((c.from||'')+(c.to?(' → '+c.to):'')),
-      role: c.detail || c.fn_ctx || '',
-      src: [c.src_dir, c.file].filter(has).join('/')+(has(c.line)?(':'+c.line):''),
-      crash: !!c.crash,
-      focus: i===1,
-    }));
-  }
-  return [];
-}
-
 /* ===== ③ 判断依据 ===== */
 function renderEvidence(){
   let h = `<section class="section" id="evidence" aria-labelledby="evidence-title">`;
-  h += `<div class="section-heading"><span class="section-no">03</span><h2 id="evidence-title">为什么得出这个结论</h2></div>`;
+  h += `<div class="section-heading"><span class="section-no">04</span><h2 id="evidence-title">为什么得出这个结论</h2></div>`;
   const evs = toArr(deep.evidence).filter(has);
   const rf = toArr(ra.reasoning_flow);
   if(evs.length){
@@ -381,7 +348,7 @@ function laneConnector(a, b, row){
 /* ===== ④ 故障机制 ===== */
 function renderMechanism(){
   let h = `<section class="section" id="mechanism" aria-labelledby="mechanism-title">`;
-  h += `<div class="section-heading"><span class="section-no">04</span><h2 id="mechanism-title">故障是怎样发生的</h2></div>`;
+  h += `<div class="section-heading"><span class="section-no">03</span><h2 id="mechanism-title">故障是怎样发生的</h2></div>`;
   const mechTxt = has(deep.mechanism) ? firstSentence(deep.mechanism) : (has(ra.conclusion)?ra.conclusion:'');
   if(has(mechTxt)) h += `<p class="section-intro">${linkify(mechTxt)}</p>`;
 
@@ -476,14 +443,14 @@ function renderValue(key, value){
         out += `<div class="raw-row"><b>条目 ${idx+1}</b></div>`;
         Object.keys(item).forEach(k=>{ out += renderValue(k, item[k]); });
       } else if(item!=null && String(item).trim()!==''){
-        out += `<div class="raw-row"><p>${idx+1}. ${esc(String(item))}</p></div>`;
+        out += `<div class="raw-row"><p>${idx+1}. ${linkify(String(item))}</p></div>`;
       }
     });
   } else if(typeof value==='object'){
     out += `<div class="raw-row"><b>${esc(key)}</b></div>`;
     Object.keys(value).forEach(k=>{ out += renderValue(k, value[k]); });
   } else {
-    out += `<div class="raw-row"><b>${esc(key)}</b><p>${esc(String(value))}</p></div>`;
+    out += `<div class="raw-row"><b>${esc(key)}</b><p>${linkify(String(value))}</p></div>`;
   }
   return out;
 }
@@ -494,25 +461,6 @@ function renderAppendix(){
   h += `<div class="section-heading"><span class="section-no">05</span><h2 id="appendix-title">技术附件</h2></div>`;
   h += `<p class="section-intro">需要复核或继续排查时，再查看这些材料。</p>`;
 
-  /* 主机与运行环境 */
-  const envDefs = [];
-  const pushEnv = (k,v)=>{ if(has(v)) envDefs.push([k,String(v)]); };
-  pushEnv('主机', host.host_name);
-  pushEnv('内核版本', host.kernel_version);
-  pushEnv('CPU', host.cpu_model);
-  if(host.cpu_num!=null) pushEnv('CPU 数量', host.cpu_num);
-  pushEnv('内存', host.memory_size);
-  pushEnv('机型', host.machine_model);
-  pushEnv('现场进程', sceneContext());
-  pushEnv('崩溃位置', cf.rip_function ? (cf.rip_function+(cf.rip_offset?('+'+cf.rip_offset):'')) : '');
-  pushEnv('报告 ID', R.report_id);
-  if(envDefs.length){
-    h += `<div class="reading-group"><details><summary>主机与运行环境<span class="chevron" aria-hidden="true"></span></summary><div class="detail-body"><dl class="env-grid">`;
-    envDefs.forEach(([k,v])=>{ h += `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`; });
-    if(toArr(host.modules).length) h += `<dt>加载模块</dt><dd>${toArr(host.modules).length} 个</dd>`;
-    h += `</dl></div></details></div>`;
-  }
-
   /* 日志特征明细 */
   const lf = cf.log_features || {};
   const lfBlocks = [];
@@ -520,7 +468,7 @@ function renderAppendix(){
   if(relErrs.length){
     lfBlocks.push(`<h4>相关报错</h4><ul>` + relErrs.map(e=>{
       const src = esc(e.file||'') + (has(e.lines)?(' · L'+esc(e.lines)):'');
-      return `<li>${esc(e.line||'')} <span class="source-label">${src}</span>${has(e.relevance)?` ${verdictBadge(e.relevance)}`:''}</li>`;
+      return `<li>${esc(e.line||'')} <span class="source-label">${src}</span>${has(e.relevance)?` ${verdictBadge(e.relevance)}`:''}${has(e.desc)?`<span class="reason">${esc(e.desc)}</span>`:''}</li>`;
     }).join('') + `</ul>`);
   }
   const reps = toArr(lf.repeated);
@@ -528,7 +476,7 @@ function renderAppendix(){
     lfBlocks.push(`<h4>重复可疑日志</h4><ul>` + reps.map(r=>{
       const ref = r.ref || {};
       const src = esc(ref.file||'') + (has(ref.lines)?(' · L'+esc(ref.lines)):'');
-      return `<li><b>${esc(r.title||'')}</b>（${esc(r.count||'')} 次 · ${esc(r.window||'')}）${has(r.relevance)?verdictBadge(r.relevance):''}${has(r.note)?`<p class="muted">${esc(r.note)}</p>`:''}${src?`<span class="source-label">${src}</span>`:''}</li>`;
+      return `<li><b>${esc(r.title||'')}</b>（${esc(r.count||'')} 次 · ${esc(r.window||'')}）${has(r.relevance)?verdictBadge(r.relevance):''}${has(r.desc)?`<span class="reason">${esc(r.desc)}</span>`:''}${has(r.note)?`<p class="muted">${esc(r.note)}</p>`:''}${src?`<span class="source-label">${src}</span>`:''}</li>`;
     }).join('') + `</ul>`);
   }
   const others = toArr(lf.other);
@@ -536,29 +484,32 @@ function renderAppendix(){
     lfBlocks.push(`<h4>其它异常</h4><ul>` + others.map(o=>{
       const ref = o.ref || {};
       const src = esc(ref.file||'') + (has(ref.lines)?(' · L'+esc(ref.lines)):'');
-      return `<li><b>${esc(o.name||'')}</b>（${esc(o.count||'')} 条 · ${esc(o.span||'')}）${has(o.relevance)?verdictBadge(o.relevance):''}${has(o.note)?`<p class="muted">${esc(o.note)}</p>`:''}${src?`<span class="source-label">${src}</span>`:''}</li>`;
+      return `<li><b>${esc(o.name||'')}</b>（${esc(o.count||'')} 条 · ${esc(o.span||'')}）${has(o.relevance)?verdictBadge(o.relevance):''}${has(o.desc)?`<span class="reason">${esc(o.desc)}</span>`:''}${has(o.note)?`<p class="muted">${esc(o.note)}</p>`:''}${src?`<span class="source-label">${src}</span>`:''}</li>`;
     }).join('') + `</ul>`);
   }
   if(lfBlocks.length){
-    h += `<div class="reading-group"><details><summary>日志特征明细<span class="chevron" aria-hidden="true"></span></summary><div class="detail-body">${lfBlocks.join('')}</div></details></div>`;
+    h += `<div class="reading-group"><details><summary>日志特征明细<span class="chevron" aria-hidden="true"></span></summary><div class="detail-body"><p class="muted">本节汇总 vmcore-dmesg 里与本次崩溃相关的日志特征，按相关性分级（强相关=直接触发崩溃；一般相关=同子系统但非直接原因；弱相关=背景噪声），每条后附一句「这行日志是什么意思」的说明。</p>${lfBlocks.join('')}</div></details></div>`;
   }
 
-  /* 知识库案例 */
+  /* 知识库案例（三大类 + kind 细分） */
+  const kindLabel = {commit:'commit', patch:'patch', issue:'issue', bugzilla:'bugzilla', mail:'邮件', email:'邮件', meeting:'会议', 会议:'会议'};
   const kbGroups = [
-    ['internal_kernel_result','内部知识库案例'],
-    ['community_kernel_result','社区案例'],
-    ['online_result','在线/上游案例'],
+    {keys: ['internal_kernel_result'], label: '本地案例库'},
+    {keys: ['community_kernel_result', 'community_meetings'], label: '本地社区案例'},
+    {keys: ['online_result'], label: '在线案例'},
   ];
-  kbGroups.forEach(([key,label])=>{
-    const arr = toArr(diag[key]);
+  kbGroups.forEach(({keys,label})=>{
+    const arr = keys.reduce((acc,k)=>acc.concat(toArr(diag[k])), []);
     if(!arr.length) return;
     h += `<div class="reading-group"><details><summary>${label} · ${arr.length} 条<span class="chevron" aria-hidden="true"></span></summary><div class="detail-body">`;
     arr.forEach((c,i)=>{
       const title = c.title || c.subject || c.knowledge_id || ('条目'+(i+1));
       const verdict = c.verdict || '';
-      h += `<details><summary>${esc(title)}${verdictBadge(verdict)}${has(c.match_level)?` <span class="caption">${esc(c.match_level)}</span>`:''}<span class="chevron" aria-hidden="true"></span></summary><div class="detail-body">`;
+      const kind = c.kind || '';
+      const kindTag = kind ? `<span class="mc-kind">${esc(kindLabel[kind] || kind)}</span>` : '';
+      h += `<details><summary>${kindTag}${esc(title)}${verdictBadge(verdict)}${has(c.match_level)?` <span class="caption">${esc(c.match_level)}</span>`:''}<span class="chevron" aria-hidden="true"></span></summary><div class="detail-body">`;
       Object.keys(c).forEach(k=>{
-        if(k==='title' || k==='subject') return;
+        if(k==='title' || k==='subject' || k==='kind') return;
         h += renderValue(k, c[k]);
       });
       h += `</div></details>`;
@@ -616,7 +567,7 @@ function render(){
   document.getElementById('top-meta').textContent = '现场记录 · ' + (readTime(cf.crash_time)||'').slice(0,10);
   document.title = '宕机分析报告 · ' + (host.host_name||R.report_id||'');
   document.getElementById('main').innerHTML =
-    renderOverview() + renderFeatures() + renderEvidence() + renderMechanism() + renderAppendix();
+    renderOverview() + renderFeatures() + renderMechanism() + renderEvidence() + renderAppendix();
   initNav();
   initButtons();
 }
