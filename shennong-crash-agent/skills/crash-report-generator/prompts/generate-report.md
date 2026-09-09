@@ -120,7 +120,7 @@
        - `t`：阶段标签（用户态 / 陷入 / 内核态 / 内核态→硬件 等），不是单调秒数；
         - `val`：关键值（寄存器/指针/变量）；`full`：一句话说明（供 hover 展示细节）；
         - `g`：**全局变量变化**（数组，每条 `{v,n,t,dir,f}`）——`v`=变量 key（**必须与 `gvars`/`ginit` 的 `k` 一致**）、`n`=变量显示名（与 `gvars` 的 `n` 一致）、`t`=该事件之后变量的新值、`dir`=值变化方向（`up` 上升 / `down` 下降）、`f`=变化前值（可选）。**只有该事件真正改变了该变量的取值时才写一条 `g`**，让全局变量列随时间看到演变（如锁「未持有」→`dir:up`「已持有」、指针 `?`→`dir:down`「0x0(NULL)」、计数器 5→4）。反例（错误）：把 `v` 写成值、`t` 写成「任务/调度」这类标签、`dir` 写 `self`——都会导致全局变量列不随时间变化。
-   - **`propagation_chain`**（崩溃链路逐跳，**必须拆成一步步，每步一个栈帧↔源码对应**）：每跳 `{from,to,type,src_dir,file,line,stack,fn_ctx,crash,source_url,detail,evidence,params[]}`。
+   - **`propagation_chain`**（崩溃链路逐跳，**必须拆成一步步，每步一个栈帧↔源码对应**）：每跳 `{from,to,type,src_dir,file,line,stack,fn_ctx,crash,source_url,detail,evidence,params[]}`。**`from`/`to` 必须覆盖 `call_trace_signature` 里的每一个函数名（栈顶到栈底每帧都要有对应跳）**，否则查看器「现场主调用栈」中未覆盖的帧会缺少说明。
      - `from`/`to` 用**函数名**（如 `schedule`→`__schedule`、`pick_next_task_fair`→`set_next_entity`），崩溃最后一跳可写 `set_next_entity`→`空指针解引用→panic`；**不要写「用户态/内核态/崩溃点」这类状态名**；
      - `stack` 写**栈帧↔源码行**，形如 `set_next_entity+0x20/0x6f8 (L2660) · 指令 (b9404280) (L2687)`，把崩溃栈上的函数/偏移对应到日志行号；
      - `src_dir`/`file`/`line` 给**源码目录/文件/行号或函数**（如 `kernel/sched` / `fair.c` / `≈7762`）；

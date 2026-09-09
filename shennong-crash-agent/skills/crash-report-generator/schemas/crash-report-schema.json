@@ -669,18 +669,18 @@
                 "type": "object",
                 "additionalProperties": false,
                 "properties": {
-              "verdict": {
-                "type": "string"
-              },
-              "relevance": {
-                "type": "string",
-                "enum": [
-                  "强相关",
-                  "部分相关",
-                  "弱相关"
-                ],
-                "description": "该上游 commit/issue/邮件与本次崩溃的相关度：强相关=补丁直接修复崩溃函数/路径(confirmed)；部分相关=同子系统不同触发点(same_area)；弱相关=与崩溃路径无关或原文获取失败(not_relevant/unverified)。"
-              },
+                  "verdict": {
+                    "type": "string"
+                  },
+                  "relevance": {
+                    "type": "string",
+                    "enum": [
+                      "强相关",
+                      "部分相关",
+                      "弱相关"
+                    ],
+                    "description": "该上游 commit/issue/邮件与本次崩溃的相关度：强相关=补丁直接修复崩溃函数/路径(confirmed)；部分相关=同子系统不同触发点(same_area)；弱相关=与崩溃路径无关或原文获取失败(not_relevant/unverified)。"
+                  },
                   "text": {
                     "type": "string"
                   }
@@ -702,7 +702,35 @@
             "evidence": {
               "type": "array",
               "items": {
-                "type": "string"
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string"
+                  },
+                  "summary": {
+                    "type": "string"
+                  },
+                  "reasoning": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "step": {
+                          "type": "string"
+                        },
+                        "detail": {
+                          "type": "string"
+                        },
+                        "evidence": {
+                          "type": "string"
+                        },
+                        "conclusion": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
               }
             },
             "confidence": {
@@ -802,10 +830,6 @@
               "hotpatch": {
                 "type": "string"
               },
-              "history": {
-                "type": "object",
-                "additionalProperties": true
-              },
               "corroboration": {
                 "type": "array",
                 "items": {
@@ -832,6 +856,45 @@
                   "string",
                   "object"
                 ]
+              },
+              "bug_type": {
+                "type": "string"
+              },
+              "bug_key": {
+                "type": "string"
+              },
+              "rip": {
+                "type": "string"
+              },
+              "rip_function": {
+                "type": "string"
+              },
+              "rip_offset": {
+                "type": "string"
+              },
+              "related_modules": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "call_trace_signature": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "call_trace_text": {
+                "type": "string"
+              },
+              "history_wiki": {
+                "type": "string"
+              },
+              "first_seen": {
+                "type": "string"
+              },
+              "last_seen": {
+                "type": "string"
               }
             }
           }
