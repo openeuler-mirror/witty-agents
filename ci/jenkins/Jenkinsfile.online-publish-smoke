@@ -172,6 +172,7 @@ pipeline {
             steps {
                 sh 'node ci/scripts/run-agent-phase.mjs --phase=artifact-gates'
                 sh 'node ci/scripts/run-agent-phase.mjs --phase=install-contract'
+                sh 'node ci/tests/test-publish-smoke-safety.mjs'
             }
         }
 

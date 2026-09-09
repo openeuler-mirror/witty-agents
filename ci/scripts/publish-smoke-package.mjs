@@ -87,7 +87,25 @@ function queryTagVersion(packageName, distTag, registry, environment) {
   if (result.status === 0) return { state: "ready", version: result.stdout.trim() }
   const output = `${result.stderr}\n${result.stdout}`
   if (output.includes("E404")) return { state: "not-found", version: null }
-  return { state: "retryable-error", version: null }
+  return { state: "retryable-error", version: null, detail: output.trim() }
+}
+
+export function decideLatestTagAction(before, after, publishedVersion) {
+  const knownStates = new Set(["ready", "not-found"])
+  if (!knownStates.has(before.state)) {
+    throw new Error(`cannot protect latest: pre-publish lookup returned ${before.state}`)
+  }
+  if (!knownStates.has(after.state)) {
+    throw new Error(`cannot protect latest: post-publish lookup returned ${after.state}`)
+  }
+  if (before.state === "ready") {
+    return after.state === "ready" && after.version === before.version
+      ? "preserved"
+      : "restore-previous"
+  }
+  if (after.state === "not-found") return "absent"
+  if (after.version === publishedVersion) return "remove-auto-created"
+  throw new Error(`cannot remove unexpected latest tag pointing to ${after.version}`)
 }
 
 function sleep(milliseconds) {
@@ -130,6 +148,57 @@ async function waitForTag(packageName, version, distTag, registry, environment) 
     }
   }
   throw new Error(`${packageName}: dist-tag ${distTag} did not point to ${version} after ${POLL_ATTEMPTS} attempts (last value: ${lastVersion || "unavailable"})`)
+}
+
+async function waitForTagAbsent(packageName, distTag, registry, environment) {
+  let lastVersion = null
+  for (let attempt = 1; attempt <= POLL_ATTEMPTS; attempt += 1) {
+    const result = queryTagVersion(packageName, distTag, registry, environment)
+    lastVersion = result.version
+    if (result.state === "not-found") {
+      console.log(`PASS: dist-tag ${distTag} is absent`)
+      return
+    }
+    if (attempt < POLL_ATTEMPTS) {
+      const detail = result.version ? `currently ${result.version}` : result.state
+      console.log(`Waiting for dist-tag ${distTag} removal (${attempt}/${POLL_ATTEMPTS}, ${detail})`)
+      await sleep(POLL_INTERVAL_MS)
+    }
+  }
+  throw new Error(`${packageName}: dist-tag ${distTag} was not removed after ${POLL_ATTEMPTS} attempts (last value: ${lastVersion || "unavailable"})`)
+}
+
+async function protectLatestTag(packageName, publishedVersion, latestBefore, registry, environment) {
+  const latestAfterPublish = queryTagVersion(packageName, "latest", registry, environment)
+  const action = decideLatestTagAction(latestBefore, latestAfterPublish, publishedVersion)
+
+  if (action === "restore-previous") {
+    npmOutput([
+      "dist-tag", "add", `${packageName}@${latestBefore.version}`, "latest", "--registry", registry,
+    ], environment)
+    await waitForTag(packageName, latestBefore.version, "latest", registry, environment)
+    console.log(`PASS: restored latest -> ${latestBefore.version}`)
+  } else if (action === "remove-auto-created") {
+    npmOutput(["dist-tag", "rm", packageName, "latest", "--registry", registry], environment)
+    await waitForTagAbsent(packageName, "latest", registry, environment)
+    console.log("PASS: removed npm's automatically created latest tag")
+  } else if (action === "preserved") {
+    console.log(`PASS: latest remains ${latestBefore.version}`)
+  } else {
+    console.log("PASS: latest remains absent")
+  }
+
+  const latestFinal = queryTagVersion(packageName, "latest", registry, environment)
+  const expectedState = latestBefore.state
+  const expectedVersion = latestBefore.version
+  if (latestFinal.state !== expectedState || latestFinal.version !== expectedVersion) {
+    throw new Error("latest dist-tag did not return to its pre-publish state")
+  }
+  return {
+    action,
+    before: latestBefore.version,
+    after: latestFinal.version,
+  }
 }
 
 async function downloadAndVerify(coordinate, sourcePath, expectedIntegrity, registry, environment, workingRoot) {
@@ -258,6 +327,11 @@ async function main() {
   try {
     const npmUser = npmOutput(["whoami", "--registry", registry], environment)
     console.log(`npm authenticated user: ${npmUser}`)
+    const latestBefore = queryTagVersion(registryPackage.packageName, "latest", registry, environment)
+    if (latestBefore.state === "retryable-error") {
+      throw new Error(`cannot verify latest before publishing: ${latestBefore.detail || "npm view failed"}`)
+    }
+    console.log(`latest before publish: ${latestBefore.version || "absent"}`)
     const current = queryIntegrity(coordinate, registry, environment)
     let action = "published"
     if (current.state === "ready") {
@@ -281,6 +355,13 @@ async function main() {
 
     await waitForIntegrity(coordinate, expectedIntegrity, registry, environment)
     await waitForTag(registryPackage.packageName, registryPackage.version, distTag, registry, environment)
+    const latestTag = await protectLatestTag(
+      registryPackage.packageName,
+      registryPackage.version,
+      latestBefore,
+      registry,
+      environment,
+    )
     const download = await downloadAndVerify(
       coordinate,
       registryPackage.path,
@@ -299,6 +380,7 @@ async function main() {
       packageName: registryPackage.packageName,
       version: registryPackage.version,
       distTag,
+      latestTag,
       registry,
       builtOnArchitecture: actualArchitecture,
       sourcePackageName: report.packageName,
@@ -318,7 +400,11 @@ async function main() {
   }
 }
 
-main().catch((error) => {
-  console.error(`[publish-smoke] ${error.message}`)
-  process.exit(1)
-})
+const executedDirectly = process.argv[1]
+  && resolve(process.argv[1]) === fileURLToPath(import.meta.url)
+if (executedDirectly) {
+  main().catch((error) => {
+    console.error(`[publish-smoke] ${error.message}`)
+    process.exit(1)
+  })
+}

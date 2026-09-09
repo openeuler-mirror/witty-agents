@@ -242,6 +242,10 @@ ci/jenkins/Jenkinsfile.online-publish-smoke
 - 版本必须是 prerelease，例如 `0.10.5-ci.aarch64.0`；
 - dist-tag 不能是 `latest`，例如 ARM 使用 `arm-test`。
 
+发布脚本会在操作前后核对 `latest`。已有 `latest` 必须保持原版本；如果 npm 在包的首次
+发布时自动创建了 `latest`，脚本会移除该标签并确认恢复到发布前状态。测试发布只更新
+`arm-test` 或 `x86-test`。
+
 发布 Job 必须指向已经复核、只有受信任维护者能写入的分支或提交，并限制 Job 的构建
 权限。`npm-token` 建议使用只允许发布该测试包的 granular token；不要让发布 Job 直接
 运行来自外部 PR 的未复核 Jenkinsfile 或脚本。
