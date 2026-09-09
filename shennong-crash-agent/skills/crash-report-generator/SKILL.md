@@ -24,7 +24,7 @@ allowed-tools: Bash(python3:*) Bash(pip:*) Bash(cat:*) Bash(ls:*) Bash(rg:*) Bas
 
 完整定义见 `schemas/crash-report-schema.json`，示例见 `sample-crash-report.json`。
 
-独立 HTML（`crash-report.html`）将报告呈现为七个章节：执行摘要 → 崩溃详情（含日志特征）→ 事件时序图（对象泳道 + 全局变量列）→ 根因分析（三部分）→ 知识库匹配（三组）→ 诊断工作流追踪。
+独立 HTML（`crash-report.html`）将报告呈现为五个章节：故障总览 → 宕机特征 → 故障机制（事件时序图）→ 判断依据 → 技术附件。判断依据章节按 `deep.evidence[]` 逐条渲染，每条核心依据必须携带独立的 `reasoning[]` 推理链；不再把多条依据合并成一个页面级总推理链。
 
 ## `diagnosis_repair_result` 的填写规则
 
@@ -55,11 +55,12 @@ allowed-tools: Bash(python3:*) Bash(pip:*) Bash(cat:*) Bash(ls:*) Bash(rg:*) Bas
 6. **根因验证** — 在核验调用栈完整性、模块一致性、源码映射后生成 `root_cause_analysis.json`；若不完整则再跑一轮。该节应由 **LLM 综合所有证据总结**，产出与 report.html 第 1/3/4 章一致的字段：
    - **`conclusion`**（**一句到三句**自然中文，叙事化、通俗、书面、少术语，**尽量短、只留结论**）：用「发生了什么 → 为什么 → 与业务/硬件是否有关」讲清场景与缺陷大类。**禁止**函数名/寄存器/标志常量/十六进制/地址/版本号/commit 号/进程名/PID 等实现细节；社区 `verdict=confirmed` 时去掉"推测"、以"（社区补丁已确认）"收尾，否则以"（推测）"结尾。
    - **`standard_solution`**（结构化对象）：`type`（patch/config/upgrade/none 四选一）/ `claim_tag` / `short`（**必须分「要做什么·为什么·怎么做」三句，每句一到两句话，通俗、书面、少术语，只写结论性表述**，不用函数名/寄存器/十六进制/文件行/循环位置）/ `basis`（修复依据）/ `fixed_in`（版本判定）/ `patch_list`（补丁 diff）/ `method_steps`（合入步骤）/ `detail`（完整说明）/ `rollback`（回退方案，**必填**：补丁/配置失败或回归时的回退步骤与还原命令）/ `verification`（验证方案，**必填**：编译无告警、压力回归、观察 dmesg 无新 Oops、监控同类 panic 建簇等）。`patch_list[].mode` 三选一：`full`/`part`/`pick`；`patch_list[].diff` **必须给可直接合入的具体补丁示例（diff 格式，含 +/- 行），禁止留空**；`type=patch` 时必须至少一条 `patch_list`。
-   - **`temporary_workaround`**（结构化对象）：`type`（config=命令行/配置规避、none=无方案）/ `summary` / `steps` / `risk` / `detail`。无有效方案时 `type=none`、`summary` 写「无」；有方案时 `steps` 优先给 shell 命令、改内核/服务配置、换机/分散部署等可落地手段。
+   - **`temporary_workaround`**（结构化对象）：`type`（config=命令行/配置规避、none=无方案）/ `case_refs` / `summary` / `steps` / `risk` / `detail`。只有检索到的案例明确提供了该临时措施时，才填写 `case_refs`（案例标识或标题）并展示临时缓解卡片；没有案例依据时 `case_refs=[]`，即使有通用建议也不在报告中展示。无有效方案时 `type=none`、`summary` 写「无」；有案例依据的方案时 `steps` 优先给 shell 命令、改内核/服务配置、换机/分散部署等可落地手段。
    - **`event_scene`**（事件时序图，三类泳道：进程/内核/硬件，**每类可有多个对象**）：`participants`（`id` 简短英文如 proc_a/cpu92/timer0、`name` 具体到进程名+PID/CPU 序号/硬件类型、`type` 三选一 process/kernel/hardware、`init`、`tip` 供 hover 展示 PID/名称/内核序号/硬件类型）/ `gvars`+`ginit`（全局变量列：`gvars[].k`=变量 key、`n`=显示名，`ginit[].k`=变量 key、`v`=初始值，**选会随时间变化的变量**）/ `anchor`（**ISO 8601 带毫秒**，如 `2026-07-08T06:20:00.000`，禁止写非时间字符串）/ `events`（每条 `m` 四选一 user/sys/kern/hw 区分用户态·内核态·硬件、`from`/`to` 用 participant id 表示泳道箭头、指向自身时 from=to 查看器画弯折回环箭头、`kind` 枚举 call/irq/softirq/hw/mutex/alloc/race/free/global/crash、`dt_ms` 相对 anchor 递增且不全 0、`t` 阶段标签非单调秒数、`val`/`full` 供 hover、`g[]` 全局变量变化 `{v=变量 key(同 gvars.k), n=显示名, t=新值, dir=up/down, f=旧值}`，**只在事件真正改变该变量时写一条 g，让全局变量列随时间演变**）。
    - **`propagation_chain`**（崩溃链路**必须拆成一步步**，每步一个栈帧↔源码对应）：每跳给 栈帧↔源码（`src_dir`/`file`/`line`/`fn_ctx`/`stack`，`from`/`to` 用**函数名**，`stack` 形如 `set_next_entity+0x20/0x6f8 (L2660)`）、关键参数 `params`（**寄存器值 ↔ 实际变量/形参**：`io`/`reg`/`n`/`formal`/`v`/`bad`，异常参数标红，**每个有实参的跳都要给 params**）、`detail`/`evidence`；**每一跳都应给出 `source_url`**（在线源码/commit/patch 链接）便于跳转对照；最后一跳写明二进制↔源码行对照。
-   - **`reasoning_flow`**（三部分根因）：`stage` 用枚举 `stack`/`hypothesis`（①崩溃特征分析，两步都要有）、`path_analysis`（②崩溃链路分析，`path_mini` **必须等于 `propagation_chain` 完整数组，禁止 null/空数组/函数名数组**）、`internal`/`community`/`commit`/`source_compare`/`conclusion`（③相关案例分析，**执行了对应检索就必须有对应 stage，未命中也要保留该 stage 并如实写「未检索到…」，最后以 `conclusion` 收尾**）；每步 `refs` 用 `anchor`（kb-internal/kb-mail/kb-meeting/kb-bugzilla/kb-commit）跳转到第 5 章对应案例卡。
-   - **`deep`**（根因结论详细）：`lead` / `mechanism` / `evidence` / `confidence` / `scope`。
+   - **`deep.evidence[]`**（逐条核心依据）：每条使用对象 `{title, summary, reasoning[]}`；`reasoning[]` 是该依据自己的证据推理链，每步填写 `step`/`detail`/`evidence`，最后一步可填 `conclusion`。HTML 会为每条依据单独提供展开面板。
+   - **`reasoning_flow`**（结构化后端追踪，schema 必填）：保留三部分根因阶段，供机器校验和原始数据追溯；HTML 不再将其作为独立的“总体诊断推理链”展示，避免与 `deep.evidence[].reasoning[]` 重复。
+   - **`deep`**（根因结论详细）：`lead` / `mechanism_summary` / `judgment` / `mechanism` / `evidence` / `confidence` / `scope`。其中 `mechanism_summary` 是给读者看的 1–3 句人话概述，只解释发生了什么、为什么崩溃、影响是什么；`judgment` 是当前根因判断和处置方向；`mechanism` 保留技术触发链，供泳道图下方的详细链条使用，三者不可互相替代。
     完整规则与示例见 `prompts/generate-report.md`。
 7. **工作流追踪** — 基于**真实会话数据**生成 `workflow_trace.json`：
    a. 运行 `scripts/extract_workflow.py` 提取当前 opencode 会话的执行时间线（用 `opencode export <sessionID>` 获取真实工具调用、时间戳、耗时、状态与 agent 的推理链）。
