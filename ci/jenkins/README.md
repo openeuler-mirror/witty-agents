@@ -52,14 +52,18 @@ Jenkins Job
 - `witty-agents-ci-runtime:oe2403sp4-node20-py311` 提供 openEuler、Node.js、Python 和
   安装验收依赖，真正执行 Agent 构建。
 
-如果服务器已有旧运行镜像，可以在 `.runtime.env` 填写：
+首次部署时，`bootstrap.sh` 默认读取 `Dockerfile.runtime`，使用 openEuler 基础镜像为
+当前服务器的原生架构构建运行镜像。x86_64 服务器生成 x86_64 镜像，aarch64 服务器
+生成 aarch64 镜像，不使用跨架构模拟。
+
+如果服务器已有旧运行镜像，也可以在 `.runtime.env` 填写：
 
 ```text
 WITTY_AGENTS_RUNTIME_IMAGE_SOURCE=<旧镜像名称>
 ```
 
-`bootstrap.sh` 会为它增加通用标签，不会删除旧标签。若服务器没有可用运行镜像，
-Jenkins 仍可启动，但第一次构建会因为找不到运行镜像而失败。
+`bootstrap.sh` 会为它增加通用标签，不会删除旧标签。若不希望脚本自动构建运行镜像，
+可设置 `WITTY_AGENTS_BUILD_RUNTIME_IMAGE=false`。自动构建需要先保证服务器有足够磁盘空间。
 
 ## 3. 从 clone 仓库到启动 Jenkins
 

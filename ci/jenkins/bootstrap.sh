@@ -37,6 +37,9 @@ JENKINS_DATA_ROOT=${JENKINS_DATA_ROOT:-/home/witty-agents-jenkins}
 JENKINS_HTTP_PORT=${JENKINS_HTTP_PORT:-18081}
 JENKINS_ADMIN_PASSWORD_SOURCE=${JENKINS_ADMIN_PASSWORD_SOURCE:-./secrets/admin-password}
 WITTY_AGENTS_RUNTIME_IMAGE=${WITTY_AGENTS_RUNTIME_IMAGE:-witty-agents-ci-runtime:oe2403sp4-node20-py311}
+WITTY_AGENTS_BUILD_RUNTIME_IMAGE=${WITTY_AGENTS_BUILD_RUNTIME_IMAGE:-true}
+WITTY_AGENTS_RUNTIME_BASE_IMAGE=${WITTY_AGENTS_RUNTIME_BASE_IMAGE:-openeuler/openeuler:24.03-lts}
+WITTY_AGENTS_OPENCODE_VERSION=${WITTY_AGENTS_OPENCODE_VERSION:-1.18.23}
 
 if [[ "${JENKINS_ADMIN_PASSWORD_SOURCE}" = /* ]]; then
     PASSWORD_FILE=${JENKINS_ADMIN_PASSWORD_SOURCE}
@@ -104,9 +107,17 @@ if ! docker image inspect "${WITTY_AGENTS_RUNTIME_IMAGE}" >/dev/null 2>&1; then
         && docker image inspect "${WITTY_AGENTS_RUNTIME_IMAGE_SOURCE}" >/dev/null 2>&1; then
         docker tag "${WITTY_AGENTS_RUNTIME_IMAGE_SOURCE}" "${WITTY_AGENTS_RUNTIME_IMAGE}"
         echo "已创建通用运行镜像标签：${WITTY_AGENTS_RUNTIME_IMAGE}"
+    elif [[ "${WITTY_AGENTS_BUILD_RUNTIME_IMAGE}" = "true" ]]; then
+        echo "正在为当前 $(uname -m) 架构构建流水线运行镜像：${WITTY_AGENTS_RUNTIME_IMAGE}"
+        docker build \
+            --build-arg "OPEN_EULER_IMAGE=${WITTY_AGENTS_RUNTIME_BASE_IMAGE}" \
+            --build-arg "OPENCODE_VERSION=${WITTY_AGENTS_OPENCODE_VERSION}" \
+            --tag "${WITTY_AGENTS_RUNTIME_IMAGE}" \
+            --file "${SCRIPT_DIR}/Dockerfile.runtime" \
+            "${SCRIPT_DIR}"
     else
         echo "警告：未找到流水线运行镜像 ${WITTY_AGENTS_RUNTIME_IMAGE}。" >&2
-        echo "Jenkins 可以启动，但首次构建前必须导入该镜像，或在 .runtime.env 配置 WITTY_AGENTS_RUNTIME_IMAGE_SOURCE。" >&2
+        echo "Jenkins 可以启动，但首次构建前必须导入该镜像、配置 WITTY_AGENTS_RUNTIME_IMAGE_SOURCE，或启用 WITTY_AGENTS_BUILD_RUNTIME_IMAGE。" >&2
     fi
 fi
 
