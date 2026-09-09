@@ -18,14 +18,9 @@
 ### 你的产出
 
 - 一份符合 `DiagnoseReport` 结构的标准化 JSON 诊断报告，最终渲染为自包含的 `crash-report.html`（可直接 file:// 打开）。
-- 报告由七个章节构成：
-   1. **执行摘要**：`结论`（问题是什么 → 要做什么 → 为什么，通俗、书面、少术语）+ `标准解决方案`（`standard_solution` 结构化对象：补丁/升级/配置命令 + 修复依据 + 补丁 diff + 合入步骤 + 完整说明 `detail` + 回退方案 `rollback` + 验证方案 `verification`）+ `临时规避方案`（`temporary_workaround`：无方案写「无」；有方案给 shell/改配置/换机等可执行步骤 + 风险 + 回退）；
-   2. **崩溃详情**：RIP / 签名 / 模块等基础字段 + `日志特征`（`log_features`：相关报错、重复可疑日志、其它异常，每条标注来源文件与行号，并标注相关性等级 `relevance`＝强相关/一般相关/弱相关）；
-  3. **事件时序图**：`event_scene`（对象泳道：进程/内核/硬件，携带具体名称、PID、CPU 序号）+ 全局变量列（随事件变化的取值）+ 用户态/内核态/硬件区分；
-  4. **根因分析**（`root_cause_analysis`，分三部分）：①崩溃特征分析（含函数栈与寄存器）；②崩溃链路分析（`propagation_chain` 逐跳：栈帧 ↔ 源码 目录/文件/行号/函数，实参/寄存器 ↔ 源码形参，异常参数标红）；③相关案例分析（内部案例 + 社区案例 + 上游 commit + 源码对照 → 结论）；
-  5. **知识库匹配**（`diagnosis_repair_result`）：内部知识库 / 社区邮件·会议纪要·Bugzilla / 上游 commit 三组，每条附原文网址、关联 commit、关键片段（解释 + 原文）；
-  6. **诊断工作流追踪**（`workflow_trace`）：完整 Agent 分析过程（特征提取 → 假设 → 验证 → 案例匹配 → 试错 → 结论），每步标注来源、交叉验证、工具与耗时；
-  7. 报告元信息：`report_id`、`parse_log_range`。
+- 报告正文由五个章节构成：①故障总览；②宕机特征；③故障是怎样发生的（机制概述、事件时序、当前判断）；④为什么得出这个结论（逐条证据推理链）；⑤技术附件（调用链、日志、案例、工作流和原始报告）。
+- `temporary_workaround.case_refs` 为空时不展示临时缓解卡片；只有检索案例明确提供该措施时才填写案例引用。
+- `event_scene` 使用固定骨架+有限推断：泳道固定为 process/kernel/hardware，CFS、CPU、hrtimer 归入 kernel；主链路建议 4–8 步。事件用 `evidence_level` 标记 L1（直接证据）/L2（强推断）/L3（机制补全），主图只放 L1/L2；只有两个并发路径、共享状态和明确交错关系同时成立时才使用 `race`。
 
 ---
 
@@ -129,8 +124,8 @@
 6. \`root_cause_analysis.json\`：**LLM 基于上下文总结生成**。在已有多源证据（基线、崩溃特征、内部/社区案例、日志检测、源码分析、在线 commit/patch/邮件）基础上，产出与 report.html 第 1/3/4 章一致的字段：
    - \`conclusion\`：**一句到三句**自然中文、叙事化、通俗、书面、少术语（「发生了什么→为什么→与业务/硬件是否有关」），**尽量短、只留结论**，**禁止**函数名/寄存器/标志常量/十六进制/地址/版本号/commit 号/进程名/PID 等实现细节；
    - \`standard_solution\`：结构化对象（type/claim_tag/short「要做什么·为什么·怎么做」/basis/fixed_in/patch_list/method_steps/detail/rollback/verification），主述区通俗、书面、少术语；\`short\` **必须分「要做什么·为什么·怎么做」三句，每句一到两句话、只写结论性表述**，不用函数名/寄存器/十六进制/文件行/循环位置（专业细节放 patch_list/method_steps/detail）；\`type\` 四选一 patch/config/upgrade/none，\`patch_list[].mode\` 三选一 full/part/pick，\`patch_list[].diff\` **必须给可直接合入的具体补丁示例（diff 格式含 +/- 行），禁止留空**，\`type=patch\` 时必须至少一条 patch_list；\`detail\` 写完整说明（通俗、书面、少术语），\`rollback\`（**必填**）写补丁/配置失败或回归时的回退步骤与还原命令，\`verification\`（**必填**）写验证方案（编译无告警、压力回归、观察 dmesg 无新 Oops、监控同类 panic 建簇等）；
-   - \`temporary_workaround\`：结构化对象（type/summary/steps/risk/detail）；无方案 type=none 且 summary 写「无」，有方案 steps 给 shell/改配置/换机等可执行命令；
-   - \`event_scene\`：事件时序图，三类泳道（进程/内核/硬件，**每类可有多个对象**）；\`participants\` 的 \`type\` 三选一 process/kernel/hardware，\`name\`/\`tip\` 带进程 PID/名称、内核序号、硬件类型供 hover；\`anchor\` 用 ISO 8601 带毫秒（如 2026-07-08T06:20:00.000）；\`gvars\`/\`ginit\` 全局变量列（\`k\`=key、\`n\`=显示名、\`v\`=初始值，**选会随时间变化的变量**）；\`events\` 每条 \`m\` 四选一 user/sys/kern/hw（区分用户态/内核态/硬件）、\`from\`/\`to\` 用 participant id 表示泳道箭头（指向自身 from=to，画弯折回环箭头）、\`kind\` 枚举 call/irq/softirq/hw/mutex/alloc/race/free/global/crash、\`dt_ms\` 相对 anchor 递增且不全 0、\`g\` 全局变量变化（\`v\`=变量 key 同 gvars.k、\`n\`=显示名、\`t\`=新值、\`dir\`=up/down，**只在事件真正改变该变量时写一条 g**）；
+   - \`temporary_workaround\`：结构化对象（type/case_refs/summary/steps/risk/detail）；只有案例明确提供该措施时才填写 case_refs，否则置空并隐藏临时缓解卡片；无方案 type=none 且 summary 写「无」；
+   - \`event_scene\`：固定骨架+有限推断的事件时序图；泳道固定为 process/kernel/hardware，CFS、CPU、hrtimer 归入 kernel；主链路建议 4-8 步。每条事件增加 \`evidence_level\`（L1 直接证据/L2 强推断/L3 机制补全）和 \`evidence\`，主图只放 L1/L2，L3 只能放 \`full\` 并标注推断；只有两个并发路径、共享状态和明确交错关系同时成立时才使用 race。\`participants\`、\`anchor\`、\`gvars\`/\`ginit\` 与 \`events\` 的其他字段保持原有定义；
    - \`propagation_chain\`：崩溃链路**必须拆成一步步**（from/to/type/src_dir/file/line/stack/fn_ctx/crash/source_url/detail/evidence/params），\`from\`/\`to\` 用函数名、\`stack\` 写 \`func+offset/size (L行号)\`、params 给**寄存器值 ↔ 实际变量/形参**（io/reg/n/formal/v/bad，异常参数 bad=true 标红，每个有实参的跳都要给 params）；**每一跳都应给 source_url（在线源码/commit/patch 链接）**；
    - \`reasoning_flow\`：三部分根因，\`stage\` 必须用枚举 \`stack\`/\`hypothesis\`（①崩溃特征分析含函数栈，**两步都要有**）、\`path_analysis\`（②崩溃链路分析，\`path_mini\` **必须等于 propagation_chain 完整数组，禁止 null/空数组/函数名数组**）、\`internal\`/\`community\`/\`commit\`/\`source_compare\`/\`conclusion\`（③相关案例分析，**执行了对应检索就必须有对应 stage，未命中也要保留该 stage 并如实写「未检索到…」，最后以 conclusion 收尾**），refs 用 anchor 跳第 5 章案例卡；
    - \`deep\`：根因结论详细（lead/mechanism/evidence/confidence/scope）。
