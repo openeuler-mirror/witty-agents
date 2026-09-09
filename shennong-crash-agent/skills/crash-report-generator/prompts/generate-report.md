@@ -107,7 +107,7 @@
       - `detail`（完整说明）：用通俗、书面、少术语的语言把「发生了什么、为什么要这么修、修的是什么、影响面」讲完整（专业细节收进可展开的补充信息）。
       - `rollback`（回退方案，**必填**）：说明补丁/配置合入失败或引发回归时的回退动作（如卸载热补丁、还原 sysctl/启动参数、回滚到原内核包、重启回退等），给出可执行命令或步骤；若为纯配置/命令行修复，给出还原命令。
       - `verification`（验证方案，**必填**）：说明合入后如何验证修复生效（编译无告警、长时压力回归、观察 dmesg 无新 Oops、监控同类 panic 建簇统计、验证触发路径不再崩溃等），给出具体验证口径。
-   - **`temporary_workaround`**（结构化对象）：`type`（`config`=命令行/配置规避、`none`=无有效临时规避方案）、`summary`、`steps`（命令/操作）、`risk`、`detail`。**无有效方案时** `type` 取 `none`、`summary` 写「无」、`steps` 置空。有方案时 `steps` 必须给出**可直接执行**的命令/操作，优先考虑：① 内核/系统配置（`sysctl` / `echo > /proc/sys/...` / 内核启动参数）；② 服务与资源控制（`systemctl set-property <svc> TasksMax=<n>`、`taskset`/`numactl` 绑核、`cgroup` 限流）；③ 换机/分散部署/流量切走（同局点避免同业务集中）；④ 关闭触发特性（`modprobe.blacklist` / 特性开关降级）；⑤ 压概率（降低并发、延长周期、避开触发路径）。`risk` 说明无法根治的原因与回退方式。
+   - **`temporary_workaround`**（结构化对象）：`type`（`config`=命令行/配置规避、`none`=无有效临时规避方案）、`case_refs`、`summary`、`steps`（命令/操作）、`risk`、`detail`。只有某个检索案例明确提供该措施时才填写 `case_refs`（案例标识或标题）；没有案例依据时必须为 `[]`，HTML 将隐藏整块“临时缓解”，即使存在通用建议也不展示。**无有效方案时** `type` 取 `none`、`summary` 写「无」、`steps` 置空。有案例依据时 `steps` 必须给出**可直接执行**的命令/操作，优先考虑内核/系统配置、服务与资源控制、换机/分散部署、关闭触发特性或降低并发等。`risk` 说明无法根治的原因与回退方式。
    - **`event_scene`**（事件时序图，**必填**，三类泳道：进程 / 内核 / 硬件，**每类可有多个对象**）：
      - `participants`（对象泳道，可多个）：`id`（简短英文，如 `proc_a`/`cpu92`/`timer0`）、`name`（具体到进程名+PID、CPU 序号、硬件类型/名称）、`type` 三选一 `process`（进程/用户态业务线程）/ `kernel`（内核/CPU）/ `hardware`（硬件）、`init`（初始状态）、`tip`（一句话说明，供 hover 展示：进程 PID/名称、内核序号、硬件类型等）。
      - `anchor`：崩溃时刻锚点，**ISO 8601 带毫秒**（如 `2026-07-08T06:20:00.000`），供查看器按 `dt_ms` 反推每个事件的「时分秒」；**禁止写非时间字符串**。
@@ -130,7 +130,10 @@
      - `detail`/`evidence` 写该跳的解释与证据（含行号/寄存器/反汇编）；
      - 最后一跳 `crash=true`，写明崩溃爆发的直接原因（含二进制↔源码行对照）。
      精确行号需 vmlinux 调试信息或本地源码树；`dis -rl` 无法给出行号时注明工具边界。
-   - **`reasoning_flow`**（三部分根因，每步 `{stage,stage_name,color,title,short,text,evidence,ev_plain,path_mini,refs[],branch}`）。`stage` **必须**用以下枚举，否则报告第 4 章三部分会渲染不完整：
+   - **`deep.mechanism_summary`**：必须填写 1–3 句面向读者的人话说明，讲清「发生了什么 → 为什么会崩溃 → 影响是什么」，禁止重复技术触发链，禁止堆叠函数名、寄存器、地址和源码行号。
+   - **`deep.judgment`**：必须填写一句当前判断，回答「根因是否已锁定 → 建议如何处置」，不要重复 `mechanism_summary` 的过程描述，也不要再铺开技术调用链。
+   - **`deep.evidence`**（核心依据与独立推理链）：必须优先输出对象数组，每条 `{title,summary,reasoning[]}` 对应一条可以独立成立的证据。`reasoning[]` 至少包含 2 步，每步 `{step,detail,evidence}`，最后一步可补 `conclusion`。寄存器证据、源码证据、案例佐证等不能合并成一个总链；HTML 第 3 章会为每条核心依据单独渲染一个展开面板。
+   - **`reasoning_flow`**（三部分根因，每步 `{stage,stage_name,color,title,short,text,evidence,ev_plain,path_mini,refs[],branch}`）。该字段仍为 schema 必填，用于后端追踪与原始数据兼容；不要把它当作 HTML 第 3 章的页面级总推理链，页面只展示 `deep.evidence[].reasoning[]`。`stage` **必须**用以下枚举，否则报告第 4 章三部分会渲染不完整：
      | `stage` | 归属部分 |
      |---|---|
      | `stack` / `hypothesis` | ① 崩溃特征分析（含函数栈）|

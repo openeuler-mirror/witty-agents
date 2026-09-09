@@ -164,6 +164,7 @@
     },
     "temporary_workaround": {
       "type": "config",
+      "case_refs": [],
       "summary": "补丁合入前暂无可根治的命令行方案，建议先采取以下措施：① 确认内核崩溃现场保存功能（kdump）已开启；② 将同类型业务分散部署，避免单点故障影响多台主机；③ 待补丁合入并验证稳定后再恢复正常部署。如此即使再次发生，影响也仅限于单机，且便于快速定位。",
       "steps": [
         "# 确认 kdump/crash 兜底已开启（本机 Kdump: loaded）",
@@ -758,12 +759,36 @@
       }
     ],
     "deep": {
+      "judgment": "根因已锁定为调度选择路径缺少空值防护；建议参考上游等价修复 https://github.com/torvalds/linux/commit/b55945c500c5723992504aa03b362fab416863a6，移植最小判空补丁，并对睡眠/唤醒与负载切换场景做压力回归。",
+      "mechanism_summary": "监控程序读取一个正在退出进程的内存映射信息时，内核没有正确处理目标进程已经释放的内存对象，继续使用了无效数据，最终引发内核空指针崩溃。这个问题属于内核防御不足，与业务逻辑和硬件无关。",
       "lead": "根因（三层）：进程 T1004_LockWaitM 在 CPU92 调用 clock_nanosleep 申请睡眠，进入睡眠前调度让出 CPU，CFS 的 pick 阶段返回空 se，4.19 在 pick→set 之间无 if(!se) 判空，空指针进入 set_next_entity 并解引用 se->on_rq（偏移 0x40）触发 Oops。",
       "mechanism": "触发链条：T1004_LockWaitM(PID4090813,CPU92) 调 clock_nanosleep 申请睡眠 → 进入睡眠前 schedule() 让出 CPU → __schedule 持 rq->lock → pick_next_task_fair → pick_next_entity 返回 NULL（cfs_rq 树空或 nr_running 计数异常/竞态窗口）→ 未判空 → set_next_entity(cfs_rq, se=NULL) → +0x20 读 se->on_rq → fault 0x40 → panic。",
       "evidence": [
-        "寄存器证据（L2663-2677）：x20=se=0、x19/x25=cfs_rq=ffffa07fefde16c0；崩溃指令读 x20+0x40",
-        "反汇编+源码证据：本内核 fair.c:7746 有判空、fair.c:7762 崩溃路径无判空；上游 v6.12 b55945c500c5 才内置 if(!se)",
-        "横向证据：同局点 0803(load_balance 硬锁死)/0824(check_preempt_wakeup 空指针) 同内核同机型同调度子系统（问题簇）"
+        {
+          "title": "寄存器证据：se 为空指针",
+          "summary": "L2663-2677 显示 x20=se=0，崩溃指令读取 x20+0x40。",
+          "reasoning": [
+            {"step": "确认异常地址", "detail": "日志报告访问地址 0x40，RIP 位于 set_next_entity+0x20。", "evidence": "Unable to handle kernel NULL pointer dereference at 0x40"},
+            {"step": "映射寄存器参数", "detail": "x20 保存 se，值为 0；x19/x25 保存 cfs_rq。", "evidence": "x20: 0000000000000000 · x19/x25: ffffa07fefde16c0"},
+            {"step": "得出结论", "detail": "指令读取 se+0x40，空指针被直接解引用。", "evidence": "Code: (b9404280) = ldr w0,[x20,#0x40]", "conclusion": "寄存器与指令共同确认 se=NULL。"}
+          ]
+        },
+        {
+          "title": "源码证据：pick 到 set 之间缺少判空",
+          "summary": "本内核 fair.c:7762 崩溃路径在 pick_next_entity 返回后直接调用 set_next_entity。",
+          "reasoning": [
+            {"step": "检查调用方", "detail": "pick_next_entity 返回后没有 if(!se) 分支。", "evidence": "fair.c:7762 · se = pick_next_entity(...); set_next_entity(..., se);"},
+            {"step": "对照上游修复", "detail": "上游 v6.12 的 b55945c500c5 已加入相关防御。", "evidence": "b55945c500c5: sched: Fix pick_next_task_fair() vs try_to_wake_up() race", "conclusion": "缺少判空是可修复的防御缺口。"}
+          ]
+        },
+        {
+          "title": "横向证据：同子系统问题簇",
+          "summary": "同局点 0803 与 0824 也集中在同内核、同机型、同一调度子系统。",
+          "reasoning": [
+            {"step": "对比历史案例", "detail": "0803 为 load_balance 硬锁死，0824 为 check_preempt_wakeup 空指针。", "evidence": "同内核 4.19.90 v2401 · Kunpeng 920 · kernel/sched"},
+            {"step": "限定证据作用", "detail": "历史案例只能作为同域佐证，不能替代本次寄存器和源码证据。", "evidence": "问题簇关联，不等同于本次直接根因", "conclusion": "横向案例支持同一调度子系统存在防御薄弱点。"}
+          ]
+        }
       ],
       "confidence": "中高：直接原因与防御缺口证据充分；nr_running 下溢/竞态的具体触发需用 crash 工具查看 cfs_rq->nr_running 复核（vmcore 未给出现场值）。",
       "scope": "仅在睡眠/调度选择窗口触发，概率极低但影响整机（panic 重启）。同问题簇在同一局点多台已复现 3 次。"
