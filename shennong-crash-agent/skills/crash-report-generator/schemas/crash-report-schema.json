@@ -437,7 +437,13 @@
                     "type": "string"
                   },
                   "type": {
-                    "type": "string"
+                    "type": "string",
+                    "enum": [
+                      "process",
+                      "kernel",
+                      "hardware"
+                    ],
+                    "description": "固定三类泳道：process=进程、kernel=内核（含调度器/定时器/CPU）、hardware=硬件。"
                   },
                   "init": {
                     "type": "string"
@@ -495,6 +501,19 @@
                   },
                   "origin": {
                     "type": "string"
+                  },
+                  "evidence_level": {
+                    "type": "string",
+                    "enum": [
+                      "L1",
+                      "L2",
+                      "L3"
+                    ],
+                    "description": "主时序证据等级：L1 日志/寄存器/源码直接确认，L2 由调用栈与源码强推断，L3 一般机制补全（不得进入主时序）。"
+                  },
+                  "evidence": {
+                    "type": "string",
+                    "description": "支持该事件的日志行、寄存器、源码位置或推断依据。"
                   },
                   "src": {
                     "type": "string"
