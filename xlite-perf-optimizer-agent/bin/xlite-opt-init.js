@@ -135,8 +135,9 @@ function backupProjectJsonc(projectJsoncPath) {
 function mergeAgentConfig(projectJsoncPath, force = false) {
   const snippet = readJsonc(path.join(PACKAGE_ROOT, 'agent', 'opencode-agent.jsonc'));
   let config = {};
+  const existed = fs.existsSync(projectJsoncPath);
 
-  if (fs.existsSync(projectJsoncPath)) {
+  if (existed) {
     try {
       config = readJsonc(projectJsoncPath);
     } catch (err) {
@@ -169,6 +170,9 @@ function mergeAgentConfig(projectJsoncPath, force = false) {
   const newRaw = JSON.stringify(config, null, 2) + '\n';
   fs.writeFileSync(projectJsoncPath, newRaw, 'utf-8');
   console.log(`[${AGENT_NAME}] 已${force ? '覆盖' : '追加'} agent 配置到 ${projectJsoncPath}`);
+  if (existed) {
+    console.log(`  提示：JSONC 回写为纯 JSON，原文件中的注释已丢失；如需恢复，请使用上方生成的 .bak 备份。`);
+  }
 }
 
 function main() {
@@ -177,8 +181,6 @@ function main() {
     console.log(`[${AGENT_NAME}] 检测到 --force 标志，将强制更新 agent 配置。`);
   }
   console.log(`\n[${AGENT_NAME}] 正在初始化...\n`);
-
-  // 1. 安装 agent.md 到全局
 
   // 1. 安装 agent.md 到全局
   mkdirp(GLOBAL_AGENT_DIR);

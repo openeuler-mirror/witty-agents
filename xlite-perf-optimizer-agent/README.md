@@ -1,6 +1,8 @@
-# xlite-perf-optimizer
+# xlite-perf-optimizer-agent
 
-一个可 npm 安装的 opencode 自定义 Agent，用于自动化 xlite 性能优化。
+一个可 npm 安装的 opencode 自定义 Agent（prompt 注册型），用于自动化 xlite 性能优化。
+
+npm 包名：`@openeuler/agent-xlite-perf-optimizer`
 
 ## 功能
 
@@ -14,11 +16,24 @@
 
 ## 安装
 
+online 包（npm registry）：
+
 ```bash
-npm install xlite-perf-optimizer
+npm install @openeuler/agent-xlite-perf-optimizer
 ```
 
-安装后执行初始化脚本：
+offline 包：本 Agent 未声明 `witty.offlineExtras`，全部内容（prompt / skills / helpers）均在 online 包内自足，无独立 offline 变体；离线环境可将 online 包导出 tgz 携带转移：
+
+```bash
+npm pack @openeuler/agent-xlite-perf-optimizer   # 在有网环境导出 tgz
+npm install openeuler-agent-xlite-perf-optimizer-<version>.tgz   # 拷贝到离线机后安装
+```
+
+> 安装过程（`postinstall`）只打印下一步提示，不创建 venv、不改写任何配置、不联网下载。
+
+## 注册
+
+在需要使用本 Agent 的 xlite 项目根目录下执行初始化命令，将 Agent 注册到 opencode：
 
 ```bash
 npx xlite-opt-init
@@ -37,17 +52,25 @@ npx xlite-opt-init --force
 3. 在当前项目的 `opencode.jsonc` 中追加/覆盖 `xlite-perf-optimizer` agent 配置。
 4. 在当前项目创建 `.xlite-opt/journal/` 和 `.xlite-opt/reports/`。
 
-> 注意：`--force` 写入 `opencode.jsonc` 前会自动生成带时间戳的 `.bak-XXX` 备份，但会丢失原有注释。如需保留注释，请手动合并。
+命令具备幂等语义：agent 配置已存在时默认跳过写入，重复执行不出错。
 
-## 使用
+> 注意：写入 `opencode.jsonc` 前会自动生成带时间戳的 `.bak-XXX` 备份，但回写为纯 JSON 会丢失原有注释（输出中会给出提示）。如需保留注释，请手动合并。
 
-安装并初始化后，在 opencode 中选择 `xlite-perf-optimizer` agent，然后直接输入优化任务，例如：
+## 验证
+
+初始化完成后，在 opencode 中选择 `xlite-perf-optimizer` agent，然后直接输入优化任务，例如：
 
 ```text
 优化 Qwen3.5-27B decode 阶段的 Conv1dAndSiLU，目标让 xlite full_mode 比 native graph 快 10%。
 ```
 
 Agent 会自动执行分析、设计、修改、测试、报告生成与保留/回滚。
+
+也可以在项目内运行结构自检，确保 agent 与 skill 文件完整：
+
+```bash
+node node_modules/@openeuler/agent-xlite-perf-optimizer/scripts/smoke-test.js
+```
 
 ## 环境变量
 
@@ -77,20 +100,12 @@ Agent 会自动执行分析、设计、修改、测试、报告生成与保留/�
 
 ```bash
 # 昇腾容器测试
-bash node_modules/xlite-perf-optimizer/helpers/ascend-container-test.sh
+bash node_modules/@openeuler/agent-xlite-perf-optimizer/helpers/ascend-container-test.sh
 
 # 解析日志
-python3 node_modules/xlite-perf-optimizer/helpers/parse-perf-log.py \
+python3 node_modules/@openeuler/agent-xlite-perf-optimizer/helpers/parse-perf-log.py \
   .xlite-opt/reports/ascend-test-<ts>.log \
   -o .xlite-opt/reports/metrics-<ts>.json
-```
-
-## 结构自检
-
-安装后可在项目内运行结构自检，确保 agent 与 skill 文件完整：
-
-```bash
-node node_modules/xlite-perf-optimizer/scripts/smoke-test.js
 ```
 
 ## 项目级原子记录
