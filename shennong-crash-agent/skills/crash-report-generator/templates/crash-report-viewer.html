@@ -103,6 +103,13 @@ function heroTitle(concl){
   cand = cand.trim().replace(/^根因[：:]\s*/,'');
   return cand.length>36 ? cand.slice(0,36)+'…' : cand;
 }
+function overviewTitle(concl){
+  const type=String(cf.bug_type||'').toLowerCase();
+  if(type==='null_pointer') return '内核空指针解引用';
+  if(type==='kernel_bug') return '内核 BUG 崩溃';
+  if(type==='panic') return '内核 panic 崩溃';
+  return heroTitle(concl);
+}
 function readTime(t){ if(!t) return ''; const s=String(t); if(/\d{4}-\d{2}-\d{2}/.test(s)){ const d=s.match(/\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2}/); return d?d[0].replace('T',' '):s.slice(0,19); } return s; }
 
 const R = EMBED_FULL || {};
@@ -129,7 +136,7 @@ function renderOverview(){
   const title = host.host_name || R.report_id || '宕机分析';
   const t = readTime(cf.crash_time);
   const concl = ra.conclusion || deep.lead || '';
-  const head = heroTitle(concl);
+  const head = overviewTitle(concl);
 
   let h = `<div class="report-header">`;
   h += `<div class="overview-heading"><div><h1 id="host-title">${esc(title)} · 宕机分析报告</h1><div class="subline"><span>主机 ${esc(host.host_name||'未提供')}</span><span>${esc(t||'时间未提供')}</span><span>报告 ${esc(R.report_id||'未提供')}</span><span>vmcore / dmesg</span></div></div><div class="overview-tools"><span class="status">内核崩溃</span><button class="control-button" id="toggle-details" type="button" aria-pressed="false" onclick="toggleAllDetails()">展开全部</button><button class="text-button" id="copy-summary" type="button">复制摘要</button><span id="copy-status" role="status" aria-live="polite"></span></div></div></div>`;
@@ -165,7 +172,7 @@ function renderOverview(){
 
   /* 根治措施 */
   h += `<article class="plan-card"><div class="small-label">根治措施 · 内核维护人员</div>`;
-  const ssTitle = ss ? (firstSentence(ss.short) || ss.claim_tag || '相应修复') : '原报告未给出根治方案';
+  const ssTitle = ss ? (ss.type==='patch' ? '合入上游等价修复' : ss.type==='config' ? '调整配置或运行参数' : (ss.claim_tag || '相应修复')) : '原报告未给出根治方案';
   h += `<h3>${esc(ssTitle)}</h3>`;
   if(ss && has(ss.short)) h += `<p>${linkify(ss.short)}</p>`;
   if(ss){
@@ -529,10 +536,14 @@ function renderAppendix(){
   const caseGroups = [
     {key:'internal_kernel_result', source:'内部案例'},
     {key:'community_kernel_result', source:'社区案例'},
+    {key:'community_emails', source:'社区邮件'},
     {key:'community_meetings', source:'社区会议'},
     {key:'online_result', source:'在线案例'},
   ];
-  const allCases = caseGroups.flatMap(g=>toArr(diag[g.key]).map(c=>({case:c, source:g.source})));
+  const community = toArr(diag.community_kernel_result);
+  const communityEmails = community.filter(c=>/mail|email|邮件|邮件列表|lore/i.test(String(c.kind||c.source||c.title||c.subject||'')));
+  const caseData = {...diag, community_kernel_result: community.filter(c=>!communityEmails.includes(c)), community_emails: communityEmails};
+  const allCases = caseGroups.flatMap(g=>toArr(caseData[g.key]).map(c=>({case:c, source:g.source})));
   if(allCases.length){
     h += `<div class="appendix-card"><details><summary><span class="appendix-summary-label">案例资料 <span class="appendix-count">${allCases.length}</span></span><span class="chevron" aria-hidden="true"></span></summary><div class="detail-body"><div class="case-list">`;
     caseGroups.forEach(group=>{
