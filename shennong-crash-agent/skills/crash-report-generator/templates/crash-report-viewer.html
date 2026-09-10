@@ -70,6 +70,18 @@
 .workflow-status.st-failed,.tool-pill.st-failed{background:#f9e5e5;color:#b04a4a}
 .workflow-status.st-skipped,.tool-pill.st-skipped{background:#eceeee;color:#7a807c}
 .tool-pill.st-success,.tool-pill.st-partial,.tool-pill.st-failed,.tool-pill.st-skipped{border:1px solid currentColor}
+.log-line{display:block;border-left:3px solid transparent;padding-left:8px}
+.log-line[data-tip]{cursor:help}
+.log-line:hover{background:#e9f1ec}
+.log-line.cat-crash{border-left-color:#b04a4a;background:#fcf4f4}
+.log-line.cat-loc{border-left-color:#926321}
+.log-line.cat-regs{border-left-color:#5b7fa6}
+.log-line.cat-trace{border-left-color:#2e7d5b}
+.log-line.cat-info{border-left-color:#b7c4bc}
+.log-line.cat-kdump{border-left-color:#7d6fa8}
+.log-line.cat-crash:hover,.log-line.cat-loc:hover,.log-line.cat-regs:hover,.log-line.cat-trace:hover,.log-line.cat-info:hover,.log-line.cat-kdump:hover{background:#e9f1ec}
+#log-tip{display:none;position:fixed;z-index:99;max-width:440px;background:#26332c;color:#eef4ef;font-size:12px;line-height:1.7;padding:10px 13px;border-radius:8px;box-shadow:0 8px 28px rgba(20,35,26,.35);pointer-events:none}
+#log-tip.pinned{pointer-events:auto;border:1px solid #4a6d59}
 .reason{font-style:italic;color:var(--muted);display:block;margin-top:2px;font-size:12px}
 .mc-kind{display:inline-block;font-size:11px;font-weight:600;padding:1px 8px;border-radius:4px;background:#eef2f7;color:#475569;border:1px solid #dbe2ea;margin-right:6px;vertical-align:middle}
 .control-button{border:1px solid #cbdad0;background:#f7faf8;color:#35644e;border-radius:6px;padding:6px 10px;font-size:11px}
@@ -378,6 +390,41 @@ function sceneContext(){
   return '';
 }
 
+/* 崩溃日志逐行分类：给出类别（配色）与悬停解读（通用解释，适用于任意内核崩溃日志） */
+function classifyLogLine(line){
+  const s = String(line||'');
+  if(/(^|\])\s*Code:/.test(s)) return {cat:'cat-loc', tip:'崩溃点附近的机器码：括号内的那一条就是触发异常的实际指令。结合 pc 可反汇编定位具体操作（如读/写某结构体成员的偏移）。'};
+  if(/\bpc\s*:/.test(s)) return {cat:'cat-loc', tip:'pc（程序计数器）：崩溃时正在执行的指令，格式「函数名+偏移/总长」——直接定位崩在哪个函数的哪条指令。+偏移=距函数开头的字节数，/总长=函数字节总长。'};
+  if(/\bRIP\s*:/.test(s)) return {cat:'cat-loc', tip:'RIP（指令指针）：崩溃时正在执行的指令地址，「函数名+偏移/总长」直接定位崩溃点。'};
+  if(/\blr\s*:/.test(s)) return {cat:'cat-loc', tip:'lr（链接寄存器）：返回地址，即调用崩溃函数的上层函数，用于还原调用关系。'};
+  if(/\b(sp|rsp)\s*:/.test(s)) return {cat:'cat-loc', tip:'栈指针：崩溃时的内核栈位置，配合栈回溯使用。'};
+  if(/pstate\s*:/.test(s)) return {cat:'cat-regs', tip:'pstate（处理器状态）：条件标志位、中断屏蔽（DAIF）与特权状态。'};
+  if(/\]\s*x\d+\s*:\s*[0-9a-f]{8,}/.test(s)) return {cat:'cat-regs', tip:'通用寄存器现场值（x0~x29）：还原崩溃瞬间的参数与指针。ARM64 中 x0~x7 为函数参数寄存器——某寄存器为 0 往往就是空指针；结合反汇编可确定各寄存器对应的参数/字段。'};
+  if(/\]\s*R[A-Z]{2,3}\s*:\s*[0-9a-f]{8,}/.test(s)) return {cat:'cat-regs', tip:'通用寄存器现场值：还原崩溃瞬间的参数与指针，为 0 的寄存器往往就是空指针来源。'};
+  if(/Call [Tt]race\s*:/.test(s)) return {cat:'cat-trace', tip:'调用栈开始：下面是从崩溃点向上到系统调用入口的栈帧，第一帧即崩溃函数。'};
+  if(/\]\s+\S+\+0x[0-9a-f]+\/0x[0-9a-f]+/.test(s)) return {cat:'cat-trace', tip:'调用栈帧：函数名+偏移/总长。自上而下 = 崩溃点 ← 调用者 ← … ← 系统调用入口，即完整调用链路。'};
+  if(/SMP:\s*(stopping|failed)/.test(s)) return {cat:'cat-kdump', tip:'崩溃后尝试停住其它 CPU 核以保护现场；failed to stop = 部分核未响应，kdump 将是部分转储。'};
+  if(/WARNING|cut here|stale|Starting crashdump|crashdump kernel/i.test(s)) return {cat:'cat-kdump', tip:'kdump 捕获阶段日志：崩溃后启动捕获内核写出 vmcore。此处告警（如 CPU 核未停住）说明转储可能不完整，但不影响崩溃原因本身。'};
+  if(/Unable to handle|Internal error|Kernel panic|BUG:|general protection|invalid opcode|Oops|watchdog/i.test(s)) return {cat:'cat-crash', tip:'崩溃类型行：说明内核以什么方式挂掉与故障地址。NULL pointer dereference=空指针解引用（故障地址即字段偏移）；Oops=内核错误；panic=整机停止。'};
+  if(/ESR\s*=|Exception class|[MD]em abort|Data abort|ISV\s*=|ISS\s*=|SET\s*=|EA\s*=|CM\s*=|WnR/i.test(s)) return {cat:'cat-info', tip:'异常综合征寄存器（ESR）与数据中止详情：编码异常类别（DABT=访存中止）、故障状态码、读写方向（WnR=0 读/1 写），用于判断访存错误性质。'};
+  if(/pgd=|pud=|pgtable/i.test(s)) return {cat:'cat-info', tip:'故障地址的页表遍历结果：全 0（pgd=0）说明该地址完全未映射——空指针/未初始化指针访问的典型证据。'};
+  if(/Modules linked in/.test(s)) return {cat:'cat-info', tip:'当时加载的内核模块列表：用于判断崩溃路径是否涉及第三方/外部模块（配合 Not tainted 标志）。'};
+  if(/Process\s+\S+\s*\(pid/.test(s)) return {cat:'cat-info', tip:'崩溃进程/任务：进程名与 PID，stack limit 为其内核栈边界。'};
+  if(/CPU:\s*\d+\s+PID:/.test(s)) return {cat:'cat-info', tip:'崩溃现场概要：CPU 号、PID 与进程名、Kdump 状态、内核污染标志（Not tainted=无外部模块污染）、内核版本。'};
+  if(/Source Version|Hardware name|BIOS/.test(s)) return {cat:'cat-info', tip:'内核源码 commit / 硬件型号与 BIOS 版本：用于定位源码树与排除硬件因素。'};
+  return null;
+}
+
+/* 把原始日志逐行包成带类别色条与 data-tip 的行块 */
+function annotateCrashLog(raw){
+  return String(raw).split('\n').map(line=>{
+    const m = classifyLogLine(line);
+    const cls = 'log-line' + (m ? (' '+m.cat) : '');
+    const tip = m ? ` data-tip="${esc(m.tip)}"` : '';
+    return `<span class="${cls}"${tip}>${esc(line) || '\u00a0'}</span>`;
+  }).join('');
+}
+
 /* ===== ② 宕机特征 ===== */
 function renderFeatures(){
   let h = `<section class="section" id="features" aria-labelledby="features-title">`;
@@ -428,26 +475,17 @@ function renderFeatures(){
     .sort((a,b)=>(parseInt(String(a.lines||''),10)||0)-(parseInt(String(b.lines||''),10)||0))
     .map(e=>String(e.line));
   const rawSrc = (lfr0.related_ref && has(lfr0.related_ref.file)) ? (lfr0.related_ref.file + (has(lfr0.related_ref.lines)?(' L'+lfr0.related_ref.lines):'')) : '';
-  /* 优先渲染 raw_crash_log（完整连续原文，与阅读指南逐项对应）；无则退化为 related_errors 拼装摘录 */
+  /* 优先渲染 raw_crash_log（完整连续原文）；无则退化为 related_errors 拼装摘录。
+     每行按类型着色并带悬停解读（annotateCrashLog），不再需要独立的「如何阅读」指南区。 */
   const rawFull = has(cf.raw_crash_log) ? String(cf.raw_crash_log) : '';
+  const hoverHint = '悬停或点击任意日志行可查看该行含义（左侧色条：红=崩溃类型 · 琥珀=崩溃指令定位 · 蓝=寄存器 · 绿=调用栈 · 紫=kdump 捕获 · 灰=现场信息）。';
   if(rawFull){
-    h += `<details class="reading-group"><summary>原始崩溃日志<span class="chevron" aria-hidden="true"></span></summary><div class="detail-body">${rawSrc?`<p class="muted">逐字摘自 ${esc(rawSrc)}（完整连续崩溃段）；逐行含义见技术附件「日志特征明细」。</p>`:''}<div class="crash-log"><pre><code>${esc(rawFull)}</code></pre></div></div></details>`;
+    h += `<details class="reading-group"><summary>原始崩溃日志<span class="chevron" aria-hidden="true"></span></summary><div class="detail-body"><p class="muted">${rawSrc?`逐字摘自 ${esc(rawSrc)}（完整连续崩溃段）。`:''}${hoverHint}</p><div class="crash-log"><pre><code>${annotateCrashLog(rawFull)}</code></pre></div></div></details>`;
   } else if(rawLines.length){
-    h += `<details class="reading-group"><summary>原始崩溃日志<span class="chevron" aria-hidden="true"></span></summary><div class="detail-body">${rawSrc?`<p class="muted">按行号排序摘自 ${esc(rawSrc)}（关键行摘录，非连续全文）；逐行含义见技术附件「日志特征明细」。</p>`:''}<div class="crash-log"><pre><code>${esc(rawLines.join('\n'))}</code></pre></div></div></details>`;
-  }
-  if(rawFull || rawLines.length){
-    h += `<details class="reading-group"><summary>如何阅读这段日志<span class="chevron" aria-hidden="true"></span></summary><div class="detail-body"><ul>`;
-    h += `<li><b>第 1 行「Unable to handle kernel ... at 0x...」</b>：崩溃类型（如空指针解引用）与故障地址——即内核访问到的无效内存地址。</li>`;
-    h += `<li><b>pc（程序计数器）</b>：CPU 崩时正在执行的那条指令的地址，格式是「函数名+偏移/总长」——函数名=崩溃所在的函数；+偏移=崩在距该函数开头多少字节处的那条指令；/总长=该函数的字节总数。这一行直接定位到「崩在哪个函数的哪条指令」。</li>`;
-    h += `<li><b>lr（Link Register）</b>：链接寄存器（返回地址），即调用崩溃函数的上层函数，用于还原调用关系。</li>`;
-    h += `<li><b>x0 ~ x29</b>：通用寄存器现场值，用于还原崩溃瞬间的参数与指针（如某个寄存器为 0 往往就是空指针）。</li>`;
-    h += `<li><b>Call trace</b>：调用栈，从崩溃点向上追溯到系统调用入口，看清完整调用链路。</li>`;
-    h += `<li><b>Code: (...)</b>：崩溃指令的机器码，括号内的那一条就是触发异常的实际指令。</li>`;
-    h += `</ul></div></details>`;
+    h += `<details class="reading-group"><summary>原始崩溃日志<span class="chevron" aria-hidden="true"></span></summary><div class="detail-body"><p class="muted">${rawSrc?`按行号排序摘自 ${esc(rawSrc)}（关键行摘录，非连续全文）。`:''}${hoverHint}</p><div class="crash-log"><pre><code>${annotateCrashLog(rawLines.join('\n'))}</code></pre></div></div></details>`;
   } else if(has(cf.call_trace_text)){
-    /* 兜底：无 related_errors 原文行时才单独展示调用栈（如实标注，不冒充原始日志）；
-       有原始日志时不再重复展示——调用链已在「故障是怎样发生的」与判断依据中逐跳呈现 */
-    h += `<details class="reading-group"><summary>崩溃调用栈<span class="chevron" aria-hidden="true"></span></summary><div class="detail-body"><div class="crash-log"><pre><code>${esc(cf.call_trace_text)}</code></pre></div></div></details>`;
+    /* 兜底：无原始日志行时才单独展示调用栈（如实标注，不冒充原始日志） */
+    h += `<details class="reading-group"><summary>崩溃调用栈<span class="chevron" aria-hidden="true"></span></summary><div class="detail-body"><p class="muted">${hoverHint}</p><div class="crash-log"><pre><code>${annotateCrashLog(cf.call_trace_text)}</code></pre></div></div></details>`;
   }
   h += `</section>`;
   return h;
@@ -979,6 +1017,47 @@ function initNav(){
 }
 
 if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', render); else render();
+
+/* 崩溃日志逐行悬停解读：hover 显示、点击钉住（兼容触屏），点空白处取消 */
+(function(){
+  let tipEl=null, pinnedLine=null;
+  function ensureTip(){
+    if(!tipEl){ tipEl=document.createElement('div'); tipEl.id='log-tip'; document.body.appendChild(tipEl); }
+    return tipEl;
+  }
+  function showTip(line){
+    const tip=line.getAttribute('data-tip'); if(!tip) return;
+    const el=ensureTip();
+    el.textContent=tip; el.style.display='block';
+    el.classList.toggle('pinned', !!pinnedLine);
+    const r=line.getBoundingClientRect(), tr=el.getBoundingClientRect();
+    let top=r.bottom+8;
+    if(top+tr.height>window.innerHeight-8) top=Math.max(8, r.top-tr.height-8);
+    let left=Math.min(Math.max(8,r.left), window.innerWidth-tr.width-8);
+    el.style.top=top+'px'; el.style.left=left+'px';
+  }
+  function hideTip(){ if(tipEl){ tipEl.style.display='none'; tipEl.classList.remove('pinned'); } }
+  document.addEventListener('mouseover', e=>{
+    if(pinnedLine) return;
+    const line=e.target.closest && e.target.closest('.log-line');
+    if(line && line.hasAttribute('data-tip')) showTip(line);
+  });
+  document.addEventListener('mouseout', e=>{
+    if(pinnedLine) return;
+    const line=e.target.closest && e.target.closest('.log-line');
+    if(line) hideTip();
+  });
+  document.addEventListener('click', e=>{
+    const line=e.target.closest && e.target.closest('.log-line');
+    if(line && line.hasAttribute('data-tip')){
+      if(pinnedLine===line){ pinnedLine=null; hideTip(); }
+      else { pinnedLine=line; showTip(line); }
+    } else if(pinnedLine && !(tipEl && tipEl.contains(e.target))){
+      pinnedLine=null; hideTip();
+    }
+  });
+  window.addEventListener('scroll', ()=>{ if(pinnedLine) showTip(pinnedLine); else if(tipEl && tipEl.style.display==='block'){ hideTip(); } }, true);
+})();
 </script>
 </body>
 </html>
