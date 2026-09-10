@@ -1,0 +1,23 @@
+# 运行期 / 本地机密
+.env
+data/
+.venv/
+*.egg-info/
+
+# bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# 不交付给客户
+test/
+deploy/
+opencode_plugin/
+*.tgz
+DESIGN.md
+NL2SQL工作流程与设计图.md
+.gitignore
+scripts/register_opencode.sh
+
+# 打包产物勿回灌
+nl2sql-*.tgz

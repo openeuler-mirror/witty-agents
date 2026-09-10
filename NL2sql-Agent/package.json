@@ -1,0 +1,25 @@
+{
+  "name": "nl2sql",
+  "version": "0.1.0",
+  "description": "NL2SQL Agent: Python Web/API source distribution with init/start CLI",
+  "bin": {
+    "nl2sql": "./bin/nl2sql.js"
+  },
+  "files": [
+    "bin",
+    "apps",
+    "nl2sql_core",
+    "configs",
+    "scripts",
+    "fixtures",
+    "docs",
+    "requirements.txt",
+    ".env.example",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "UNLICENSED",
+  "private": true
+}
