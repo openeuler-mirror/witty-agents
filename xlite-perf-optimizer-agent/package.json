@@ -1,8 +1,17 @@
 {
-  "name": "xlite-perf-optimizer",
+  "name": "@openeuler/agent-xlite-perf-optimizer",
   "version": "0.1.0",
   "description": "xlite 性能优化自动化 Agent — 分析、算子优化、测试验证、HTML 报告与原子回滚",
-  "main": "index.js",
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://atomgit.com/openeuler/witty-agents",
+    "directory": "xlite-perf-optimizer-agent"
+  },
   "bin": {
     "xlite-opt-init": "./bin/xlite-opt-init.js"
   },
@@ -27,8 +36,7 @@
     "llm-inference"
   ],
   "author": "",
-  "license": "MIT",
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=18"
   }
 }
