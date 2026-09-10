@@ -14,8 +14,23 @@ description: >
 
 ## 0. 环境与入口（每次任务先确定）
 
-1. **仓库根** `REPO`：含 `nl2sql_core/`、`configs/`、`.env`（或随后用 settings 写入）的目录。  
-2. **本 skill 目录** `SKILL`：本文件所在目录（其下有 `scripts/`、`references/`）。  
+1. **本 skill 目录** `SKILL`：本文件所在目录（其下有 `scripts/`、`references/`）。  
+   - 可放在仓库内，也可复制/链接到 `~/.config/opencode/skills/nl2sql`。  
+2. **NL2SQL 仓库根** `REPO`：含 `nl2sql_core/`、`configs/` 的目录（代码与 `.env` / `data/` 在这里）。  
+   **定位顺序（脚本自动）：**
+   1. 环境变量 `NL2SQL_ROOT`（若设置）  
+   2. `$SKILL/scripts/config.json` 里的 `nl2sql_root`（绝对路径，推荐 skill 与仓库分离时使用）  
+   3. 未配置时：按默认相对布局  
+      `<repo>/opencode_plugin/skills/nl2sql/scripts` → 上溯到 `<repo>`  
+
+   分离部署时：
+
+```bash
+cp $SKILL/scripts/config.example.json $SKILL/scripts/config.json
+# 编辑 config.json，例如：
+# { "nl2sql_root": "/home/you/NL2SQL-Agent-publish" }
+```
+
 3. 入口命令（推荐始终用绝对路径）：
 
 ```bash
@@ -26,13 +41,13 @@ CLI="python3 $SKILL/scripts/nl2sql_skill_cli.py"
 #   python3 $SKILL/scripts/rules_import.py ...
 ```
 
-脚本会自动把 `REPO` 加入 `sys.path`，一般**不必**再 export `PYTHONPATH`，但工作目录建议在 `REPO`。
+脚本会把 `REPO` 加入 `sys.path`，并 `chdir` 到仓库根，一般**不必**再 export `PYTHONPATH`。
 
 4. **详细参数与返回字段**：必读 `references/api.md`。  
 5. **禁止**：启动/依赖 `http://127.0.0.1:8199` 或任何 NL2SQL Web；禁止对业务库做写删；禁止编造未在规则/schema 中的字段映射。
 
 依赖（由用户环境提供，不是本 skill 启动的服务）：本机 Python≥3.10、已部署的 **rag-core**、目标业务库（如 ES）。  
-**LLM：** 生成查询时优先可用 **Agent 框架当前会话模型**；若 NL2SQL 已配置 Key，也可用全链路 `ask`（见 §2.1）。
+**LLM：** 生成查询时优先可用 **Agent 框架当前会话模型**；若 NL2SQL 已配置 Key，也可用全链路 `ask`（见 §2）。
 
 ---
 
