@@ -912,9 +912,9 @@ function renderAppendix(){
       h += `</div></div></details></div>`;
     }
 
-    /* 参考案例（未采用）：默认折叠，避免干扰主阅读流 */
+    /* 其他案例：默认折叠，避免干扰主阅读流 */
     if(referenceCases.length){
-      h += `<div class="appendix-card"><details><summary><span class="appendix-summary-label">参考案例（未采用） <span class="appendix-count">${referenceCases.length}</span></span><span class="chevron" aria-hidden="true"></span></summary><div class="detail-body"><p class="muted">以下案例与本次宕机存在相似特征，但触发路径、内核版本或修复口径不完全匹配，仅作为诊断旁证，不作为推荐修复方案。</p><div class="case-list">`;
+      h += `<div class="appendix-card"><details><summary><span class="appendix-summary-label">其他案例 <span class="appendix-count">${referenceCases.length}</span></span><span class="chevron" aria-hidden="true"></span></summary><div class="detail-body"><p class="muted">以下案例与本次宕机存在相似特征，但触发路径、内核版本或修复口径不完全匹配，仅作为诊断旁证，不作为推荐修复方案。</p><div class="case-list">`;
       referenceCases.forEach(item=>{ h += renderCaseCard(item.case, 0, item.source, item.id); });
       h += `</div></div></details></div>`;
     }
