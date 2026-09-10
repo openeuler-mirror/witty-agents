@@ -404,7 +404,26 @@ function renderFeatures(){
   h += `<div class="section-heading"><span class="section-no">02</span><h2 id="features-title">宕机现场有哪些特征</h2></div>`;
   h += `<p class="section-intro">先看现场发生了什么：异常、RIP 与主调用栈直接展示。</p>`;
 
-  /* 主机与运行环境（折叠） */
+  const rows = [];
+  const bt = cf.bug_type || '';
+  rows.push(['异常类型', bt ? bt.replace(/_/g,' ') : '内核崩溃']);
+  const addr = faultAddr();
+  if(addr) rows.push(['故障地址', `<code>${esc(addr)}</code>`]);
+  if(has(cf.rip_function)) rows.push(['RIP / 崩溃函数', `<code>${esc(cf.rip_function+(cf.rip_offset?('+'+esc(cf.rip_offset)):''))}</code>`]);
+  if(has(cf.rip)) rows.push(['RIP', `<code>${esc(cf.rip)}</code>`]);
+  const ctx = sceneContext();
+  if(has(ctx)) rows.push(['现场上下文', esc(ctx)]);
+
+  h += `<dl class="crash-facts">`;
+  rows.forEach(r=>{ h += `<div><dt>${esc(r[0])}</dt><dd>${r[1]}</dd></div>`; });
+  const lf = cf.log_features || {};
+  /* 其他异常信息：只收「崩溃段之外」的异常信号（重复可疑日志 + 其它异常）。
+     related_errors 是崩溃日志本身——原文已完整呈现在「原始崩溃日志」，逐行解释在技术附件「日志特征明细」，此处不再重复。 */
+  const other = [...toArr(lf.repeated), ...toArr(lf.other)].map(logFeatureText).filter(has);
+  if(other.length) h += `<div><dt>其他异常信息</dt><dd><ul class="crash-fact-list">${other.map(o=>`<li>${linkifyBody(o)}</li>`).join('')}</ul></dd></div>`;
+  h += `</dl>`;
+
+  /* 主机与运行环境（折叠）：置于异常特征之后、原始崩溃日志之前 */
   {
     const envDefs = [];
     const pushEnv = (k,v)=>{ if(has(v)) envDefs.push([k,String(v)]); };
@@ -424,25 +443,6 @@ function renderFeatures(){
       h += `</dl></div></details></div>`;
     }
   }
-
-  const rows = [];
-  const bt = cf.bug_type || '';
-  rows.push(['异常类型', bt ? bt.replace(/_/g,' ') : '内核崩溃']);
-  const addr = faultAddr();
-  if(addr) rows.push(['故障地址', `<code>${esc(addr)}</code>`]);
-  if(has(cf.rip_function)) rows.push(['RIP / 崩溃函数', `<code>${esc(cf.rip_function+(cf.rip_offset?('+'+esc(cf.rip_offset)):''))}</code>`]);
-  if(has(cf.rip)) rows.push(['RIP', `<code>${esc(cf.rip)}</code>`]);
-  const ctx = sceneContext();
-  if(has(ctx)) rows.push(['现场上下文', esc(ctx)]);
-
-  h += `<dl class="crash-facts">`;
-  rows.forEach(r=>{ h += `<div><dt>${esc(r[0])}</dt><dd>${r[1]}</dd></div>`; });
-  const lf = cf.log_features || {};
-  /* 其他异常信息：只收「崩溃段之外」的异常信号（重复可疑日志 + 其它异常）。
-     related_errors 是崩溃日志本身——原文已完整呈现在「原始崩溃日志」，逐行解释在技术附件「日志特征明细」，此处不再重复。 */
-  const other = [...toArr(lf.repeated), ...toArr(lf.other)].map(logFeatureText).filter(has);
-  if(other.length) h += `<div><dt>其他异常信息</dt><dd><ul class="crash-fact-list">${other.map(o=>`<li>${linkifyBody(o)}</li>`).join('')}</ul></dd></div>`;
-  h += `</dl>`;
 
   /* 原始崩溃日志：call_trace_text 只是栈函数列表，不能冒充原始日志；
      优先用 log_features.related_errors[].line（dmesg 原文）按行号排序拼装，call_trace_text 单独作为「崩溃调用栈」展示。 */
