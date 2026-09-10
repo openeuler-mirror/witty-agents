@@ -378,26 +378,6 @@ function sceneContext(){
   return '';
 }
 
-/* 从日志特征对象提取可读文本 */
-function logFeatureText(o){
-  if(o==null) return '';
-  if(typeof o!=='object') return String(o);
-  const parts = [];
-  if(has(o.title)) parts.push(o.title);
-  if(has(o.name)) parts.push(o.name);
-  if(has(o.note)) parts.push(o.note);
-  /* 原始日志内容三选一：related_errors 用 line（单数=原文）；other 用 lines（数组=原文）；repeated 用 examples（数组=原文）。
-     注意 related_errors.lines 是「行号」字符串，只能进来源引用，不能当内容展示。 */
-  if(has(o.line)) parts.push(o.line);
-  else if(Array.isArray(o.lines) && o.lines.filter(has).length) parts.push(o.lines.filter(has).join(' / '));
-  else if(Array.isArray(o.examples) && o.examples.filter(has).length) parts.push(o.examples.filter(has).join(' / '));
-  /* 来源引用（文件:行号） */
-  const ref = o.ref;
-  if(ref && (has(ref.file)||has(ref.lines))) parts.push(((ref.file||'')+(has(ref.lines)?(':'+ref.lines):'')).trim());
-  else if(has(o.file)) parts.push(o.file + (!Array.isArray(o.lines)&&has(o.lines)?(':'+o.lines):'') + (has(o.relevance)?(' · '+o.relevance):''));
-  return parts.filter(has).join(' · ');
-}
-
 /* ===== ② 宕机特征 ===== */
 function renderFeatures(){
   let h = `<section class="section" id="features" aria-labelledby="features-title">`;
@@ -414,13 +394,9 @@ function renderFeatures(){
   const ctx = sceneContext();
   if(has(ctx)) rows.push(['现场上下文', esc(ctx)]);
 
+  /* 异常特征表只保留崩溃直接事实；重复可疑日志/其它异常等背景信号统一收在技术附件「日志特征明细」 */
   h += `<dl class="crash-facts">`;
   rows.forEach(r=>{ h += `<div><dt>${esc(r[0])}</dt><dd>${r[1]}</dd></div>`; });
-  const lf = cf.log_features || {};
-  /* 其他异常信息：只收「崩溃段之外」的异常信号（重复可疑日志 + 其它异常）。
-     related_errors 是崩溃日志本身——原文已完整呈现在「原始崩溃日志」，逐行解释在技术附件「日志特征明细」，此处不再重复。 */
-  const other = [...toArr(lf.repeated), ...toArr(lf.other)].map(logFeatureText).filter(has);
-  if(other.length) h += `<div><dt>其他异常信息</dt><dd><ul class="crash-fact-list">${other.map(o=>`<li>${linkifyBody(o)}</li>`).join('')}</ul></dd></div>`;
   h += `</dl>`;
 
   /* 主机与运行环境（折叠）：置于异常特征之后、原始崩溃日志之前 */

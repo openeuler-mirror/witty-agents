@@ -36,7 +36,7 @@ allowed-tools: Bash(python3:*) Bash(pip:*) Bash(cat:*) Bash(ls:*) Bash(rg:*) Bas
    - **修复依据**：`verdict === 'confirmed'` 的案例，**以及被 `standard_solution.basis` / `patch_list` 明确引用的案例**（按 url/sha 匹配；即使 verdict 为 `same_area`，只要被方案引用就升格到此组），默认展开。被引用但非 confirmed 的案例标注「方案引用」徽标，其论证区标题改为「与推荐方案的关系」，并在有 diff 时展示补丁摘录。
    - **参考案例（未采用）**：其余 `same_area` / `not_relevant` / `unverified` 案例默认折叠，仅作为诊断旁证。
    - 该规则保证第 1 章「规避手段 · 修复依据」引用的案例一定出现在技术附件「修复依据」组中，两处不再脱节。
-5. **宕机特征章三块内容分工不重复**：「原始崩溃日志」= 崩溃本身（`raw_crash_log` 完整原文）；「其他异常信息」= 崩溃段**之外**的背景异常信号（仅 `log_features.repeated` + `other`，不含 `related_errors`——其原文已在原始崩溃日志中、逐行解释在技术附件）；技术附件「日志特征明细」= 三类日志特征全量明细（相关性徽标 + 逐行 desc）。
+5. **宕机特征章只留崩溃直接事实**：异常特征表仅含异常类型/故障地址/RIP/现场上下文；「原始崩溃日志」= 崩溃本身（`raw_crash_log` 完整原文）。重复可疑日志、其它异常等背景信号不在本章展示，统一收在技术附件「日志特征明细」（三类全量 + 相关性徽标 + 逐行 desc），避免低参考价值内容干扰主线阅读。
 6. **原始崩溃日志优先完整原文**：「宕机特征」章的「原始崩溃日志」优先渲染 `crash_feature_info.raw_crash_log`（完整连续崩溃段：首行崩溃类型 → ESR → pc/lr/sp → x0~x29 → Call trace → Code 机器码），保证与「如何阅读这段日志」指南逐项对应；无 `raw_crash_log` 时退化为 `related_errors[].line` 按行号拼装摘录；两者都没有时才单独展示「崩溃调用栈」（`call_trace_text`，不冒充原始日志）。
 7. **案例卡片字段零丢失**：卡片按分支渲染 `how`/`fix_scope`/`files`/`diff`/`excerpt`/`corroboration` 等字段（commit 类案例的 meta 附短 sha，非 confirmed commit 同样渲染涉及文件、diff 摘录与原文摘录折叠区）；「查看其余字段（未在上方展示）」采用**动态追踪**——只收纳实际未渲染的字段（已渲染的不重复出现），任何字段都不会既不在卡片正文、也不在其余字段中静默丢失。
 4. **论证展示规则**：
