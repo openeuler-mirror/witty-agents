@@ -23,7 +23,7 @@
 .facts{gap:0;grid-template-columns:1fr 1fr 1.25fr}.fact{padding:0 17px;border-right:1px solid var(--line)}.fact:first-child{padding-left:0}.fact:last-child{border:0;padding-right:0}.fact-label{font-weight:650;color:#5c7064;margin-bottom:8px}.fact-note a{font-size:11px;display:inline-block;margin-top:5px}.fact-note code{font-size:11px}.fact-value{line-height:1.6}
 .mechanism{background:#fafcfb;padding:22px;border-color:#dce4de}.sequence-intro{margin-bottom:22px}.sequence-intro b{display:block;font-size:15px}.sequence-intro>span{display:block;color:var(--muted);font-size:12px;margin-top:4px}
 .mechanism-summary{border:1px solid #d9e4dc;border-left:3px solid #6b9482;border-radius:8px;background:#f4f8f5;padding:14px 16px;margin:14px 0 18px}.mechanism-summary-label{font-size:11px;color:#5f7869;font-weight:650;letter-spacing:.4px;margin-bottom:5px}.mechanism-summary p{font-size:13px;color:#4f6658;line-height:1.8;margin:0}
-.mechanism-judgment{border:1px solid #d8e4dc;border-radius:8px;background:#eef5f0;padding:14px 16px;margin:18px 0 4px}.mechanism-judgment b{display:block;font-size:12px;color:#3d6a4f;margin-bottom:5px}.mechanism-judgment p{font-size:13px;color:#50675a;margin:0;line-height:1.8}.mechanism-judgment .confidence{font-size:11px;color:#718177;margin-top:7px}
+.mechanism-judgment{border:1px solid #d8e4dc;border-radius:8px;background:#eef5f0;padding:14px 16px;margin:14px 0 18px}.mechanism-conclusion{margin:14px 0 18px}.mechanism-conclusion .mechanism-summary{margin:0 0 10px}.mechanism-conclusion .mechanism-judgment{margin:0}.mechanism-judgment b{display:block;font-size:12px;color:#3d6a4f;margin-bottom:5px}.mechanism-judgment p{font-size:13px;color:#50675a;margin:0;line-height:1.8}.mechanism-judgment .confidence{font-size:11px;color:#718177;margin-top:7px}
 .crash-log{max-width:920px;margin:0 auto}.crash-log pre{margin:12px auto 18px}
 .crash-fact-list{margin:5px 0 0;padding-left:18px}.crash-fact-list li{margin:3px 0;font-size:12px;line-height:1.65;color:#52645a}
 .race-window{grid-column:1/-1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:28px;border:1px dashed #b8c9bd;background:#f3f7f4;border-radius:8px;padding:13px 12px;margin:4px 0 12px}.race-start{padding:4px;text-align:center}.race-start b{font-size:13px;display:block;color:#4a6656}.race-start small{display:block;font-size:11px;color:var(--muted);margin-top:4px}.race-window p{grid-column:1/-1;border-top:1px dashed #d2ddd5;padding-top:10px;margin:10px 0 0;text-align:center;font-size:11px;color:#64786a}
@@ -554,7 +554,14 @@ function renderMechanism(){
   let h = `<section class="section" id="mechanism" aria-labelledby="mechanism-title">`;
   h += `<div class="section-heading"><span class="section-no">03</span><h2 id="mechanism-title">故障是怎样发生的</h2></div>`;
   const mechTxt = has(deep.mechanism_summary) ? deep.mechanism_summary : (has(ra.conclusion)?ra.conclusion:(has(deep.mechanism)?firstSentence(deep.mechanism):''));
-  if(has(mechTxt)) h += `<div class="mechanism-summary"><div class="mechanism-summary-label">机制概述</div><p>${linkifyBody(mechTxt)}</p></div>`;
+  /* 当前判断与机制概述整合在章节顶部（结论先行）；两者文本相同（同回退到 conclusion）时不重复渲染。
+     判断不再依赖 event_scene 存在——无时序图的报告同样渲染。 */
+  const judgment = deep.judgment || ra.conclusion || '';
+  const showJudgment = has(judgment) && String(judgment).trim() !== String(mechTxt).trim();
+  const summaryHtml = has(mechTxt) ? `<div class="mechanism-summary"><div class="mechanism-summary-label">机制概述</div><p>${linkifyBody(mechTxt)}</p></div>` : '';
+  const judgmentHtml = showJudgment ? `<div class="mechanism-judgment"><b>当前判断</b><p>${linkifyJudgment(judgment)}</p>${has(deep.confidence)?`<p class="confidence">判断置信度：${linkify(deep.confidence)}</p>`:''}</div>` : '';
+  if(summaryHtml && judgmentHtml) h += `<div class="mechanism-conclusion">${summaryHtml}${judgmentHtml}</div>`;
+  else h += summaryHtml + judgmentHtml;
 
   /* 事件时序泳道图（event_scene）：事件独占一行，箭头指引流向 */
   const es = ra.event_scene;
@@ -598,8 +605,6 @@ function renderMechanism(){
       prevLane = idx;
     });
     h += `</div>`;
-    const judgment = deep.judgment || ra.conclusion || '';
-    if(has(judgment)) h += `<div class="mechanism-judgment"><b>当前判断</b><p>${linkifyJudgment(judgment)}</p>${has(deep.confidence)?`<p class="confidence">判断置信度：${linkify(deep.confidence)}</p>`:''}</div>`;
     h += `<p class="diagram-caption">依据报告 event_scene 重建；只表达机制中的关键先后，不补造未记录的顺序或时间戳。</p>`;
     h += `</div>`;
   }
