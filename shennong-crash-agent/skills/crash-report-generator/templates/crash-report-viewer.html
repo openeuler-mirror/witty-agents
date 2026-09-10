@@ -37,7 +37,7 @@
 .seq-event{position:relative;z-index:1;border:1px solid #d2dfd6;border-radius:7px;background:#fff;padding:14px 15px;overflow-wrap:anywhere}.seq-event b{font-size:14px;display:block;margin:5px 0}.seq-event small{display:block;font-size:11px;color:var(--muted);margin-top:5px}.seq-event code{font-size:11px}.step-label{font-size:11px;color:#6c7e71;display:block}.seq-event.warm{border-color:#d8bc92;background:#fffbf4}.seq-event.warm .step-label{color:#936322}.seq-event.crash{background:#fcf3f1;border-color:#e5c5bf}.seq-event.crash b,.seq-event.crash .step-label{color:#ac4a3f}.seq-empty{display:flex;align-items:center;justify-content:center;padding:8px}.seq-empty span{font-size:11px;color:#7d8c82;background:#fafcfb;padding:4px 8px;text-align:center}
 .cross-order{grid-column:1/-1;height:72px;position:relative}.cross-order svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}.cross-order span{position:absolute;left:50%;top:13px;transform:translateX(-50%);font-size:10px;color:#956829;background:#fafcfb;padding:2px 8px;white-space:nowrap}
 .lane-arrow{text-align:center;font-size:21px;line-height:33px;color:#8aa291}.race-takeaway{margin-top:21px;padding:14px 16px;border:1px solid #d9e4dc;border-radius:7px;background:#edf4ef}.race-takeaway b{font-size:13px;color:#3c6b50}.race-takeaway p{font-size:12px;color:#5e7466;margin:4px 0 0}.diagram-caption{text-align:left;font-size:11px}
-@media(max-width:600px){.section{padding:0 17px 20px}.section-heading{margin:0 -17px;padding:16px 17px 9px}.section-heading h2{font-size:19px}.section-intro{margin:0 -17px 20px;padding:0 17px 15px}.facts{grid-template-columns:1fr;gap:14px}.fact,.fact:first-child,.fact:last-child{padding:0 0 13px;border:0;border-bottom:1px solid var(--line)}.fact:last-child{border:0;padding-bottom:0}.mechanism{padding:14px 10px}.swimlane,.race-window{column-gap:12px}.seq-event{padding:10px 9px}.seq-event b{font-size:12px}.seq-event code{font-size:10px}.race-window{padding:10px 5px}.race-start b{font-size:12px}.cross-order span{font-size:9px;padding:2px}.sequence-intro b{font-size:13px}.lane-head b{font-size:12px}}
+@media(max-width:600px){.section{padding:0 17px 20px}.section-heading{margin:0 -17px;padding:16px 17px 9px}.section-heading h2{font-size:19px}.section-intro{margin:0 -17px 20px;padding:0 17px 15px}.facts{grid-template-columns:1fr;gap:14px}.fact,.fact:first-child,.fact:last-child{padding:0 0 13px;border:0;border-bottom:1px solid var(--line)}.fact:last-child{border:0;padding-bottom:0}.mechanism{padding:14px 10px}.swimlane,.race-window{column-gap:12px}.swimlane{--gap:12px}.lane-conn.cross{height:40px}.lane-conn .stub-full,.lane-conn .stub-dst{bottom:-9px}.lane-conn .head{bottom:-9px}.seq-event{padding:10px 9px}.seq-event b{font-size:12px}.seq-event code{font-size:10px}.race-window{padding:10px 5px}.race-start b{font-size:12px}.cross-order span{font-size:9px;padding:2px}.sequence-intro b{font-size:13px}.lane-head b{font-size:12px}}
 @media print{.section{margin-top:20px;box-shadow:none}.section-heading,.section-intro{break-after:avoid}.mechanism{break-inside:avoid}.swimlane{print-color-adjust:exact}.section{border-color:#bccbc1}}
 
 .plan-card{min-width:0}.plan-card>.reading-group{border:1px solid #dbe4dd;border-radius:7px;padding:0 12px;background:#f9fbf9}.plan-card>.reading-group>details:first-child{border-top:0}.plan-card>.reading-group>details:last-child{border-bottom:0}.plan-card .detail-body{font-size:13px}.plan-card pre{padding:12px;font-size:11px;white-space:pre;overflow-x:auto}.plan-card pre code{font-size:11px}.plan{align-items:start}
@@ -85,6 +85,16 @@
 .log-legend-label{font-weight:600;color:#52615c}
 .log-legend-item{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
 .log-legend-item i{width:12px;height:12px;border-radius:3px;display:inline-block;flex-shrink:0}
+.swimlane{--gap:28px}
+.lane-conn{position:relative;--lw:calc((100% - (var(--n) - 1) * var(--gap,28px)) / var(--n));--cx1:calc(var(--x1) * (var(--lw) + var(--gap,28px)) + var(--lw) / 2);--cx2:calc(var(--x2) * (var(--lw) + var(--gap,28px)) + var(--lw) / 2);--cxa:calc(var(--xa) * (var(--lw) + var(--gap,28px)) + var(--lw) / 2);--cxb:calc(var(--xb) * (var(--lw) + var(--gap,28px)) + var(--lw) / 2)}
+.lane-conn.same{height:33px}
+.lane-conn.cross{height:72px}
+.lane-conn i{position:absolute;background:#a77836;width:2px;margin-left:-1px}
+.lane-conn .stub-full{left:var(--cx1);top:-10px;bottom:-4px}
+.lane-conn .stub-src{left:var(--cx1);top:-10px;height:calc(50% + 10px)}
+.lane-conn .bar{left:var(--cxa);width:calc(var(--cxb) - var(--cxa));top:50%;height:2px;margin-top:-1px;margin-left:0}
+.lane-conn .stub-dst{left:var(--cx2);top:50%;bottom:-4px}
+.lane-conn .head{bottom:-4px;left:var(--cx2);width:0;height:0;margin-left:0;background:none;border-left:5px solid transparent;border-right:5px solid transparent;border-top:8px solid #a77836;transform:translateX(-50%)}
 #log-tip{display:none;position:fixed;z-index:99;max-width:440px;background:#26332c;color:#eef4ef;font-size:12px;line-height:1.7;padding:10px 13px;border-radius:8px;box-shadow:0 8px 28px rgba(20,35,26,.35);pointer-events:none}
 #log-tip.pinned{pointer-events:auto;border:1px solid #4a6d59}
 .reason{font-style:italic;color:var(--muted);display:block;margin-top:2px;font-size:12px}
@@ -540,13 +550,16 @@ function evidenceTitle(e, i){
 
 /* 事件之间流向箭头：同泳道用 ↓，任意跨泳道均使用 S 形曲线。 */
 function laneConnector(a, b, row){
-  if(a===b) return `<div class="lane-arrow" style="grid-column:${a+1};grid-row:${row}" aria-hidden="true">↓</div>`;
+  /* 泳道连接线：起点=源盒底端正中间，终点=目标盒顶端正中间。
+     同泳道=带箭头垂直直线；跨泳道=「垂直→水平→垂直」三段折线。
+     几何用 CSS calc 按 --n/--x* 与列距 --gap 精确计算泳道中心。 */
+  if(a===b){
+    return `<div class="lane-conn same" style="grid-column:${a+1};grid-row:${row};--n:1;--x1:0;--x2:0;--xa:0;--xb:0" aria-hidden="true"><i class="stub-full"></i><i class="head"></i></div>`;
+  }
   const lo=Math.min(a,b), hi=Math.max(a,b);
-  const w=(hi-lo+1)*200;
-  const x1=(a+0.5-lo)*200, x2=(b+0.5-lo)*200;
-  const h=40;
-  const d=`M ${x1} 0 C ${x1} 15, ${x2} 25, ${x2} ${h}`;
-  return `<div class="cross-order flow-arrow" style="grid-column:${lo+1}/${hi+2};grid-row:${row}" aria-hidden="true"><svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none"><defs><marker id="flow-arr-${row}" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#a77836"/></marker></defs><path d="${d}" fill="none" stroke="#a77836" stroke-width="2.5" marker-end="url(#flow-arr-${row})"/></svg></div>`;
+  const n=hi-lo+1, x1=a-lo, x2=b-lo;
+  const xa=Math.min(x1,x2), xb=Math.max(x1,x2);
+  return `<div class="lane-conn cross" style="grid-column:${lo+1}/${hi+2};grid-row:${row};--n:${n};--x1:${x1};--x2:${x2};--xa:${xa};--xb:${xb}" aria-hidden="true"><i class="stub-src"></i><i class="bar"></i><i class="stub-dst"></i><i class="head"></i></div>`;
 }
 
 /* ===== ④ 故障机制 ===== */
