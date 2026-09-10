@@ -9,3 +9,6 @@ __pycache__/
 .DS_Store
 
 .opt/
+
+# skill 本机路径（含绝对路径，勿提交）
+opencode_plugin/skills/nl2sql/scripts/config.json

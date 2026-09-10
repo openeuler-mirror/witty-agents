@@ -7,9 +7,22 @@
 python3 $SKILL/scripts/nl2sql_skill_cli.py <command> [options]
 ```
 
-- 工作目录建议为**仓库根**（含 `nl2sql_core/`）。  
-- **stdout = JSON**（`indent=2`，`ensure_ascii=False`）。失败时常见：`{"ok": false, "error": "..."}` 且进程 exit code ≠ 0。  
+## 仓库根如何定位
+
+CLI 通过 `_common.py` 解析 **NL2SQL 仓库根**（须含 `nl2sql_core/` + `configs/`）：
+
+| 优先级 | 来源 |
+|--------|------|
+| 1 | 环境变量 `NL2SQL_ROOT` |
+| 2 | `$SKILL/scripts/config.json` 字段 `nl2sql_root`（绝对路径；可参考 `config.example.json`） |
+| 3 | 默认：假定 skill 在 `<repo>/opencode_plugin/skills/nl2sql/scripts`，上溯 4 级到 `<repo>` |
+
+skill 放在 `~/.config/opencode/skills/nl2sql` 时，**必须**配置 1 或 2，否则无法 import `nl2sql_core`。  
+`config.json` 仅本机使用，仓库 `.gitignore` 已忽略；请提交 `config.example.json` 作模板。
+
+- **stdout = JSON**。失败时常见：`{"ok": false, "error": "..."}` 且 exit ≠ 0。  
 - **不要**调用本机 Web HTTP；本 CLI 即全部能力面。
+- 解析到仓库根后，进程会 `chdir` 到该根，以便读取 `.env` / `configs/` / `data/`。
 
 ---
 
