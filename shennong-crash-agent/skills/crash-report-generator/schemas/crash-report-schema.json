@@ -280,6 +280,10 @@
               }
             }
           }
+        },
+        "raw_crash_log": {
+          "type": "string",
+          "description": "完整原始崩溃日志段（逐字复制自 dmesg/vmcore-dmesg）：从崩溃首行（如 Unable to handle/BUG/panic）起，到 Code: 机器码行（无 Code 行则到 Call trace 结束）止的连续原文，含 ESR/寄存器/Call trace 全部行。HTML「原始崩溃日志」区优先渲染本字段，保证与「如何阅读这段日志」指南逐项对应。"
         }
       }
     },

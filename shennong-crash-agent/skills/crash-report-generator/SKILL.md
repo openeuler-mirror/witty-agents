@@ -26,6 +26,24 @@ allowed-tools: Bash(python3:*) Bash(pip:*) Bash(cat:*) Bash(ls:*) Bash(rg:*) Bas
 
 独立 HTML（`crash-report.html`）将报告呈现为五个章节：故障总览 → 宕机特征 → 故障机制（事件时序图）→ 判断依据 → 技术附件。判断依据章节按 `deep.evidence[]` 逐条渲染，每条核心依据必须携带独立的 `reasoning[]` 推理链；不再把多条依据合并成一个页面级总推理链。
 
+### HTML 渲染层约定
+
+`templates/crash-report-viewer.html` 负责把 JSON 渲染为自包含 HTML，以下行为由模板层保证：
+
+1. **正文链接指向技术附件**：故障总览、宕机特征、故障机制、判断依据等正文区域出现的 commit / URL，若命中 `diagnosis_repair_result` 中的案例条目，则渲染为当前 HTML 内部锚点 `#case-{group}-{index}`；点击后自动展开技术附件的多层折叠并高亮目标卡片。未命中索引的 commit / URL 保持纯文本，正文区域不生成外部跳转链接。
+2. **技术附件保留外链**：案例卡片内的「查看原始资料」等链接仍指向外部一手资料。
+3. **案例按「是否支撑推荐修复方案」分层展示**：
+   - **修复依据**：`verdict === 'confirmed'` 的案例，**以及被 `standard_solution.basis` / `patch_list` 明确引用的案例**（按 url/sha 匹配；即使 verdict 为 `same_area`，只要被方案引用就升格到此组），默认展开。被引用但非 confirmed 的案例标注「方案引用」徽标，其论证区标题改为「与推荐方案的关系」，并在有 diff 时展示补丁摘录。
+   - **参考案例（未采用）**：其余 `same_area` / `not_relevant` / `unverified` 案例默认折叠，仅作为诊断旁证。
+   - 该规则保证第 1 章「规避手段 · 修复依据」引用的案例一定出现在技术附件「修复依据」组中，两处不再脱节。
+5. **宕机特征章三块内容分工不重复**：「原始崩溃日志」= 崩溃本身（`raw_crash_log` 完整原文）；「其他异常信息」= 崩溃段**之外**的背景异常信号（仅 `log_features.repeated` + `other`，不含 `related_errors`——其原文已在原始崩溃日志中、逐行解释在技术附件）；技术附件「日志特征明细」= 三类日志特征全量明细（相关性徽标 + 逐行 desc）。
+6. **原始崩溃日志优先完整原文**：「宕机特征」章的「原始崩溃日志」优先渲染 `crash_feature_info.raw_crash_log`（完整连续崩溃段：首行崩溃类型 → ESR → pc/lr/sp → x0~x29 → Call trace → Code 机器码），保证与「如何阅读这段日志」指南逐项对应；无 `raw_crash_log` 时退化为 `related_errors[].line` 按行号拼装摘录；两者都没有时才单独展示「崩溃调用栈」（`call_trace_text`，不冒充原始日志）。
+7. **案例卡片字段零丢失**：卡片按分支渲染 `how`/`fix_scope`/`files`/`diff`/`excerpt`/`corroboration` 等字段（commit 类案例的 meta 附短 sha，非 confirmed commit 同样渲染涉及文件、diff 摘录与原文摘录折叠区）；「查看其余字段（未在上方展示）」采用**动态追踪**——只收纳实际未渲染的字段（已渲染的不重复出现），任何字段都不会既不在卡片正文、也不在其余字段中静默丢失。
+4. **论证展示规则**：
+   - `confirmed` 的 commit：合并为单一区域「为什么这个 commit 能修复当前问题」，包含 `how` / `fix_scope` / 涉及文件 / `diff` 摘录。
+   - `same_area` 的 commit / 社区案例：展示「匹配论证」+「适用性 / 参考性说明」，明确为什么只能参考、不能直接采用。
+   - 内部案例：展示 `corroboration` 多维匹配论证表格 + `applicability` 采用前提 + `fingerprints` 匹配指纹。
+
 ## `diagnosis_repair_result` 的填写规则
 
 - `internal_kernel_result` 的**核心字段**（`knowledge_id`/`bug_summary`/`root_cause`/`solution`/`hotpatch`/`kernel_versions`/`case_count`/`match_level` 等）必须逐值复制 `crash-feature-matcher:query_knowledge` / `query_cases` 返回的原生 JSON，再由 LLM 补齐分析字段（`id`/`anchor`/`title`/`verdict`/`fingerprints`/`affected_component`/`history`/`corroboration`/`applicability`，`match_score` 换算成 高/中/低），禁止改写核心字段的 value；`fingerprints`（匹配指纹）由 LLM 写成人类可读的多维特征列表（子系统/内核版本/CPU/机型/业务/访问模式），不要只写签名串。

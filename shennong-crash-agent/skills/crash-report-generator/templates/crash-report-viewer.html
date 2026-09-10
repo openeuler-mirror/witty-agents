@@ -65,12 +65,41 @@
 .tag-blue{background:#d9edf7;color:#31708f}
 .tag-yellow{background:#fcf8e3;color:#8a6d3b}
 .tag-gray{background:#eee;color:#666}
+.workflow-status.st-success,.tool-pill.st-success{background:#e3f0e6;color:#2e7d5b}
+.workflow-status.st-partial,.tool-pill.st-partial{background:#faf1de;color:#926321}
+.workflow-status.st-failed,.tool-pill.st-failed{background:#f9e5e5;color:#b04a4a}
+.workflow-status.st-skipped,.tool-pill.st-skipped{background:#eceeee;color:#7a807c}
+.tool-pill.st-success,.tool-pill.st-partial,.tool-pill.st-failed,.tool-pill.st-skipped{border:1px solid currentColor}
 .reason{font-style:italic;color:var(--muted);display:block;margin-top:2px;font-size:12px}
 .mc-kind{display:inline-block;font-size:11px;font-weight:600;padding:1px 8px;border-radius:4px;background:#eef2f7;color:#475569;border:1px solid #dbe2ea;margin-right:6px;vertical-align:middle}
 .control-button{border:1px solid #cbdad0;background:#f7faf8;color:#35644e;border-radius:6px;padding:6px 10px;font-size:11px}
 .control-button:hover{background:#eaf3ed}
 .control-button.is-open{background:#35644e;border-color:#35644e;color:#fff}
 .control-button.is-open:hover{background:#2b543f}
+/* 正文区域指向技术附件的链接 */
+.attachment-link{position:relative;display:inline-flex;align-items:center;gap:4px;color:#27685b;background:#eaf3ef;border-radius:4px;padding:1px 6px;text-decoration:none;font-weight:600}
+.attachment-link::after{content:"↗";font-size:10px}
+.case-highlight{animation:case-pulse 2.2s ease}
+@keyframes case-pulse{0%{box-shadow:0 0 0 3px rgba(39,104,91,.45)}70%{box-shadow:0 0 0 10px rgba(39,104,91,0)}100%{box-shadow:0 0 0 0 rgba(39,104,91,0)}}
+/* 案例卡片增强：匹配论证与修复论证 */
+.case-lead{font-size:13px;color:#4f6257;line-height:1.75;margin:10px 0 12px;padding:10px 12px;background:#f7faf8;border-left:3px solid #6b9482;border-radius:0 6px 6px 0}
+.corrob-table{width:100%;border-collapse:collapse;margin-top:8px;font-size:12px;border:1px solid #dbe4dd;border-radius:6px;overflow:hidden}
+.corrob-table thead th{background:#f0f4f1;color:#52685b;font-weight:650;text-align:left;padding:8px 10px;border-bottom:1px solid #dbe4dd;white-space:nowrap}
+.corrob-table tbody td{padding:8px 10px;border-bottom:1px solid #edf1ee;vertical-align:top;line-height:1.65;color:#4f6257;word-break:break-word}
+.corrob-table tbody tr:last-child td{border-bottom:none}
+.corrob-table .corrob-support{background:#f4fbf6}
+.corrob-table .corrob-support td:nth-child(2){color:#2e7d5b}
+.corrob-table .corrob-partial{background:#fffbf4}
+.corrob-table .corrob-partial td:nth-child(2){color:#926321}
+.corrob-table .corrob-mismatch{background:#fdf4f3}
+.corrob-table .corrob-mismatch td:nth-child(2){color:#b54b41}
+.case-applicability,.case-relevance{margin-top:10px;padding:8px 10px;background:#f7faf8;border-radius:5px;font-size:12px;color:#4f6257}
+.case-fix-section{background:#f7faf8;border:1px solid #dbe4dd;border-left:3px solid #6b9482;border-radius:0 6px 6px 0;padding:12px 14px}
+.case-fix-section>p{margin:6px 0}
+.case-fingerprints{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.patch-rationale{background:#f7faf8;border-left:3px solid #6b9482;padding:10px 12px;margin:10px 0;border-radius:0 6px 6px 0}
+.patch-rationale b{font-size:12px;color:#3d6a4f;display:block;margin-bottom:4px}
+.patch-rationale p{font-size:12px;color:#50675a;margin:0;line-height:1.75}
 </style></head>
 <body>
 <a class="skip-link" href="#overview">跳到报告正文</a>
@@ -122,6 +151,129 @@ const ss = ra.standard_solution || null;
 const wa = ra.temporary_workaround || null;
 const deep = ra.deep || {};
 
+/* ===== 技术附件索引：把正文里的 commit/url 链接指向第 05 章对应案例 ===== */
+let attachmentIndex = {};   /* key -> caseId */
+let caseIdMap = {};         /* caseId -> case object */
+
+function normalizeUrl(u){
+  return String(u || '').replace(/[.,，。；;!?\)\]'">]+$/, '').trim().toLowerCase();
+}
+
+function collectCases(){
+  const caseGroups = [
+    {key:'internal_kernel_result', source:'内部案例'},
+    {key:'community_kernel_result', source:'社区案例'},
+    {key:'community_emails', source:'社区邮件'},
+    {key:'community_meetings', source:'社区会议'},
+    {key:'online_result', source:'在线案例'},
+  ];
+  const community = toArr(diag.community_kernel_result);
+  const communityEmails = community.filter(c=>/mail|email|邮件|邮件列表|lore/i.test(String(c.kind||c.source||c.title||c.subject||'')));
+  const caseData = {...diag, community_kernel_result: community.filter(c=>!communityEmails.includes(c)), community_emails: communityEmails};
+  return caseGroups.flatMap(g=>toArr(caseData[g.key]).map((c,i)=>({case:c, source:g.source, id:`case-${g.key}-${i}`})));
+}
+
+function registerAttachment(id, c){
+  caseIdMap[id] = c;
+  ['url','patch_url','sha','patch_ref','commit'].forEach(k=>{
+    const v = c[k];
+    if(!v) return;
+    attachmentIndex[normalizeUrl(v)] = id;
+    if(/^[0-9a-f]{12,40}$/i.test(String(v))){
+      attachmentIndex[String(v).toLowerCase()] = id;
+      attachmentIndex[String(v).toLowerCase().slice(0,12)] = id;
+    }
+  });
+  // 从文本字段里再提取一次 commit sha，扩大命中面
+  [c.title, c.subject, c.bug_summary, c.excerpt, c.how, c.lead, c.phenomenon, c.root_cause].forEach(txt=>{
+    if(!txt) return;
+    const shas = String(txt).match(/\b[0-9a-f]{12,40}\b/gi) || [];
+    shas.forEach(sha=>{ attachmentIndex[String(sha).toLowerCase()] = id; });
+  });
+}
+
+function buildAttachmentIndex(){
+  attachmentIndex = {};
+  caseIdMap = {};
+  collectCases().forEach(({case:c, id})=> registerAttachment(id, c));
+}
+
+function findAttachmentId(token){
+  if(!token) return '';
+  const k = normalizeUrl(token);
+  if(attachmentIndex[k]) return attachmentIndex[k];
+  const kl = String(token).toLowerCase();
+  if(attachmentIndex[kl]) return attachmentIndex[kl];
+  // 尝试短 sha 前缀匹配
+  if(/^[0-9a-f]{12,40}$/i.test(kl)){
+    for(const key in attachmentIndex){
+      if(key.startsWith(kl) || kl.startsWith(key)) return attachmentIndex[key];
+    }
+  }
+  return '';
+}
+
+function openAttachmentCase(id){
+  const el = document.getElementById(id);
+  if(!el) return true;
+  // 展开所有父级 details
+  let p = el.parentElement;
+  while(p){
+    if(p.tagName === 'DETAILS') p.open = true;
+    p = p.parentElement;
+  }
+  // 展开案例分组与附件总折叠
+  const group = el.closest('.case-group');
+  if(group && group.tagName === 'DETAILS') group.open = true;
+  const appendixCard = el.closest('.appendix-card');
+  if(appendixCard){
+    const topDetails = appendixCard.querySelector(':scope > details');
+    if(topDetails) topDetails.open = true;
+  }
+  // 同时展开卡片内部的“查看完整字段”等 details，让用户直接看到对应材料
+  const innerDetails = el.querySelectorAll('details');
+  innerDetails.forEach(d => d.open = true);
+  if(el.scrollIntoView) el.scrollIntoView({behavior:'smooth', block:'center'});
+  el.classList.add('case-highlight');
+  setTimeout(()=>el.classList.remove('case-highlight'), 2200);
+  return false;
+}
+window.openAttachmentCase = openAttachmentCase;
+
+/* 正文区域使用的链接化：命中附件索引则跳转到技术附件并自动展开，否则保持外链。 */
+function linkifyBody(s){
+  if(s==null) return '';
+  let text=esc(s), urls=[];
+  text=text.replace(/https?:\/\/[^\s<]+/g,m=>{
+    const url=m.replace(/[.,，。；;!?\)\]'">]+$/,'');
+    const tail=m.slice(url.length);
+    const i=urls.push({url,tail})-1;
+    return `@@URL${i}@@`;
+  });
+  text=text.replace(/\b[0-9a-f]{12,40}\b/gi,m=>{
+    const id = findAttachmentId(m);
+    if(id) return `<a href="#${id}" onclick="openAttachmentCase('${id}'); return false;" class="attachment-link" title="跳转到技术附件">${m}</a>`;
+    return m; /* 未命中索引的 commit 保持纯文本，不跳外部 */
+  });
+  return text.replace(/@@URL(\d+)@@/g,(_,i)=>{
+    const u = urls[i].url;
+    const id = findAttachmentId(u);
+    if(id) return `<a href="#${id}" onclick="openAttachmentCase('${id}'); return false;" class="attachment-link" title="跳转到技术附件">${u}</a>${urls[i].tail}`;
+    return u + urls[i].tail; /* 未命中索引的 URL 保持纯文本，不跳外部 */
+  });
+}
+
+function linkifyJudgment(s){
+  if(s==null) return '';
+  return esc(s).replace(/https?:\/\/[^\s<]+/g, m=>{
+    const url=m.replace(/[.,，。；;!?\)\]'">]+$/,'');
+    const tail=m.slice(url.length);
+    const id = findAttachmentId(url);
+    if(id) return `<a href="#${id}" onclick="openAttachmentCase('${id}'); return false;" class="attachment-link" title="跳转到技术附件">查看关联技术附件 ↗</a>${tail}`;
+    return url + tail; /* 未命中索引的 URL 保持纯文本 */
+  });
+}
+
 /* 从日志/签名里提取崩溃地址（形如 0x...） */
 function faultAddr(){
   const hay = [cf.signature, cf.bug_key, cf.bug_summary, cf.rip].filter(has).join(' | ');
@@ -145,7 +297,7 @@ function renderOverview(){
 
   /* hero：一句话结论 */
   h += `<div class="hero"><h2>${esc(head)}</h2>`;
-  if(has(concl)) h += `<p class="hero-copy">${linkify(concl)}</p>`;
+  if(has(concl)) h += `<p class="hero-copy">${linkifyBody(concl)}</p>`;
 
   /* facts：3 个关键事实 */
   const facts = [];
@@ -162,7 +314,7 @@ function renderOverview(){
 
   if(facts.length){
     h += `<div class="facts">`;
-    facts.forEach(f=>{ h += `<div class="fact"><div class="fact-label">${esc(f.label)}</div><div class="fact-value">${esc(f.value)}</div>${has(f.note)?`<div class="fact-note">${linkify(f.note)}</div>`:''}</div>`; });
+    facts.forEach(f=>{ h += `<div class="fact"><div class="fact-label">${esc(f.label)}</div><div class="fact-value">${esc(f.value)}</div>${has(f.note)?`<div class="fact-note">${linkifyBody(f.note)}</div>`:''}</div>`; });
     h += `</div>`;
   }
   h += `</div>`; /* hero */
@@ -174,23 +326,27 @@ function renderOverview(){
   h += `<article class="plan-card"><div class="small-label">根治措施 · 内核维护人员</div>`;
   const ssTitle = ss ? (ss.type==='patch' ? '合入上游等价修复' : ss.type==='config' ? '调整配置或运行参数' : (ss.claim_tag || '相应修复')) : '原报告未给出根治方案';
   h += `<h3>${esc(ssTitle)}</h3>`;
-  if(ss && has(ss.short)) h += `<p>${linkify(ss.short)}</p>`;
+  if(ss && has(ss.short)) h += `<p>${linkifyBody(ss.short)}</p>`;
   if(ss){
     h += `<div class="reading-group">`;
     let det = '';
     if(toArr(ss.patch_list).length){
       det += `<h4>建议合入补丁</h4>`;
       toArr(ss.patch_list).forEach(p=>{
-        det += `<p><b>${esc(p.subject||p.sha||'')}</b></p>`;
-        if(has(p.sha)) det += `<p class="caption">${esc(p.sha)}</p>`;
+        det += `<p><b>${linkifyBody(p.subject||p.sha||'')}</b></p>`;
+        if(has(p.sha)) det += `<p class="caption">${linkifyBody(p.sha)}</p>`;
+        if(has(p.why)) det += `<div class="patch-rationale"><b>为什么这个补丁能修复当前问题</b><p>${linkifyBody(p.why)}</p></div>`;
         if(toArr(p.files).length) det += `<p>涉及文件：${esc(toArr(p.files).join(' · '))}</p>`;
         if(has(p.diff)) det += `<pre><code>${esc(p.diff)}</code></pre>`;
       });
     }
     if(toArr(ss.method_steps).length){
-      det += `<h4>合入步骤</h4><ol>${toArr(ss.method_steps).map(s=>`<li>${linkify(s)}</li>`).join('')}</ol>`;
+      det += `<h4>合入步骤</h4><ol>${toArr(ss.method_steps).map(s=>{
+        const clean = String(s).replace(/^\s*\d+[.、)\]\s]+/, '');
+        return `<li>${linkifyBody(clean)}</li>`;
+      }).join('')}</ol>`;
     }
-    if(toArr(ss.basis).length) det += `<h4>修复依据</h4><ul class="reference-list">${toArr(ss.basis).map(b=>{const lbl=b.title||b.text||'';const lnk=b.url?`<a href="${esc(b.url)}" target="_blank" rel="noopener noreferrer">${esc(lbl)} ↗</a>`:esc(lbl);return `<li>${lnk}${(has(b.text)&&b.title)?`<p class="muted">${linkify(b.text)}</p>`:''}</li>`;}).join('')}</ul>`;
+    if(toArr(ss.basis).length) det += `<h4>修复依据</h4><ul class="reference-list">${toArr(ss.basis).map(b=>{const lbl=b.title||b.text||'';const basisId=b.url?findAttachmentId(b.url):'';const lnk=basisId?`<a href="#${basisId}" onclick="openAttachmentCase('${basisId}'); return false;" class="attachment-link">${esc(lbl)} ↗</a>`:esc(lbl);return `<li>${lnk}${(has(b.text)&&b.title)?`<p class="muted">${linkifyBody(b.text)}</p>`:''}</li>`;}).join('')}</ul>`;
     if(has(det)) h += `<details><summary>修复细节与补丁摘录<span class="chevron" aria-hidden="true"></span></summary><div class="detail-body">${det}</div></details>`;
     h += `</div>`;
   }
@@ -200,9 +356,9 @@ function renderOverview(){
   const waCaseRefs = wa ? toArr(wa.case_refs).filter(has) : [];
   if(waCaseRefs.length && wa && has(wa.summary) && String(wa.summary).trim()!=='无'){
     h += `<article class="plan-card secondary"><div class="small-label">临时缓解 · 采集组件维护人员</div>`;
-    h += `<h3>${esc(firstSentence(wa.summary))}</h3><p>${linkify(wa.summary)}</p>`;
-    if(toArr(wa.steps).length) h += `<p>${toArr(wa.steps).map(s=>linkify(s)).join('<br>')}</p>`;
-    if(has(wa.risk)) h += `<p class="notice">${linkify(wa.risk)}</p>`;
+    h += `<h3>${esc(firstSentence(wa.summary))}</h3><p>${linkifyBody(wa.summary)}</p>`;
+    if(toArr(wa.steps).length) h += `<p>${toArr(wa.steps).map(s=>linkifyBody(s)).join('<br>')}</p>`;
+    if(has(wa.risk)) h += `<p class="notice">${linkifyBody(wa.risk)}</p>`;
     else h += `<p class="notice">仅降低触发概率，不能根治。</p>`;
     h += `</article>`;
   }
@@ -230,10 +386,15 @@ function logFeatureText(o){
   if(has(o.title)) parts.push(o.title);
   if(has(o.name)) parts.push(o.name);
   if(has(o.note)) parts.push(o.note);
-  if(has(o.lines)) parts.push(o.lines);
-  else if(has(o.file)) parts.push(o.file + (has(o.line)?(':'+o.line):'') + (has(o.relevance)?(' · '+o.relevance):''));
+  /* 原始日志内容三选一：related_errors 用 line（单数=原文）；other 用 lines（数组=原文）；repeated 用 examples（数组=原文）。
+     注意 related_errors.lines 是「行号」字符串，只能进来源引用，不能当内容展示。 */
+  if(has(o.line)) parts.push(o.line);
+  else if(Array.isArray(o.lines) && o.lines.filter(has).length) parts.push(o.lines.filter(has).join(' / '));
+  else if(Array.isArray(o.examples) && o.examples.filter(has).length) parts.push(o.examples.filter(has).join(' / '));
+  /* 来源引用（文件:行号） */
   const ref = o.ref;
-  if(ref && (has(ref.file)||has(ref.lines))) parts.push(((ref.file||'')+' '+(ref.lines||'')).trim());
+  if(ref && (has(ref.file)||has(ref.lines))) parts.push(((ref.file||'')+(has(ref.lines)?(':'+ref.lines):'')).trim());
+  else if(has(o.file)) parts.push(o.file + (!Array.isArray(o.lines)&&has(o.lines)?(':'+o.lines):'') + (has(o.relevance)?(' · '+o.relevance):''));
   return parts.filter(has).join(' · ');
 }
 
@@ -277,12 +438,28 @@ function renderFeatures(){
   h += `<dl class="crash-facts">`;
   rows.forEach(r=>{ h += `<div><dt>${esc(r[0])}</dt><dd>${r[1]}</dd></div>`; });
   const lf = cf.log_features || {};
-  const other = [...toArr(lf.related_errors), ...toArr(lf.repeated), ...toArr(lf.other)].map(logFeatureText).filter(has);
-  if(other.length) h += `<div><dt>其他异常信息</dt><dd><ul class="crash-fact-list">${other.map(o=>`<li>${linkify(o)}</li>`).join('')}</ul></dd></div>`;
+  /* 其他异常信息：只收「崩溃段之外」的异常信号（重复可疑日志 + 其它异常）。
+     related_errors 是崩溃日志本身——原文已完整呈现在「原始崩溃日志」，逐行解释在技术附件「日志特征明细」，此处不再重复。 */
+  const other = [...toArr(lf.repeated), ...toArr(lf.other)].map(logFeatureText).filter(has);
+  if(other.length) h += `<div><dt>其他异常信息</dt><dd><ul class="crash-fact-list">${other.map(o=>`<li>${linkifyBody(o)}</li>`).join('')}</ul></dd></div>`;
   h += `</dl>`;
 
-  if(has(cf.call_trace_text)){
-    h += `<details class="reading-group"><summary>原始崩溃日志<span class="chevron" aria-hidden="true"></span></summary><div class="detail-body"><div class="crash-log"><pre><code>${esc(cf.call_trace_text)}</code></pre></div></div></details>`;
+  /* 原始崩溃日志：call_trace_text 只是栈函数列表，不能冒充原始日志；
+     优先用 log_features.related_errors[].line（dmesg 原文）按行号排序拼装，call_trace_text 单独作为「崩溃调用栈」展示。 */
+  const lfr0 = cf.log_features || {};
+  const rawLines = toArr(lfr0.related_errors).filter(e=>e && has(e.line))
+    .slice()
+    .sort((a,b)=>(parseInt(String(a.lines||''),10)||0)-(parseInt(String(b.lines||''),10)||0))
+    .map(e=>String(e.line));
+  const rawSrc = (lfr0.related_ref && has(lfr0.related_ref.file)) ? (lfr0.related_ref.file + (has(lfr0.related_ref.lines)?(' L'+lfr0.related_ref.lines):'')) : '';
+  /* 优先渲染 raw_crash_log（完整连续原文，与阅读指南逐项对应）；无则退化为 related_errors 拼装摘录 */
+  const rawFull = has(cf.raw_crash_log) ? String(cf.raw_crash_log) : '';
+  if(rawFull){
+    h += `<details class="reading-group"><summary>原始崩溃日志<span class="chevron" aria-hidden="true"></span></summary><div class="detail-body">${rawSrc?`<p class="muted">逐字摘自 ${esc(rawSrc)}（完整连续崩溃段）；逐行含义见技术附件「日志特征明细」。</p>`:''}<div class="crash-log"><pre><code>${esc(rawFull)}</code></pre></div></div></details>`;
+  } else if(rawLines.length){
+    h += `<details class="reading-group"><summary>原始崩溃日志<span class="chevron" aria-hidden="true"></span></summary><div class="detail-body">${rawSrc?`<p class="muted">按行号排序摘自 ${esc(rawSrc)}（关键行摘录，非连续全文）；逐行含义见技术附件「日志特征明细」。</p>`:''}<div class="crash-log"><pre><code>${esc(rawLines.join('\n'))}</code></pre></div></div></details>`;
+  }
+  if(rawFull || rawLines.length){
     h += `<details class="reading-group"><summary>如何阅读这段日志<span class="chevron" aria-hidden="true"></span></summary><div class="detail-body"><ul>`;
     h += `<li><b>第 1 行「Unable to handle kernel ... at 0x...」</b>：崩溃类型（如空指针解引用）与故障地址——即内核访问到的无效内存地址。</li>`;
     h += `<li><b>pc（程序计数器）</b>：CPU 崩时正在执行的那条指令的地址，格式是「函数名+偏移/总长」——函数名=崩溃所在的函数；+偏移=崩在距该函数开头多少字节处的那条指令；/总长=该函数的字节总数。这一行直接定位到「崩在哪个函数的哪条指令」。</li>`;
@@ -291,6 +468,10 @@ function renderFeatures(){
     h += `<li><b>Call trace</b>：调用栈，从崩溃点向上追溯到系统调用入口，看清完整调用链路。</li>`;
     h += `<li><b>Code: (...)</b>：崩溃指令的机器码，括号内的那一条就是触发异常的实际指令。</li>`;
     h += `</ul></div></details>`;
+  } else if(has(cf.call_trace_text)){
+    /* 兜底：无 related_errors 原文行时才单独展示调用栈（如实标注，不冒充原始日志）；
+       有原始日志时不再重复展示——调用链已在「故障是怎样发生的」与判断依据中逐跳呈现 */
+    h += `<details class="reading-group"><summary>崩溃调用栈<span class="chevron" aria-hidden="true"></span></summary><div class="detail-body"><div class="crash-log"><pre><code>${esc(cf.call_trace_text)}</code></pre></div></div></details>`;
   }
   h += `</section>`;
   return h;
@@ -310,14 +491,14 @@ function renderEvidence(){
       const reasoning = isObj ? toArr(e.reasoning) : [];
       h += `<article class="evidence"><div class="evidence-number">${i+1}</div><div>`;
       h += `<h3>${esc(title)}</h3>`;
-      if(has(summary)) h += `<p>${linkify(summary)}</p>`;
+      if(has(summary)) h += `<p>${linkifyBody(summary)}</p>`;
       if(reasoning.length){
         h += `<details><summary>查看推理细节与证据<span class="chevron" aria-hidden="true"></span></summary><div class="detail-body"><ol class="reasoning">`;
         reasoning.forEach(st=>{
           h += `<li><h4>${esc(st.step||'')}</h4>`;
-          if(has(st.detail)) h += `<p>${linkify(st.detail)}</p>`;
+          if(has(st.detail)) h += `<p>${linkifyBody(st.detail)}</p>`;
           if(has(st.evidence)) h += `<pre><code>${esc(st.evidence)}</code></pre>`;
-          if(has(st.conclusion)) h += `<p class="reason-result">${linkify(st.conclusion)}</p>`;
+          if(has(st.conclusion)) h += `<p class="reason-result">${linkifyBody(st.conclusion)}</p>`;
           h += `</li>`;
         });
         h += `</ol></div></details>`;
@@ -356,7 +537,7 @@ function renderMechanism(){
   let h = `<section class="section" id="mechanism" aria-labelledby="mechanism-title">`;
   h += `<div class="section-heading"><span class="section-no">03</span><h2 id="mechanism-title">故障是怎样发生的</h2></div>`;
   const mechTxt = has(deep.mechanism_summary) ? deep.mechanism_summary : (has(ra.conclusion)?ra.conclusion:(has(deep.mechanism)?firstSentence(deep.mechanism):''));
-  if(has(mechTxt)) h += `<div class="mechanism-summary"><div class="mechanism-summary-label">机制概述</div><p>${linkify(mechTxt)}</p></div>`;
+  if(has(mechTxt)) h += `<div class="mechanism-summary"><div class="mechanism-summary-label">机制概述</div><p>${linkifyBody(mechTxt)}</p></div>`;
 
   /* 事件时序泳道图（event_scene）：事件独占一行，箭头指引流向 */
   const es = ra.event_scene;
@@ -416,7 +597,7 @@ function renderMechanism(){
       const code = c.stack || ((c.from||'')+(c.to?(' → '+c.to):''));
       const loc = [c.src_dir, c.file].filter(has).join('/')+(has(c.line)?(':'+c.line):'');
       let ex = `<b>${esc((c.from||'')+(c.to?(' → '+c.to):''))}</b>`;
-      if(has(c.detail)) ex += `<p>${linkify(c.detail)}</p>`;
+      if(has(c.detail)) ex += `<p>${linkifyBody(c.detail)}</p>`;
       const params = toArr(c.params);
       if(params.length){
         ex += `<div class="source-route"><b>关键参数（寄存器 ↔ 形参）</b><p>` +
@@ -424,13 +605,27 @@ function renderMechanism(){
           `</p></div>`;
       }
       if(has(c.evidence)) ex += `<span class="source-label">${esc(c.evidence)}</span>`;
-      if(has(c.source_url)) ex += `<p><a href="${esc(c.source_url)}" target="_blank" rel="noopener noreferrer">在线源码对照 ↗</a></p>`;
+      if(has(c.source_url)){
+        const srcId = findAttachmentId(c.source_url);
+        if(srcId) ex += `<p><a href="#${srcId}" onclick="openAttachmentCase('${srcId}'); return false;" class="attachment-link" title="跳转到技术附件">关联技术附件 ↗</a></p>`;
+        else ex += `<p>在线源码对照：${esc(c.source_url)}</p>`;
+      }
       h += `<li class="${cls}"><div class="stack-frame"><span>${esc(loc||c.fn_ctx||'')}</span><code>${esc(code)}</code></div><span class="stack-pointer" aria-hidden="true">→</span><div class="stack-explain">${ex}</div></li>`;
     });
     h += `</ol></div></div></details></div>`;
   }
   h += `</section>`;
   return h;
+}
+
+/* 工作流/工具状态配色：success 绿 · partial 琥珀 · failed 红 · skipped 灰 */
+function statusClass(st){
+  const s = String(st||'').toLowerCase();
+  if(/success|ok|completed|done/.test(s)) return 'st-success';
+  if(/partial|part|warn|degraded/.test(s)) return 'st-partial';
+  if(/fail|error|timeout/.test(s)) return 'st-failed';
+  if(/skip|cancel/.test(s)) return 'st-skipped';
+  return '';
 }
 
 /* 案例判定徽标 */
@@ -442,6 +637,34 @@ function verdictBadge(v){
   else if(/same_area|同域|同子系统|需适配/.test(vv)) color = '#926321';
   else if(/not_relevant|无关|不适用|未验证|unverified/.test(vv)) color = '#8a8f8c';
   return `<span style="display:inline-block;margin-left:6px;padding:0 7px;border-radius:10px;background:${color};color:#fff;font-size:11px;vertical-align:middle">${esc(v)}</span>`;
+}
+
+function relevanceBadge(v){
+  if(!has(v)) return '';
+  const vv = String(v).toLowerCase();
+  let color = '#8a8f8c';
+  if(/强相关/.test(vv)) color = '#b04a4a';  /* 强相关=与崩溃最直接相关，红色醒目警示 */
+  else if(/confirmed|可直接采用/.test(vv)) color = '#2e7d5b';
+  else if(/部分相关|一般相关|same_area|同域/.test(vv)) color = '#926321';
+  else if(/弱相关|not_relevant|无关|不适用|未验证|unverified/.test(vv)) color = '#8a8f8c';
+  return `<span style="display:inline-block;margin-left:6px;padding:0 7px;border-radius:10px;background:${color}22;color:${color};border:1px solid ${color}55;font-size:11px;vertical-align:middle">${esc(v)}</span>`;
+}
+
+function renderCorroboration(rows){
+  if(!Array.isArray(rows) || !rows.length) return '';
+  const dimNames = {
+    feature_data:'崩溃特征', kernel_version:'内核版本', execution_context:'执行上下文',
+    timeline:'时间线', mechanism:'触发机制', fix_scope:'修复口径'
+  };
+  let h = `<table class="corrob-table"><thead><tr><th>维度</th><th>判定</th><th>本次现场</th><th>参考案例</th></tr></thead><tbody>`;
+  rows.forEach(r=>{
+    const v = String(r.verdict||'').toLowerCase();
+    const state = v==='support' ? '支持' : v==='partial' ? '部分支持' : v==='mismatch' ? '不匹配' : (r.verdict || '');
+    const cls = v==='support' ? 'corrob-support' : (v==='mismatch' ? 'corrob-mismatch' : 'corrob-partial');
+    h += `<tr class="${cls}"><td>${esc(dimNames[r.dimension] || r.dimension || '')}</td><td><b>${esc(state)}</b></td><td>${esc(r.current||'')}</td><td>${esc(r.reference||'')}</td></tr>`;
+  });
+  h += `</tbody></table>`;
+  return h;
 }
 
 /* 递归渲染键值（含数组/对象） */
@@ -468,28 +691,130 @@ function renderValue(key, value){
   return out;
 }
 
-function renderCaseCard(c, i, source){
-  const title = c.title || c.subject || c.bug_summary || c.knowledge_id || ('案例 '+(i+1));
-  const meta = [source, c.kind, c.verdict, c.match_level, c.kernel_version, c.date].filter(has);
-  const sections = [
-    ['现象', c.phenomenon || c.bug_summary],
-    ['根因', c.root_cause],
-    ['修复方案', c.solution || c.how],
-    ['适用性', c.applicability],
-  ].filter(x=>has(x[1]));
-  const consumed = new Set(['title','subject','bug_summary','knowledge_id','kind','verdict','match_level','kernel_version','date','phenomenon','root_cause','solution','how','applicability','url','patch_url']);
-  const extras = Object.keys(c).filter(k=>!consumed.has(k));
-  let h = `<article class="case-card"><div class="case-head"><h4>${esc(title)}</h4>${verdictBadge(c.verdict||'')}</div>`;
+function renderCaseCard(c, i, source, caseId){
+  const used = new Set();  /* 动态记录实际渲染过的字段，「查看完整字段」只兜底真正未展示的字段，杜绝静默丢失 */
+  const isCommit = c.kind === 'commit' || source === '在线案例';
+  const vLower = String(c.verdict||'').toLowerCase();
+  const basisCited = vLower !== 'confirmed' && isBasisCited(c, basisRefs());
+  const citedBadge = basisCited ? `<span class="tag tag-green">方案引用</span>` : '';
+
+  /* 标题：只标记实际采用的字段，其余同义字段落入完整字段 */
+  const titleKey = has(c.title)?'title':has(c.subject)?'subject':has(c.bug_summary)?'bug_summary':has(c.knowledge_id)?'knowledge_id':'';
+  const title = titleKey ? c[titleKey] : ('案例 '+(i+1));
+  if(titleKey) used.add(titleKey);
+
+  /* meta pills（commit 附短 sha） */
+  const shaShort = (isCommit && has(c.sha)) ? String(c.sha).slice(0,12) : '';
+  if(shaShort) used.add('sha');
+  const meta = [source, c.kind, c.verdict, c.match_level, c.kernel_version, c.date, shaShort].filter(has);
+  ['kind','verdict','match_level','kernel_version','date'].forEach(k=>{ if(has(c[k])) used.add(k); });
+
+  let h = `<article class="case-card"${caseId ? ` id="${caseId}"` : ''}><div class="case-head"><h4>${esc(title)}</h4>${verdictBadge(c.verdict||'')}${relevanceBadge(c.relevance||'')}${citedBadge}</div>`;
   if(meta.length) h += `<div class="case-meta">${meta.map(v=>`<span class="case-pill">${esc(v)}</span>`).join('')}</div>`;
-  sections.forEach(([label,value])=>{ h += `<div class="case-section"><b>${label}</b><p>${linkify(value)}</p></div>`; });
+  if(has(c.relevance)) used.add('relevance');
+
+  /* 一句话摘要 */
+  if(has(c.lead)){ h += `<p class="case-lead">${esc(c.lead)}</p>`; used.add('lead'); }
+
+  const v = vLower;
+
+  /* confirmed commit：匹配与修复论证合并为一个区域 */
+  if(isCommit && v === 'confirmed'){
+    h += `<div class="case-section case-fix-section"><b>为什么这个 commit 能修复当前问题</b>`;
+    if(has(c.how)){ h += `<p>${linkify(c.how)}</p>`; used.add('how'); }
+    if(has(c.fix_scope)){ h += `<p><b>修复范围：</b>${linkify(c.fix_scope)}</p>`; used.add('fix_scope'); }
+    if(has(c.files) && toArr(c.files).length){ h += `<p><b>涉及文件：</b>${esc(toArr(c.files).join(' · '))}</p>`; used.add('files'); }
+    if(has(c.diff)){ h += `<details class="case-extra"><summary>补丁 diff 摘录<span class="chevron" aria-hidden="true"></span></summary><div class="detail-body"><pre><code>${esc(c.diff)}</code></pre></div></details>`; used.add('diff'); }
+    h += `</div>`;
+  } else {
+    /* 匹配论证：为什么这条资料与本次宕机有关 */
+    h += `<div class="case-section"><b>匹配论证</b>`;
+    if(source === '内部案例' && Array.isArray(c.corroboration) && c.corroboration.length){
+      h += renderCorroboration(c.corroboration); used.add('corroboration');
+      if(has(c.applicability)){ h += `<p class="case-applicability"><b>采用前提：</b>${linkify(c.applicability)}</p>`; used.add('applicability'); }
+    } else {
+      if(has(c.how)){ h += `<p>${linkify(c.how)}</p>`; used.add('how'); }
+    }
+    h += `</div>`;
+  }
+
+  /* 现象 / 根因 */
+  const phenomenon = c.phenomenon || c.bug_summary || (source === '社区案例' || source === '社区邮件' || source === '社区会议' ? c.excerpt : '');
+  if(has(phenomenon)){
+    h += `<div class="case-section"><b>${has(c.phenomenon)||has(c.bug_summary)?'现象':'关键摘录'}</b><p>${linkify(phenomenon)}</p></div>`;
+    if(has(c.phenomenon)) used.add('phenomenon');
+    else if(has(c.bug_summary)) used.add('bug_summary');
+    else if(has(c.excerpt)) used.add('excerpt');
+  }
+  if(has(c.root_cause)){ h += `<div class="case-section"><b>根因</b><p>${linkify(c.root_cause)}</p></div>`; used.add('root_cause'); }
+
+  /* 非 confirmed commit 的适用性说明（补齐涉及文件与 diff）；非 commit 的修复方案 */
+  if(isCommit && v !== 'confirmed'){
+    h += `<div class="case-section"><b>${basisCited ? '与推荐方案的关系' : '适用性 / 参考性说明'}</b>`;
+    if(has(c.how)){ h += `<p><b>与本次的关联：</b>${linkify(c.how)}</p>`; used.add('how'); }
+    if(has(c.fix_scope)){ h += `<p><b>${basisCited ? '采用方式 / 限制' : '为什么不能直接采用'}：</b>${linkify(c.fix_scope)}</p>`; used.add('fix_scope'); }
+    if(has(c.files) && toArr(c.files).length){ h += `<p><b>涉及文件：</b>${esc(toArr(c.files).join(' · '))}</p>`; used.add('files'); }
+    if(!has(c.how) && !has(c.fix_scope) && has(c.applicability)){ h += `<p>${linkify(c.applicability)}</p>`; used.add('applicability'); }
+    if(has(c.diff)){ h += `<details class="case-extra"><summary>补丁 diff 摘录<span class="chevron" aria-hidden="true"></span></summary><div class="detail-body"><pre><code>${esc(c.diff)}</code></pre></div></details>`; used.add('diff'); }
+    h += `</div>`;
+  } else if(!isCommit && has(c.solution)) {
+    h += `<div class="case-section"><b>修复方案</b><p>${linkify(c.solution)}</p></div>`; used.add('solution');
+  }
+
+  /* 原文摘录（excerpt 未作为现象展示时，折叠展示，不再静默丢失） */
+  if(has(c.excerpt) && !used.has('excerpt')){
+    h += `<details class="case-extra"><summary>原文摘录<span class="chevron" aria-hidden="true"></span></summary><div class="detail-body"><p>${linkify(c.excerpt)}</p></div></details>`;
+    used.add('excerpt');
+  }
+
+  /* 适用性（避免与前面分支重复渲染） */
+  if(has(c.applicability) && source !== '内部案例' && !used.has('applicability')){ h += `<div class="case-section"><b>适用性 / 采用前提</b><p>${linkify(c.applicability)}</p></div>`; used.add('applicability'); }
+
+  /* 匹配指纹（内部案例） */
+  if(source === '内部案例' && Array.isArray(c.fingerprints) && c.fingerprints.length){
+    h += `<div class="case-section"><b>匹配指纹</b><p class="case-fingerprints">${c.fingerprints.map(f=>`<span class="case-pill">${esc(f)}</span>`).join('')}</p></div>`;
+    used.add('fingerprints');
+  }
+
+  /* 原始资料链接 */
   const url = c.url || c.patch_url;
-  if(has(url)) h += `<a class="case-link" href="${esc(url)}" target="_blank" rel="noopener noreferrer">查看原始资料 ↗</a>`;
+  if(has(url)){ h += `<a class="case-link" href="${esc(url)}" target="_blank" rel="noopener noreferrer">查看原始资料 ↗</a>`; used.add(has(c.url)?'url':'patch_url'); }
+
+  /* 其余字段（兜底：上方未实际渲染的字段都在此展示，已渲染的不重复出现） */
+  const extras = Object.keys(c).filter(k=>!used.has(k));
   if(extras.length){
-    h += `<details class="case-extra"><summary>查看完整字段<span class="chevron" aria-hidden="true"></span></summary><div class="detail-body">`;
+    h += `<details class="case-extra"><summary>查看其余字段（未在上方展示）<span class="chevron" aria-hidden="true"></span></summary><div class="detail-body">`;
     extras.forEach(k=>{ h += renderValue(k,c[k]); });
     h += `</div></details>`;
   }
   return h + `</article>`;
+}
+
+/* 修复依据引用集合：来自 standard_solution.basis 与 patch_list（url + sha） */
+function basisRefs(){
+  const refs = {urls:new Set(), shas:new Set()};
+  toArr(ss && ss.basis).forEach(b=>{
+    if(has(b.url)) refs.urls.add(String(b.url).trim());
+    const t = [b.title, b.url, b.text].filter(has).join(' ');
+    (t.match(/\b[0-9a-f]{7,40}\b/g)||[]).forEach(s=>refs.shas.add(s.toLowerCase()));
+  });
+  toArr(ss && ss.patch_list).forEach(p=>{
+    if(has(p.sha)) refs.shas.add(String(p.sha).toLowerCase());
+    if(has(p.url)) refs.urls.add(String(p.url).trim());
+  });
+  return refs;
+}
+
+/* 判断案例是否被修复方案引用（url 相等或 sha 前缀互含） */
+function isBasisCited(c, refs){
+  if(!c || !refs) return false;
+  const urls = [c.url, c.patch_url].filter(has).map(u=>String(u).trim());
+  if(urls.some(u=>refs.urls.has(u))) return true;
+  const text = [c.sha, c.url, c.patch_url, c.patch_ref, c.title].filter(has).join(' ').toLowerCase();
+  for(const sha of refs.shas){
+    if(sha.length >= 7 && text.includes(sha)) return true;
+  }
+  return false;
 }
 
 /* ===== ⑤ 技术附件 ===== */
@@ -509,7 +834,7 @@ function renderAppendix(){
   if(relErrs.length){
     lfBlocks.push(`<h4>相关报错</h4><div class="log-evidence-list">` + relErrs.map(e=>{
       const src = esc(e.file||'') + (has(e.lines)?(' · L'+esc(e.lines)):'');
-      return `<article class="log-evidence"><div class="log-evidence-head"><span class="source-label">${src}</span>${has(e.relevance)?verdictBadge(e.relevance):''}</div><code>${esc(e.line||'')}</code>${has(e.desc)?`<p>${esc(e.desc)}</p>`:''}</article>`;
+      return `<article class="log-evidence"><div class="log-evidence-head"><span class="source-label">${src}</span>${has(e.relevance)?relevanceBadge(e.relevance):''}</div><code>${esc(e.line||'')}</code>${has(e.desc)?`<p>${esc(e.desc)}</p>`:''}</article>`;
     }).join('') + `</div>`);
   }
   const reps = toArr(lf.repeated);
@@ -517,7 +842,7 @@ function renderAppendix(){
     lfBlocks.push(`<h4>重复可疑日志</h4><div class="log-evidence-list">` + reps.map(r=>{
       const ref = r.ref || {};
       const src = esc(ref.file||'') + (has(ref.lines)?(' · L'+esc(ref.lines)):'');
-      return `<article class="log-evidence"><div class="log-evidence-head"><b>${esc(r.title||'')}</b>${has(r.relevance)?verdictBadge(r.relevance):''}</div><p>${esc(r.count||'')} 次 · ${esc(r.window||'')}</p>${has(r.desc)?`<p>${esc(r.desc)}</p>`:''}${has(r.note)?`<p class="muted">${esc(r.note)}</p>`:''}${src?`<span class="source-label">${src}</span>`:''}</article>`;
+      return `<article class="log-evidence"><div class="log-evidence-head"><b>${esc(r.title||'')}</b>${has(r.relevance)?relevanceBadge(r.relevance):''}</div><p>${esc(r.count||'')} 次 · ${esc(r.window||'')}</p>${(Array.isArray(r.examples)&&r.examples.length)?`<code>${esc(r.examples.filter(has).join('\n'))}</code>`:''}${has(r.desc)?`<p>${esc(r.desc)}</p>`:''}${has(r.note)?`<p class="muted">${esc(r.note)}</p>`:''}${src?`<span class="source-label">${src}</span>`:''}</article>`;
     }).join('') + `</div>`);
   }
   const others = toArr(lf.other);
@@ -525,34 +850,36 @@ function renderAppendix(){
     lfBlocks.push(`<h4>其它异常</h4><div class="log-evidence-list">` + others.map(o=>{
       const ref = o.ref || {};
       const src = esc(ref.file||'') + (has(ref.lines)?(' · L'+esc(ref.lines)):'');
-      return `<article class="log-evidence"><div class="log-evidence-head"><b>${esc(o.name||'')}</b>${has(o.relevance)?verdictBadge(o.relevance):''}</div><p>${esc(o.count||'')} 条 · ${esc(o.span||'')}</p>${has(o.desc)?`<p>${esc(o.desc)}</p>`:''}${has(o.note)?`<p class="muted">${esc(o.note)}</p>`:''}${src?`<span class="source-label">${src}</span>`:''}</article>`;
+      return `<article class="log-evidence"><div class="log-evidence-head"><b>${esc(o.name||'')}</b>${has(o.relevance)?relevanceBadge(o.relevance):''}</div><p>${esc(o.count||'')} 条 · ${esc(o.span||'')}</p>${(Array.isArray(o.lines)&&o.lines.length)?`<code>${esc(o.lines.filter(has).join('\n'))}</code>`:''}${has(o.desc)?`<p>${esc(o.desc)}</p>`:''}${has(o.note)?`<p class="muted">${esc(o.note)}</p>`:''}${src?`<span class="source-label">${src}</span>`:''}</article>`;
     }).join('') + `</div>`);
   }
   if(lfBlocks.length){
     h += `<div class="appendix-card"><details><summary><span class="appendix-summary-label">日志特征明细 <span class="appendix-count">${attachmentLogCount}</span></span><span class="chevron" aria-hidden="true"></span></summary><div class="detail-body"><p class="muted">汇总 vmcore-dmesg 中与本次崩溃相关的日志特征，并按相关性分级。</p>${lfBlocks.join('')}</div></details></div>`;
   }
 
-  /* 知识库案例（三大类 + kind 细分） */
-  const caseGroups = [
-    {key:'internal_kernel_result', source:'内部案例'},
-    {key:'community_kernel_result', source:'社区案例'},
-    {key:'community_emails', source:'社区邮件'},
-    {key:'community_meetings', source:'社区会议'},
-    {key:'online_result', source:'在线案例'},
-  ];
-  const community = toArr(diag.community_kernel_result);
-  const communityEmails = community.filter(c=>/mail|email|邮件|邮件列表|lore/i.test(String(c.kind||c.source||c.title||c.subject||'')));
-  const caseData = {...diag, community_kernel_result: community.filter(c=>!communityEmails.includes(c)), community_emails: communityEmails};
-  const allCases = caseGroups.flatMap(g=>toArr(caseData[g.key]).map(c=>({case:c, source:g.source})));
+  /* 知识库案例：按「是否支撑推荐修复方案」分层。
+     修复依据组 = verdict=confirmed 的案例 + standard_solution.basis/patch_list 明确引用的案例
+     （即使 verdict=same_area，只要被方案引用就升格展示，保证第 1 章修复依据与技术附件一致）。 */
+  const allCases = collectCases();
   if(allCases.length){
-    h += `<div class="appendix-card"><details><summary><span class="appendix-summary-label">案例资料 <span class="appendix-count">${allCases.length}</span></span><span class="chevron" aria-hidden="true"></span></summary><div class="detail-body"><div class="case-list">`;
-    caseGroups.forEach(group=>{
-      const groupCases = allCases.filter(item=>item.source===group.source);
-      h += `<details class="case-group"><summary><span class="appendix-summary-label">${group.source} <span class="appendix-count">${groupCases.length}</span></span><span class="chevron" aria-hidden="true"></span></summary><div class="case-list">`;
-      groupCases.forEach((item,i)=>{ h += renderCaseCard(item.case,i,item.source); });
-      h += `</div></details>`;
-    });
-    h += `</div></div></details></div>`;
+    const brefs = basisRefs();
+    const isBasis = item => String(item.case.verdict||'').toLowerCase() === 'confirmed' || isBasisCited(item.case, brefs);
+    const confirmedCases = allCases.filter(isBasis);
+    const referenceCases = allCases.filter(item => !isBasis(item));
+
+    /* 修复依据：默认展开 */
+    if(confirmedCases.length){
+      h += `<div class="appendix-card"><details open><summary><span class="appendix-summary-label">修复依据 <span class="appendix-count">${confirmedCases.length}</span></span><span class="chevron" aria-hidden="true"></span></summary><div class="detail-body"><p class="muted">以下案例是本次推荐修复方案的直接依据：verdict=confirmed 的一手修复证据，或「规避手段 · 修复依据」明确引用的上游 commit（标注「方案引用」）。</p><div class="case-list">`;
+      confirmedCases.forEach(item=>{ h += renderCaseCard(item.case, 0, item.source, item.id); });
+      h += `</div></div></details></div>`;
+    }
+
+    /* 参考案例（未采用）：默认折叠，避免干扰主阅读流 */
+    if(referenceCases.length){
+      h += `<div class="appendix-card"><details><summary><span class="appendix-summary-label">参考案例（未采用） <span class="appendix-count">${referenceCases.length}</span></span><span class="chevron" aria-hidden="true"></span></summary><div class="detail-body"><p class="muted">以下案例与本次宕机存在相似特征，但触发路径、内核版本或修复口径不完全匹配，仅作为诊断旁证，不作为推荐修复方案。</p><div class="case-list">`;
+      referenceCases.forEach(item=>{ h += renderCaseCard(item.case, 0, item.source, item.id); });
+      h += `</div></div></details></div>`;
+    }
   }
 
   /* 工作流 */
@@ -560,7 +887,7 @@ function renderAppendix(){
     h += `<div class="appendix-card"><details><summary><span class="appendix-summary-label">Agent 诊断工作流 <span class="appendix-count">${wt.step_count||toArr(wt.steps).length}</span></span><span class="chevron" aria-hidden="true"></span></summary><div class="detail-body">`;
     h += `<div class="workflow-list">`;
     toArr(wt.steps).forEach(s=>{
-      h += `<article class="workflow-step"><div class="workflow-head"><h4>${esc(s.decision||('步骤 '+(s.step||'')))}</h4>${has(s.status)?`<span class="workflow-status">${esc(s.status)}</span>`:''}</div>`;
+      h += `<article class="workflow-step"><div class="workflow-head"><h4>${esc(s.decision||('步骤 '+(s.step||'')))}</h4>${has(s.status)?`<span class="workflow-status ${statusClass(s.status)}">${esc(s.status)}</span>`:''}</div>`;
       if(has(s.observations)) h += `<p><b>观察：</b>${linkify(s.observations)}</p>`;
       if(has(s.judgment)) h += `<p><b>判断：</b>${linkify(s.judgment)}</p>`;
       const tools = toArr(s.tools);
@@ -569,7 +896,7 @@ function renderAppendix(){
         tools.forEach(t=>{
           const name = (typeof t==='object' && t) ? (t.tool_name || t.title || '') : String(t||'');
           const st = (typeof t==='object' && t) ? (t.status || '') : '';
-          if(has(name)||has(st)) h += `<span class="tool-pill">${esc(name)}${has(st)?` · ${esc(st)}`:''}</span>`;
+          if(has(name)||has(st)) h += `<span class="tool-pill ${statusClass(st)}">${esc(name)}${has(st)?` · ${esc(st)}`:''}</span>`;
         });
         h += `</div>`;
       }
@@ -604,6 +931,7 @@ function buildSummary(){
 
 /* ===== 渲染入口 ===== */
 function render(){
+  buildAttachmentIndex();
   document.getElementById('top-meta').textContent = '现场记录 · ' + (readTime(cf.crash_time)||'').slice(0,10);
   document.title = '宕机分析报告 · ' + (host.host_name||R.report_id||'');
   document.getElementById('main').innerHTML =
