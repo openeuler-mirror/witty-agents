@@ -37,15 +37,17 @@
 
 神农基于现场数据（vmcore / vmcore-dmesg / dmesg / sosreport 等）输出一份符合
 `DiagnoseReport` 结构的标准化 JSON 报告，并渲染为可直接 `file://` 打开的自包含
-`crash-report.html`。报告分七个章节：
+`crash-report.html`。报告正文分五个章节，另附原始数据与诊断工作流：
 
-1. **执行摘要**：`conclusion`（发生了什么 → 为什么 → 与业务/硬件是否有关）+ `standard_solution`（补丁/升级/配置 + 修复依据 + 补丁 diff + 合入步骤 + 回退/验证方案）+ `temporary_workaround`（临时规避）；
-2. **崩溃详情**：RIP / 签名 / 模块等基础字段 + `log_features` 日志特征（相关报错 / 重复日志 / 其它异常，各标相关性 `强相关`/`一般相关`/`弱相关`）；
-3. **事件时序图**：`event_scene` 对象泳道（进程 / 内核 / 硬件）+ 全局变量列（随事件变化）；
-4. **根因分析**（三部分）：① 崩溃特征分析（含函数栈）② 崩溃链路分析（`propagation_chain` 逐跳，栈帧↔源码、寄存器值↔形参）③ 相关案例分析（内部 / 社区 / 上游 commit + 源码对照 → 结论）；
-5. **知识库匹配**：`diagnosis_repair_result` 内部知识库 / 社区邮件·会议纪要·Bugzilla / 上游 commit 三组（各附原文网址、关联 commit、关键片段，并标相关度 `强相关`/`部分相关`/`弱相关`）；
-6. **诊断工作流追踪**：`workflow_trace` 完整分析过程（工具调用、耗时、状态）；
-7. **报告元信息**：`report_id`、`parse_log_range`。
+1. **故障总览**：`conclusion`、`standard_solution` 与有案例依据时才展示的 `temporary_workaround`；
+2. **宕机特征**：RIP / 签名 / 模块等基础字段，以及 `log_features` 日志特征（相关报错 / 重复日志 / 其它异常）；
+3. **故障是怎样发生的**：`deep.mechanism_summary`、`event_scene` 事件时序和统一的 `deep.judgment`；
+4. **为什么得出这个结论**：`deep.evidence[]`，每条核心依据拥有独立的证据推理链；
+5. **技术附件**：`propagation_chain`、日志明细、案例资料、工作流和完整原始报告数据。
+
+`event_scene` 使用“固定骨架 + 有限推断”：泳道固定为进程 / 内核 / 硬件，主链路建议 4–8 步；事件以 `evidence_level` 区分 L1（直接证据）、L2（强推断）和 L3（机制补全），主图只展示 L1/L2。只有存在两个并发路径、共享状态和明确交错关系时才绘制 `race` 竞态窗口。
+
+案例资料按内部案例、社区案例、社区邮件、社区会议、在线案例分类展示。`temporary_workaround.case_refs` 为空时不展示临时缓解卡片，避免将没有案例依据的通用建议当成结论。
 
 诊断约束与字段规范见 `agent.md` 与 `skills/crash-report-generator/`（含 JSON Schema
 `schemas/crash-report-schema.json`）；报告生成后必须通过 `validate_report.py` 强校验。

@@ -368,7 +368,7 @@ async def query_upstream_online(
     因此 RAG 未配置时同样可用。
     """
     try:
-        cfg = Config().get()
+        cfg = Config().get().community
         result = await retrieve_upstream_online(
             crash_features, cfg, query_text=query_text, max_mails=max_mails
         )

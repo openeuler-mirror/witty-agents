@@ -161,6 +161,10 @@
                       "弱相关"
                     ],
                     "description": "该报错行与崩溃的相关性：强相关=直接导致/触发崩溃的报错；一般相关=与崩溃同子系统/上下文但非直接原因；弱相关=背景噪声或无关日志。"
+                  },
+                  "desc": {
+                    "type": "string",
+                    "description": "该行日志的含义说明（解释这行日志是什么意思）。"
                   }
                 }
               }
@@ -212,6 +216,10 @@
                       "弱相关"
                     ],
                     "description": "该重复日志与崩溃的相关性：强相关=直接导致/触发崩溃；一般相关=同子系统/上下文相关但非直接原因；弱相关=背景噪声或无关日志。"
+                  },
+                  "desc": {
+                    "type": "string",
+                    "description": "该行日志的含义说明（解释这行日志是什么意思）。"
                   }
                 }
               }
@@ -263,11 +271,19 @@
                       "弱相关"
                     ],
                     "description": "该异常特征与崩溃的相关性：强相关=直接导致/触发崩溃；一般相关=同子系统/上下文相关但非直接原因；弱相关=背景噪声或无关日志。"
+                  },
+                  "desc": {
+                    "type": "string",
+                    "description": "该行日志的含义说明（解释这行日志是什么意思）。"
                   }
                 }
               }
             }
           }
+        },
+        "raw_crash_log": {
+          "type": "string",
+          "description": "完整原始崩溃日志段（逐字复制自 dmesg/vmcore-dmesg）：从崩溃首行（如 Unable to handle/BUG/panic）起，到 Code: 机器码行（无 Code 行则到 Call trace 结束）止的连续原文，含 ESR/寄存器/Call trace 全部行。HTML「原始崩溃日志」区优先渲染本字段，保证与「如何阅读这段日志」指南逐项对应。"
         }
       }
     },
@@ -387,6 +403,13 @@
             "summary": {
               "type": "string"
             },
+            "case_refs": {
+              "type": "array",
+              "description": "明确提供该临时措施的案例标识或案例标题；为空时不在报告中展示临时缓解卡片。",
+              "items": {
+                "type": "string"
+              }
+            },
             "steps": {
               "type": "array",
               "items": {
@@ -418,7 +441,13 @@
                     "type": "string"
                   },
                   "type": {
-                    "type": "string"
+                    "type": "string",
+                    "enum": [
+                      "process",
+                      "kernel",
+                      "hardware"
+                    ],
+                    "description": "固定三类泳道：process=进程、kernel=内核（含调度器/定时器/CPU）、hardware=硬件。"
                   },
                   "init": {
                     "type": "string"
@@ -476,6 +505,19 @@
                   },
                   "origin": {
                     "type": "string"
+                  },
+                  "evidence_level": {
+                    "type": "string",
+                    "enum": [
+                      "L1",
+                      "L2",
+                      "L3"
+                    ],
+                    "description": "主时序证据等级：L1 日志/寄存器/源码直接确认，L2 由调用栈与源码强推断，L3 一般机制补全（不得进入主时序）。"
+                  },
+                  "evidence": {
+                    "type": "string",
+                    "description": "支持该事件的日志行、寄存器、源码位置或推断依据。"
                   },
                   "src": {
                     "type": "string"
@@ -669,18 +711,18 @@
                 "type": "object",
                 "additionalProperties": false,
                 "properties": {
-              "verdict": {
-                "type": "string"
-              },
-              "relevance": {
-                "type": "string",
-                "enum": [
-                  "强相关",
-                  "部分相关",
-                  "弱相关"
-                ],
-                "description": "该上游 commit/issue/邮件与本次崩溃的相关度：强相关=补丁直接修复崩溃函数/路径(confirmed)；部分相关=同子系统不同触发点(same_area)；弱相关=与崩溃路径无关或原文获取失败(not_relevant/unverified)。"
-              },
+                  "verdict": {
+                    "type": "string"
+                  },
+                  "relevance": {
+                    "type": "string",
+                    "enum": [
+                      "强相关",
+                      "部分相关",
+                      "弱相关"
+                    ],
+                    "description": "该上游 commit/issue/邮件与本次崩溃的相关度：强相关=补丁直接修复崩溃函数/路径(confirmed)；部分相关=同子系统不同触发点(same_area)；弱相关=与崩溃路径无关或原文获取失败(not_relevant/unverified)。"
+                  },
                   "text": {
                     "type": "string"
                   }
@@ -692,6 +734,10 @@
         "deep": {
           "type": "object",
           "additionalProperties": false,
+          "required": [
+            "mechanism_summary",
+            "judgment"
+          ],
           "properties": {
             "lead": {
               "type": "string"
@@ -699,10 +745,59 @@
             "mechanism": {
               "type": "string"
             },
+            "mechanism_summary": {
+              "type": "string",
+              "description": "面向读者的人话机制概述：说明发生了什么、为什么会崩溃以及影响，不重复技术触发链、函数名、寄存器和地址。"
+            },
+            "judgment": {
+              "type": "string",
+              "description": "当前判断：用一句话给出根因判断和处置方向，不重复机制过程。"
+            },
             "evidence": {
               "type": "array",
               "items": {
-                "type": "string"
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "title",
+                  "summary",
+                  "reasoning"
+                ],
+                "properties": {
+                  "title": {
+                    "type": "string"
+                  },
+                  "summary": {
+                    "type": "string"
+                  },
+                  "reasoning": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "step",
+                        "detail",
+                        "evidence"
+                      ],
+                      "properties": {
+                        "step": {
+                          "type": "string"
+                        },
+                        "detail": {
+                          "type": "string"
+                        },
+                        "evidence": {
+                          "type": "string"
+                        },
+                        "conclusion": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
               }
             },
             "confidence": {
@@ -802,10 +897,6 @@
               "hotpatch": {
                 "type": "string"
               },
-              "history": {
-                "type": "object",
-                "additionalProperties": true
-              },
               "corroboration": {
                 "type": "array",
                 "items": {
@@ -832,6 +923,45 @@
                   "string",
                   "object"
                 ]
+              },
+              "bug_type": {
+                "type": "string"
+              },
+              "bug_key": {
+                "type": "string"
+              },
+              "rip": {
+                "type": "string"
+              },
+              "rip_function": {
+                "type": "string"
+              },
+              "rip_offset": {
+                "type": "string"
+              },
+              "related_modules": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "call_trace_signature": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "call_trace_text": {
+                "type": "string"
+              },
+              "history_wiki": {
+                "type": "string"
+              },
+              "first_seen": {
+                "type": "string"
+              },
+              "last_seen": {
+                "type": "string"
               }
             }
           }
