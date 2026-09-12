@@ -544,7 +544,7 @@ shennong-crash-agent/
 
 ## 版本
 
-- `0.10.4`
+- `0.10.5`
 - npm 包：`@openeuler/agent-shennong-crash-online` / `@openeuler/agent-shennong-crash-offline`
 
 ## 常见问题
