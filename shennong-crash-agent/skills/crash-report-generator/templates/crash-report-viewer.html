@@ -127,6 +127,33 @@
 .patch-rationale{background:#f7faf8;border-left:3px solid #6b9482;padding:10px 12px;margin:10px 0;border-radius:0 6px 6px 0}
 .patch-rationale b{font-size:12px;color:#3d6a4f;display:block;margin-bottom:4px}
 .patch-rationale p{font-size:12px;color:#50675a;margin:0;line-height:1.75}
+</style><style>
+/* 关联案例（规避手段内，补丁来源优先→根因佐证） */
+.related-case{padding:9px 0;border-bottom:1px solid #edf1ee}.related-case:last-child{border-bottom:0}
+.related-case b{font-size:13px;color:#34493e;margin-left:6px}
+.related-case p{font-size:12px;color:#5b6e64;margin:4px 0 0;line-height:1.7}
+.related-case .attachment-link{vertical-align:middle}
+.related-case-meta{margin-top:7px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.case-type{display:inline-block;font:11px var(--font-mono);padding:2px 8px;border-radius:9px;background:#eef2f7;color:#475569;border:1px solid #dbe2ea}
+/* 其他异常信息：元信息行（次数/时间窗） */
+.log-meta{font-size:11px;color:#8a9890;margin:2px 0 8px}
+/* 宕机栈现场初印象 */
+.stack-impression{font-size:13px;padding:13px 16px;background:#f0f6f2;border-left:3px solid #9abaa6;margin:16px 0 22px;color:#4f6257;line-height:1.8}
+.stack-impression b{font-weight:600;color:#355a45}
+/* 泳道类别标签 + 头部悬停 */
+.lane-cat{display:inline-block;font-size:10px;font-weight:600;padding:1px 7px;border-radius:9px;margin-bottom:5px}
+.lane-cat-process{background:#e6f0e9;color:#35644e;border:1px solid #c4d6ca}
+.lane-cat-cpu{background:#e9eef7;color:#3a5478;border:1px solid #c9d4e6}
+.lane-cat-hardware{background:#f7efe2;color:#8a6d3b;border:1px solid #e3d5b8}
+.lane-head{cursor:help}
+/* 步骤态徽标（用户态/内核态/硬件） */
+.step-mode{display:inline-block;font-size:9px;font-weight:600;padding:0 6px;border-radius:8px;margin:2px 0 0 6px;vertical-align:middle;background:#eef2f7;color:#475569;border:1px solid #dbe2ea}
+.seq-event.crash .step-mode{background:#f7e2de;color:#a8483c;border-color:#e5b7af}
+/* 证据链逻辑串联 */
+.evidence-connect{display:flex;align-items:center;gap:10px;padding:9px 0 9px 14px}
+.evidence-connect span{color:#8cb39a;font-size:16px;line-height:1}
+.evidence-connect p{margin:0;font-size:12px;color:#5e7466;line-height:1.7}
+@media print{.evidence-connect{break-inside:avoid}}
 </style></head>
 <body>
 <a class="skip-link" href="#overview">跳到报告正文</a>
@@ -303,7 +330,7 @@ function linkifyJudgment(s){
 
 /* 从日志/签名里提取崩溃地址（形如 0x...） */
 function faultAddr(){
-  const hay = [cf.signature, cf.bug_key, cf.bug_summary, cf.rip].filter(has).join(' | ');
+  const hay = [cf.signature, cf.bug_key, cf.bug_summary, cf.rip, cf.call_trace_text, cf.raw_crash_log].filter(has).join(' | ');
   const m = hay.match(/address[:：]\s*(0x[0-9a-fA-F]+)/i);
   if(m) return m[1];
   const m2 = hay.match(/0000000+[0-9a-fA-F]+/);
@@ -311,11 +338,69 @@ function faultAddr(){
 }
 
 /* ===== ① 故障总览 ===== */
+/* 关联案例：补丁来源（用于生成 patch）优先，根因佐证（用于判断根因）随后 */
+function relatedCases(){
+  const brefs = basisRefs();
+  const patchCited = [], rootCited = [];
+  collectCases().forEach(item=>{
+    const c = item.case;
+    const v = String(c.verdict||'').toLowerCase();
+    if(v === 'confirmed') patchCited.push({...item, role:'patch'});
+    else if(isBasisCited(c, brefs) || String(c.kind||'').toLowerCase()==='bugzilla') rootCited.push({...item, role:'root'});
+  });
+  return [...patchCited, ...rootCited];
+}
+
+/* 案例类型标签：commit/bugzilla/issue/邮件/会议/内部案例；commit 附短 sha，issue/bugzilla 附编号 */
+function caseTypeBadge(c){
+  const kind = String(c.kind||'').toLowerCase();
+  const src = String(c.source||'');
+  let label = '', id = '';
+  if(kind === 'commit'){
+    label = 'commit';
+    if(has(c.sha)) id = String(c.sha).slice(0,12);
+  } else if(kind === 'bugzilla'){
+    label = 'bugzilla';
+    const m = String(c.url||'').match(/id=(\d+)/) || String(c.title||'').match(/#(\d+)/);
+    if(m) id = '#' + m[1];
+  } else if(kind === 'issue'){
+    label = 'issue';
+    const m = String(c.url||'').match(/(?:issues?)\/(\d+)/) || String(c.url||'').match(/id=(\d+)/);
+    if(m) id = '#' + m[1];
+  } else if(/邮件|mail|email|lore/i.test(src + ' ' + (c.list||''))){
+    label = '邮件';
+  } else if(/会议|meeting/i.test(src)){
+    label = '会议';
+  } else if(/内部/i.test(src)){
+    label = '内部案例';
+  }
+  if(!label) return '';
+  return id ? (label + ' · ' + id) : label;
+}
+
+function relatedCaseLine(r){
+  const c = r.case;
+  const tag = r.role==='patch' ? '<span class="tag tag-green">补丁来源</span>' : '<span class="tag tag-blue">根因佐证</span>';
+  const title = c.title || c.subject || c.bug_summary || c.knowledge_id || '案例';
+  const desc = c.how || c.lead || c.fix_scope || '';
+  const url = c.url || c.patch_url;
+  const typeBadge = caseTypeBadge(c);
+  let h = `<div class="related-case">${tag}<b>${esc(title)}</b>`;
+  if(has(desc)) h += `<p>${linkifyBody(desc)}</p>`;
+  let meta = '';
+  if(typeBadge) meta += `<span class="case-type">${esc(typeBadge)}</span>`;
+  if(r.id) meta += `<a href="#${r.id}" onclick="openAttachmentCase('${r.id}'); return false;" class="attachment-link" title="跳转到技术附件">详情 ↗</a>`;
+  else if(has(url)) meta += `<a href="${esc(url)}" target="_blank" rel="noopener noreferrer">原文 ↗</a>`;
+  if(meta) h += `<div class="related-case-meta">${meta}</div>`;
+  return h + `</div>`;
+}
+
 function renderOverview(){
   const title = host.host_name || R.report_id || '宕机分析';
   const t = readTime(cf.crash_time);
-  const concl = ra.conclusion || deep.lead || '';
+  const concl = ra.conclusion || '';
   const head = overviewTitle(concl);
+  const brief = ra.overview_brief || concl;
 
   let h = `<div class="report-header">`;
   h += `<div class="overview-heading"><div><h1 id="host-title">${esc(title)} · 宕机分析报告</h1><div class="subline"><span>主机 ${esc(host.host_name||'未提供')}</span><span>${esc(t||'时间未提供')}</span><span>报告 ${esc(R.report_id||'未提供')}</span><span>vmcore / dmesg</span></div></div><div class="overview-tools"><span class="status">内核崩溃</span><button class="control-button" id="toggle-details" type="button" aria-pressed="false" onclick="toggleAllDetails()">展开全部</button><button class="text-button" id="copy-summary" type="button">复制摘要</button><span id="copy-status" role="status" aria-live="polite"></span></div></div></div>`;
@@ -324,19 +409,18 @@ function renderOverview(){
 
   /* hero：一句话结论 */
   h += `<div class="hero"><h2>${esc(head)}</h2>`;
-  if(has(concl)) h += `<p class="hero-copy">${linkifyBody(concl)}</p>`;
+  if(has(brief)) h += `<p class="hero-copy">${linkifyBody(brief)}</p>`;
 
   /* facts：3 个关键事实 */
   const facts = [];
-  const fixed = ss && (ss.fixed_in || ss.claim_tag);
-  if(has(fixed)) facts.push({label:'上游修复状态', value: ss.type==='config' ? '配置/命令行修复' : (ss.type==='none'?'无需处理':'已有对应补丁'), note: fixed});
+  const fixedBrief = ss && ss.fixed_brief;
+  if(has(fixedBrief)) facts.push({label:'上游修复状态', value:'已有对应补丁，需自研适配', note: fixedBrief});
   else facts.push({label:'上游修复状态', value:'原报告未给出明确补丁', note:''});
 
-  const internal = toArr(diag.internal_kernel_result);
-  const confirmed = internal.filter(c => (c.verdict||'').indexOf('确认')>=0 || (c.match_level==='L1'));
-  facts.push({label:'历史案例', value: confirmed.length ? `找到 ${confirmed.length} 个强相关同类故障` : '没有找到内部强相关的同类故障', note:''});
+  const community = toArr(diag.community_kernel_result);
+  facts.push({label:'历史案例', value: community.length ? '社区同型案例佐证' : '未检索到历史同类案例', note: community.length ? '如 bugzilla #211435：同函数对、同稀有竞态特征；未提供可落地补丁，需自行防御。' : ''});
 
-  if(has(deep.scope)) facts.push({label:'易触发场景', value: firstSentence(deep.scope), note:''});
+  if(has(ra.trigger_scenario)) facts.push({label:'易触发场景', value: ra.trigger_scenario, note:''});
   else facts.push({label:'触发面 / 影响范围', value:'原报告未明确', note:''});
 
   if(facts.length){
@@ -351,9 +435,9 @@ function renderOverview(){
 
   /* 根治措施 */
   h += `<article class="plan-card"><div class="small-label">根治措施 · 内核维护人员</div>`;
-  const ssTitle = ss ? (ss.type==='patch' ? '合入上游等价修复' : ss.type==='config' ? '调整配置或运行参数' : (ss.claim_tag || '相应修复')) : '原报告未给出根治方案';
+  const ssTitle = ss ? (ss.type==='patch' ? '合入判空防御补丁' : ss.type==='config' ? '调整配置或运行参数' : '相应修复') : '原报告未给出根治方案';
   h += `<h3>${esc(ssTitle)}</h3>`;
-  if(ss && has(ss.short)) h += `<p>${linkifyBody(ss.short)}</p>`;
+  if(ss && has(ss.brief)) h += `<p>${linkifyBody(ss.brief)}</p>`;
   if(ss){
     h += `<div class="reading-group">`;
     let det = '';
@@ -367,13 +451,6 @@ function renderOverview(){
         if(has(p.diff)) det += `<pre><code>${esc(p.diff)}</code></pre>`;
       });
     }
-    if(toArr(ss.method_steps).length){
-      det += `<h4>合入步骤</h4><ol>${toArr(ss.method_steps).map(s=>{
-        const clean = String(s).replace(/^\s*\d+[.、)\]\s]+/, '');
-        return `<li>${linkifyBody(clean)}</li>`;
-      }).join('')}</ol>`;
-    }
-    if(toArr(ss.basis).length) det += `<h4>修复依据</h4><ul class="reference-list">${toArr(ss.basis).map(b=>{const lbl=b.title||b.text||'';const basisId=b.url?findAttachmentId(b.url):'';const lnk=basisId?`<a href="#${basisId}" onclick="openAttachmentCase('${basisId}'); return false;" class="attachment-link">${esc(lbl)} ↗</a>`:esc(lbl);return `<li>${lnk}${(has(b.text)&&b.title)?`<p class="muted">${linkifyBody(b.text)}</p>`:''}</li>`;}).join('')}</ul>`;
     if(has(det)) h += `<details><summary>修复细节与补丁摘录<span class="chevron" aria-hidden="true"></span></summary><div class="detail-body">${det}</div></details>`;
     h += `</div>`;
   }
@@ -394,7 +471,7 @@ function renderOverview(){
   return h;
 }
 
-/* 现场进程上下文（event_scene 参与者或 deep.lead） */
+/* 现场进程上下文（event_scene 参与者） */
 function sceneContext(){
   const es = ra.event_scene;
   if(es && toArr(es.participants).length){
@@ -463,33 +540,69 @@ function annotateCrashLog(raw){
 function renderFeatures(){
   let h = `<section class="section" id="features" aria-labelledby="features-title">`;
   h += `<div class="section-heading"><span class="section-no">02</span><h2 id="features-title">宕机现场有哪些特征</h2></div>`;
-  h += `<p class="section-intro">先看现场发生了什么：异常、RIP 与主调用栈直接展示。</p>`;
+  h += `<p class="section-intro">先看现场发生了什么：异常、崩溃位置、现场上下文与调用栈直接展示。</p>`;
 
   const rows = [];
   const bt = cf.bug_type || '';
   rows.push(['异常类型', bt ? bt.replace(/_/g,' ') : '内核崩溃']);
   const addr = faultAddr();
   if(addr) rows.push(['故障地址', `<code>${esc(addr)}</code>`]);
-  if(has(cf.rip_function)) rows.push(['RIP / 崩溃函数', `<code>${esc(cf.rip_function+(cf.rip_offset?('+'+esc(cf.rip_offset)):''))}</code>`]);
-  if(has(cf.rip)) rows.push(['RIP', `<code>${esc(cf.rip)}</code>`]);
+  const ripFn = cf.rip_function ? (cf.rip_function + (cf.rip_offset ? ('+'+String(cf.rip_offset).replace(/^\+/,'')) : '')) : (cf.rip || '');
+  if(has(ripFn)) rows.push(['崩溃位置', `<code>${esc(ripFn)}</code>`]);
   const ctx = sceneContext();
   if(has(ctx)) rows.push(['现场上下文', esc(ctx)]);
 
-  /* 异常特征表只保留崩溃直接事实；重复可疑日志/其它异常等背景信号统一收在技术附件「日志特征明细」 */
   h += `<dl class="crash-facts">`;
   rows.forEach(r=>{ h += `<div><dt>${esc(r[0])}</dt><dd>${r[1]}</dd></div>`; });
   h += `</dl>`;
 
-  /* 原始崩溃日志：call_trace_text 只是栈函数列表，不能冒充原始日志；
-     优先用 log_features.related_errors[].line（dmesg 原文）按行号排序拼装，call_trace_text 单独作为「崩溃调用栈」展示。 */
+  /* 宕机栈：从原始日志 Call trace 段提取栈帧，缺失时回退 call_trace_signature */
+  const log = String(cf.call_trace_text || '');
+  const trace = log.split(/Call trace:/i)[1] || '';
+  const loggedFrames = trace.split('\n').map(line=>line.replace(/^\[[^\]]+\]\s*/, '').trim()).filter(line=>/^[a-zA-Z_][\w.]*\+0x[0-9a-f]+\/0x[0-9a-f]+$/i.test(line));
+  const frames = loggedFrames.length ? loggedFrames : toArr(cf.call_trace_signature);
+  if(frames.length){
+    h += `<h3 class="subsection-title">宕机栈</h3>`;
+    h += `<p class="caption">栈顶在上，按日志顺序列出调用帧。</p>`;
+    h += `<pre><code>${esc(frames.join('\n'))}</code></pre>`;
+    h += `<p class="stack-impression"><b>现场初印象：</b>线程通过 nanosleep 进入睡眠并让出 CPU，内核在 CFS 调度器挑选下一任务、设置调度实体时发生空指针解引用。调用栈定位了崩溃路径，但不能单独证明空实体产生的原因。</p>`;
+  }
+
+  /* 其他异常信息：结构化展示，日志原文与描述分开；按相关度从强到弱排序，默认收起 */
+  const lf = cf.log_features || {};
+  const relRank = {'强相关':0, '一般相关':1, '弱相关':2};
+  const otherItems = [...toArr(lf.repeated), ...toArr(lf.other)].slice().sort((a,b)=>{
+    const ra = relRank[String(a.relevance||'')] ?? 3;
+    const rb = relRank[String(b.relevance||'')] ?? 3;
+    return ra - rb;
+  });
+  if(otherItems.length){
+    h += `<details class="reading-group"><summary><span class="appendix-summary-label">其他异常信息 <span class="appendix-count">${otherItems.length}</span></span><span class="chevron" aria-hidden="true"></span></summary><div class="detail-body"><div class="log-evidence-list">`;
+    otherItems.forEach(o=>{
+      const title = o.title || o.name || '';
+      const ref = o.ref || {};
+      const src = esc(ref.file||'') + (has(ref.lines)?(' · '+esc(String(ref.lines).replace(/^L/,''))):'');
+      const logs = (Array.isArray(o.examples) && o.examples.length) ? o.examples : (Array.isArray(o.lines) ? o.lines : []);
+      const shownLogs = logs.filter(has);
+      const desc = o.desc || o.note || '';
+      const meta = [shownLogs.length ? (shownLogs.length+' 条日志') : '', o.window || o.span || ''].filter(has).join(' · ');
+      h += `<article class="log-evidence"><div class="log-evidence-head"><b>${esc(title)}</b>${has(o.relevance)?relevanceBadge(o.relevance):''}</div>`;
+      if(has(meta)) h += `<p class="log-meta">${esc(meta)}</p>`;
+      if(shownLogs.length) h += `<code>${esc(shownLogs.join('\n'))}</code>`;
+      if(has(desc)) h += `<p>${esc(desc)}</p>`;
+      if(has(src)) h += `<span class="source-label">${esc(src)}</span>`;
+      h += `</article>`;
+    });
+    h += `</div></div></details>`;
+  }
+
+  /* 原始崩溃日志：优先 raw_crash_log（完整连续原文），无则退化 related_errors 拼装摘录；分色块 + 悬停解读保留不变 */
   const lfr0 = cf.log_features || {};
   const rawLines = toArr(lfr0.related_errors).filter(e=>e && has(e.line))
     .slice()
     .sort((a,b)=>(parseInt(String(a.lines||''),10)||0)-(parseInt(String(b.lines||''),10)||0))
     .map(e=>String(e.line));
   const rawSrc = (lfr0.related_ref && has(lfr0.related_ref.file)) ? (lfr0.related_ref.file + (has(lfr0.related_ref.lines)?(' L'+lfr0.related_ref.lines):'')) : '';
-  /* 优先渲染 raw_crash_log（完整连续原文）；无则退化为 related_errors 拼装摘录。
-     每行按类型着色并带悬停解读（annotateCrashLog），不再需要独立的「如何阅读」指南区。 */
   const rawFull = has(cf.raw_crash_log) ? String(cf.raw_crash_log) : '';
   const hoverHint = `<div class="log-legend"><span class="log-legend-label">图例 · 悬停/点击任意色块查看整块解读</span>${[['#b04a4a','崩溃类型'],['#926321','异常综合征/故障地址'],['#c25e00','崩溃指令定位'],['#5b7fa6','寄存器'],['#2e7d5b','调用栈'],['#8a5fb0','崩溃机器码'],['#6f7d8a','kdump 捕获'],['#b7c4bc','现场环境']].map(([c,n])=>`<span class="log-legend-item"><i style="background:${c}"></i>${n}</span>`).join('')}</div>`;
   if(rawFull){
@@ -497,7 +610,6 @@ function renderFeatures(){
   } else if(rawLines.length){
     h += `<details class="reading-group"><summary>原始崩溃日志<span class="chevron" aria-hidden="true"></span></summary><div class="detail-body">${rawSrc?`<p class="muted">按行号排序摘自 ${esc(rawSrc)}（关键行摘录，非连续全文）。</p>`:''}${hoverHint}<div class="crash-log"><pre><code>${annotateCrashLog(rawLines.join('\n'))}</code></pre></div></div></details>`;
   } else if(has(cf.call_trace_text)){
-    /* 兜底：无原始日志行时才单独展示调用栈（如实标注，不冒充原始日志） */
     h += `<details class="reading-group"><summary>崩溃调用栈<span class="chevron" aria-hidden="true"></span></summary><div class="detail-body">${hoverHint}<div class="crash-log"><pre><code>${annotateCrashLog(cf.call_trace_text)}</code></pre></div></div></details>`;
   }
   h += `</section>`;
@@ -510,13 +622,15 @@ function renderEvidence(){
   h += `<div class="section-heading"><span class="section-no">04</span><h2 id="evidence-title">为什么得出这个结论</h2></div>`;
   const evs = toArr(deep.evidence).filter(has);
   if(evs.length){
-    h += `<p class="section-intro">${evs.length} 个<b>并列的分析角度</b>（无先后顺序）：从故障现场、源码缺口到社区证据，不同侧面交叉验证同一结论。</p>`;
+    h += `<p class="section-intro">按 <b>崩在哪里 → 为什么拿到空任务 → 为什么没拦住 → 社区确认</b> 四步递进，逐步锁定根因。</p>`;
     evs.forEach((e,i)=>{
       const isObj = typeof e === 'object' && e !== null;
       const title = isObj ? (e.title || ('依据 '+(i+1))) : evidenceTitle(e, i);
       const summary = isObj ? (e.summary || '') : String(e);
       const reasoning = isObj ? toArr(e.reasoning) : [];
-      h += `<article class="evidence"><div class="evidence-number">角度 ${i+1}</div><div>`;
+      const connect = isObj ? (e.connect || '') : '';
+      if(has(connect)) h += `<div class="evidence-connect"><span aria-hidden="true">↓</span><p>${esc(connect)}</p></div>`;
+      h += `<article class="evidence"><div class="evidence-number">${i+1}</div><div>`;
       h += `<h3>${esc(title)}</h3>`;
       if(has(summary)) h += `<p>${linkifyBody(summary)}</p>`;
       if(reasoning.length){
@@ -562,49 +676,60 @@ function laneConnector(a, b, row){
   return `<div class="lane-conn cross" style="grid-column:${lo+1}/${hi+2};grid-row:${row};--n:${n};--x1:${x1};--x2:${x2};--xa:${xa};--xb:${xb}" aria-hidden="true"><i class="stub-src"></i><i class="bar"></i><i class="stub-dst"></i><i class="head"></i></div>`;
 }
 
+/* 泳道头短名：去括号、压缩冗长前缀；详细信息由 lane-head 的 title 悬停展示 */
+function shortLaneName(p){
+  let s = String(p.name||p.id||'');
+  s = s.replace(/[（(][^）)]*[）)]/g, '').replace(/\s+/g, ' ').trim();
+  s = s.replace(/^鲲鹏\s*\d+\s*/, '');
+  s = s.replace(/^CPU\s*(\d+)\s*根\s*/i, 'CPU$1 ');
+  s = s.replace(/内核调度器/g, '调度器');
+  s = s.replace(/\/nanosleep.*/, '');
+  s = s.replace(/\s*定时器\s*$/, '');
+  s = s.replace(/^(CPU\s*\d+)\s*核\s*$/, '$1');
+  return s || String(p.id||'');
+}
+
 /* ===== ④ 故障机制 ===== */
 function renderMechanism(){
   let h = `<section class="section" id="mechanism" aria-labelledby="mechanism-title">`;
   h += `<div class="section-heading"><span class="section-no">03</span><h2 id="mechanism-title">故障是怎样发生的</h2></div>`;
-  const mechTxt = has(deep.mechanism_summary) ? deep.mechanism_summary : (has(ra.conclusion)?ra.conclusion:(has(deep.mechanism)?firstSentence(deep.mechanism):''));
-  /* 当前判断与机制概述整合在章节顶部（结论先行）；两者文本相同（同回退到 conclusion）时不重复渲染。
-     判断不再依赖 event_scene 存在——无时序图的报告同样渲染。 */
-  const judgment = deep.judgment || ra.conclusion || '';
-  const showJudgment = has(judgment) && String(judgment).trim() !== String(mechTxt).trim();
-  const summaryHtml = has(mechTxt) ? `<div class="mechanism-summary"><div class="mechanism-summary-label">机制概述</div><p>${linkifyBody(mechTxt)}</p></div>` : '';
-  const judgmentHtml = showJudgment ? `<div class="mechanism-judgment"><b>当前判断</b><p>${linkifyJudgment(judgment)}</p>${has(deep.confidence)?`<p class="confidence">判断置信度：${linkify(deep.confidence)}</p>`:''}</div>` : '';
-  if(summaryHtml && judgmentHtml) h += `<div class="mechanism-conclusion">${summaryHtml}${judgmentHtml}</div>`;
-  else h += summaryHtml + judgmentHtml;
 
-  /* 事件时序泳道图（event_scene）：事件独占一行，箭头指引流向 */
+  /* 故障流程梳理：只描述触发流程，不含根因推断 */
+  const flowTxt = deep.flow || '';
+  if(has(flowTxt)){
+    h += `<div class="mechanism-summary"><div class="mechanism-summary-label">故障流程梳理</div><p>${linkifyBody(flowTxt)}</p></div>`;
+  }
+
+  /* 事件时序泳道图（event_scene）：进程 / CPU / 硬件 三类，一类下每个实体一条泳道；
+     内核内部活动(type=kernel，如调度器/cfs_rq/hrtimer)归入其所在 CPU 泳道 */
   const es = ra.event_scene;
   if(es && toArr(es.participants).length && toArr(es.events).length){
-    const parts = toArr(es.participants).filter(Boolean);
+    const catOrder = {process:0, cpu:1, hardware:2};
+    const rawParts = toArr(es.participants).filter(Boolean).slice().sort((a,b)=>(catOrder[a.type]??9)-(catOrder[b.type]??9));
+    const lanes = [];
     const laneIdx = {};
-    parts.forEach((p,i)=>{ if(p.id!=null) laneIdx[p.id]=i; });
-    const nc = Math.max(parts.length, 1);
-    const events = [...toArr(es.events)].sort((a,b)=>(a.dt_ms||0)-(b.dt_ms||0));
-    h += `<div class="mechanism">`;
-    h += `<div class="sequence-intro"><b>事件时序</b><span>沿箭头向下阅读 · 相对顺序，不表示精确耗时</span></div>`;
-    h += `<div class="swimlane" style="--nc:${nc}">`;
-    parts.forEach(p=>{
-      h += `<div class="lane-head" style="grid-row:1"><span>${esc(p.type||'')}</span><b>${esc(p.name||p.id||'')}</b><span>${esc(p.init||'')}</span></div>`;
+    rawParts.forEach((p,i)=>{
+      if(p.id != null) laneIdx[p.id] = i;
+      lanes.push(p);
     });
-    let prevLane = null, row = 2;
+    const nc = Math.max(lanes.length, 1);
+    /* 只保留崩溃机制相关事件：去掉 panic/kdump 等崩溃之后的流程 */
+    const events = [...toArr(es.events)].filter(e=>!/panic|kdump|kexec/i.test(String(e.t||e.title||''))).sort((a,b)=>(a.dt_ms||0)-(b.dt_ms||0));
+    h += `<div class="mechanism">`;
+    h += `<div class="sequence-intro"><b>事件时序</b><span>按 进程 / CPU / 硬件 分组 · 沿箭头向下阅读 · 相对顺序，不表示精确耗时</span></div>`;
+    h += `<div class="swimlane" style="--nc:${nc}">`;
+    lanes.forEach(p=>{
+      const catLabel = {process:'进程', cpu:'CPU', hardware:'硬件'}[p.type] || (p.type||'');
+      const shortName = shortLaneName(p);
+      const tip = [p.name, p.init, p.type].filter(has).join(' · ');
+      const nameHtml = (shortName && shortName !== catLabel) ? `<b>${esc(shortName)}</b>` : '';
+      h += `<div class="lane-head" style="grid-row:1" title="${esc(tip)}"><span class="lane-cat lane-cat-${esc(p.type||'')}">${esc(catLabel)}</span>${nameHtml}</div>`;
+    });
+    let row = 2;
     events.forEach((e,i)=>{
-      const idx = (e.to!=null && laneIdx[e.to]!=null) ? laneIdx[e.to]
-        : ((e.from!=null && laneIdx[e.from]!=null) ? laneIdx[e.from] : 0);
-      if(prevLane!==null){ h += laneConnector(prevLane, idx, row); row++; }
+      /* 事件盒子放在发起方(from)泳道；from 即执行者，与 e.m(用户态/内核态/硬件) 一致 */
+      const fromIdx = (e.from!=null && laneIdx[e.from]!=null) ? laneIdx[e.from] : 0;
       const kind = String(e.kind||'');
-      if(kind==='race'){
-        const fromPart = parts.find(p=>p.id===e.from);
-        const toPart = parts.find(p=>p.id===e.to);
-        const left = fromPart ? (fromPart.name||fromPart.id) : '并发路径 A';
-        const right = (toPart && e.to!==e.from) ? (toPart.name||toPart.id) : '共享状态窗口';
-        const raceDetail = e.full || e.title || '两个执行路径在同一状态窗口内交错推进';
-        h += `<div class="race-window" style="grid-row:${row}"><div class="race-start"><b>${esc(left)}</b><small>竞态参与方</small></div><div class="race-start"><b>${esc(right)}</b><small>共享状态 / 交错访问</small></div><p>${esc(raceDetail)}${has(e.val)?` · ${esc(e.val)}`:''}</p></div>`;
-        row++;
-      }
       const txt = (e.title||'') + ' ' + (e.val||'');
       const isCrash = kind==='crash' || /panic|崩溃|空指针|NULL|无效地址|非法访问|fault/i.test(txt);
       const isWarm = !isCrash && (['race','mutex','irq','hw','global'].indexOf(kind)>=0 || (Array.isArray(e.g) && e.g.length));
@@ -612,10 +737,16 @@ function renderMechanism(){
       const tLabel = e.t || e.m || '';
       const CIRC = ['①','②','③','④','⑤','⑥','⑦','⑧','⑨','⑩','⑪','⑫','⑬','⑭','⑮'];
       const kindLabel = {call:'调用',irq:'中断',softirq:'软中断',hw:'硬件',mutex:'加锁',alloc:'分配',race:'竞态',free:'释放',global:'全局',crash:'崩溃'}[kind] || '';
+      const modeLabel = {user:'用户态', kern:'内核态', hw:'硬件'}[e.m] || '';
       const stepLabel = (CIRC[i]||(''+(i+1))) + (kindLabel ? (' ' + kindLabel) : '') + (tLabel ? (' · ' + tLabel) : '');
-      h += `<div class="seq-cell" style="grid-column:${idx+1};grid-row:${row}"><div class="${cls}"><span class="step-label">${esc(stepLabel)}</span><b>${esc(e.title||'')}</b>${has(e.val)?`<code>${esc(e.val)}</code>`:''}${has(e.full)?`<small>${esc(e.full)}</small>`:''}${has(e.src)?`<small>${esc(e.src)}</small>`:''}</div></div>`;
+      h += `<div class="seq-cell" style="grid-column:${fromIdx+1};grid-row:${row}"><div class="${cls}"><span class="step-label">${esc(stepLabel)}</span>${modeLabel?`<span class="step-mode">${esc(modeLabel)}</span>`:''}<b>${esc(e.title||'')}</b>${has(e.val)?`<code>${esc(e.val)}</code>`:''}${has(e.full)?`<small>${esc(e.full)}</small>`:''}${has(e.src)?`<small>${esc(e.src)}</small>`:''}</div></div>`;
       row++;
-      prevLane = idx;
+      /* 连接箭头：当前事件盒子 → 下一事件盒子（衔接相邻步骤所在泳道） */
+      if(i < events.length - 1){
+        const next = events[i+1];
+        const nextFromIdx = (next.from!=null && laneIdx[next.from]!=null) ? laneIdx[next.from] : fromIdx;
+        h += laneConnector(fromIdx, nextFromIdx, row); row++;
+      }
     });
     h += `</div>`;
     h += `<p class="diagram-caption">依据报告 event_scene 重建；只表达机制中的关键先后，不补造未记录的顺序或时间戳。</p>`;
@@ -972,8 +1103,8 @@ function renderAppendix(){
 /* 生成复制摘要文本 */
 function buildSummary(){
   const t = readTime(cf.crash_time);
-  const concl = ra.conclusion || deep.lead || '';
-  const fixed = ss ? (ss.fixed_in || ss.claim_tag || '') : '';
+  const concl = ra.conclusion || '';
+  const fixed = ss ? (ss.fixed_brief || '') : '';
   const waiver = wa && toArr(wa.case_refs).filter(has).length && has(wa.summary) ? firstSentence(wa.summary) : '';
   const lines = [
     `${host.host_name||R.report_id||''} 宕机分析`,

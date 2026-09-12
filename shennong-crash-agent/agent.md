@@ -20,7 +20,7 @@
 - 一份符合 `DiagnoseReport` 结构的标准化 JSON 诊断报告，最终渲染为自包含的 `crash-report.html`（可直接 file:// 打开）。
 - 报告正文由五个章节构成：①故障总览；②宕机特征；③故障是怎样发生的（机制概述、事件时序、当前判断）；④为什么得出这个结论（逐条证据推理链）；⑤技术附件（调用链、日志、案例、工作流和原始报告）。
 - `temporary_workaround.case_refs` 为空时不展示临时缓解卡片；只有检索案例明确提供该措施时才填写案例引用。
-- `event_scene` 使用固定骨架+有限推断：泳道固定为 process/kernel/hardware，CFS、CPU、hrtimer 归入 kernel；主链路建议 4–8 步。事件用 `evidence_level` 标记 L1（直接证据）/L2（强推断）/L3（机制补全），主图只放 L1/L2；只有两个并发路径、共享状态和明确交错关系同时成立时才使用 `race`。
+- `event_scene` 使用固定骨架+有限推断：泳道固定为 process/cpu/hardware，内核内部活动（调度器、cfs_rq、hrtimer）归入所属 cpu；cpu 泳道 name 写「编号 · 型号」；主链路建议 4–8 步，只写到崩溃指令、不写 panic/kdump 之后。事件用 `evidence_level` 标记 L1（直接证据）/L2（强推断）/L3（机制补全），主图只放 L1/L2；不绘制竞态窗口。
 
 ---
 
@@ -91,7 +91,7 @@
   1. **崩溃特征分析（含函数栈）**：从 `analyze_crash` 的 `call_trace_text` / `call_trace_signature` 与寄存器还原「在哪条路径、以什么方式崩」（RIP / fault addr / ESR / 关键寄存器）。
   2. **崩溃链路分析**：把函数栈拆成逐跳扩散链 `propagation_chain`，每一跳必须给出：栈帧符号 ↔ 内核源码（目录/文件/行号/函数）、关键输入输出参数（寄存器值），并明确「实参/寄存器 ↔ 源码形参」的对应关系，异常参数标红；精确源码行需 `vmlinux` 调试信息或本地源码树，`dis -rl <func>` 无法给出行号时注明工具边界。
   3. **相关案例分析**：以崩溃栈特征为锚，交叉分析 内部知识库案例 → 社区邮件/会议纪要/Bugzilla → 上游 commit → 当前内核对应位置源码逐行对照 → 得出结论（`verdict` 已确认则去掉「推测」标注）。
-- **先分析、后定因**：按三部分组织根因推理（对应 report.html 第 4 章）：`reasoning_flow`（①崩溃特征分析含函数栈 ②崩溃链路分析 ③相关案例分析；每步带 stage/stage_name/title/short/text/evidence/refs/branch，refs 用 anchor 跳转第 5 章案例卡）+ `deep`（根因结论：lead/mechanism/evidence/confidence/scope）+ `propagation_chain`（逐跳 栈帧↔源码 目录/文件/行号/函数 + 实参/寄存器↔源码形参）+ `event_scene`（事件时序图）。
+ - **先分析、后定因**：按三部分组织根因推理（对应 report.html 第 4 章）：`reasoning_flow`（①崩溃特征分析含函数栈 ②崩溃链路分析 ③相关案例分析；每步带 stage/stage_name/title/short/text/evidence/refs/branch，refs 用 anchor 跳转第 5 章案例卡）+ `deep`（根因结论：flow 故障流程梳理 + evidence 四部分递进）+ `propagation_chain`（逐跳 栈帧↔源码 目录/文件/行号/函数 + 实参/寄存器↔源码形参）+ `event_scene`（事件时序图）。
 - 将内部案例 Top 1-2、社区案例 Top 3-4、三种日志检测产物、本地内核源码（如有）、在线爬取的 commit/patch/邮件（如触发）作为节点构建局部知识图谱；
 - 建立案例根因、修复方案、受影响版本、调用栈、模块、RIP、异常值、源码函数/指针校验/锁操作等节点之间的关联边；
 - 执行逻辑自洽验证：案例根因是否解释当前日志异常、修复方案涉及的源码改动是否与崩溃现场一致、受影响版本/模块/业务场景是否与主机基线匹配；
@@ -110,7 +110,7 @@
 
 - 内部案例优先于社区案例；
 - 对冲突信息进行消解，生成根因摘要；
-- 输出 `conclusion`（结论）、`standard_solution`（标准解决方案，结构化）、`temporary_workaround`（临时规避方案，结构化），并补齐 `deep` / `reasoning_flow` / `propagation_chain` / `event_scene`（字段说明见第 8 步 root_cause_analysis.json）。
+- 输出 `conclusion`（结论）、`overview_brief`（总览一句话）、`trigger_scenario`（易触发场景）、`standard_solution`（标准解决方案，结构化，含 brief/fixed_brief）、`temporary_workaround`（临时规避方案，结构化），并补齐 `deep`（flow + evidence 四部分）/ `reasoning_flow` / `propagation_chain` / `event_scene`（字段说明见第 8 步 root_cause_analysis.json）。
 
 ### 第八步：标准化 JSON 报告生成（分片生成、脚本优先、总结补充、合并输出）
 
@@ -123,9 +123,9 @@
 5. \`diagnosis_repair_result.json\`：**脚本/工具直接生成**。\`internal_kernel_result\` 核心字段取自 \`query_knowledge\` / \`query_cases\` 返回数组的原始 JSON（禁止改写），并补齐分析字段（见 generate-report.md「内部案例条目细化」）；\`community_kernel_result\` 取自 \`query_community_cases\` 返回数组的原始 JSON，逐字节复制； （唯一例外：仅 \`match_score\` 字段转换为匹配等级 高/中/低——\`match_score\`(0-1): 高≥0.7 / 中0.4-0.69 / 低<0.4。）
 6. \`root_cause_analysis.json\`：**LLM 基于上下文总结生成**。在已有多源证据（基线、崩溃特征、内部/社区案例、日志检测、源码分析、在线 commit/patch/邮件）基础上，产出与 report.html 第 1/3/4 章一致的字段：
    - \`conclusion\`：**一句到三句**自然中文、叙事化、通俗、书面、少术语（「发生了什么→为什么→与业务/硬件是否有关」），**尽量短、只留结论**，**禁止**函数名/寄存器/标志常量/十六进制/地址/版本号/commit 号/进程名/PID 等实现细节；
-   - \`standard_solution\`：结构化对象（type/claim_tag/short「要做什么·为什么·怎么做」/basis/fixed_in/patch_list/method_steps/detail/rollback/verification），主述区通俗、书面、少术语；\`short\` **必须分「要做什么·为什么·怎么做」三句，每句一到两句话、只写结论性表述**，不用函数名/寄存器/十六进制/文件行/循环位置（专业细节放 patch_list/method_steps/detail）；\`type\` 四选一 patch/config/upgrade/none，\`patch_list[].mode\` 三选一 full/part/pick，\`patch_list[].diff\` **必须给可直接合入的具体补丁示例（diff 格式含 +/- 行），禁止留空**，\`type=patch\` 时必须至少一条 patch_list；\`detail\` 写完整说明（通俗、书面、少术语），\`rollback\`（**必填**）写补丁/配置失败或回归时的回退步骤与还原命令，\`verification\`（**必填**）写验证方案（编译无告警、压力回归、观察 dmesg 无新 Oops、监控同类 panic 建簇等）；
+    - \`standard_solution\`：结构化对象（type/brief/fixed_brief/basis/patch_list/detail/rollback/verification），主述区通俗、书面、少术语；\`brief\` 一句话说明「给出了一个什么补丁」，\`fixed_brief\` 一句话说明「哪个内核版本的哪个补丁修复了什么问题」，均不用函数名/寄存器/十六进制/文件行/循环位置（专业细节放 patch_list/detail）；\`type\` 四选一 patch/config/upgrade/none，\`patch_list[].mode\` 三选一 full/part/pick，\`patch_list[].diff\` **必须给可直接合入的具体补丁示例（diff 格式含 +/- 行），禁止留空**，\`type=patch\` 时必须至少一条 patch_list；\`detail\` 写完整说明（通俗、书面、少术语），\`rollback\`（**必填**）写补丁/配置失败或回归时的回退步骤与还原命令，\`verification\`（**必填**）写验证方案（编译无告警、压力回归、观察 dmesg 无新 Oops、监控同类 panic 建簇等）；
    - \`temporary_workaround\`：结构化对象（type/case_refs/summary/steps/risk/detail）；只有案例明确提供该措施时才填写 case_refs，否则置空并隐藏临时缓解卡片；无方案 type=none 且 summary 写「无」；
-   - \`event_scene\`：固定骨架+有限推断的事件时序图；泳道固定为 process/kernel/hardware，CFS、CPU、hrtimer 归入 kernel；主链路建议 4-8 步。每条事件增加 \`evidence_level\`（L1 直接证据/L2 强推断/L3 机制补全）和 \`evidence\`，主图只放 L1/L2，L3 只能放 \`full\` 并标注推断；只有两个并发路径、共享状态和明确交错关系同时成立时才使用 race。\`participants\`、\`anchor\`、\`gvars\`/\`ginit\` 与 \`events\` 的其他字段保持原有定义；
+    - \`event_scene\`：固定骨架+有限推断的事件时序图；泳道固定为 process/cpu/hardware，内核内部活动（调度器、cfs_rq、hrtimer）归入所属 cpu，cpu 泳道 name 写「编号 · 型号」；主链路建议 4-8 步、只写到崩溃指令不写 panic/kdump 之后；不绘制竞态窗口。每条事件增加 \`evidence_level\`（L1 直接证据/L2 强推断/L3 机制补全）和 \`evidence\`，主图只放 L1/L2，L3 只能放 \`full\` 并标注推断。\`participants\`、\`anchor\`、\`gvars\`/\`ginit\` 与 \`events\` 的其他字段保持原有定义；
    - \`propagation_chain\`：崩溃链路**必须拆成一步步**（from/to/type/src_dir/file/line/stack/fn_ctx/crash/source_url/detail/evidence/params），\`from\`/\`to\` 用函数名、\`stack\` 写 \`func+offset/size (L行号)\`、params 给**寄存器值 ↔ 实际变量/形参**（io/reg/n/formal/v/bad，异常参数 bad=true 标红，每个有实参的跳都要给 params）；**每一跳都应给 source_url（在线源码/commit/patch 链接）**；
    - \`reasoning_flow\`：三部分根因，\`stage\` 必须用枚举 \`stack\`/\`hypothesis\`（①崩溃特征分析含函数栈，**两步都要有**）、\`path_analysis\`（②崩溃链路分析，\`path_mini\` **必须等于 propagation_chain 完整数组，禁止 null/空数组/函数名数组**）、\`internal\`/\`community\`/\`commit\`/\`source_compare\`/\`conclusion\`（③相关案例分析，**执行了对应检索就必须有对应 stage，未命中也要保留该 stage 并如实写「未检索到…」，最后以 conclusion 收尾**），refs 用 anchor 跳第 5 章案例卡；
    - \`deep\`：根因结论详细（lead/mechanism/evidence/confidence/scope）。

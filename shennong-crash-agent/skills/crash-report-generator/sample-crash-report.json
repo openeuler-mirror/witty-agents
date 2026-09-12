@@ -1,377 +1,529 @@
 {
-  "report_id": "21.206.114.11-20260708-20260708",
+  "report_id": "observer02y-20260708-20260708",
   "parse_log_range": [
-    "vmcore-dmesg.txt"
+    "/tmp/opencode/0708/vmcore-dmesg.txt（崩溃段 L2642-2737 + 全文异常扫描）",
+    "/tmp/shennong_work/sosreport-observer02y-20260708151412/var/log/messages（Jul 7 03:14 ~ Jul 8 06:03，含崩溃前窗口与重启段）",
+    "/tmp/shennong_work/sosreport-observer02y-20260708151412/var/log/messages-20260707",
+    "/tmp/shennong_0708/vmcore（crash 8.0.4 + vmlinux 4.19.90-89.17.v2401.ky10 取证采样：sys/bt/dis/struct/runq/task/全量128CPU cfs_rq 扫描）",
+    "/home/zjq/test/linux_exmaple/raw_data（本地知识库：linux/openeuler 的 bug+commit，命中 bugzilla_211435/220447/219920 与 6 个上游 commit）",
+    "/tmp/shennong_0803/vmcore-dmesg.txt、/tmp/shennong_0824/vmcore-dmesg.txt（同局点历史宕机横向关联）"
   ],
   "host_base_info": {
-    "host_name": "21.206.114.11",
+    "host_name": "observer02y.czob4b",
     "kernel_version": "4.19.90-89.17.v2401.ky10.aarch64",
-    "cpu_model": "Kunpeng 920 (part 0x481fd010) · ARMv8 aarch64",
-    "machine_model": "PowerLeader PR210K (BC82AMDYA)",
+    "cpu_model": "HiSilicon Kunpeng 920 (HIP08, MIDR 0x481fd010, TaiShan v110) aarch64",
+    "machine_model": "PowerLeader PR210K/BC82AMDYA（BIOS 6.57 05/17/2023，2 路鲲鹏 920 / 4 NUMA）",
     "cpu_num": 128,
-    "memory_size": "未知（sosreport 未记录）",
+    "memory_size": "1024GB",
     "modules": [
       "nfsd",
-      "sunrpc",
+      "nfs_acl",
+      "binfmt_misc",
+      "rpcsec_gss_krb5",
+      "auth_rpcgss",
+      "nfsv4",
+      "dns_resolver",
+      "nfs",
+      "lockd",
+      "grace",
+      "fscache",
       "bonding",
-      "hinic",
-      "ngbe",
-      "hisi_sas_v3_hw",
+      "sunrpc",
+      "ipmi_ssif",
+      "vfat",
+      "fat",
+      "aes_ce_blk",
+      "crypto_simd",
+      "joydev",
+      "cryptd",
+      "aes_ce_cipher",
+      "crct10dif_ce",
+      "ofpart",
+      "ghash_ce",
+      "cmdlinepart",
+      "ipmi_si",
+      "sha1_ce",
+      "ses",
+      "sbsa_gwdt",
+      "ky_lpcmux",
+      "enclosure",
+      "hi_sfc",
+      "ipmi_devintf",
+      "mtd",
+      "ipmi_msghandler",
+      "spi_dw_mmio",
+      "sch_fq_codel",
+      "ip_tables",
+      "sha2_ce",
       "nvme",
-      "ipmi_ssif"
+      "hinic",
+      "sha256_arm64",
+      "nvme_core",
+      "nfit",
+      "hisi_sas_v3_hw",
+      "nvme_common",
+      "ngbe",
+      "megaraid_sas",
+      "libnvdimm",
+      "hisi_sas_main",
+      "host_edma_drv",
+      "dm_mirror",
+      "dm_region_hash",
+      "dm_log"
     ]
   },
   "crash_feature_info": {
-    "crash_time": "≈2026-07-08（内核运行第 290 天，uptime 25097461s）",
-    "signature": "null_deref :: set_next_entity+0x20/0x6f8 :: CPU92",
-    "bug_type": "oops · 内核空指针解引用",
-    "bug_key": "kernel NULL pointer dereference",
-    "bug_summary": "CFS 调度 set_next_entity 空指针（se=NULL 解引用 on_rq@0x40）",
-    "rip": "pc : set_next_entity+0x20/0x6f8（指令 b9404280 = ldr w0,[x20,#0x40]）",
-    "rip_function": "set_next_entity (kernel/sched/fair.c)",
-    "rip_offset": "+0x20",
-    "related_modules": [
-      "sched(fair.c 内建)",
-      "hrtimer"
-    ],
+    "crash_time": "2026-07-08T05:59:48+08:00",
+    "signature": "null_pointer::kernel::set_next_entity::0x20",
+    "bug_type": "null_pointer",
+    "bug_key": "Unable to handle kernel NULL pointer dereference at virtual address",
+    "bug_summary": "Kylin V10（4.19.90-89.17.v2401.ky10.aarch64，鲲鹏920 128核/1024GB，PowerLeader PR210K）CFS 调度器空指针宕机：业务线程 T1004_LockWaitM(PID 4090813) 在 CPU92 上经 nanosleep 睡眠让出 CPU，__schedule→pick_next_task_fair 挑选下一任务时，因根 cfs_rq(ffffa07fefde16c0) 的 nr_running/h_nr_running 双双下溢为 0xffffffff 绕过 !nr_running 空队列检查，pick_next_entity 在空红黑树(rb_leftmost=0x0)上返回 NULL(se=0)，随后第二个 pick 循环（厂商 QoS 路径，反汇编 +716~+748，无 cbz 判空）直接调用 set_next_entity，其首条访存指令 ldr w0,[x20,#64]（读 se->on_rq，偏移 0x40）访问虚地址 0x40 触发 DABT(ESR=0x96000005)，内核 Oops 并经 kdump 收集 3.8GB vmcore 后重启。同局点 0803(hard lockup@load_balance)/0824(check_preempt_wakeup NULL@0x168) 属同一调度器问题簇。",
+    "rip": "set_next_entity+0x20",
+    "rip_function": "set_next_entity",
+    "rip_offset": "0x20",
+    "related_modules": [],
     "call_trace_signature": [
       "set_next_entity",
       "pick_next_task_fair",
-      "__schedule",
-      "schedule",
       "do_nanosleep",
       "hrtimer_nanosleep",
       "sys_nanosleep",
       "el0_svc_naked"
     ],
-    "call_trace_text": "Internal error: Oops: 96000005 [#1] SMP\nProcess T1004_LockWaitM (pid: 4090813)\nCPU: 92 PID: 4090813 Comm: T1004_LockWaitM Not tainted 4.19.90-89.17.v2401.ky10.aarch64\npc : set_next_entity+0x20/0x6f8\nlr : pick_next_task_fair+0x2e8/0x548\nx19/x25: ffffa07fefde16c0(cfs_rq)  x20: 0(se)\nCode: aa0103f4 aa0003f3 aa1e03e0 d503201f (b9404280)\nCall trace:\n set_next_entity+0x20/0x6f8\n pick_next_task_fair+0x2e8/0x548\n __schedule+0x6e4/0x840\n schedule+0x30/0xe0\n do_nanosleep+0x78/0x168\n hrtimer_nanosleep+0x88/0x100\n sys_nanosleep+0x94/0xb8\n el0_svc_naked+0x44/0x48\n(source: vmcore-dmesg.txt L2642-2688)",
+    "call_trace_text": "set_next_entity pick_next_task_fair do_nanosleep hrtimer_nanosleep sys_nanosleep el0_svc_naked",
+    "raw_crash_log": "[25097461.360687] Unable to handle kernel NULL pointer dereference at virtual address 0000000000000040\n[25097461.370128] Mem abort info:\n[25097461.373601]   ESR = 0x96000005\n[25097461.377332]   Exception class = DABT (current EL), IL = 32 bits\n[25097461.383914]   SET = 0, FnV = 0\n[25097461.387647]   EA = 0, S1PTW = 0\n[25097461.391465] Data abort info:\n[25097461.395024]   ISV = 0, ISS = 0x00000005\n[25097461.399533]   CM = 0, WnR = 0\n[25097461.403180] user pgtable: 64k pages, 48-bit VAs, pgdp = 00000000d758cc80\n[25097461.410540] [0000000000000040] pgd=0000000000000000, pud=0000000000000000\n[25097461.417991] Internal error: Oops: 96000005 [#1] SMP\n[25097461.423539] Modules linked in: nfsd nfs_acl binfmt_misc rpcsec_gss_krb5 auth_rpcgss nfsv4 dns_resolver nfs lockd grace fscache bonding sunrpc ipmi_ssif vfat fat aes_ce_blk crypto_simd joydev cryptd aes_ce_cipher crct10dif_ce ofpart ghash_ce cmdlinepart ipmi_si sha1_ce ses sbsa_gwdt ky_lpcmux enclosure hi_sfc ipmi_devintf mtd ipmi_msghandler spi_dw_mmio sch_fq_codel ip_tables sha2_ce nvme hinic sha256_arm64 nvme_core nfit hisi_sas_v3_hw nvme_common ngbe megaraid_sas libnvdimm hisi_sas_main host_edma_drv dm_mirror dm_region_hash dm_log\n[25097461.471273] Process T1004_LockWaitM (pid: 4090813, stack limit = 0x0000000096656505)\n[25097461.479672] CPU: 92 PID: 4090813 Comm: T1004_LockWaitM Kdump: loaded Not tainted 4.19.90-89.17.v2401.ky10.aarch64 #1\n[25097461.490836] Source Version: 1052da24987a66078c6e04be3830a5167e73a1ec\n[25097461.497852] Hardware name: PowerLeader PR210K/BC82AMDYA, BIOS 6.57 05/17/2023\n[25097461.505644] pstate: 60400089 (nZCv daIf +PAN -UAO)\n[25097461.511111] pc : set_next_entity+0x20/0x6f8\n[25097461.515968] lr : pick_next_task_fair+0x2e8/0x548\n[25097461.521255] sp : ffff8041a56d7c60\n[25097461.525245] x29: ffff8041a56d7c60 x28: ffff8040a2593800 \n[25097461.531225] x27: ffff561d3caa3000 x26: ffff561d3c135a28 \n[25097461.537205] x25: ffffa07fefde16c0 x24: 0000000000000000 \n[25097461.543184] x23: ffffa07fefde16c0 x22: ffff561d3c430000 \n[25097461.549161] x21: 0000000000000000 x20: 0000000000000000 \n[25097461.555140] x19: ffffa07fefde16c0 x18: 0000fffa2730e4b5 \n[25097461.561117] x17: 0000fffbced05500 x16: ffff561d3b040568 \n[25097461.567096] x15: 0000fffa2730eda8 x14: 6572205d35313d74 \n[25097461.573073] x13: 00000000000f4240 x12: 000000007fffffff \n[25097461.579053] x11: 0008ea9dc04c9f1b x10: 0000000000000000 \n[25097461.585029] x9 : 0000000000000000 x8 : 0000000000000b44 \n[25097461.591009] x7 : 000000019597afde x6 : 0008ea635b942881 \n[25097461.596988] x5 : 00ffffffffffffff x4 : 0000000000000000 \n[25097461.602967] x3 : ffff561d3afdeef0 x2 : 0000000000000000 \n[25097461.608946] x1 : 0000000000000000 x0 : ffff561d3afdf1d8 \n[25097461.614926] Call trace:\n[25097461.618054]  set_next_entity+0x20/0x6f8\n[25097461.622563]  pick_next_task_fair+0x2e8/0x548\n[25097461.627509]  __schedule+0x6e4/0x840\n[25097461.631673]  schedule+0x30/0xe0\n[25097461.635493]  do_nanosleep+0x78/0x168\n[25097461.639747]  hrtimer_nanosleep+0x88/0x100\n[25097461.644429]  sys_nanosleep+0x94/0xb8\n[25097461.648680]  el0_svc_naked+0x44/0x48\n[25097461.652931] Code: aa0103f4 aa0003f3 aa1e03e0 d503201f (b9404280) ",
     "log_features": {
       "related_ref": {
         "file": "vmcore-dmesg.txt",
-        "lines": "2642-2688"
+        "lines": "2642-2692"
       },
       "related_errors": [
         {
           "file": "vmcore-dmesg.txt",
           "lines": "2642",
-          "line": "Unable to handle kernel NULL pointer dereference at virtual address 0000000000000040",
-          "relevance": "强相关"
+          "line": "[25097461.360687] Unable to handle kernel NULL pointer dereference at virtual address 0000000000000040",
+          "relevance": "强相关",
+          "desc": "崩溃首行：内核态读虚地址 0x40（=offsetof(struct sched_entity, on_rq)）失败，se=NULL 的直接证据。"
         },
         {
           "file": "vmcore-dmesg.txt",
-          "lines": "2643-2649",
-          "line": "Mem abort / ESR 0x96000005 (DABT) · 访问 [0x40] 为空页",
-          "relevance": "强相关"
+          "lines": "2644",
+          "line": "[25097461.373601]   ESR = 0x96000005",
+          "relevance": "强相关",
+          "desc": "ESR=0x96000005：DABT 数据中止（当前 EL），ISS=0x05 一级页表翻译故障，WnR=0 读操作——与 ldr w0,[x20,#64] 一致。"
+        },
+        {
+          "file": "vmcore-dmesg.txt",
+          "lines": "2651",
+          "line": "[25097461.403180] user pgtable: 64k pages, 48-bit VAs, pgdp = 00000000d758cc80",
+          "relevance": "强相关",
+          "desc": "[0x40] pgd=0 pud=0：故障地址页表全空，确认是 NULL+0x40 解引用而非野指针/权限问题。"
         },
         {
           "file": "vmcore-dmesg.txt",
           "lines": "2653",
-          "line": "Internal error: Oops: 96000005 [#1] SMP",
-          "relevance": "强相关"
+          "line": "[25097461.417991] Internal error: Oops: 96000005 [#1] SMP",
+          "relevance": "强相关",
+          "desc": "Internal error: Oops: 96000005 [#1] SMP：首次 Oops，触发 die→kdump。"
+        },
+        {
+          "file": "vmcore-dmesg.txt",
+          "lines": "2656",
+          "line": "[25097461.479672] CPU: 92 PID: 4090813 Comm: T1004_LockWaitM Kdump: loaded Not tainted 4.19.90-89.17.v2401.ky10.aarch64 #1",
+          "relevance": "强相关",
+          "desc": "崩溃上下文：CPU92、PID 4090813、T1004_LockWaitM（OceanBase 类租户锁等待线程）、kdump 已加载、内核未污染（Not tainted）。"
         },
         {
           "file": "vmcore-dmesg.txt",
           "lines": "2660-2661",
-          "line": "pc: set_next_entity+0x20/0x6f8 · lr: pick_next_task_fair+0x2e8/0x548",
-          "relevance": "强相关"
+          "line": "[25097461.511111] pc : set_next_entity+0x20/0x6f8 / [25097461.515968] lr : pick_next_task_fair+0x2e8/0x548",
+          "relevance": "强相关",
+          "desc": "pc=set_next_entity+0x20（ldr w0,[x20,#64] 读 se->on_rq），lr=pick_next_task_fair+0x2e8（+744，恰为 +740 处 bl set_next_entity 的返回地址），锁定崩溃调用点为第二个 pick 循环。"
+        },
+        {
+          "file": "vmcore-dmesg.txt",
+          "lines": "2668",
+          "line": "x21: 0000000000000000 x20: 0000000000000000",
+          "relevance": "强相关",
+          "desc": "x20=se=NULL（set_next_entity+16 mov x20,x1 保存第二入参），x19/x23/x25=ffffa07fefde16c0=CPU92 根 cfs_rq，与 vmcore 取证地址一致。"
+        },
+        {
+          "file": "vmcore-dmesg.txt",
+          "lines": "2678-2686",
+          "line": "Call trace: set_next_entity+0x20/0x6f8 → pick_next_task_fair+0x2e8/0x548 → __schedule+0x6e4/0x840 → schedule+0x30/0xe0 → do_nanosleep+0x78/0x168 → hrtimer_nanosleep+0x88/0x100 → sys_nanosleep+0x94/0xb8 → el0_svc_naked+0x44/0x48",
+          "relevance": "强相关",
+          "desc": "完整用户态→内核态路径：业务线程 nanosleep 主动睡眠触发上下文切换，在挑选下一个任务时崩溃。"
         },
         {
           "file": "vmcore-dmesg.txt",
           "lines": "2687",
-          "line": "Code: aa0103f4 aa0003f3 aa1e03e0 d503201f (b9404280)",
-          "relevance": "强相关"
+          "line": "[25097461.652931] Code: aa0103f4 aa0003f3 aa1e03e0 d503201f (b9404280)",
+          "relevance": "强相关",
+          "desc": "崩溃机器码 (b9404280)=ldr w0,[x20,#0x40]，与 vmlinux 反汇编 set_next_entity+32(0x20) 逐字节一致。"
+        },
+        {
+          "file": "vmcore-dmesg.txt",
+          "lines": "2689",
+          "line": "[25097462.682406] SMP: failed to stop secondary CPUs 0-91,93-127",
+          "relevance": "一般相关",
+          "desc": "kdump 停其它 CPU 失败（0-91,93-127），随后 machine_kexec WARNING 'Some CPUs may be stale'——不影响崩溃 CPU92 现场完整性，但其它 CPU 状态参考性下降。"
         }
       ],
       "repeated": [
         {
-          "title": "收包软中断 pending 提示在运行期反复出现（背景，弱相关）",
+          "title": "NOHZ: local_softirq_pending 08/80/88",
           "count": 10,
-          "window": "启动各阶段",
+          "window": "内核时间 3502s ~ 12170s（启动初期，距崩溃约 290 天）",
           "ref": {
             "file": "vmcore-dmesg.txt",
             "lines": "2629-2638"
           },
-          "note": "均为 NOHZ: local_softirq_pending（softirq 位 0x08/0x80）常规提示，说明系统 softirq/调度活动频繁；与本次崩溃无直接因果。",
+          "note": "NOHZ 进入 idle 时仍有 softirq pending 的提示，集中在开机初期，与崩溃时刻（uptime 25097461s）无时间关联。",
           "examples": [
-            "[12170.62] NOHZ: local_softirq_pending 80",
-            "[10623.31] NOHZ: local_softirq_pending 08"
+            "[ 3502.774431] NOHZ: local_softirq_pending 80",
+            "[12170.620604] NOHZ: local_softirq_pending 80"
           ],
-          "relevance": "弱相关"
+          "relevance": "弱相关",
+          "desc": "tickless idle 入口发现本地 softirq 待处理位非零（0x08=TIMER? 0x80=?位掩码），内核打印一次提示；属常见良性噪声。"
         }
       ],
       "other": [
         {
-          "name": "其它同文件日志片段（供现场核对）",
-          "count": "1",
-          "span": "崩溃前 2s",
+          "name": "hrtimer: interrupt took 100811 ns",
+          "count": 1,
+          "span": "uptime 3750411s（崩溃前约 247 天）",
           "ref": {
             "file": "vmcore-dmesg.txt",
-            "lines": "2639-2641"
+            "lines": "2639"
           },
-          "note": "hrtimer 单次中断耗时 100.8µs、NFSD 启动等均与本次崩溃无关；列出是为了证明崩溃块前后为正常业务日志。",
+          "note": "单次 hrtimer 中断耗时 100us 超阈值提示，距崩溃极远，无因果证据。",
           "lines": [
-            "[3750411.45] hrtimer: interrupt took 100811 ns",
-            "[4579103.99] Installing knfsd (copyright ...)",
-            "[4579107.98] NFSD: starting 90-second grace period"
+            "[3750411.450172] hrtimer: interrupt took 100811 ns"
           ],
-          "relevance": "弱相关"
+          "relevance": "弱相关",
+          "desc": "高精度定时器中断处理耗时超过预设阈值的一次性告警。"
+        },
+        {
+          "name": "SMP: failed to stop secondary CPUs 0-91,93-127 + machine_kexec WARNING（Some CPUs may be stale, kdump will be unreliable）",
+          "count": 1,
+          "span": "崩溃后 kdump 阶段（25097462s）",
+          "ref": {
+            "file": "vmcore-dmesg.txt",
+            "lines": "2688-2737"
+          },
+          "note": "Oops 后 1 秒内未能 IPI 停齐其它 CPU 即强制 kexec；vmcore 中其它 CPU 的 NT_PRSTATUS 缺失（crash 提示 WARNING: cpu N: cannot find NT_PRSTATUS note），但崩溃 CPU92 的寄存器/栈/结构体取证完整可信。",
+          "lines": [
+            "[25097462.682406] SMP: failed to stop secondary CPUs 0-91,93-127",
+            "[25097462.701134] Some CPUs may be stale, kdump will be unreliable."
+          ],
+          "relevance": "一般相关",
+          "desc": "kdump 可靠性提示：影响非崩溃 CPU 状态的取证参考性，不影响本崩溃定性。"
+        },
+        {
+          "name": "崩溃前 syslog 无内核异常前兆",
+          "count": 0,
+          "span": "Jul 7 03:14 ~ Jul 8 05:59（sosreport messages）",
+          "ref": {
+            "file": "sosreport-observer02y-20260708151412/var/log/messages",
+            "lines": "L42746-45891（Jul 8 窗口）"
+          },
+          "note": "崩溃前最后日志为 05:44/05:50 例行 dmsetup/sysstat，无 soft lockup/RCU stall/MCE/EDAC/AER/IO 错误；崩溃突发，排除渐进性硬件劣化前兆。",
+          "lines": [
+            "Jul  8 05:50:01 observer02y systemd[1]: Started Session 921849 of user root.",
+            "Jul  8 06:03:36 observer02y kernel: [    0.000000] Booting Linux on physical CPU 0x0000080000 [0x481fd010]"
+          ],
+          "relevance": "一般相关",
+          "desc": "用于硬件/软件定界：无任何硬件错误事件与内核告警前兆。"
         }
       ]
     }
   },
   "root_cause_analysis": {
-    "conclusion": "本次事故为内核调度器的空指针崩溃：进程让出 CPU 后，内核在挑选下一个待运行任务时得到了一个空任务对象，却未做有效性检查便继续使用，最终访问了无效内存地址，导致内核崩溃并整机重启。该问题源于内核代码缺少一处空值判断，与业务程序及硬件无关。",
+    "conclusion": "这台服务器在连续运行约 290 天后，内核调度器中某个处理器运行队列的任务计数在一次极罕见的并发窗口中被多减了一次而变为负值，调度器因此误以为空队列上仍有任务可选，绕过正常的空闲保护去空队列取任务并得到空结果，又因该内核版本缺少对空结果的最后一道防御检查而访问无效地址，整机随即宕机并自动转储重启。该问题与硬件故障无关，属内核调度器已知缺陷家族（上游社区已在后续大版本确认并加入防御检查，社区补丁已确认）；同一局点此外两次宕机与本问题属同一调度器问题簇，需统一修复与监控。",
     "standard_solution": {
       "type": "patch",
-      "claim_tag": "建议：补充空值判断，具体操作与代码见补充信息",
-      "short": "要做什么：在内核的任务调度挑选逻辑中补充空值检查——当未能选中可运行任务时，直接进入空闲分支，避免继续使用空任务对象。\n为什么：该缺陷在多个内核版本中普遍存在，上游于 v6.12（提交 b55945c500c5）才修复；本机运行的 4.19 内核尚无该检查，仍可能复发。\n怎么做：通过补丁方式合入少量改动（具体命令与代码见下方补充信息），合入后进行数日压力回归，确认稳定后再批量部署。",
       "basis": [
         {
           "kind": "commit",
-          "title": "upstream v6.12 b55945c500c5  sched: Fix pick_next_task_fair() vs try_to_wake_up() race",
-          "url": "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=b55945c500c5723992504aa03b362fab416863a6",
-          "text": "上游直到 v6.12 才引入 if (!se) 判空（2024-10，Peter Zijlstra）。说明 pick→set 无判空是 4.19~v6.11 的通用防御缺口。"
+          "title": "sched/fair: Prepare pick_next_task() for delayed dequeue（上游判空防御原始出处，v6.12）",
+          "url": "https://github.com/torvalds/linux/commit/f12e148892ede8d9ee82bcd3e469e6d01fc077ac",
+          "text": "上游在 pick 循环中加入 'if (!se) goto again;'，确认 pick_next_entity 返回 NULL 是必须防御的合法状态；本补丁移植该模式（4.19 语义下改为 goto idle）。"
         },
         {
-          "kind": "meeting",
-          "title": "openEuler Kernel SIG 例会 · CFS pick→set 判空防御缺口（见第 5 章会议纪要）",
-          "url": "https://gitee.com/openeuler/community/blob/master/sig/Kernel/meetings/2025-02.md",
-          "text": "纪要确认 4.19 fair.c 因厂商 QoS 拆出多个 pick→set 循环存在漏判空，约定逐个补 if(!se)；与本次 fair.c:7762 漏判空对照一致。"
+          "kind": "bugzilla",
+          "title": "Kernel Panic in set_next_entity+0x8/0xc30（#211435，4.9 ARM 同型案例）",
+          "url": "https://bugzilla.kernel.org/show_bug.cgi?id=211435",
+          "text": "同函数对、同'极窄竞态+压力场景'特征的跨版本案例，证明该缺陷家族在 4.9/4.19 世代无现成修复、需自行防御。"
+        },
+        {
+          "kind": "evidence",
+          "title": "本案 vmcore 反汇编实证",
+          "url": "",
+          "text": "第一循环 +268 已有 cbz x20 判空而第二循环 +728~+740 无判空、LR=+744 锁定崩溃于第二循环——补丁必须覆盖所有 pick→set 循环，只修一处无效。"
         }
       ],
-      "fixed_in": "判定：当前内核没有这道检查，属于“未修复”。官方在较新内核（v6.12 之后）才自带，因此需在当前 4.19 上补同样的检查（详见下方补丁）。",
       "patch_list": [
         {
-          "sha": "自研补丁（fair.c 约 +3/-0 行）",
+          "sha": "自研（模式移植自 f12e148892ede8d9ee82bcd3e469e6d01fc077ac）",
           "mode": "pick",
-          "subject": "sched/fair: 在 pick_next_task_fair 所有路径对 se 判空（参照 b55945c500c5）",
-          "why": "改动仅加 NULL 分支：队列空时 goto idle，符合调度语义、风险低；必须覆盖厂商 QoS 拆出的所有循环（7746 有判空，7762 崩溃路径缺失）。",
+          "subject": "sched/fair: pick_next_task_fair() 为 pick_next_entity() 返回值增加判空防御（覆盖 QoS 双循环）",
+          "why": "cfs_rq->nr_running 下溢为 -1 时绕过 !nr_running 空队列检查，空树上 pick_next_entity 合法返回 NULL；无判空则 set_next_entity 首条访存指令即 NULL 解引用宕机。判空后走 idle 分支符合调度语义（队列空→运行 idle 任务），改动仅增加 NULL 分支，风险低。",
           "files": [
             "kernel/sched/fair.c"
           ],
-          "diff": "--- a/kernel/sched/fair.c\n+++ b/kernel/sched/fair.c\n@@ -7762,6 +7762,9 @@ again:\n \t\tif (curr) {\n \t\t\t...\n \t\t}\n \t}\n+\tse = pick_next_entity(cfs_rq, curr);\n+\tif (!se)                       /* 防御缺口：上游 v6.12 起才有 if(!se) */\n+\t\tgoto idle;\n \tset_next_entity(cfs_rq, se);\n \t...\n"
+          "diff": "--- a/kernel/sched/fair.c\n+++ b/kernel/sched/fair.c\n@@ -6689,6 +6689,16 @@ pick_next_task_fair(struct rq *rq, struct task_struct *prev, struct rq_flags *rf)\n \tput_prev_task(rq, prev);\n \n \tdo {\n \t\tse = pick_next_entity(cfs_rq, NULL);\n+\t\t/*\n+\t\t * Defensive NULL check (mirrors upstream v6.12 f12e148892ed):\n+\t\t * cfs_rq->nr_running may underflow to -1 via a rare\n+\t\t * enqueue/dequeue race, bypassing the !nr_running idle check\n+\t\t * above while the rb-tree is empty. pick_next_entity() then\n+\t\t * legitimately returns NULL -- fall back to idle instead of\n+\t\t * dereferencing NULL in set_next_entity().\n+\t\t */\n+\t\tif (unlikely(!se))\n+\t\t\tgoto idle;\n \t\tset_next_entity(cfs_rq, se);\n \t\tcfs_rq = group_cfs_rq(se);\n \t} while (cfs_rq);\n@@ 厂商 QoS 第二循环（本次崩溃路径，Kylin 源码树中定位方法见 method_steps）@@\n \tdo {\n \t\tse = pick_next_entity(cfs_rq, NULL);\n+\t\tif (unlikely(!se))\n+\t\t\tgoto idle;   /* 同上：第二循环必须同步补判空，本次崩溃即发生于此循环 */\n \t\tset_next_entity(cfs_rq, se);\n \t\tcfs_rq = se->my_q;\n \t} while (cfs_rq);"
         }
       ],
-      "method_steps": [
-        "① 反汇编核验：dis -l pick_next_task_fair，确认 pick_next_entity 与 set_next_entity 之间无 cbz 判空 → 在漏判空路径补判空；",
-        "② 覆盖厂商 QoS 拆出的所有循环（7746 已判空，7762 崩溃路径漏判）— 逐个 pick→set 对检查；",
-        "③ 只移植防御性小补丁，禁止移植上游 1911.1/00528 大重构系列（sched_class 原型不兼容）；",
-        "④ 编译无告警 + 长时（数天~数周）压力回归，观察 dmesg 无新 Oops。"
-      ],
-      "detail": "三层拆解：直接原因=NULL 解引用；触发条件=调度窗口返回空 se（nr_running 下溢/竞态，需 crash 复核 cfs_rq->nr_running==0xffffffff）；防御缺失=4.19 无判空。防御补丁治标，深层下溢需另行定位。上游对照见补充信息 commit 链接。",
-      "rollback": "本补丁仅新增空值判空分支，不改变调度语义；若合入后出现调度异常或性能回归，可回退：① 保留合入前内核包/ vmlinux 备份；② 卸载热补丁或重启回滚到原内核；③ 还原未改动的 sysctl/启动参数，无新增配置需要清理。",
-      "verification": "合入后验证：① 编译无告警；② 长时（数天~数周）压力回归，覆盖睡眠/唤醒/负载均衡路径，观察 dmesg 无新 Oops；③ 用 crash 复核触发路径不再出现空指针崩溃；④ 监控同机型同内核 panic 建簇统计，连续观察周期内无复发后再批量部署。"
+      "detail": "三层根因对应三层处置：① 直接原因（set_next_entity NULL 解引用）与防御缺失（QoS 第二循环无判空）——本补丁立即消除宕机后果，队列异常为空时安全转入 idle（此时 rq->nr_running=0，本就该运行 idle 任务，语义正确）；② 触发条件（cfs_rq->nr_running/h_nr_running 下溢为 0xffffffff）——判空补丁是防御性治标，下溢本身是深层 enqueue/dequeue 计数竞态（double-decrement 类；prev 线程 nr_migrations=4100 万次的高频迁移显著扩大竞态窗口；上游 b55945c5 证明 pick vs ttwu 竞态家族真实存在），需厂商带调试手段（如 count 校验 WARN、sched debug 内核）联合定位；③ 问题簇（同局点 0708/0803/0824 三种调度器形态宕机）——统一建簇监控、统一补丁覆盖 pick 路径，0824 的 check_preempt_wakeup 路径判空（se/rq->curr 相关）建议在同一补丁系列中一并评估。补丁量级 +3~10 行/循环，不改数据结构、不改锁语义、无 KABI 影响，可热补丁化。",
+      "rollback": "热补丁形态：livepatch disable / rmmod 对应热补丁模块即可即时恢复原逻辑（无数据结构变更，回退零风险）；整内核形态：grub 菜单选择上一版本内核（4.19.90-89.17.v2401.ky10.aarch64）启动，确认稳定后 grubby --set-default /boot/vmlinuz-4.19.90-89.17.v2401.ky10.aarch64 恢复默认项；若补丁引发调度行为回归（理论上仅新增 NULL→idle 分支，概率极低），直接回退并保留 vmcore/dmesg 供再分析。",
+      "verification": "1) 编译零新告警（W=1 对比基线）；2) 反汇编核验：crash> dis -l pick_next_task_fair 确认每个 bl pick_next_entity 与 bl set_next_entity 之间均存在 cbz 判空分支（含 QoS 第二循环）；3) 功能回归：schbench/hackbench/cgroup 层级压测 + CPU 热插拔/迁移压力，确认调度行为无回归（队列空时正常走 idle）；4) 长时观察：该竞态窗口极窄（290 天 uptime 一遇），需数天~数周长时压力/生产观察，监控 dmesg/kdump 无新 set_next_entity/check_preempt_wakeup 类 Oops；5) 建簇监控：对同局点 0708(NULL@0x40)/0803(hard lockup@load_balance)/0824(NULL@0x168) 三种形态建立告警聚类，复发即升级厂商联合排查。",
+      "fixed_brief": "上游 v6.12 补丁 f12e148892ed 首次加入判空防御，修复空队列 pick 返回 NULL 未判空导致的宕机（为 pick_next_task 增加对空结果的防御检查）；当前 4.19 无对应修复，需自研等价防御补丁。",
+      "brief": "已给出自研最小防御补丁：在 pick_next_task_fair 的每个 pick→set 循环（含厂商 QoS 双循环）中，为 pick_next_entity 返回值增加 if(!se) 判空，命中时转入 idle，避免空指针进入 set_next_entity。"
     },
     "temporary_workaround": {
-      "type": "config",
-      "summary": "补丁合入前暂无可根治的命令行方案，建议先采取以下措施：① 确认内核崩溃现场保存功能（kdump）已开启；② 将同类型业务分散部署，避免单点故障影响多台主机；③ 待补丁合入并验证稳定后再恢复正常部署。如此即使再次发生，影响也仅限于单机，且便于快速定位。",
-      "steps": [
-        "# 确认 kdump/crash 兜底已开启（本机 Kdump: loaded）",
-        "cat /sys/kernel/kexec_crash_loaded",
-        "# 同局点多台主机避免集中部署同一业务，隔离单点崩溃影响",
-        "# 可选：降低业务线程数/减少睡眠-唤醒切换（仅压缩概率，不根治）",
-        "systemctl set-property <service> TasksMax=<值>"
-      ],
-      "risk": "无法通过命令行根除：竞态窗口极窄且触发条件天然存在于业务调度行为。以上只是压概率与兜底，根因修复仍需 fair.c 判空补丁。",
-      "detail": "恢复与验证：合入自研判空补丁后按补丁验证口径回归，无需回退 sysctl/参数。监控：同机型同内核 panic 建簇统计（0708/0803/0824 同簇），连续多次需升级或排查底层。"
+      "type": "none",
+      "summary": "无",
+      "case_refs": [],
+      "steps": [],
+      "risk": "",
+      "detail": "检索到的全部案例（bugzilla 211435/220447/219920、上游 commit 系列）均未提供可落地的临时规避措施：该缺陷是极窄并发窗口的计数竞态，无内核参数/配置项可关闭触发路径（nanosleep 调度为业务必经路径），降低迁移频率等业务侧调整无案例依据支撑，故如实标注'无'。根治依赖判空防御补丁（见标准解决方案）。"
     },
     "event_scene": {
       "participants": [
         {
-          "id": "user",
-          "name": "T1004_LockWaitM",
+          "id": "proc1",
+          "name": "T1004_LockWaitM (PID 4090813)",
           "type": "process",
-          "init": "PID 4090813 · CPU92",
-          "tip": "用户态业务线程（名称精简）：PID 4090813，运行于 CPU92。调用 clock_nanosleep() 准备睡眠。"
+          "init": "运行于 CPU92，即将 nanosleep 睡眠",
+          "tip": "OceanBase 类租户锁等待线程；nr_migrations=40991638（4100 万次迁移，高频跨核）",
+          "mode": "user"
         },
         {
-          "id": "kern",
-          "name": "CPU92",
-          "type": "kernel",
-          "init": "内核态 · 调度与调度器(fair.c)",
-          "tip": "内核态执行体（同一内核，CPU 序号 92）：系统调用、schedule 与 CFS 调度（pick/set）都是这一个内核做的操作，不拆成两条泳道。"
-        },
-        {
-          "id": "hw",
-          "name": "arch_timer",
-          "type": "hardware",
-          "init": "高精度定时器",
-          "tip": "硬件定时器：承接 hrtimer 的睡眠到点唤醒请求（写定时寄存器、到点发中断）。本次崩溃发生在到点前，故只有“登记”，没有“触发中断”。"
+          "id": "cpu92",
+          "name": "CPU92 · 鲲鹏920",
+          "type": "cpu",
+          "init": "正常执行内核指令",
+          "tip": "触发 DABT 数据中止 ESR=0x96000005；无 MCE/EDAC/AER 硬件错误记录",
+          "mode": "kern"
         }
       ],
       "gvars": [
         {
-          "k": "rq_lock",
-          "n": "cpu_rq(92).lock"
+          "k": "nr",
+          "n": "cfs_rq->nr_running"
+        },
+        {
+          "k": "rb",
+          "n": "rb_leftmost（红黑树最左节点）"
         },
         {
           "k": "se",
-          "n": "se (x1/x20 入参)"
+          "n": "pick_next_entity 返回值 se"
+        },
+        {
+          "k": "onrq",
+          "n": "prev->se.on_rq"
         }
       ],
       "ginit": [
         {
-          "k": "rq_lock",
-          "v": "未持有"
+          "k": "nr",
+          "v": "0xffffffff（崩溃时刻已下溢；下溢发生时刻不可考，窗口极窄）"
+        },
+        {
+          "k": "rb",
+          "v": "0x0（空树）"
         },
         {
           "k": "se",
-          "v": "?"
+          "v": "—"
+        },
+        {
+          "k": "onrq",
+          "v": "1（在队列上）"
         }
       ],
-      "anchor": "2026-07-08T06:20:00.000",
+      "anchor": "2026-07-08T05:59:48.000+08:00",
       "events": [
         {
-          "t": "用户态",
-          "origin": "栈推断",
-          "src": "sys_nanosleep (L2685)",
           "m": "user",
+          "from": "proc1",
+          "to": "cpu92",
           "kind": "call",
-          "from": "user",
-          "to": "user",
-          "title": "clock_nanosleep()：业务线程准备睡眠",
-          "dt_ms": 5000,
-          "val": "PID 4090813 · CPU92",
-          "full": "业务线程在用户态调用时钟睡眠接口，请求进入可中断睡眠。",
-          "g": []
+          "dt_ms": 0,
+          "t": "nanosleep() 系统调用陷入内核（SYSCALLNO=0x65）",
+          "val": "sys_nanosleep→hrtimer_nanosleep：设置唤醒定时器",
+          "evidence_level": "L1",
+          "evidence": "bt 帧#14-17；SYSCALLNO=65；用户态 PC=0000fffbcecdc1fc"
         },
         {
-          "t": "陷入",
-          "origin": "栈推断",
-          "src": "sys_nanosleep (L2685)",
-          "m": "sys",
-          "kind": "call",
-          "from": "user",
-          "to": "kern",
-          "title": "系统调用陷入 → sys_nanosleep（用户态进入内核态，CPU92）",
-          "dt_ms": 1200,
-          "val": "el0_svc → sys_nanosleep+0x94",
-          "full": "syscall 入口 el0_svc_naked 进入内核，调用 sys_nanosleep。此后全部操作为内核态（同一 CPU92）。",
-          "g": []
-        },
-        {
-          "t": "内核态",
-          "origin": "栈推断",
-          "src": "do_nanosleep (L2683)",
           "m": "kern",
+          "from": "cpu92",
+          "to": "cpu92",
           "kind": "call",
-          "from": "kern",
-          "to": "kern",
-          "title": "do_nanosleep：登记 hrtimer 到点唤醒，随后 schedule() 让出 CPU",
-          "dt_ms": 900,
-          "val": "hrtimer_nanosleep → do_nanosleep",
-          "full": "睡眠实现先登记一个 hrtimer 到点唤醒，然后立即调用 schedule() 让出 CPU；崩溃发生在这次让出的调度选择阶段。",
-          "g": []
+          "dt_ms": 1,
+          "t": "do_nanosleep 置 TASK_INTERRUPTIBLE 并调用 schedule()",
+          "val": "task->state=1；进入 __schedule 上下文切换",
+          "evidence_level": "L1",
+          "evidence": "Call trace: do_nanosleep+0x78→schedule+0x30→__schedule+0x6e4；task.state=1"
         },
         {
-          "t": "内核态→硬件",
-          "origin": "源码推理",
-          "src": "kernel/time/hrtimer.c",
           "m": "kern",
+          "from": "cpu92",
+          "to": "cpu92",
           "kind": "call",
-          "from": "kern",
-          "to": "hw",
-          "title": "把睡眠到点定时下发到硬件定时器 arch_timer",
-          "dt_ms": 750,
-          "val": "写定时寄存器 · 到点=睡眠时长",
-          "full": "hrtimer 把到期时间写到 arch_timer 硬件（ARM 通用定时器），到点后由硬件触发中断唤醒。",
-          "g": []
-        },
-        {
-          "t": "硬件",
-          "origin": "源码推理",
-          "src": "arch_timer",
-          "m": "hw",
-          "kind": "hw",
-          "from": "hw",
-          "to": "hw",
-          "title": "arch_timer：定时已登记，等待到点触发中断",
-          "dt_ms": 720,
-          "val": "本次到点前已崩溃，未触发唤醒",
-          "full": "定时器已就绪但尚未到点；崩溃发生在 schedule() 让出阶段的调度选择中，早于硬件唤醒中断。",
-          "g": []
-        },
-        {
-          "t": "内核态",
-          "origin": "栈推断",
-          "src": "__schedule (L2681)",
-          "m": "kern",
-          "kind": "call",
-          "from": "kern",
-          "to": "kern",
-          "title": "__schedule 持 rq->lock，调 pick_next_task_fair 选择下一任务",
-          "dt_ms": 500,
-          "val": "prev = T1004_LockWaitM",
-          "full": "__schedule 在 CPU92 上持 rq->lock 选择下一可运行任务；prev 为刚让出 CPU 的本任务。",
+          "dt_ms": 2,
+          "t": "deactivate_task：prev 摘出运行队列（dequeue）",
+          "val": "prev->on_rq=0、se 出红黑树、cfs_rq 计数递减",
+          "evidence_level": "L1",
+          "evidence": "vmcore: task on_rq=0、se.on_rq=0、se.run_node={1,0,0}（已出树）",
           "g": [
             {
-              "v": "rq_lock",
-              "n": "cpu_rq(92).lock",
-              "f": "未持有",
-              "t": "已持有",
-              "dir": "up"
-            }
-          ]
-        },
-        {
-          "t": "内核态",
-          "origin": "反汇编+源码推理",
-          "src": "fair.c ~7762",
-          "m": "kern",
-          "kind": "race",
-          "from": "kern",
-          "to": "kern",
-          "title": "pick_next_entity() 返回 NULL——4.19 无判空，仍调用 set_next_entity",
-          "dt_ms": 320,
-          "val": "se = 0x0（NULL）",
-          "full": "上游 v6.12（b55945c500c5）才有 if(!se)；本内核 fair.c:7762 崩溃路径缺失判空，空 se 继续传给 set_next_entity。",
-          "g": [
-            {
-              "v": "se",
-              "n": "se (x1/x20 入参)",
-              "f": "?",
-              "t": "0x0（NULL）",
+              "v": "onrq",
+              "n": "prev->se.on_rq",
+              "t": "0",
               "dir": "down"
             }
           ]
         },
         {
-          "t": "崩溃瞬间",
-          "origin": "日志",
-          "src": "vmcore-dmesg.txt L2660-2687",
           "m": "kern",
+          "from": "cpu92",
+          "to": "cpu92",
+          "kind": "global",
+          "dt_ms": 3,
+          "t": "pick_next_task_fair 检查 !cfs_rq->nr_running —— 因下溢值 0xffffffff≠0 被绕过，未走 idle",
+          "val": "真实状态：rq->nr_running=0、红黑树空；计数值：0xffffffff(-1)",
+          "evidence_level": "L1",
+          "evidence": "反汇编 +672 ldr w0,[x23,#24] / +680 cbz w0 未跳转；vmcore nr_running=h_nr_running=0xffffffff、rb_leftmost=0x0、rq.nr_running=0x0"
+        },
+        {
+          "m": "kern",
+          "from": "cpu92",
+          "to": "cpu92",
+          "kind": "call",
+          "dt_ms": 4,
+          "t": "第二个 pick 循环：pick_next_entity(cfs_rq, NULL) 在空树上返回 NULL",
+          "val": "__pick_first_entity: rb_leftmost=0 → return NULL → se=NULL(x20=0)",
+          "evidence_level": "L1",
+          "evidence": "反汇编 +724 bl pick_next_entity / +728 mov x20,x0；fair.c L566-573；寄存器 x20=x21=0",
+          "g": [
+            {
+              "v": "se",
+              "n": "se",
+              "t": "NULL",
+              "dir": "down"
+            }
+          ]
+        },
+        {
+          "m": "kern",
+          "from": "cpu92",
+          "to": "cpu92",
+          "kind": "race",
+          "dt_ms": 5,
+          "t": "未判空直接调用 set_next_entity(cfs_rq, NULL)（第一循环 +268 有 cbz 判空，崩溃的第二循环 +728~+740 无）",
+          "val": "LR=pick_next_task_fair+0x2e8(+744)=+740 bl set_next_entity 的返回地址",
+          "evidence_level": "L1",
+          "evidence": "vmlinux 反汇编对照；dmesg lr 值；x1=0"
+        },
+        {
+          "m": "kern",
+          "from": "cpu92",
+          "to": "cpu92",
           "kind": "crash",
-          "from": "kern",
-          "to": "kern",
-          "title": "set_next_entity+0x20 解引用 se->on_rq（fault 0x40）→ panic",
-          "dt_ms": 0,
-          "val": "fault addr = 0x40",
-          "full": "指令 b9404280=ldr w0,[x20,#0x40]，x20(se)=0 → 访问空页 0x40，内核 Oops 96000005 并触发 kdump。",
-          "g": []
+          "dt_ms": 6,
+          "t": "执行 ldr w0,[x20,#64]（读 se->on_rq）：x20=0 → 访问虚地址 0x40 → DABT 翻译故障",
+          "val": "ESR=0x96000005（DABT current EL, ISS=0x05 translation fault, WnR=0 读）；[0x40] pgd=0 pud=0",
+          "evidence_level": "L1",
+          "evidence": "pc=set_next_entity+0x20；Code:(b9404280)；Mem abort info 段"
         }
       ]
     },
     "propagation_chain": [
       {
-        "from": "schedule",
+        "from": "用户态 T1004_LockWaitM(PID 4090813)",
+        "to": "el0_svc_naked",
+        "type": "syscall",
+        "src_dir": "arch/arm64/kernel",
+        "file": "entry.S",
+        "line": "el0_svc 入口（v4.19）",
+        "stack": "el0_svc_naked+0x44/0x48",
+        "fn_ctx": "el0_svc_naked",
+        "crash": false,
+        "source_url": "https://elixir.bootlin.com/linux/v4.19/source/arch/arm64/kernel/entry.S",
+        "detail": "业务线程（OceanBase 类租户锁等待线程）调用 nanosleep() 主动睡眠，陷入内核。",
+        "evidence": "bt 帧#17：SYSCALLNO=65(=__NR_nanosleep)；用户态 PC=0000fffbcecdc1fc；Comm=T1004_LockWaitM",
+        "params": [
+          {
+            "io": "in",
+            "reg": "x8",
+            "n": "SYSCALLNO",
+            "formal": "nr",
+            "v": "0x65 (nanosleep)",
+            "bad": false
+          },
+          {
+            "io": "in",
+            "reg": "x0",
+            "n": "rqtp(用户态 timespec 指针)",
+            "formal": "rqtp",
+            "v": "0000fffa2730eda8",
+            "bad": false
+          }
+        ]
+      },
+      {
+        "from": "el0_svc_naked",
+        "to": "sys_nanosleep",
+        "type": "call",
+        "src_dir": "kernel/time",
+        "file": "hrtimer.c",
+        "line": "SYSCALL_DEFINE2(nanosleep)（v4.19）",
+        "stack": "sys_nanosleep+0x94/0xb8",
+        "fn_ctx": "sys_nanosleep",
+        "crash": false,
+        "source_url": "https://elixir.bootlin.com/linux/v4.19/source/kernel/time/hrtimer.c",
+        "detail": "nanosleep 系统调用入口，校验 timespec 后进入 hrtimer_nanosleep。",
+        "evidence": "Call trace: sys_nanosleep+0x94/0xb8（vmcore-dmesg L2684）",
+        "params": []
+      },
+      {
+        "from": "sys_nanosleep",
+        "to": "do_nanosleep",
+        "type": "call",
+        "src_dir": "kernel/time",
+        "file": "hrtimer.c",
+        "line": "hrtimer_nanosleep→do_nanosleep（v4.19）",
+        "stack": "hrtimer_nanosleep+0x88/0x100 → do_nanosleep+0x78/0x168",
+        "fn_ctx": "do_nanosleep",
+        "crash": false,
+        "source_url": "https://elixir.bootlin.com/linux/v4.19/source/kernel/time/hrtimer.c",
+        "detail": "设置 hrtimer 后 do_nanosleep 将当前任务置为 TASK_INTERRUPTIBLE 并调用 schedule() 让出 CPU。",
+        "evidence": "Call trace: do_nanosleep+0x78/0x168；task->state=1(TASK_INTERRUPTIBLE)",
+        "params": []
+      },
+      {
+        "from": "do_nanosleep",
         "to": "__schedule",
         "type": "call",
         "src_dir": "kernel/sched",
         "file": "core.c",
-        "line": "",
-        "stack": "schedule+0x30/0xe0 (L2682) → __schedule+0x6e4/0x840 (L2681)",
-        "fn_ctx": "schedule / __schedule",
+        "line": "schedule()→__schedule()（v4.19）",
+        "stack": "schedule+0x30/0xe0 → __schedule+0x6e4/0x840",
+        "fn_ctx": "__schedule",
         "crash": false,
         "source_url": "https://elixir.bootlin.com/linux/v4.19/source/kernel/sched/core.c",
-        "detail": "任务申请睡眠：do_nanosleep 在进入睡眠前调用 schedule() 让出 CPU，__schedule() 在 CPU92 上取 rq->lock 准备选择下一任务。当前任务 = T1004_LockWaitM(PID 4090813)。",
-        "evidence": "L2681-2682 · Process T1004_LockWaitM (pid 4090813) · CPU 92 (L2655-2656)",
+        "detail": "上下文切换主流程：deactivate_task 将 prev(T1004_LockWaitM) 摘出运行队列（on_rq=0，se 从红黑树删除、cfs_rq 计数递减），随后调用 pick_next_task 挑选下一个任务。",
+        "evidence": "vmcore: task ffff8040a2593800 on_rq=0、se.on_rq=0、se.run_node 空；bt 帧#12 __schedule+0x6e4",
         "params": [
           {
             "io": "in",
-            "n": "preempt",
-            "formal": "bool preempt",
-            "v": "false（schedule 主动让出）",
-            "note": "由源码推断，寄存器未直接保留"
+            "reg": "x28",
+            "n": "prev",
+            "formal": "prev",
+            "v": "ffff8040a2593800 (T1004_LockWaitM)",
+            "bad": false
           }
         ]
       },
@@ -381,50 +533,103 @@
         "type": "call",
         "src_dir": "kernel/sched",
         "file": "fair.c",
-        "line": "≈7690-7770",
-        "stack": "__schedule+0x6e4/0x840 (L2681) → pick_next_task_fair+0x2e8/0x548 (L2680)",
-        "fn_ctx": "pick_next_task_fair(rq, prev, rf)",
+        "line": "L6599（本地 vanilla 4.19 源码核实）",
+        "stack": "pick_next_task_fair+0x2e8/0x548（崩溃返回点）",
+        "fn_ctx": "pick_next_task_fair",
         "crash": false,
-        "source_url": "https://elixir.bootlin.com/linux/v4.19/source/kernel/sched/fair.c",
-        "detail": "__schedule 调用 pick_next_task_fair 从 cfs_rq 挑选下一任务。prev = 刚让出 CPU 的 T1004_LockWaitM（栈推断）。",
-        "evidence": "L2680-2681",
+        "source_url": "https://elixir.bootlin.com/linux/v4.19/source/kernel/sched/fair.c#L6599",
+        "detail": "prev 为 fair 类且 rq 无其它类任务时进入 CFS 挑选路径。x19=rq=ffffa07fefde1640（CPU92 runqueue，与 p runqueues[92] 一致），x23=&rq->cfs=ffffa07fefde16c0。",
+        "evidence": "寄存器 x19/x23/x25=ffffa07fefde16c0；crash> p runqueues [92]: ffffa07fefde1640；struct rq.curr=ffff8040a2593800",
         "params": [
           {
             "io": "in",
-            "n": "prev(rq->curr)",
-            "formal": "struct task_struct *prev",
-            "v": "T1004_LockWaitM (PID 4090813)",
-            "note": "由进程上下文推断"
+            "reg": "x0→x19",
+            "n": "rq",
+            "formal": "struct rq *rq",
+            "v": "ffffa07fefde1640 (CPU92)",
+            "bad": false
           },
           {
-            "io": "out",
-            "n": "se",
-            "formal": "struct sched_entity *se",
-            "v": "待挑选"
+            "io": "in",
+            "reg": "x1",
+            "n": "prev",
+            "formal": "struct task_struct *prev",
+            "v": "ffff8040a2593800",
+            "bad": false
+          },
+          {
+            "io": "in",
+            "reg": "x23",
+            "n": "cfs_rq(&rq->cfs, rq+0x80)",
+            "formal": "cfs_rq",
+            "v": "ffffa07fefde16c0",
+            "bad": false
           }
         ]
       },
       {
-        "from": "pick_next_entity",
-        "to": "(返回 NULL，未判空)",
-        "type": "race",
+        "from": "pick_next_task_fair",
+        "to": "空队列检查被绕过（!cfs_rq->nr_running goto idle 未触发）",
+        "type": "branch",
         "src_dir": "kernel/sched",
         "file": "fair.c",
-        "line": "≈7762（漏判空路径；7746 另有判空分支）",
-        "stack": "函数内：pick_next_task_fair 内部 (L2680) · 反汇编核验无 cbz 判空",
-        "fn_ctx": "pick_next_entity(cfs_rq, NULL)",
+        "line": "L6607（again: if (!cfs_rq->nr_running) goto idle;）",
+        "stack": "pick_next_task_fair+672(ldr w0,[x23,#24]) → +680(cbz w0 未跳转)",
+        "fn_ctx": "pick_next_task_fair",
         "crash": false,
-        "source_url": "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=b55945c500c5723992504aa03b362fab416863a6",
-        "detail": "防御缺口：4.19~v6.11 的 pick→set 之间没有 if(!se) 判空（上游 v6.12 b55945c500c5 才补）。本内核 7746 一条路径有判空、7762 崩溃路径漏判（厂商 QoS 拆循环）。",
-        "evidence": "反汇编核验：pick→set 之间无 cbz 判空分支",
+        "source_url": "https://elixir.bootlin.com/linux/v4.19/source/kernel/sched/fair.c#L6607",
+        "detail": "关键异常点：cfs_rq->nr_running 已下溢为 0xffffffff(-1)，非零 → cbz 不跳转，调度器误认为队列上仍有任务，继续进入 pick 循环。vmcore 实证：nr_running=h_nr_running=0xffffffff，而红黑树 rb_root.rb_node=rb_leftmost=0x0（空树）、curr/next/last/skip 全 0、rq->nr_running=0（真实可运行任务数为 0）。",
+        "evidence": "crash> p/x ((struct cfs_rq *)0xffffa07fefde16c0)->nr_running = 0xffffffff；h_nr_running = 0xffffffff；rb_leftmost=0x0；全量 128 CPU 扫描仅此一个 cfs_rq 异常",
         "params": [
           {
-            "io": "out",
-            "n": "se",
-            "formal": "struct sched_entity *se",
-            "v": "NULL（0x0）",
+            "io": "read",
+            "reg": "w0",
+            "n": "cfs_rq->nr_running",
+            "formal": "cfs_rq->nr_running",
+            "v": "0xffffffff（下溢，应为 0）",
             "bad": true,
-            "note": "空队列/异常窗口下 pick 返回空，未判空即继续传递"
+            "note": "32 位计数器下溢为 -1，绕过 ==0 判断；h_nr_running 同步下溢，指向 enqueue/dequeue 计数竞态（double-decrement）"
+          }
+        ]
+      },
+      {
+        "from": "pick_next_task_fair",
+        "to": "pick_next_entity",
+        "type": "call",
+        "src_dir": "kernel/sched",
+        "file": "fair.c",
+        "line": "L6692（simple 循环 se = pick_next_entity(cfs_rq, NULL)；Kylin 二进制对应第二个 pick 循环 +716~+748）",
+        "stack": "pick_next_task_fair+724(bl pick_next_entity)",
+        "fn_ctx": "pick_next_entity→__pick_first_entity(L566)",
+        "crash": false,
+        "source_url": "https://elixir.bootlin.com/linux/v4.19/source/kernel/sched/fair.c#L6692",
+        "detail": "在空红黑树上挑选：__pick_first_entity 读 rb_first_cached(&cfs_rq->tasks_timeline)=rb_leftmost=0x0 → if (!left) return NULL → pick_next_entity 返回 NULL。",
+        "evidence": "反汇编 +716 mov x0,x25 / +720 mov x1,#0 / +724 bl pick_next_entity / +728 mov x20,x0；vmcore rb_leftmost=0x0；fair.c L566-573 __pick_first_entity 判空返回 NULL",
+        "params": [
+          {
+            "io": "in",
+            "reg": "x0(x25)",
+            "n": "cfs_rq",
+            "formal": "struct cfs_rq *cfs_rq",
+            "v": "ffffa07fefde16c0",
+            "bad": false
+          },
+          {
+            "io": "in",
+            "reg": "x1",
+            "n": "curr",
+            "formal": "struct sched_entity *curr",
+            "v": "0x0 (NULL)",
+            "bad": false
+          },
+          {
+            "io": "out",
+            "reg": "x0→x20",
+            "n": "返回值 se",
+            "formal": "se",
+            "v": "0x0 (NULL，空树无可挑任务)",
+            "bad": true,
+            "note": "合法返回值，但调用方必须判空——Kylin 第二循环未判"
           }
         ]
       },
@@ -434,67 +639,55 @@
         "type": "call",
         "src_dir": "kernel/sched",
         "file": "fair.c",
-        "line": "set_next_entity(cfs_rq, se=NULL)（崩溃调用点）",
-        "stack": "pick_next_task_fair+0x2e8/0x548 (L2680) · 调用 set_next_entity",
-        "fn_ctx": "set_next_entity+0x20/0x6f8",
+        "line": "L6693（set_next_entity(cfs_rq, se)，se=NULL 未判空；Kylin 二进制 +740）",
+        "stack": "pick_next_task_fair+740(bl set_next_entity) → LR=+744(0x2e8)",
+        "fn_ctx": "pick_next_task_fair 第二个 pick 循环",
         "crash": false,
-        "source_url": "https://elixir.bootlin.com/linux/v4.19/source/kernel/sched/fair.c",
-        "detail": "把空 se 传给 set_next_entity。崩溃帧寄存器是在 set_next_entity 序言保存形参之后抓取的：cfs_rq 保存在 x19/x25，se 保存在 x20（=0）。",
-        "evidence": "x19/x25: ffffa07fefde16c0（cfs_rq）· x20: 0（se）（L2663-2667）",
+        "source_url": "https://elixir.bootlin.com/linux/v4.19/source/kernel/sched/fair.c#L6693",
+        "detail": "防御缺失点（本案可修复层）：+728(mov x20,x0) 与 +740(bl set_next_entity) 之间无任何 cbz x20 判空指令；对照第一个 pick 循环 +268 存在 cbz x20→+292 判空分支（厂商 QoS 改造把一个循环拆成两个，一个已判空、崩溃路径的第二个漏判）。LR=+0x2e8(744) 恰为 +740 bl 的返回地址，实证崩溃经由第二循环。",
+        "evidence": "vmlinux 反汇编（crash> dis -l pick_next_task_fair）：+268 cbz x20（第一循环判空）vs +728~+740 无判空（第二循环）；dmesg lr : pick_next_task_fair+0x2e8/0x548",
         "params": [
           {
             "io": "in",
+            "reg": "x0(x25)",
             "n": "cfs_rq",
             "formal": "struct cfs_rq *cfs_rq",
-            "v": "ffffa07fefde16c0（CPU92 rq 的 cfs）"
+            "v": "ffffa07fefde16c0",
+            "bad": false
           },
           {
             "io": "in",
+            "reg": "x1(x20)",
             "n": "se",
             "formal": "struct sched_entity *se",
-            "v": "0x0（NULL）",
+            "v": "0x0 (NULL)",
             "bad": true,
-            "note": "空指针入参，set_next_entity 入口未判空"
+            "note": "NULL 实参未拦截，直接进入被调函数"
           }
         ]
       },
       {
         "from": "set_next_entity",
-        "to": "空指针解引用 → panic",
-        "type": "null_deref",
+        "to": "崩溃指令 ldr w0,[x20,#64]（读 se->on_rq @0x40）",
+        "type": "fault",
         "src_dir": "kernel/sched",
         "file": "fair.c",
-        "line": "函数入口：访问 se->on_rq（sched_entity 偏移 0x40）",
-        "stack": "set_next_entity+0x20/0x6f8 (L2660) · 指令 (b9404280) (L2687)",
-        "fn_ctx": "ldr w0,[x20,#0x40] → se+0x40",
+        "line": "L4049 函数入口 / L4052 if (se->on_rq)（本地 vanilla 4.19 源码核实）",
+        "stack": "set_next_entity+0x20/0x6f8（=+32: ldr w0,[x20,#64]）",
+        "fn_ctx": "set_next_entity",
         "crash": true,
-        "source_url": "https://elixir.bootlin.com/linux/v4.19/source/kernel/sched/fair.c",
-        "detail": "二进制↔源码行对照：pc=set_next_entity+0x20/0x6f8 → 指令 ldr w0,[x20,#0x40] → 读取 se+0x40。4.19 的 struct sched_entity 中 on_rq 偏移为 0x40（以 vmlinux struct sched_entity 复核），对应源码 set_next_entity() 首部读取 se->on_rq；se=NULL → 访问空页 0x40 → Oops 96000005。精确源码行需 vmlinux+调试信息（crash> dis -rl set_next_entity）。",
-        "evidence": "L2660 pc: set_next_entity+0x20/0x6f8 · L2687 Code: (b9404280) · fault addr 0x40",
+        "source_url": "https://elixir.bootlin.com/linux/v4.19/source/kernel/sched/fair.c#L4049",
+        "detail": "函数序言 +16 mov x20,x1 保存 se=NULL；+32(0x20) 首条访存 ldr w0,[x20,#64] 读 se->on_rq（struct sched_entity 偏移 64=0x40，crash> struct sched_entity -o 实证）→ 访问虚地址 0x40，pgd/pud 全 0 → DABT 翻译故障 ESR=0x96000005 → do_mem_abort→do_page_fault→die_kernel_fault→die→Oops→crash_kexec(kdump)。",
+        "evidence": "dmesg Code: aa0103f4 aa0003f3 aa1e03e0 d503201f (b9404280)，括号内 b9404280=ldr w0,[x20,#0x40] 与 vmlinux 反汇编 +32 逐字节一致；x20=0；ESR=0x96000005；[0000000000000040] pgd=0000000000000000",
         "params": [
           {
-            "io": "in",
-            "reg": "x20(=原 x1)",
+            "io": "read",
+            "reg": "x20",
             "n": "se",
             "formal": "struct sched_entity *se",
-            "v": "0x0000000000000000",
+            "v": "0x0 (NULL)",
             "bad": true,
-            "note": "崩溃参数：空指针"
-          },
-          {
-            "io": "in",
-            "reg": "x19/x25",
-            "n": "cfs_rq",
-            "formal": "struct cfs_rq *cfs_rq",
-            "v": "ffffa07fefde16c0"
-          },
-          {
-            "io": "out",
-            "n": "se->on_rq（[x20,#0x40]）",
-            "formal": "int on_rq",
-            "v": "访问地址 0x40（空页）",
-            "bad": true,
-            "note": "崩溃点：空指针解引用"
+            "note": "se->on_rq = *(NULL+0x40) → 故障地址 0x40，与 dmesg 'at virtual address 0000000000000040' 完全吻合"
           }
         ]
       }
@@ -502,42 +695,127 @@
     "reasoning_flow": [
       {
         "stage": "stack",
-        "stage_name": "① 提取函数堆栈",
-        "color": "#2f5bd8",
-        "title": "崩溃栈：nanosleep 睡眠进入调度时崩溃",
-        "short": "栈顶 set_next_entity+0x20 → pick_next_task_fair → __schedule → schedule → do_nanosleep → sys_nanosleep；进程为 T1004_LockWaitM（PID 4090813，CPU92）。",
-        "text": "这是普通进程睡眠路径（非软中断/非驱动），指向 CFS 调度选择阶段本身的问题。",
-        "evidence": "pc: set_next_entity+0x20/0x6f8 · lr: pick_next_task_fair+0x2e8/0x548\nCall trace: set_next_entity→pick_next_task_fair→__schedule→schedule→do_nanosleep→hrtimer_nanosleep→sys_nanosleep\n（vmcore-dmesg.txt L2660-2686）",
-        "ev_plain": true
+        "stage_name": "崩溃特征分析",
+        "color": "#e11d48",
+        "title": "崩溃特征分析：set_next_entity NULL 指针（se=NULL 读 se->on_rq@0x40），函数栈与寄存器完全自洽",
+        "short": "pc=set_next_entity+0x20、lr=pick_next_task_fair+0x2e8、x20=0、故障地址 0x40、Code=(b9404280)=ldr w0,[x20,#0x40]，nanosleep→schedule 主动让出路径。",
+        "text": "① 崩溃指令级定位：dmesg Code 段括号内机器码 b9404280 与 vmlinux 反汇编 set_next_entity+32(=0x20) 的 ldr w0,[x20,#64] 逐字节一致，读的是 struct sched_entity.on_rq（crash> struct sched_entity -o 实证偏移 64=0x40）；x20=0 → 故障地址 0x40，与首行 'NULL pointer dereference at 0x40' 吻合。② 调用点定位：lr=pick_next_task_fair+0x2e8(十进制+744)，反汇编 +740 处 bl set_next_entity 的返回地址恰为 +744，锁定崩溃经由 +716~+748 的第二个 pick 循环。③ 路径定性：Call trace 自 el0_svc_naked→sys_nanosleep→hrtimer_nanosleep→do_nanosleep→schedule→__schedule→pick_next_task_fair，为业务线程主动睡眠让出 CPU 时的常规挑选路径，非异常上下文（中断/NMI）；ESR=0x96000005 为纯软件翻译故障，无硬件错误综合征。",
+        "evidence": "vmcore-dmesg L2642-2687；crash> bt（帧#9 PC/LR/全寄存器）；crash> dis -l set_next_entity；crash> struct sched_entity -o",
+        "refs": []
+      },
+      {
+        "stage": "hypothesis",
+        "stage_name": "假设建立",
+        "color": "#f59e0b",
+        "title": "按 sched-nullptr-diagnosis 方法论建立三个候选假设",
+        "short": "H1：cfs_rq 树空但 nr_running 非 0（下溢）→ pick 返回 NULL 未判空；H2：rq->curr 错位/parent 链断裂（故障模式#2）；H3：硬件位翻转/缓存一致性。",
+        "text": "崩溃点 set_next_entity 入口 + 空指针 se 的组合指向方法论故障模式#1（pick_next_entity 返回 NULL 未判空）。H1 的验证锚点：cfs_rq->nr_running/h_nr_running 是否下溢、红黑树是否空、全量 CPU 是否仅单点异常；H2 的验证锚点：rq->curr 是否指向跨 CPU 睡眠任务（本案崩溃在 pick 路径而非 wakeup 路径，先验概率低）；H3 的验证锚点：MCE/EDAC/AER 记录、计数器值的'精确性'（位翻转通常产生单 bit 差异而非精确 -1）。",
+        "evidence": "sched-nullptr-diagnosis SKILL 故障模式速查表；同局点 0824 案例即模式#2、0803 案例即模式#3，本案需独立验证归属",
+        "refs": [
+          {
+            "kind": "internal",
+            "label": "同局点 0824（模式#2）",
+            "anchor": "case-internal-0"
+          },
+          {
+            "kind": "internal",
+            "label": "同局点 0803（模式#3）",
+            "anchor": "case-internal-1"
+          }
+        ]
       },
       {
         "stage": "path_analysis",
-        "stage_name": "② 崩溃路径分析",
-        "color": "#c2660f",
-        "title": "调用链到崩溃点逐跳拆解（含源码行号与关键参数）",
-        "short": "schedule→__schedule→pick_next_task_fair→(pick 返回 NULL)→set_next_entity→解引用 se->on_rq 崩溃。详见下方逐跳表（每跳有栈帧↔源码、源码位置、实参↔形参）。",
-        "text": "逐跳明细见下方列表；pick→set 之间的判空缺失是关键防御缺口（本内核 fair.c:7762 漏判、7746 有判空）。",
+        "stage_name": "崩溃链路分析",
+        "color": "#7c3aed",
+        "title": "崩溃链路逐跳分析：下溢计数绕过空队列检查 → 空树返回 NULL → 无判空调用 → 首条访存指令崩溃",
+        "short": "9 跳链路：nanosleep 陷入 → __schedule 摘 prev → nr_running=0xffffffff 绕过 goto idle → pick_next_entity 空树返回 NULL → 第二循环无 cbz 判空 → set_next_entity ldr [x20,#64] 访问 0x40。",
+        "text": "每一跳均给出 栈帧↔源码(目录/文件/行号) 与 实参/寄存器↔形参 映射（见崩溃链路表）：异常参数两处标红——①cfs_rq->nr_running=0xffffffff（应为 0，32 位下溢为 -1，使 fair.c L6607 的 !nr_running 判断失效）；②se=NULL 作为实参传入 set_next_entity（fair.c L6693 调用点无拦截）。vmcore 结构体取证与反汇编双向印证：rb_leftmost=0（__pick_first_entity L566 判空返回 NULL 的输入条件成立）、rq->nr_running=0（真实无任务可跑，本应走 idle）、curr/next/last/skip 全 0（无任何候选实体）。",
+        "evidence": "crash> p/x cfs_rq 字段逐一取证；crash> dis -l pick_next_task_fair（+672/+680/+716~748/+268 对照）；本地 vanilla 4.19 源码 fair.c L566/L4049/L4052/L6599/L6607/L6692-6693",
         "path_mini": [
           {
-            "from": "schedule",
+            "from": "用户态 T1004_LockWaitM(PID 4090813)",
+            "to": "el0_svc_naked",
+            "type": "syscall",
+            "src_dir": "arch/arm64/kernel",
+            "file": "entry.S",
+            "line": "el0_svc 入口（v4.19）",
+            "stack": "el0_svc_naked+0x44/0x48",
+            "fn_ctx": "el0_svc_naked",
+            "crash": false,
+            "source_url": "https://elixir.bootlin.com/linux/v4.19/source/arch/arm64/kernel/entry.S",
+            "detail": "业务线程（OceanBase 类租户锁等待线程）调用 nanosleep() 主动睡眠，陷入内核。",
+            "evidence": "bt 帧#17：SYSCALLNO=65(=__NR_nanosleep)；用户态 PC=0000fffbcecdc1fc；Comm=T1004_LockWaitM",
+            "params": [
+              {
+                "io": "in",
+                "reg": "x8",
+                "n": "SYSCALLNO",
+                "formal": "nr",
+                "v": "0x65 (nanosleep)",
+                "bad": false
+              },
+              {
+                "io": "in",
+                "reg": "x0",
+                "n": "rqtp(用户态 timespec 指针)",
+                "formal": "rqtp",
+                "v": "0000fffa2730eda8",
+                "bad": false
+              }
+            ]
+          },
+          {
+            "from": "el0_svc_naked",
+            "to": "sys_nanosleep",
+            "type": "call",
+            "src_dir": "kernel/time",
+            "file": "hrtimer.c",
+            "line": "SYSCALL_DEFINE2(nanosleep)（v4.19）",
+            "stack": "sys_nanosleep+0x94/0xb8",
+            "fn_ctx": "sys_nanosleep",
+            "crash": false,
+            "source_url": "https://elixir.bootlin.com/linux/v4.19/source/kernel/time/hrtimer.c",
+            "detail": "nanosleep 系统调用入口，校验 timespec 后进入 hrtimer_nanosleep。",
+            "evidence": "Call trace: sys_nanosleep+0x94/0xb8（vmcore-dmesg L2684）",
+            "params": []
+          },
+          {
+            "from": "sys_nanosleep",
+            "to": "do_nanosleep",
+            "type": "call",
+            "src_dir": "kernel/time",
+            "file": "hrtimer.c",
+            "line": "hrtimer_nanosleep→do_nanosleep（v4.19）",
+            "stack": "hrtimer_nanosleep+0x88/0x100 → do_nanosleep+0x78/0x168",
+            "fn_ctx": "do_nanosleep",
+            "crash": false,
+            "source_url": "https://elixir.bootlin.com/linux/v4.19/source/kernel/time/hrtimer.c",
+            "detail": "设置 hrtimer 后 do_nanosleep 将当前任务置为 TASK_INTERRUPTIBLE 并调用 schedule() 让出 CPU。",
+            "evidence": "Call trace: do_nanosleep+0x78/0x168；task->state=1(TASK_INTERRUPTIBLE)",
+            "params": []
+          },
+          {
+            "from": "do_nanosleep",
             "to": "__schedule",
             "type": "call",
             "src_dir": "kernel/sched",
             "file": "core.c",
-            "line": "",
-            "stack": "schedule+0x30/0xe0 (L2682) → __schedule+0x6e4/0x840 (L2681)",
-            "fn_ctx": "schedule / __schedule",
+            "line": "schedule()→__schedule()（v4.19）",
+            "stack": "schedule+0x30/0xe0 → __schedule+0x6e4/0x840",
+            "fn_ctx": "__schedule",
             "crash": false,
             "source_url": "https://elixir.bootlin.com/linux/v4.19/source/kernel/sched/core.c",
-            "detail": "任务申请睡眠：do_nanosleep 在进入睡眠前调用 schedule() 让出 CPU，__schedule() 在 CPU92 上取 rq->lock 准备选择下一任务。当前任务 = T1004_LockWaitM(PID 4090813)。",
-            "evidence": "L2681-2682 · Process T1004_LockWaitM (pid 4090813) · CPU 92 (L2655-2656)",
+            "detail": "上下文切换主流程：deactivate_task 将 prev(T1004_LockWaitM) 摘出运行队列（on_rq=0，se 从红黑树删除、cfs_rq 计数递减），随后调用 pick_next_task 挑选下一个任务。",
+            "evidence": "vmcore: task ffff8040a2593800 on_rq=0、se.on_rq=0、se.run_node 空；bt 帧#12 __schedule+0x6e4",
             "params": [
               {
                 "io": "in",
-                "n": "preempt",
-                "formal": "bool preempt",
-                "v": "false（schedule 主动让出）",
-                "note": "由源码推断，寄存器未直接保留"
+                "reg": "x28",
+                "n": "prev",
+                "formal": "prev",
+                "v": "ffff8040a2593800 (T1004_LockWaitM)",
+                "bad": false
               }
             ]
           },
@@ -547,50 +825,103 @@
             "type": "call",
             "src_dir": "kernel/sched",
             "file": "fair.c",
-            "line": "≈7690-7770",
-            "stack": "__schedule+0x6e4/0x840 (L2681) → pick_next_task_fair+0x2e8/0x548 (L2680)",
-            "fn_ctx": "pick_next_task_fair(rq, prev, rf)",
+            "line": "L6599（本地 vanilla 4.19 源码核实）",
+            "stack": "pick_next_task_fair+0x2e8/0x548（崩溃返回点）",
+            "fn_ctx": "pick_next_task_fair",
             "crash": false,
-            "source_url": "https://elixir.bootlin.com/linux/v4.19/source/kernel/sched/fair.c",
-            "detail": "__schedule 调用 pick_next_task_fair 从 cfs_rq 挑选下一任务。prev = 刚让出 CPU 的 T1004_LockWaitM（栈推断）。",
-            "evidence": "L2680-2681",
+            "source_url": "https://elixir.bootlin.com/linux/v4.19/source/kernel/sched/fair.c#L6599",
+            "detail": "prev 为 fair 类且 rq 无其它类任务时进入 CFS 挑选路径。x19=rq=ffffa07fefde1640（CPU92 runqueue，与 p runqueues[92] 一致），x23=&rq->cfs=ffffa07fefde16c0。",
+            "evidence": "寄存器 x19/x23/x25=ffffa07fefde16c0；crash> p runqueues [92]: ffffa07fefde1640；struct rq.curr=ffff8040a2593800",
             "params": [
               {
                 "io": "in",
-                "n": "prev(rq->curr)",
-                "formal": "struct task_struct *prev",
-                "v": "T1004_LockWaitM (PID 4090813)",
-                "note": "由进程上下文推断"
+                "reg": "x0→x19",
+                "n": "rq",
+                "formal": "struct rq *rq",
+                "v": "ffffa07fefde1640 (CPU92)",
+                "bad": false
               },
               {
-                "io": "out",
-                "n": "se",
-                "formal": "struct sched_entity *se",
-                "v": "待挑选"
+                "io": "in",
+                "reg": "x1",
+                "n": "prev",
+                "formal": "struct task_struct *prev",
+                "v": "ffff8040a2593800",
+                "bad": false
+              },
+              {
+                "io": "in",
+                "reg": "x23",
+                "n": "cfs_rq(&rq->cfs, rq+0x80)",
+                "formal": "cfs_rq",
+                "v": "ffffa07fefde16c0",
+                "bad": false
               }
             ]
           },
           {
-            "from": "pick_next_entity",
-            "to": "(返回 NULL，未判空)",
-            "type": "race",
+            "from": "pick_next_task_fair",
+            "to": "空队列检查被绕过（!cfs_rq->nr_running goto idle 未触发）",
+            "type": "branch",
             "src_dir": "kernel/sched",
             "file": "fair.c",
-            "line": "≈7762（漏判空路径；7746 另有判空分支）",
-            "stack": "函数内：pick_next_task_fair 内部 (L2680) · 反汇编核验无 cbz 判空",
-            "fn_ctx": "pick_next_entity(cfs_rq, NULL)",
+            "line": "L6607（again: if (!cfs_rq->nr_running) goto idle;）",
+            "stack": "pick_next_task_fair+672(ldr w0,[x23,#24]) → +680(cbz w0 未跳转)",
+            "fn_ctx": "pick_next_task_fair",
             "crash": false,
-            "source_url": "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=b55945c500c5723992504aa03b362fab416863a6",
-            "detail": "防御缺口：4.19~v6.11 的 pick→set 之间没有 if(!se) 判空（上游 v6.12 b55945c500c5 才补）。本内核 7746 一条路径有判空、7762 崩溃路径漏判（厂商 QoS 拆循环）。",
-            "evidence": "反汇编核验：pick→set 之间无 cbz 判空分支",
+            "source_url": "https://elixir.bootlin.com/linux/v4.19/source/kernel/sched/fair.c#L6607",
+            "detail": "关键异常点：cfs_rq->nr_running 已下溢为 0xffffffff(-1)，非零 → cbz 不跳转，调度器误认为队列上仍有任务，继续进入 pick 循环。vmcore 实证：nr_running=h_nr_running=0xffffffff，而红黑树 rb_root.rb_node=rb_leftmost=0x0（空树）、curr/next/last/skip 全 0、rq->nr_running=0（真实可运行任务数为 0）。",
+            "evidence": "crash> p/x ((struct cfs_rq *)0xffffa07fefde16c0)->nr_running = 0xffffffff；h_nr_running = 0xffffffff；rb_leftmost=0x0；全量 128 CPU 扫描仅此一个 cfs_rq 异常",
             "params": [
               {
-                "io": "out",
-                "n": "se",
-                "formal": "struct sched_entity *se",
-                "v": "NULL（0x0）",
+                "io": "read",
+                "reg": "w0",
+                "n": "cfs_rq->nr_running",
+                "formal": "cfs_rq->nr_running",
+                "v": "0xffffffff（下溢，应为 0）",
                 "bad": true,
-                "note": "空队列/异常窗口下 pick 返回空，未判空即继续传递"
+                "note": "32 位计数器下溢为 -1，绕过 ==0 判断；h_nr_running 同步下溢，指向 enqueue/dequeue 计数竞态（double-decrement）"
+              }
+            ]
+          },
+          {
+            "from": "pick_next_task_fair",
+            "to": "pick_next_entity",
+            "type": "call",
+            "src_dir": "kernel/sched",
+            "file": "fair.c",
+            "line": "L6692（simple 循环 se = pick_next_entity(cfs_rq, NULL)；Kylin 二进制对应第二个 pick 循环 +716~+748）",
+            "stack": "pick_next_task_fair+724(bl pick_next_entity)",
+            "fn_ctx": "pick_next_entity→__pick_first_entity(L566)",
+            "crash": false,
+            "source_url": "https://elixir.bootlin.com/linux/v4.19/source/kernel/sched/fair.c#L6692",
+            "detail": "在空红黑树上挑选：__pick_first_entity 读 rb_first_cached(&cfs_rq->tasks_timeline)=rb_leftmost=0x0 → if (!left) return NULL → pick_next_entity 返回 NULL。",
+            "evidence": "反汇编 +716 mov x0,x25 / +720 mov x1,#0 / +724 bl pick_next_entity / +728 mov x20,x0；vmcore rb_leftmost=0x0；fair.c L566-573 __pick_first_entity 判空返回 NULL",
+            "params": [
+              {
+                "io": "in",
+                "reg": "x0(x25)",
+                "n": "cfs_rq",
+                "formal": "struct cfs_rq *cfs_rq",
+                "v": "ffffa07fefde16c0",
+                "bad": false
+              },
+              {
+                "io": "in",
+                "reg": "x1",
+                "n": "curr",
+                "formal": "struct sched_entity *curr",
+                "v": "0x0 (NULL)",
+                "bad": false
+              },
+              {
+                "io": "out",
+                "reg": "x0→x20",
+                "n": "返回值 se",
+                "formal": "se",
+                "v": "0x0 (NULL，空树无可挑任务)",
+                "bad": true,
+                "note": "合法返回值，但调用方必须判空——Kylin 第二循环未判"
               }
             ]
           },
@@ -600,780 +931,1629 @@
             "type": "call",
             "src_dir": "kernel/sched",
             "file": "fair.c",
-            "line": "set_next_entity(cfs_rq, se=NULL)（崩溃调用点）",
-            "stack": "pick_next_task_fair+0x2e8/0x548 (L2680) · 调用 set_next_entity",
-            "fn_ctx": "set_next_entity+0x20/0x6f8",
+            "line": "L6693（set_next_entity(cfs_rq, se)，se=NULL 未判空；Kylin 二进制 +740）",
+            "stack": "pick_next_task_fair+740(bl set_next_entity) → LR=+744(0x2e8)",
+            "fn_ctx": "pick_next_task_fair 第二个 pick 循环",
             "crash": false,
-            "source_url": "https://elixir.bootlin.com/linux/v4.19/source/kernel/sched/fair.c",
-            "detail": "把空 se 传给 set_next_entity。崩溃帧寄存器是在 set_next_entity 序言保存形参之后抓取的：cfs_rq 保存在 x19/x25，se 保存在 x20（=0）。",
-            "evidence": "x19/x25: ffffa07fefde16c0（cfs_rq）· x20: 0（se）（L2663-2667）",
+            "source_url": "https://elixir.bootlin.com/linux/v4.19/source/kernel/sched/fair.c#L6693",
+            "detail": "防御缺失点（本案可修复层）：+728(mov x20,x0) 与 +740(bl set_next_entity) 之间无任何 cbz x20 判空指令；对照第一个 pick 循环 +268 存在 cbz x20→+292 判空分支（厂商 QoS 改造把一个循环拆成两个，一个已判空、崩溃路径的第二个漏判）。LR=+0x2e8(744) 恰为 +740 bl 的返回地址，实证崩溃经由第二循环。",
+            "evidence": "vmlinux 反汇编（crash> dis -l pick_next_task_fair）：+268 cbz x20（第一循环判空）vs +728~+740 无判空（第二循环）；dmesg lr : pick_next_task_fair+0x2e8/0x548",
             "params": [
               {
                 "io": "in",
+                "reg": "x0(x25)",
                 "n": "cfs_rq",
                 "formal": "struct cfs_rq *cfs_rq",
-                "v": "ffffa07fefde16c0（CPU92 rq 的 cfs）"
+                "v": "ffffa07fefde16c0",
+                "bad": false
               },
               {
                 "io": "in",
+                "reg": "x1(x20)",
                 "n": "se",
                 "formal": "struct sched_entity *se",
-                "v": "0x0（NULL）",
+                "v": "0x0 (NULL)",
                 "bad": true,
-                "note": "空指针入参，set_next_entity 入口未判空"
+                "note": "NULL 实参未拦截，直接进入被调函数"
               }
             ]
           },
           {
             "from": "set_next_entity",
-            "to": "空指针解引用 → panic",
-            "type": "null_deref",
+            "to": "崩溃指令 ldr w0,[x20,#64]（读 se->on_rq @0x40）",
+            "type": "fault",
             "src_dir": "kernel/sched",
             "file": "fair.c",
-            "line": "函数入口：访问 se->on_rq（sched_entity 偏移 0x40）",
-            "stack": "set_next_entity+0x20/0x6f8 (L2660) · 指令 (b9404280) (L2687)",
-            "fn_ctx": "ldr w0,[x20,#0x40] → se+0x40",
+            "line": "L4049 函数入口 / L4052 if (se->on_rq)（本地 vanilla 4.19 源码核实）",
+            "stack": "set_next_entity+0x20/0x6f8（=+32: ldr w0,[x20,#64]）",
+            "fn_ctx": "set_next_entity",
             "crash": true,
-            "source_url": "https://elixir.bootlin.com/linux/v4.19/source/kernel/sched/fair.c",
-            "detail": "二进制↔源码行对照：pc=set_next_entity+0x20/0x6f8 → 指令 ldr w0,[x20,#0x40] → 读取 se+0x40。4.19 的 struct sched_entity 中 on_rq 偏移为 0x40（以 vmlinux struct sched_entity 复核），对应源码 set_next_entity() 首部读取 se->on_rq；se=NULL → 访问空页 0x40 → Oops 96000005。精确源码行需 vmlinux+调试信息（crash> dis -rl set_next_entity）。",
-            "evidence": "L2660 pc: set_next_entity+0x20/0x6f8 · L2687 Code: (b9404280) · fault addr 0x40",
+            "source_url": "https://elixir.bootlin.com/linux/v4.19/source/kernel/sched/fair.c#L4049",
+            "detail": "函数序言 +16 mov x20,x1 保存 se=NULL；+32(0x20) 首条访存 ldr w0,[x20,#64] 读 se->on_rq（struct sched_entity 偏移 64=0x40，crash> struct sched_entity -o 实证）→ 访问虚地址 0x40，pgd/pud 全 0 → DABT 翻译故障 ESR=0x96000005 → do_mem_abort→do_page_fault→die_kernel_fault→die→Oops→crash_kexec(kdump)。",
+            "evidence": "dmesg Code: aa0103f4 aa0003f3 aa1e03e0 d503201f (b9404280)，括号内 b9404280=ldr w0,[x20,#0x40] 与 vmlinux 反汇编 +32 逐字节一致；x20=0；ESR=0x96000005；[0000000000000040] pgd=0000000000000000",
             "params": [
               {
-                "io": "in",
-                "reg": "x20(=原 x1)",
+                "io": "read",
+                "reg": "x20",
                 "n": "se",
                 "formal": "struct sched_entity *se",
-                "v": "0x0000000000000000",
+                "v": "0x0 (NULL)",
                 "bad": true,
-                "note": "崩溃参数：空指针"
-              },
-              {
-                "io": "in",
-                "reg": "x19/x25",
-                "n": "cfs_rq",
-                "formal": "struct cfs_rq *cfs_rq",
-                "v": "ffffa07fefde16c0"
-              },
-              {
-                "io": "out",
-                "n": "se->on_rq（[x20,#0x40]）",
-                "formal": "int on_rq",
-                "v": "访问地址 0x40（空页）",
-                "bad": true,
-                "note": "崩溃点：空指针解引用"
+                "note": "se->on_rq = *(NULL+0x40) → 故障地址 0x40，与 dmesg 'at virtual address 0000000000000040' 完全吻合"
               }
             ]
           }
         ],
-        "evidence": "详见各跳；vmcore-dmesg.txt L2660-2687",
-        "ev_plain": true
-      },
-      {
-        "stage": "hypothesis",
-        "stage_name": "③ 寄存器还原与机制定位",
-        "color": "#5b46d9",
-        "title": "寄存器 ABI 反推：se 参数为 NULL",
-        "short": "set_next_entity(cfs_rq, se)：x19/x25=cfs_rq=ffffa07fefde16c0、x20(=原x1)=se=0x0；崩溃指令读 [x20,#0x40]=se->on_rq → 确认为空指针解引用。",
-        "text": "崩溃帧序言把形参存入被调用者保存寄存器：x19/x25 保存 cfs_rq，x20 保存 se。指令 b9404280 在 +0x20 读取 x20+0x40；se 非空不会 fault → 直接原因锁定为 set_next_entity 收到 NULL。",
-        "evidence": "x19/x25: ffffa07fefde16c0（cfs_rq）· x20: 0（se）· Code: (b9404280)（vmcore-dmesg.txt L2663-2687）",
-        "ev_plain": true
+        "refs": []
       },
       {
         "stage": "internal",
-        "stage_name": "④ 内部案例（指纹关联）",
-        "color": "#2f5bd8",
-        "title": "同局点同机型同内核的调度器宕机簇",
-        "short": "内部案例库命中同局点调度器宕机簇（L2/same_area）：0803 load_balance 硬锁死、0824 check_preempt_wakeup 空指针；同簇但崩溃点不同，需外部佐证。",
-        "text": "三起均为 PowerLeader/Kylin 4.19 上的 CFS 调度异常；本次 set_next_entity 空指针与簇内其它症状一致指向调度器状态污染。指纹同子系统，判定同簇不同因，未达“直接采用结论”的高置信。",
+        "stage_name": "内部案例检索",
+        "color": "#0ea5e9",
+        "title": "内部知识库：crash-feature-matcher RAG 未配置；以同局点真实历史宕机构建问题簇",
+        "short": "query_knowledge/query_cases/query_community_cases 均返回 'RAG knowledge base not configured'；改用同局点 0803/0824 真实 vmcore-dmesg 作为内部同簇案例（same_area，L2/L3）。",
+        "text": "同局点 observer02y（21.206.114.11，PowerLeader PR210K/鲲鹏920，Kylin 4.19.90-89.x，OceanBase 类租户业务）三次宕机恰好覆盖方法论三种故障模式：0708=set_next_entity NULL（模式#1，本案）、0824=check_preempt_wakeup NULL@0x168（模式#2，同内核版本）、0803=load_balance 路径 hard lockup（模式#3，89.11 旧版）。按方法论第 5 节判据：同局点多台机器、多种调度器症状 → 系统性调度器/底层问题，而非孤立事件。",
+        "evidence": "/tmp/shennong_0803/vmcore-dmesg.txt（hard LOCKUP cpu96, pc=queued_spin_lock_slowpath, lr=load_balance+0x454）；/tmp/shennong_0824/vmcore-dmesg.txt（NULL@0x168, check_preempt_wakeup+0xc8, ttwu 路径）",
         "refs": [
           {
-            "kind": "kb",
-            "label": "内部命中案例（同簇）",
-            "anchor": "kb-internal"
+            "kind": "internal",
+            "label": "0824 check_preempt_wakeup",
+            "anchor": "case-internal-0"
+          },
+          {
+            "kind": "internal",
+            "label": "0803 hard lockup",
+            "anchor": "case-internal-1"
           }
-        ],
-        "branch": {
-          "verdict": "go",
-          "text": "同域但崩溃点不同、缺一手源码补丁证据 → 继续社区/上游检索（指纹完全相同则可直接终止）。"
-        }
+        ]
       },
       {
         "stage": "community",
-        "stage_name": "⑤ 社区/上游检索",
-        "color": "#9a6a00",
-        "title": "上游：pick→set 无判空直至 v6.12 才修复",
-        "short": "社区会议纪要/Bugzilla 提供同簇与判空专项背景（见第 5 章）；直接修复以上游 commit b55945c500c5（v6.12，2024-10）落地：同一“pick 返回 NULL 未判空”模式，4.19~v6.11 均为通用缺口。",
-        "text": "检索结论：会议纪要/Bugzilla 记录的是同簇与判空专项背景（SIG 例会、麒麟例会、同簇 Issue），本身不含该修复的专案提交；修复以上游 commit 形式存在（sched: Fix pick_next_task_fair() vs try_to_wake_up() race，Peter Zijlstra）。同时明确不可整体回移上游大重构（sched_class 原型不兼容）。",
+        "stage_name": "社区案例检索",
+        "color": "#10b981",
+        "title": "社区 Bugzilla（本地 raw_data 知识库全文命中 3 条同家族案例）；light_rag 文档库无相关内容",
+        "short": "bugzilla 211435（4.9 ARM set_next_entity NULL，LR=pick_next_task_fair，压测数天~数周一遇）为最接近案例；220447/219920（6.12-rt pick_eevdf/pick_task_fair NULL@0x51）为同家族最新形态。",
+        "text": "检索通道说明：crash-feature-matcher query_community_cases 返回 RAG 未配置；SHENNONG_COMMUNITY_DIR(/data/shennong/community) 不存在；light_rag 仅有 openeuler_whitepaper/nl2sql_knowledge 两库，检索无相关内容（白皮书营销内容）。有效通道为用户指定的本地知识库 /home/zjq/test/linux_exmaple/raw_data：linux/bug(2528 条 bugzilla 全文) grep 'set_next_entity|pick_next_task|pick_next_entity' 命中 32 处，人工甄别后 3 条真实相关（其余为无关栈噪声）。211435 与本崩溃同函数对、同'极窄竞态+压力场景'特征，且报告人指向 v5.4 pick 重构系列 lore 线程；三条 bugzilla 状态均为 NEW（社区无定论修复），佐证 4.19 世代该缺陷无现成社区补丁。",
+        "evidence": "raw_data/linux/bug/bugzilla_211435.json（全文含 Oops 原文与 lore 链接）；bugzilla_220447.json（pick_eevdf NULL 分析）；bugzilla_219920.json（pick_task_fair+0x51）",
         "refs": [
           {
-            "kind": "mail",
-            "label": "社区邮件/上游记录",
-            "anchor": "kb-mail"
+            "kind": "community",
+            "label": "bugzilla 211435",
+            "anchor": "case-community-0"
           },
           {
-            "kind": "commit",
-            "label": "上游 v6.12 b55945c500c5",
-            "anchor": "kb-commit"
+            "kind": "community",
+            "label": "bugzilla 220447",
+            "anchor": "case-community-1"
+          },
+          {
+            "kind": "community",
+            "label": "bugzilla 219920",
+            "anchor": "case-community-2"
           }
         ]
       },
       {
         "stage": "commit",
-        "stage_name": "⑥ 深度关联 commit",
-        "color": "#12805c",
-        "title": "关联上游判空补丁并评估回移性",
-        "short": "关联 commit b55945c500c5（fair.c 加 if(!se)）。但 v6.12 差异大、无法整体 backport → 4.19 采用“同思路自研最小补丁”。",
-        "text": "上游补丁改动 fair.c 的 pick_next_task_fair 路径；语义与本崩溃完全一致（pick 返回 NULL）。建议取其思路移植 +3 行，不整包回移。",
+        "stage_name": "上游 commit 检索与在线验证",
+        "color": "#6366f1",
+        "title": "上游判空防御引入点精确定位：f12e148892ed（v6.12）；全部 6 个引用 commit 经 GitHub API 在线验证 + 本地 raw_data 副本双重确认",
+        "short": "v6.11 及以前（含 4.19）pick 循环均无 if(!se) 判空；v6.12 delayed-dequeue 重构中 f12e148892ed 首次加入 if (!se) goto again；b55945c5 修复 pick vs ttwu 竞态（同家族根因）。",
+        "text": "验证链：① 本地 raw_data/linux/commit 按 SHA 文件名精确命中 6 个 commit JSON（GitHub API 格式，含完整 message）；② GitHub REST API 逐一在线验证哈希真实性（api.github.com/repos/torvalds/linux/commits/<sha> 全部 200 返回）；③ 拉取 .patch 原文核对 f12e148892ed 的 diff 确为 '+ if (!se) + goto again;'；④ 拉取 v6.11/v6.12/v6.13 tag 的 fair.c 原文对照：v6.11 pick_task_fair 无判空（与 4.19 同缺口）、v6.12 起有判空；⑤ bugzilla 211435 引用的 lore 线程（20191108121526，Anubis 反爬无法直读）经 GitHub commits API 按时间窗定位到同日合入的 v5.4 重构系列（5d7d6056/98c2f700/6e2df058）。结论：本案内核不含任何上游判空修复，4.19 修复只能自研最小防御补丁（方法论红线：禁止移植 LKML 1911.1/00528 大重构系列）。",
+        "evidence": "GitHub API 响应（b55945c5/f12e148892ed/152e11f6 元数据）；f12e148892ed.patch L65-74（+if (!se) +goto again）；v6.11 fair.c L8451（se = pick_next_entity(cfs_rq); 无判空）vs v6.12 L8866-8868（有判空）",
         "refs": [
           {
             "kind": "commit",
-            "label": "commit b55945c500c5 详情",
-            "anchor": "kb-commit"
+            "label": "f12e148892ed (confirmed)",
+            "anchor": "case-online-0"
+          },
+          {
+            "kind": "commit",
+            "label": "b55945c5",
+            "anchor": "case-online-1"
+          },
+          {
+            "kind": "commit",
+            "label": "152e11f6df29",
+            "anchor": "case-online-2"
+          },
+          {
+            "kind": "commit",
+            "label": "5d7d6056",
+            "anchor": "case-online-3"
+          },
+          {
+            "kind": "commit",
+            "label": "6e2df058",
+            "anchor": "case-online-4"
           }
         ]
       },
       {
         "stage": "source_compare",
-        "stage_name": "⑦ 源码与二进制对照",
-        "color": "#5b7bb0",
-        "title": "对照本内核：确认缺判空",
-        "short": "本内核 fair.c:7746 有判空、fair.c:7762 崩溃路径无判空（用反汇编复核）；上游 v6.12 b55945c500c5 之后才有对应判空。",
-        "text": "二进制↔行号关系：pc=set_next_entity+0x20 对应指令 ldr w0,[x20,#0x40] = 读取 sched_entity.on_rq（偏移 0x40）；精确源码行需 vmlinux 调试信息（dis -rl set_next_entity）逐一映射。当前内核版本早于修复版本，判定未修复。",
-        "evidence": "本内核：se = pick_next_entity(...); set_next_entity(cfs_rq, se);   ← 无判空\n上游 v6.12：if (!se) goto again/idle;（b55945c500c5）",
-        "ev_plain": true
+        "stage_name": "源码/反汇编对照",
+        "color": "#ec4899",
+        "title": "三方对照：vanilla 4.19 源码 vs Kylin 二进制反汇编 vs 上游 v6.11/v6.12 —— 确认厂商 QoS 双循环中第二循环漏判空",
+        "short": "vanilla 4.19 只有一个无判空的 simple 循环；Kylin 二进制有两个循环：第一循环 +268 有 cbz x20 判空，第二循环 +716~+748（崩溃路径）无判空；上游 v6.11 同样无判空、v6.12 起有。",
+        "text": "① vanilla 4.19（本地 fair_v4.19.c 核实）：L6691-6695 simple 循环 'se = pick_next_entity(cfs_rq, NULL); set_next_entity(cfs_rq, se);' 无判空——上游同代基线即有此缺口；② Kylin 4.19.90-89.17 vmlinux 反汇编：pick_next_task_fair 存在两个 pick→set 循环，第一循环（+152 bl pick_next_entity → +268 cbz x20 → +280 bl set_next_entity）已含判空，第二循环（+716 mov x0,x25 → +724 bl pick_next_entity → +728 mov x20,x0 → +740 bl set_next_entity → +744 ldr x25,[x20,#368](se->my_q) → +748 cbnz 回环）无任何判空——厂商 QoS 改造拆出的第二循环漏掉了防御（与方法论'必须逐个循环核验'警示一致）；LR=+744 实证崩溃恰在第二循环；③ 上游对照：v6.11 pick_task_fair 同样无判空（L8451），v6.12 起 f12e148892ed 加入 if (!se) goto again——当前内核（4.19 世代）不含修复。注：Kylin 源码树不在本机，厂商 QoS 循环的源码行号未采集，本结论以 vmlinux 反汇编为一手证据（工具边界如实注明）。",
+        "evidence": "crash> dis -l pick_next_task_fair 全量反汇编（dis_pick_output.txt + 本次 fresh 采样复核）；fair_v4.19.c L6688-6698；v6.11/v6.12 fair.c（raw.githubusercontent.com 拉取）",
+        "refs": [
+          {
+            "kind": "commit",
+            "label": "f12e148892ed diff",
+            "anchor": "case-online-0"
+          }
+        ]
       },
       {
         "stage": "conclusion",
-        "stage_name": "⑧ 结论与修复",
-        "color": "#12805c",
-        "title": "直接原因/触发条件/防御缺口三层定位",
-        "short": "直接原因=set_next_entity 收到 NULL 解引用；触发条件=pick 返回空 se 的调度窗口；防御缺口=4.19 无判空。建议自研 +3 行防御补丁，覆盖所有 pick→set 路径。",
-        "text": "① 直接原因：se=NULL（x20=0）在 set_next_entity 入口访问 se->on_rq(0x40)；\n② 触发条件：cfs_rq 调度窗口返回空 se（nr_running 下溢/竞态，需 crash 复核 ==0xffffffff）；\n③ 防御缺口：4.19~v6.11 pick→set 无判空，上游 v6.12 b55945c500c5 才补。\n修复动作详见第 1 章标准解决方案（自研判空补丁）。",
+        "stage_name": "根因结论",
+        "color": "#16a34a",
+        "title": "三层根因定界：直接原因（NULL 解引用）实证、触发条件（nr_running 下溢）实证、深层竞态源头（下溢如何发生）未完全定位；硬件排除",
+        "short": "直接原因与防御缺失为 L1 级实证；下溢为 L1 级实证（0xffffffff 精确值+单 CPU 孤立异常+无硬件错误）；下溢的具体竞态路径为 L2/L3 推断（窗口极窄，290 天仅一遇）。",
+        "text": "硬件排除依据：① nr_running 与 h_nr_running 两个独立计数器同时精确等于 0xffffffff（位翻转/UE 通常产生单 bit 差异且不会双字段同步）；② 全量 128 CPU 扫描仅 CPU92 一个 cfs_rq 异常（系统性内存/缓存污染会呈现多点异常）；③ sosreport 与 vmcore-dmesg 无 MCE/EDAC/AER/GHES 事件；④ 崩溃前 syslog 无任何内核告警前兆。深层竞态源头候选（推断）：enqueue/dequeue 路径 double-decrement、load_balance/migration 与 dequeue 竞态（prev 线程 nr_migrations 高达 4100 万次，迁移极其频繁，扩大竞态窗口）、厂商 QoS 改造引入的额外计数操作；上游 b55945c5 证明 pick vs ttwu 竞态家族真实存在。精确复现需厂商带调试手段联合排查，防御性判空补丁可立即消除宕机后果。",
+        "evidence": "check_all_cfs_output.txt（128 cfs_rq 全量扫描，仅 1 处 0xffffffff）；sosreport rasdaemon/AER 仅初始化日志无事件；task nr_migrations=40991638；b55945c5 commit message",
         "refs": [
           {
-            "kind": "source",
-            "label": "标准解决方案见第 1 章"
+            "kind": "commit",
+            "label": "b55945c5 竞态家族",
+            "anchor": "case-online-1"
           }
         ]
       }
     ],
     "deep": {
-      "lead": "根因（三层）：进程 T1004_LockWaitM 在 CPU92 调用 clock_nanosleep 申请睡眠，进入睡眠前调度让出 CPU，CFS 的 pick 阶段返回空 se，4.19 在 pick→set 之间无 if(!se) 判空，空指针进入 set_next_entity 并解引用 se->on_rq（偏移 0x40）触发 Oops。",
-      "mechanism": "触发链条：T1004_LockWaitM(PID4090813,CPU92) 调 clock_nanosleep 申请睡眠 → 进入睡眠前 schedule() 让出 CPU → __schedule 持 rq->lock → pick_next_task_fair → pick_next_entity 返回 NULL（cfs_rq 树空或 nr_running 计数异常/竞态窗口）→ 未判空 → set_next_entity(cfs_rq, se=NULL) → +0x20 读 se->on_rq → fault 0x40 → panic。",
+      "flow": "业务线程在 CPU92 上通过 nanosleep 睡眠、让出 CPU → 内核调度器摘出当前任务、挑选下一任务 → 运行队列计数在极罕见并发窗口中被多减一次变为负值，绕过「队列空则转空闲」的检查 → 在空队列上取任务取到空值 → 又因缺少空值检查而直接使用该空值 → 访问无效地址，内核崩溃并经 kdump 转储后重启。",
       "evidence": [
-        "寄存器证据（L2663-2677）：x20=se=0、x19/x25=cfs_rq=ffffa07fefde16c0；崩溃指令读 x20+0x40",
-        "反汇编+源码证据：本内核 fair.c:7746 有判空、fair.c:7762 崩溃路径无判空；上游 v6.12 b55945c500c5 才内置 if(!se)",
-        "横向证据：同局点 0803(load_balance 硬锁死)/0824(check_preempt_wakeup 空指针) 同内核同机型同调度子系统（问题簇）"
-      ],
-      "confidence": "中高：直接原因与防御缺口证据充分；nr_running 下溢/竞态的具体触发需用 crash 工具查看 cfs_rq->nr_running 复核（vmcore 未给出现场值）。",
-      "scope": "仅在睡眠/调度选择窗口触发，概率极低但影响整机（panic 重启）。同问题簇在同一局点多台已复现 3 次。"
-    }
+        {
+          "title": "宕机栈分析：崩在哪里、为什么崩",
+          "summary": "调用栈显示：线程 nanosleep 睡眠让出 CPU 后，内核在挑选下一个任务时，在 set_next_entity 读取一个空指针的成员时崩溃。",
+          "reasoning": [
+            {
+              "step": "谁触发的",
+              "detail": "业务线程 T1004_LockWaitM 调用 nanosleep 睡眠、让出 CPU，内核进入调度流程。",
+              "evidence": "调用栈：sys_nanosleep → do_nanosleep → schedule → __schedule → pick_next_task_fair → set_next_entity"
+            },
+            {
+              "step": "崩在哪一行",
+              "detail": "崩溃指令是 ldr w0,[x20,#64]，即“读 x20 指向的地址 +64 处”。x20 此刻是 0（空指针），于是读了 0+64=0x40 这个非法地址，触发崩溃。",
+              "evidence": "pc=set_next_entity+0x20；机器码 b9404280=ldr w0,[x20,#64]；x20=0；故障地址 0x40"
+            }
+          ]
+        },
+        {
+          "title": "结构体取证：为什么调度器拿到了空任务",
+          "summary": "运行队列的“任务数”计数器变成了 -1（0xffffffff），调度器误以为队列里还有任务；但队列实际上是空的，取任务自然取到了空值。",
+          "connect": "栈定位了“崩在 set_next_entity 读空指针”，接下来解释调度器为什么会拿到这个空任务。",
+          "reasoning": [
+            {
+              "step": "计数被多减了一次",
+              "detail": "运行队列的 nr_running 计数在一个极罕见的并发窗口中被多减了一次，变成 -1（0xffffffff）。内核判断“队列是否为空”用的是“计数是否为 0”，-1 不等于 0，于是误判队列里还有任务。",
+              "evidence": "nr_running = h_nr_running = 0xffffffff（32 位无符号 -1）"
+            },
+            {
+              "step": "队列其实是空的",
+              "detail": "红黑树、候选任务等字段全为 0，队列上确实没有任何可运行的任务，取任务必然返回空值。",
+              "evidence": "rb_leftmost=0、curr/next/last/skip 全 0"
+            },
+            {
+              "step": "只有 CPU92 出现",
+              "detail": "对全部 128 个 CPU 的运行队列逐一检查，只有 CPU92 出现这个 -1，说明不是内存被大面积破坏，而是一次性的窄窗口竞态。",
+              "evidence": "128 个 cfs_rq 全量扫描，仅 CPU92 一处 0xffffffff"
+            }
+          ]
+        },
+        {
+          "title": "对照反编译源码：为什么空值没有被拦住",
+          "summary": "把本机内核的反编译结果与上游源码对照，发现“取任务”和“用任务”之间少了一道空值检查：第一处循环有检查，崩溃所在的第二处循环漏掉了；上游也是到 v6.12 才补上这道检查。",
+          "connect": "结构体证明了“计数异常导致取到空任务”，接下来对照反编译和源码，解释这个空任务为什么没有被一道空值检查拦住。",
+          "reasoning": [
+            {
+              "step": "本机反编译：两处循环一有一无",
+              "detail": "反编译 pick_next_task_fair 能看到两处“取任务→用任务”的循环。第一处在用任务之前有 cbz 判空（为空就跳过）；第二处（厂商 QoS 改造拆出的）在调用 set_next_entity 之前没有任何判空分支，本次崩溃就发生在这一处。",
+              "evidence": "反汇编：第一循环 +268 有 cbz x20；第二循环 +728~+740 无任何判空分支"
+            },
+            {
+              "step": "崩溃点落在无判空的那一处",
+              "detail": "崩溃时返回地址 LR 指向 +744，恰好是第二循环里 bl set_next_entity 的返回地址（第一循环的返回地址是 +284），证明崩溃发生在漏了判空的第二处循环。",
+              "evidence": "dmesg lr=+744 ↔ 反汇编 +740 bl set_next_entity"
+            },
+            {
+              "step": "上游源码对照：v6.12 才补上",
+              "detail": "对照上游源码，v6.11 的公平调度同样没有判空，v6.12 起才加上 if(!se) 判空（由 f12e148892ed 引入）。说明这道检查确实是后来才补上的防护，当前 4.19 内核普遍缺这一道。",
+              "evidence": "v6.11/v6.12 fair.c 源码对照；f12e148892ed 补丁"
+            }
+          ]
+        },
+        {
+          "title": "社区与上游交叉验证：确认是已知缺陷",
+          "summary": "社区 bugzilla #211435 是同类崩溃（同一个函数、同样罕见的触发条件）；上游直到 v6.12 才补上判空，当前 4.19 内核没有这道防护，需要自行打补丁。",
+          "connect": "反汇编与源码对照证明“缺一道判空”，接下来用社区和上游案例交叉验证，确认这是已知缺陷家族。",
+          "reasoning": [
+            {
+              "step": "同型案例佐证",
+              "detail": "bugzilla #211435 与本崩溃同型：同样在 set_next_entity 入口空指针、同样在压测下极罕见地命中，证明这是这个缺陷家族的典型表现。",
+              "evidence": "bugzilla #211435（4.9 ARM，同函数对）"
+            },
+            {
+              "step": "修复只能自研",
+              "detail": "上游的判空补丁依赖 v6.12 的大改版（函数签名都变了），不能直接搬回 4.19；唯一可行的办法是参考它的思路，自行写一个最小的判空补丁。",
+              "evidence": "f12e148892ed 依赖 v6.12 delayed-dequeue 重构，不可整体回移植"
+            }
+          ]
+        }
+      ]
+    },
+    "overview_brief": "内核调度器在一次让出 CPU、挑选下一任务时，误以为空队列里还有任务，去取却取到空结果，又因该内核版本缺少一道空值检查，直接访问了无效地址，导致整机宕机并重启。这是内核调度器的已知缺陷，与业务程序和硬件无关。",
+    "trigger_scenario": "在类高频迁移业务的线程频繁睡眠/唤醒（如 nanosleep 让出 CPU）的场景下，内核调度器挑选下一任务时即可能触发。"
   },
   "diagnosis_repair_result": {
     "internal_kernel_result": [
       {
-        "knowledge_id": "internal-cluster-sched-0708",
-        "id": "internal-cluster-sched-0708",
-        "anchor": "kb-internal",
-        "title": "同局点 CFS 调度器宕机簇",
+        "knowledge_id": "local-cluster-observer02y-20260824",
+        "id": "internal-0",
+        "anchor": "case-internal-0",
+        "title": "同局点同内核 0824 宕机：check_preempt_wakeup NULL 指针解引用 @0x168（ttwu 唤醒路径）",
+        "bug_summary": "observer02y 同型机（PowerLeader PR210K/鲲鹏920，4.19.90-89.17.v2401.ky10.aarch64）于 uptime 46218968s 再次宕机：hrtimer_wakeup→try_to_wake_up→ttwu_do_activate→check_preempt_curr→check_preempt_wakeup+0xc8 读虚地址 0x168（=offsetof(struct sched_entity, cfs_rq)=360，se 或 rq->curr 相关指针为 NULL 未判空），ESR=0x96000005 同型 DABT。",
         "bug_type": "null_pointer",
-        "bug_key": "kernel NULL pointer dereference",
-        "bug_summary": "同内核(4.19.90-89.11/89.17.v2401)同机型(PowerLeader PR210K/KunLun)同局点的 CFS 调度异常簇：0708 set_next_entity 空指针、0803 load_balance 硬锁死、0824 check_preempt_wakeup 空指针。",
-        "rip": "set_next_entity+0x20",
-        "rip_function": "set_next_entity",
-        "rip_offset": "0x20",
+        "bug_key": "Unable to handle kernel NULL pointer dereference at virtual address 0000000000000168",
+        "rip": "check_preempt_wakeup+0xc8/0x248",
+        "rip_function": "check_preempt_wakeup",
+        "rip_offset": "0xc8",
         "related_modules": [],
         "call_trace_signature": [
-          "set_next_entity",
-          "pick_next_task_fair",
-          "__schedule",
-          "schedule"
+          "check_preempt_wakeup",
+          "check_preempt_curr",
+          "ttwu_do_wakeup",
+          "ttwu_do_activate",
+          "try_to_wake_up",
+          "wake_up_process",
+          "hrtimer_wakeup",
+          "__hrtimer_run_queues",
+          "hrtimer_interrupt",
+          "arch_timer_handler_phys"
         ],
-        "call_trace_text": "set_next_entity+0x20/0x6f8 -> pick_next_task_fair+0x2e8/0x548",
+        "call_trace_text": "check_preempt_wakeup+0xc8/0x248\ncheck_preempt_curr+0x4c/0xd0\nttwu_do_wakeup.isra.23+0x38/0x188\nttwu_do_activate+0x74/0x88\ntry_to_wake_up+0x224/0x640\nwake_up_process+0x28/0x38\nhrtimer_wakeup+0x28/0x38",
         "kernel_versions": [
-          "4.19.90-89.17.v2401.ky10.aarch64",
-          "4.19.90-89.11.v2401.ky10.aarch64"
+          "4.19.90-89.17.v2401.ky10.aarch64"
         ],
         "match_score": "中",
         "match_level": "L2",
         "verdict": "same_area",
-        "root_cause": "CFS 调度器状态异常簇（nr_running 下溢/竞态导致 pick/set 阶段拿到空或错位对象）。不同崩溃点同属一个调度器子系统的防御缺口，需外部上游/源码佐证后复用结论。",
-        "solution": "先自研 fair.c 判空止血（pick→set 之间 if(!se) goto idle）；复现时用 crash 查看 cfs_rq->nr_running/h_nr_running 是否 0xffffffff，再定位下溢源。",
-        "hotpatch": "自研补丁（kernel/sched/fair.c 约 +3 行，参照上游 v6.12 b55945c500c5）；无官方 RPM 热补丁，需自研移植并通过回归。",
-        "history_wiki": "",
-        "case_count": 3,
-        "first_seen": "2026-07-08",
-        "last_seen": "2026-08-24",
+        "affected_component": "kernel/sched/fair.c（CFS 唤醒抢占检查路径）",
+        "case_count": 1,
         "fingerprints": [
-          "CFS 调度器",
-          "kernel 4.19.90 v2401",
-          "Kunpeng 920 aarch64(128核)",
-          "PowerLeader PR210K",
-          "同局点 T100x 业务",
-          "空/悬垂对象访问(pick/set 阶段)"
+          "子系统：kernel/sched CFS（与本案同一子系统、不同函数路径）",
+          "内核版本：4.19.90-89.17.v2401.ky10.aarch64（与本案完全相同）",
+          "CPU/机型：鲲鹏920 / PowerLeader PR210K（与本案相同）",
+          "局点/业务：observer02y（21.206.114.11），OceanBase 类租户业务（与本案相同）",
+          "访问模式：NULL 指针 + 固定小偏移（0x168=se->cfs_rq 偏移，对应 sched-nullptr-diagnosis 故障模式#2：rq->curr 错位/find_matching_se 上溯 parent 至 NULL）"
         ],
-        "affected_component": "kernel/sched (CFS fair.c)",
+        "root_cause": "CFS 唤醒抢占检查路径对 se/rq->curr 相关指针缺少判空防御（故障模式#2），与本案（故障模式#1：nr_running 下溢+pick 无判空）同属 Kylin 4.19 CFS 调度器防御缺口簇；深层触发源（计数/指针状态被并发路径破坏）尚未完全定位。",
+        "solution": "并入同一问题簇处置：自研判空防御补丁统一覆盖 pick/wakeup 路径 + 推动厂商（麒麟）定位深层竞态；升级至含调试手段的内核版本辅助抓取。",
+        "hotpatch": "",
         "corroboration": [
           {
-            "dimension": "feature_data",
+            "dimension": "内核版本",
+            "verdict": "match",
+            "current": "4.19.90-89.17.v2401.ky10.aarch64",
+            "reference": "4.19.90-89.17.v2401.ky10.aarch64（完全相同）"
+          },
+          {
+            "dimension": "机型/CPU",
+            "verdict": "match",
+            "current": "PowerLeader PR210K / 鲲鹏920 128核",
+            "reference": "同型机"
+          },
+          {
+            "dimension": "子系统",
+            "verdict": "match",
+            "current": "kernel/sched/fair.c pick 路径（set_next_entity）",
+            "reference": "kernel/sched/fair.c 唤醒抢占路径（check_preempt_wakeup）"
+          },
+          {
+            "dimension": "崩溃形态",
+            "verdict": "match",
+            "current": "NULL+0x40（se->on_rq）",
+            "reference": "NULL+0x168（se->cfs_rq）——同为 sched_entity 成员偏移的 NULL 解引用"
+          },
+          {
+            "dimension": "触发时刻",
             "verdict": "partial",
-            "current": "本次崩溃函数 set_next_entity+0x20/0x6f8（fair.c），普通进程调度上下文（sys_nanosleep）。",
-            "reference": "同簇崩溃点不同：0803 为 load_balance/queued_spin_lock 硬锁死、0824 为 check_preempt_wakeup 空指针；均属 CFS 同一类空/悬垂对象问题。"
-          },
-          {
-            "dimension": "kernel_version",
-            "verdict": "support",
-            "current": "4.19.90-89.17.v2401.ky10.aarch64（source 1052da2...）。",
-            "reference": "同簇 0803 为 89.11.v2401、0824 为 89.17.v2401，同属 4.19.90 v2401 谱系。"
-          },
-          {
-            "dimension": "execution_context",
-            "verdict": "support",
-            "current": "进程让出/重选 CPU 的普通调度路径（睡眠、futex 等待）。",
-            "reference": "同簇均在业务线程 T100x 的调度/唤醒路径上出现。"
-          },
-          {
-            "dimension": "timeline",
-            "verdict": "partial",
-            "current": "0708 一次 Oops；uptime 290 天。",
-            "reference": "同簇在 07-08/08-03/08-24 三次复发，低频但系统性出现。"
-          },
-          {
-            "dimension": "mechanism",
-            "verdict": "support",
-            "current": "cfs 空/悬垂对象在 pick→set（或 load_balance/唤醒）阶段被访问。",
-            "reference": "同簇机制一致：CFS 状态异常导致访问空对象；上游 v6.12 才统一加判空。"
-          },
-          {
-            "dimension": "fix_scope",
-            "verdict": "partial",
-            "current": "需 fair.c 判空 + 复现时定位 nr_running 下溢源。",
-            "reference": "同簇均需调度器侧防御/修复（自研判空补丁）+ 深层下溢定位。"
+            "current": "nanosleep 主动让出（schedule 路径）",
+            "reference": "hrtimer_wakeup 唤醒（ttwu 路径）——覆盖调度器一进一出两条主干路径"
           }
         ],
-        "applicability": "作为同域佐证、横向跟踪与触发面判断使用（3 起同簇）；不能替代本次 set_next_entity 空指针的直接修复——其修复=在 pick→set 之间补判空（见第 1 章），并建议用 crash 复核 cfs_rq->nr_running 是否 0xffffffff。"
-      },
-      {
-        "knowledge_id": "internal-sched-direct-2025",
-        "id": "internal-sched-direct-2025",
-        "anchor": "kb-internal2",
-        "title": "同型号 set_next_entity 空指针（同源独立记录）",
-        "bug_type": "null_pointer",
-        "bug_key": "kernel NULL pointer dereference",
-        "bug_summary": "另一时段同型号主机(PR210K) set_next_entity+0x20 空指针，崩溃点与本次一致；记录缺少完整 vmcore/寄存器，仅指纹部分命中。",
-        "rip": "set_next_entity+0x20",
-        "rip_function": "set_next_entity",
-        "rip_offset": "0x20",
-        "related_modules": [],
-        "call_trace_signature": [
-          "set_next_entity",
-          "pick_next_task_fair"
-        ],
-        "call_trace_text": "set_next_entity+0x20/0x6f8",
-        "kernel_versions": [
-          "4.19.90-89.17.v2401.ky10.aarch64"
-        ],
-        "match_score": "低",
-        "match_level": "L3",
-        "verdict": "unverified",
-        "root_cause": "与本次同崩溃点（pick 返回空 se 后 set_next_entity 崩溃）；缺寄存器/vmcore 细节，暂作 L3 弱匹配参考。",
-        "solution": "同本次：pick→set 判空自研补丁；需回查原案例确认堆栈后再采用。",
-        "hotpatch": "待复核",
+        "applicability": "作为同簇案例支撑「系统性调度器防御缺口」定性与统一修复策略；不直接提供本案的修复 diff。",
         "history_wiki": "",
-        "first_seen": "2025-11",
-        "last_seen": "2025-11",
-        "fingerprints": [
-          "set_next_entity+0x20",
-          "4.19.90 v2401",
-          "aarch64",
-          "PowerLeader PR210K"
-        ],
-        "affected_component": "kernel/sched fair.c",
-        "applicability": "待核验(L3)：需回查原案例调用栈/寄存器后再决定是否并入本簇结论。"
+        "first_seen": "2026-08-24（uptime 46218968s）",
+        "last_seen": "2026-08-24"
       },
       {
-        "knowledge_id": "internal-cluster-loadbalance-0803",
-        "id": "internal-cluster-loadbalance-0803",
-        "anchor": "kb-internal3",
-        "title": "同簇 0803 load_balance 硬锁死（独立入库）",
-        "bug_type": "hardlockup",
-        "bug_key": "watchdog: BUG: soft lockup - CPU# stuck",
-        "bug_summary": "同局点另一时段 0803：newidle_balance/load_balance + queued_spin_lock 硬锁死；与本次同属 CFS 调度器异常簇，作为横向跟踪旁证。",
-        "rip": "queued_spin_lock_slowpath",
+        "knowledge_id": "local-cluster-observer02y-20260803",
+        "id": "internal-1",
+        "anchor": "case-internal-1",
+        "title": "同局点 0803 宕机：queued_spin_lock_slowpath hard lockup（lr=load_balance，rq->lock 长期持有）",
+        "bug_summary": "同局点机器（4.19.90-89.11.v2401.ky10.aarch64，PowerLeader PR210K/鲲鹏920）uptime 21655791s 时 NMI watchdog 检出 CPU96 hard lockup：pc=queued_spin_lock_slowpath+0x1b4，lr=load_balance+0x454，业务线程 T1012_L0_G10000（OceanBase 类租户）——对应 sched-nullptr-diagnosis 故障模式#3：rq->lock 被 load_balance/update_blocked_averages 持锁路径异常长期持有。",
+        "bug_type": "hard_lockup",
+        "bug_key": "NMI watchdog: Watchdog detected hard LOCKUP on cpu 96",
+        "rip": "queued_spin_lock_slowpath+0x1b4/0x3c8",
         "rip_function": "queued_spin_lock_slowpath",
-        "rip_offset": "",
+        "rip_offset": "0x1b4",
         "related_modules": [],
         "call_trace_signature": [
-          "newidle_balance",
-          "load_balance",
-          "queued_spin_lock_slowpath"
+          "queued_spin_lock_slowpath",
+          "load_balance"
         ],
-        "call_trace_text": "",
+        "call_trace_text": "pc : queued_spin_lock_slowpath+0x1b4/0x3c8\nlr : load_balance+0x454/0xbe0",
         "kernel_versions": [
           "4.19.90-89.11.v2401.ky10.aarch64"
         ],
-        "match_score": "低",
+        "match_score": "中",
         "match_level": "L3",
         "verdict": "same_area",
-        "root_cause": "load_balance 持锁路径异常导致 rq->lock 长时间持有/硬锁死；与本次崩溃簇同源但触发点不同。",
-        "solution": "与本次同簇跟踪：先自研防御补丁止血，深层定位持锁/下溢竞态。",
-        "hotpatch": "待复核",
-        "history_wiki": "",
-        "first_seen": "2026-08-03",
-        "last_seen": "2026-08-03",
+        "affected_component": "kernel/sched/fair.c（负载均衡/rq->lock 路径）",
+        "case_count": 1,
         "fingerprints": [
-          "CFS load_balance",
-          "4.19.90 v2401",
-          "aarch64",
-          "同局点"
+          "子系统：kernel/sched CFS 负载均衡路径（load_balance 持 rq->lock）",
+          "内核版本：4.19.90-89.11.v2401.ky10（同族旧版本）",
+          "CPU/机型：鲲鹏920 / PowerLeader PR210K（相同）",
+          "局点/业务：同局点，OceanBase 类租户线程 T1012_L0_G10000",
+          "症状形态：hard lockup（自旋锁慢路径死等），非 NULL 解引用"
         ],
-        "affected_component": "kernel/sched (load_balance)",
-        "applicability": "同簇旁证(L3)，不直接采用其结论，仅用于横向跟踪。"
+        "root_cause": "rq->lock 持锁路径异常（load_balance/update_blocked_averages 锁边界或缓存一致性问题），与本案同属 Kylin 4.19 调度器问题簇的不同表现形态。",
+        "solution": "同簇处置：升级含调试手段的内核版本、推动厂商联合排查；本案判空补丁不覆盖该形态。",
+        "hotpatch": "",
+        "corroboration": [
+          {
+            "dimension": "内核版本",
+            "verdict": "partial",
+            "current": "4.19.90-89.17.v2401",
+            "reference": "4.19.90-89.11.v2401（同族旧版）"
+          },
+          {
+            "dimension": "机型/CPU",
+            "verdict": "match",
+            "current": "PowerLeader PR210K / 鲲鹏920",
+            "reference": "相同"
+          },
+          {
+            "dimension": "子系统",
+            "verdict": "match",
+            "current": "kernel/sched fair.c pick 路径",
+            "reference": "kernel/sched fair.c load_balance 锁路径"
+          },
+          {
+            "dimension": "业务",
+            "verdict": "match",
+            "current": "T1004_LockWaitM（租户锁等待线程）",
+            "reference": "T1012_L0_G10000（租户线程）"
+          }
+        ],
+        "applicability": "支撑「同局点多形态调度器问题簇」定性（方法论第 5 节：同局点多台机器、多种调度器症状 → 系统性问题）；不为本案提供直接修复。",
+        "history_wiki": "",
+        "first_seen": "2026-08-03（uptime 21655791s）",
+        "last_seen": "2026-08-03"
       }
     ],
     "community_kernel_result": [
       {
         "kind": "bugzilla",
-        "title": "openEuler Issue/Bugzilla：4.19 aarch64 set_next_entity Oops",
-        "url": "https://gitee.com/openeuler/kernel/issues/sched-next-001",
-        "author": "OSClinic 上报",
-        "list": "openEuler kernel issues",
-        "date": "2025-11",
-        "anchor": "kb-bugzilla",
-        "kernel_version": "4.19.90-89.17.v2401",
-        "verdict": "confirmed",
-        "patch_url": "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=b55945c500c5723992504aa03b362fab416863a6",
-        "excerpt": "现象：Kunpeng 920 aarch64 上 set_next_entity+0x20 空指针，fault addr 0x40；与本次崩溃函数/偏移一致。",
-        "how": "崩溃函数与偏移一致（set_next_entity+0x20 / 0x40）→ 指向同一 pick→set 判空缺口，转邮件/commit 组获取修复。",
-        "patch_ref": "commit b55945c500c5",
-        "lead": "同崩溃函数/偏移（set_next_entity+0x20 / fault 0x40）→ 指向同一 pick→set 判空缺口。"
+        "title": "Kernel Panic in set_next_entity+0x8/0xc30（bugzilla.kernel.org #211435）",
+        "url": "https://bugzilla.kernel.org/show_bug.cgi?id=211435",
+        "author": "ahimanshu5k2",
+        "list": "kernel.org bugzilla",
+        "date": "2021-01-27",
+        "anchor": "case-community-0",
+        "kernel_version": "4.9.170 / 4.9.247（ARM32, Pilot4 SoC）",
+        "verdict": "same_area",
+        "excerpt": "During the stress test, some of the system are getting kernel panic in scheduler. It is very tough to reproduce, out of 10 system, it hit on 1 system in few days to couple of weeks. We have tried with kernel 4.9.247 as well... Unable to handle kernel NULL pointer dereference at virtual address 0000001c / PC is at set_next_entity+0x8/0xc30 / LR is at pick_next_task_fair+0xa54/0xcd8 / CPU: 1 PID: 0 Comm: swapper/1 ... Link to the patch which i refering in 5.4-rc: https://lore.kernel.org/lkml/20191108121526.GB83597@google.com/T/",
+        "how": "与本崩溃同型：set_next_entity 入口即 NULL 解引用（该案访问 0x1c=ARM32 下 se 成员偏移，本案 0x40=aarch64 se->on_rq 偏移），LR 均为 pick_next_task_fair；同为压力场景下数天~数周才复现一次的极窄竞态；报告人同样指向 pick_next_task 重构系列。差异：该案为 ARM32 4.9 idle 任务(swapper)路径，本案为 aarch64 4.19 业务线程 nanosleep 路径且实证 nr_running 下溢。",
+        "patch_ref": "lore: https://lore.kernel.org/lkml/20191108121526.GB83597@google.com/T/（v5.4 pick_next_task 重构系列讨论，在线检索被 Anubis 反爬拦截，经 GitHub API 定位到同期合入 commit 5d7d6056/98c2f700/6e2df058）",
+        "lead": "本地知识库 /home/zjq/test/linux_exmaple/raw_data/linux/bug/bugzilla_211435.json 全文命中（grep 'set_next_entity'），状态 NEW（未关闭/无官方修复结论）。"
       },
       {
         "kind": "bugzilla",
-        "title": "Kylin issue：load_balance 硬锁死 + check_preempt_wakeup 空指针（同簇 0803/0824）",
-        "url": "https://gitee.com/openeuler/kernel/issues/sched-cluster-002",
-        "author": "现场上报",
-        "list": "Kylin kernel issues",
-        "date": "2026-08",
-        "anchor": "kb-bugzilla2",
+        "title": "rt kernel 6.12.18: BUG: kernel NULL pointer dereference, address: 0x51（pick_eevdf 返回 NULL 未判空，#220447）",
+        "url": "https://bugzilla.kernel.org/show_bug.cgi?id=220447",
+        "author": "kernel.org bugzilla 报告人（Process Management/Scheduler）",
+        "list": "kernel.org bugzilla",
+        "date": "2025-08-15",
+        "anchor": "case-community-1",
+        "kernel_version": "6.12.18-rt（PREEMPT_RT）",
         "verdict": "same_area",
-        "patch_url": "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=b55945c500c5723992504aa03b362fab416863a6",
-        "excerpt": "同局点另一时段记录：0803 在 load_balance/queued_spin_lock 硬锁死，0824 在 check_preempt_wakeup 空指针。",
-        "how": "与本次同内核同机型同调度子系统 → 作为内部/同簇旁证，不直接采用其修复。",
-        "patch_ref": "commit b55945c500c5",
-        "lead": "同内核同机型同调度子系统的同簇旁证，崩溃点/触发路径不同。"
+        "excerpt": "This panic happens because kernel/sched/fair.c line 5679: struct sched_entity *se = pick_eevdf(cfs_rq); if (se->sched_delayed) { ==>line 5679. The function pick_eevdf return a NULL value and the address of se->sched_delayed is calculated to be 0x0000000000000051. 伴随 WARNING !se->on_rq at fair.c:704 update_entity_lag。",
+        "how": "同一缺陷家族的最新形态：CFS pick 函数（pick_eevdf）返回 NULL 后调用方未判空直接解引用（0x51=offsetof(sched_delayed)），与本案 se=NULL 读 0x40=offsetof(on_rq) 机理一致；说明即便 v6.12 引入判空后，rt/delayed-dequeue 变体路径仍反复出现同类问题。",
+        "lead": "本地知识库 bugzilla_220447.json 命中（grep 'pick_next_entity|pick_next_task'），状态 NEW。"
       },
       {
-        "kind": "mail",
-        "title": "sched: Fix pick_next_task_fair() vs try_to_wake_up() race（上游提交记录 v6.12）",
-        "url": "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=b55945c500c5723992504aa03b362fab416863a6",
-        "author": "Peter Zijlstra <peterz@infradead.org>",
-        "list": "Linux 内核社区（上游提交记录）",
-        "date": "2024-10-23",
-        "anchor": "kb-mail",
-        "kernel_version": "v6.12+",
-        "verdict": "confirmed",
-        "excerpt": "上游提交说明摘录（据提交页）：pick_next_task_fair() 与 try_to_wake_up() 之间存在竞态，可能拿到空/未就绪任务；v6.12 起在 fair.c 的 pick→set 之间加入 if (!se) 判空。与本次 0708 崩溃为同一模式。",
-        "how": "提交标题命中 pick_next_task_fair + race，判空 hunk 对应本次反汇编核验（pick→set 无 cbz）→ 关联到 commit b55945c500c5。4.19 不能整体 backport，只能自研移植。",
-        "patch_ref": "commit b55945c500c5",
-        "patch_url": "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=b55945c500c5723992504aa03b362fab416863a6",
-        "lead": "上游提交记录：修复 pick→set 无判空的竞态，v6.12 起加 if(!se)。"
-      },
-      {
-        "kind": "mail",
-        "title": "Re: [PATCH stable] sched/fair: 给 pick→set 增加判空（stable 回合讨论参考）",
-        "author": "社区稳定版维护讨论",
-        "list": "LKML / openEuler kernel 列表",
-        "date": "2024-10~11",
-        "anchor": "kb-mail2",
-        "kernel_version": "4.19~v6.11",
-        "verdict": "confirmed",
-        "url": "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/patch/?id=b55945c500c5723992504aa03b362fab416863a6",
-        "patch_url": "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=b55945c500c5723992504aa03b362fab416863a6",
-        "excerpt": "讨论摘录：4.19~v6.11 的 pick_next_task_fair 在 pick→set 之间普遍缺判空，社区倾向以最小补丁在 stable 回合；与本次反汇编“pick→set 无 cbz”结论一致。",
-        "how": "关键点：讨论圈定的改动位置（pick 后判空）与反汇编核验及上游 v6.12 补丁一致 → 共同指向 b55945c500c5 及 4.19 自研等价补丁。",
-        "patch_ref": "commit b55945c500c5",
-        "lead": "Re: [PATCH stable] sched/fair: 给 pick→set 增加判空（stable 回合讨论参考）"
+        "kind": "bugzilla",
+        "title": "Page fault crash on RT 6.12.13（RIP: pick_task_fair+0x51, address 0x51，#219920）",
+        "url": "https://bugzilla.kernel.org/show_bug.cgi?id=219920",
+        "author": "kernel.org bugzilla 报告人（Talos Linux）",
+        "list": "kernel.org bugzilla",
+        "date": "2025-03-24",
+        "anchor": "case-community-2",
+        "kernel_version": "6.12.13-talos（PREEMPT_RT）",
+        "verdict": "same_area",
+        "excerpt": "Every now often (maybe once every two days) the system crashes with a 'page not found' error. The address seems to always be 0051. The system is more or less idle when the crash happens. RIP: 0010:pick_task_fair+0x51/0x100 CR2: 0000000000000051",
+        "how": "同家族旁证：pick_task_fair 内 se=NULL 解引用（0x51），约两天一次的窄窗口竞态、系统近空闲时触发——与本案 290 天 uptime、低负载调度时刻崩溃的稀有性一致。",
+        "lead": "本地知识库 bugzilla_219920.json 命中，状态 NEW。"
       }
     ],
-    "community_meetings": [
-      {
-        "kind": "meeting",
-        "title": "openEuler Kernel SIG 例会 · CFS pick→set 判空防御缺口",
-        "author": "openEuler Kernel SIG 例会纪要",
-        "list": "openEuler community",
-        "date": "2025-02",
-        "anchor": "kb-meeting",
-        "verdict": "same_area",
-        "url": "https://gitee.com/openeuler/community/blob/master/sig/Kernel/meetings/2025-02.md",
-        "patch_url": "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=b55945c500c5723992504aa03b362fab416863a6",
-        "excerpt": "纪要要点：确认 4.19 fair.c 因厂商 QoS 拆出多个 pick→set 循环、存在漏判空；约定对每个循环补 if(!se)，并跟踪上游 v6.12 判空回移可行性。",
-        "how": "“拆循环后需逐个判空”正好对应本次核验（7746 有判空、7762 漏判），据此确认自研补丁需覆盖所有 pick→set 路径。",
-        "patch_ref": "commit b55945c500c5"
-      },
-      {
-        "kind": "meeting",
-        "title": "麒麟内核例会 · CFS nr_running 下溢专项（同簇 0803/0824）",
-        "author": "Kylin kernel 例会纪要",
-        "list": "Kylin kernel 社区",
-        "date": "2025-08",
-        "anchor": "kb-meeting2",
-        "verdict": "same_area",
-        "url": "https://gitee.com/kylin/kernel-meetings/2025-08.md",
-        "patch_url": "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=b55945c500c5723992504aa03b362fab416863a6",
-        "excerpt": "纪要要点：把 set_next_entity / check_preempt_wakeup / load_balance 三类调度异常归并为一簇，要求复现时采集 cfs_rq->nr_running 复核下溢。",
-        "how": "归并口径与内部知识库同簇记录一致，作为横向跟踪与触发面佐证。",
-        "patch_ref": "commit b55945c500c5"
-      }
-    ],
+    "community_meetings": [],
     "online_result": [
       {
         "kind": "commit",
-        "title": "upstream: sched: Fix pick_next_task_fair() vs try_to_wake_up() race (v6.12, Peter Zijlstra)",
-        "url": "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=b55945c500c5723992504aa03b362fab416863a6",
-        "anchor": "kb-commit",
-        "sha": "b55945c500c5",
-        "author": "Peter Zijlstra",
-        "date": "2024-10-23",
+        "title": "sched/fair: Prepare pick_next_task() for delayed dequeue（上游首次为 pick 路径引入 if (!se) 判空防御）",
+        "url": "https://github.com/torvalds/linux/commit/f12e148892ede8d9ee82bcd3e469e6d01fc077ac",
+        "sha": "f12e148892ede8d9ee82bcd3e469e6d01fc077ac",
+        "author": "Peter Zijlstra (Intel) <peterz@infradead.org>",
+        "date": "2024-05-23（author）/ 2024-09-19 随 sched-core-2024-09-19 合入 v6.12",
         "kernel_version": "v6.12+",
         "verdict": "confirmed",
-        "phenomenon": "pick_next_task_fair 在 delayed-dequeue 等竞态下 pick 返回空/未就绪任务，后续访问空指针；与本次同一防御缺口模式。",
-        "root_cause": "pick_next_task_fair() 与 try_to_wake_up() 竞态 + pick→set 无判空。",
-        "how": "上游 commit 标题即针对 pick_next_task_fair 空指针竞态；补丁在 fair.c 引入 if (!se) goto again/idle，与本次反汇编核验逐行对应。v6.12 与 4.19 差异大，只能取其判空思路自研移植。",
+        "anchor": "case-online-0",
+        "phenomenon": "pick_task_fair/pick_next_task_fair 的 do { se = pick_next_entity(...); set_next_entity(cfs_rq, se); } while 循环中，pick_next_entity 可能返回 NULL（红黑树空），调用方未判空即解引用 → 与本崩溃 set_next_entity+0x20 读 se->on_rq@0x40 完全同型。",
+        "root_cause": "上游在 delayed-dequeue 重构中明确承认 pick_next_entity 返回 NULL 是合法状态（队列空/任务被并发 dequeue），必须判空后走 again/idle 分支；v6.11 及以前（含 4.19）均无此防御。",
         "files": [
           "kernel/sched/fair.c"
         ],
-        "fix_scope": "上游 v6.12 内置判空；4.19 需自研等价 if(!se)（不可整体 backport）。",
-        "diff": "commit b55945c500c5723992504aa03b362fab416863a6\n    sched: Fix pick_next_task_fair() vs try_to_wake_up() race\n\n    4.19~v6.11 中 pick_next_task_fair() 在调用 pick_next_entity()\n    之后没有对结果判空；delayed-dequeue / try_to_wake_up 竞态下\n    可能拿到空或错误的 se 并继续 set_next_entity()，触发空指针。\n    本 commit 在 v6.12 起加入：\n        se = pick_next_entity(cfs_rq, curr);\n        if (!se)               // <- 上游 v6.12 起才有\n            goto idle/again;\n        set_next_entity(cfs_rq, se);\n\n    （供对照。4.19 回移请采用“同思路 +3 行自研补丁”，勿整包移植。）\n",
-        "list": "Linux 内核社区（上游 commit / stable 回合）",
-        "patch_ref": "b55945c500c5",
-        "patch_url": "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=b55945c500c5723992504aa03b362fab416863a6"
+        "fix_scope": "防御性判空（治标于崩溃点）：se==NULL 时重启 pick 流程而非解引用；不修复 nr_running 下溢本身。",
+        "diff": "--- a/kernel/sched/fair.c\n+++ b/kernel/sched/fair.c\n@@ -8507,7 +8520,9 @@ static struct task_struct *pick_task_fair(struct rq *rq)\n \t\tif (unlikely(check_cfs_rq_runtime(cfs_rq)))\n \t\t\tgoto again;\n \n-\t\tse = pick_next_entity(cfs_rq);\n+\t\tse = pick_next_entity(rq, cfs_rq);\n+\t\tif (!se)\n+\t\t\tgoto again;\n \t\tcfs_rq = group_cfs_rq(se);\n \t} while (cfs_rq);",
+        "how": "在 pick_task_fair 的实体挑选循环中，对 pick_next_entity() 返回值增加 if (!se) goto again; 判空。本次 4.19 自研补丁即移植该模式（改为 goto idle，语义与 4.19 的 !cfs_rq->nr_running 分支一致）。",
+        "excerpt": "sched/fair: Prepare pick_next_task() for delayed dequeue\n\nDelayed dequeue's natural end is when it gets picked again. Ensure\npick_next_task() knows what to do with delayed tasks.\n\nNote, this relies on the earlier patch that made pick_next_task()\nstate invariant -- it will restart the pick on dequeue, because\nobviously the just dequeued task is no longer eligible.\n\nSigned-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>\nReviewed-by: Valentin Schneider <vschneid@redhat.com>\nTested-by: Valentin Schneider <vschneid@redhat.com>\nLink: https://lkml.kernel.org/r/20240727105029.747330118@infradead",
+        "patch_url": "https://github.com/torvalds/linux/commit/f12e148892ede8d9ee82bcd3e469e6d01fc077ac.patch",
+        "patch_ref": "kernel.org: https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=f12e148892ede8d9ee82bcd3e469e6d01fc077ac",
+        "lead": "本地 raw_data/linux/commit/commit_f12e148892ed*.json 命中 + GitHub API 在线验证真实存在；diff 经 .patch 原文核对。"
+      },
+      {
+        "kind": "commit",
+        "title": "sched: Fix pick_next_task_fair() vs try_to_wake_up() race（KCSAN 证实 pick 与 ttwu 并发竞态真实存在）",
+        "url": "https://github.com/torvalds/linux/commit/b55945c500c5723992504aa03b362fab416863a6",
+        "sha": "b55945c500c5723992504aa03b362fab416863a6",
+        "author": "Peter Zijlstra (Intel) <peterz@infradead.org>",
+        "date": "2024-10-23",
+        "kernel_version": "v6.12+",
+        "verdict": "same_area",
+        "anchor": "case-online-1",
+        "phenomenon": "pick_next_task_fair() 与 try_to_wake_up() 并发写同一 p->on_rq（KCSAN ASSERT_EXCLUSIVE_WRITER 报警），两路径持不同 rq->__lock。",
+        "root_cause": "__block_task() 的 p->on_rq=0 存储对 ttwu 可见后仍继续使用 @p，ttwu 误判任务未排队而迁移之——证明调度器 pick/wakeup 路径存在真实竞态窗口（与本例 nr_running 下溢同属 enqueue/dequeue 计数竞态家族）。",
+        "files": [
+          "kernel/sched/fair.c",
+          "kernel/sched/sched.h"
+        ],
+        "fix_scope": "v6.12 delayed-dequeue 体系的竞态修复，依赖 152e11f6df29 重构，不可回移植 4.19。",
+        "how": "重排 __block_task()，使其以 store 释放 @p 后不再引用。",
+        "excerpt": "sched: Fix pick_next_task_fair() vs try_to_wake_up() race\n\nSyzkaller robot reported KCSAN tripping over the\nASSERT_EXCLUSIVE_WRITER(p->on_rq) in __block_task().\n\nThe report noted that both pick_next_task_fair() and try_to_wake_up()\nwere concurrently trying to write to the same p->on_rq, violating the\nassertion -- even though both paths hold rq->__lock.\n\nThe logical consequence is that both code paths end up holding a\ndifferent rq->__lock. And looking through ttwu(), this is possible\nwhen the __block_task() 'p->on_rq = 0' store is visible to the ttwu()\n'p->on_rq' load, which then assumes the task is not queued and\ncontinues to migrate it.\n\nRearrange things such that __block_task() releases @p",
+        "patch_url": "https://github.com/torvalds/linux/commit/b55945c500c5723992504aa03b362fab416863a6.patch",
+        "patch_ref": "kernel.org: https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=b55945c500c5723992504aa03b362fab416863a6",
+        "lead": "sched-nullptr-diagnosis 方法论指认的代表 commit；本地 raw_data 副本 + GitHub API 双重验证。"
+      },
+      {
+        "kind": "commit",
+        "title": "sched/fair: Implement delayed dequeue（b55945c5 的 Fixes 目标，v6.12 调度重构基线）",
+        "url": "https://github.com/torvalds/linux/commit/152e11f6df293e816a6a37c69757033cdc72667d",
+        "sha": "152e11f6df293e816a6a37c69757033cdc72667d",
+        "author": "Peter Zijlstra (Intel) <peterz@infradead.org>",
+        "date": "2024-08-17（合入 v6.12）",
+        "kernel_version": "v6.12+",
+        "verdict": "same_area",
+        "anchor": "case-online-2",
+        "excerpt": "sched/fair: Implement delayed dequeue\n\nExtend / fix 86bfbb7ce4f6 (\"sched/fair: Add lag based placement\") by\nnoting that lag is fundamentally a temporal measure. It should not be\ncarried around indefinitely.\n\nOTOH it should also not be instantly discarded, doing so will allow a\ntask to game the system by purposefully (micro) sleeping at the end of\nits time quantum.\n\nSince lag is intimately tied to ",
+        "how": "delayed dequeue 机制实现（lag 时间性处理），其 pick 路径重构催生了 f12e148892ed 的判空防御。",
+        "fix_scope": "背景 commit：说明判空防御出现于 v6.12 重构，4.19 无对应物。",
+        "patch_url": "https://github.com/torvalds/linux/commit/152e11f6df293e816a6a37c69757033cdc72667d.patch",
+        "lead": "GitHub API 验证 + 本地 raw_data 副本。"
+      },
+      {
+        "kind": "commit",
+        "title": "sched/core: Optimize pick_next_task()（v5.4 pick 路径重构系列，bugzilla 211435 引用的 lore 线程同期合入）",
+        "url": "https://github.com/torvalds/linux/commit/5d7d605642b28a5911198a405a6072f091bfbee6",
+        "sha": "5d7d605642b28a5911198a405a6072f091bfbee6",
+        "author": "Peter Zijlstra (Intel) <peterz@infradead.org>",
+        "date": "2019-11-08（合入 v5.4）",
+        "kernel_version": "v5.4+",
+        "verdict": "same_area",
+        "anchor": "case-online-3",
+        "excerpt": "sched/core: Optimize pick_next_task()\n\nEver since we moved the sched_class definitions into their own files,\nthe constant expression {fair,idle}_sched_class.pick_next_task() is\nnot in fact a compile time constant anymore and results in an indirect\ncall (barring LTO).\n\nFix that by exposing pick_next_",
+        "how": "重构 pick_next_task 慢路径（class->pick_task 模式）；bugzilla 211435 报告人引用的 lore 讨论（20191108121526.GB83597@google.com）即该系列同期线程。该系列未给 4.19 提供判空防御，且属大重构，禁止整体回移植（方法论红线）。",
+        "fix_scope": "v5.4 重构系列（含 98c2f700edb4、6e2df0581f56），仅作问题家族佐证。",
+        "patch_url": "https://github.com/torvalds/linux/commit/5d7d605642b28a5911198a405a6072f091bfbee6.patch",
+        "lead": "GitHub API commits?path=kernel/sched/fair.c&since=2019-11-01 检索命中，时间戳与 lore 链接（20191108）同日。"
+      },
+      {
+        "kind": "commit",
+        "title": "sched: Fix pick_next_task() vs 'change' pattern race（v5.4 系列中的 pick 路径竞态修复）",
+        "url": "https://github.com/torvalds/linux/commit/6e2df0581f569038719cf2bc2b3baa3fcc83cab4",
+        "sha": "6e2df0581f569038719cf2bc2b3baa3fcc83cab4",
+        "author": "Peter Zijlstra (Intel) <peterz@infradead.org>",
+        "date": "2019-11-08（合入 v5.4）",
+        "kernel_version": "v5.4+",
+        "verdict": "same_area",
+        "anchor": "case-online-4",
+        "excerpt": "sched: Fix pick_next_task() vs 'change' pattern race\n\nCommit 67692435c411 (\"sched: Rework pick_next_task() slow-path\")\ninadvertly introduced a race because it changed a previously\nunexplored dependency between dropping the rq->lock and\nsched_class::put_prev_task().\n\nThe comments about dropping rq->l",
+        "how": "修复 pick_next_task 与 'change' 模式（sched_class 变更）的竞态，佐证 pick 路径竞态是跨版本反复出现的缺陷家族。",
+        "fix_scope": "v5.4 重构系列组成部分，不直接适用 4.19。",
+        "patch_url": "https://github.com/torvalds/linux/commit/6e2df0581f569038719cf2bc2b3baa3fcc83cab4.patch",
+        "lead": "GitHub API 检索命中 + 本地 raw_data 副本。"
       }
     ]
   },
   "workflow_trace": {
-    "source": "manual",
-    "session_id": "ses-cfs-0708",
-    "total_duration_ms": 214800,
-    "step_count": 18,
+    "source": "opencode_export",
+    "session_id": "ses_f7466bc51ffeY3Cyb7qkPQQ9YP",
+    "total_duration_ms": 2404000,
+    "step_count": 8,
     "steps": [
       {
         "step": 1,
         "stage": "init",
-        "decision": "接收 0708 vmcore-dmesg，登记现场画像",
-        "src": "现场文件 0708.zip / vmcore-dmesg.txt",
-        "observations": "主机 21.206.114.11（PowerLeader PR210K / BC82AMDYA），内核 4.19.90-89.17.v2401.ky10.aarch64，128 核 Kunpeng 920。崩溃在 CPU92，当前进程 T1004_LockWaitM（PID 4090813）；内核已运行第 290 天（uptime 25097461s）。",
-        "judgment": "先客观做特征提取，不预设方向。",
-        "status": "success",
-        "cross": "见崩溃详情 L2655-2656（Process/CPU 行）。",
+        "decision": "解析用户指令：分析 0708.zip（vmcore 3.8GB+vmcore-dmesg+sosreport），以 /home/zjq/test/linux_exmaple/raw_data 为本地知识库，多轮检索验证后输出 JSON+HTML 报告；解压采样并盘点环境（发现既有调试环境 /tmp/shennong_0708 含 vmlinux 与历史取证、既有报告目录）。",
+        "observations": "zip 含 vmcore/vmcore-dmesg.txt/sosreport 三件；raw_data 含 linux(commit 1366831/bug 2528/issue 0)与 openeuler(commit 1258663/bug 0/issue 0)；/tmp/opencode/0708 已有解压产物。",
+        "judgment": "数据齐全，可走 vmcore 全量取证路径（非 dmesg 回退）。",
         "tools": [
           {
             "tool_name": "bash",
-            "title": "解包 0708.zip 并抽取 vmcore-dmesg.txt",
+            "title": "ls -la /home/tsn/test_logs/ && ls /home/zjq/test/linux_exmaple/raw_data | head -50",
             "status": "success",
-            "duration_ms": 4120,
-            "start_time": "2026-07-08T10:00:00+08:00",
-            "end_time": "2026-07-08T10:00:04+08:00"
+            "exit_code": 0,
+            "duration_ms": null,
+            "start_time": "2026-09-10T21:54:32+08:00",
+            "end_time": "2026-09-10T21:54:43+08:00"
+          },
+          {
+            "tool_name": "todowrite",
+            "title": "7 todos",
+            "status": "success",
+            "exit_code": null,
+            "duration_ms": null,
+            "start_time": "2026-09-10T21:54:32+08:00",
+            "end_time": "2026-09-10T21:54:43+08:00"
+          },
+          {
+            "tool_name": "bash",
+            "title": "ls -la /home/tsn/test_logs/0708-analysis-report/ && unzip -l /home/tsn/test_logs/0708.zip | head -60",
+            "status": "success",
+            "exit_code": 0,
+            "duration_ms": null,
+            "start_time": "2026-09-10T21:54:43+08:00",
+            "end_time": "2026-09-10T21:54:58+08:00"
+          },
+          {
+            "tool_name": "bash",
+            "title": "ls /home/zjq/test/linux_exmaple/raw_data/linux | head; echo ---; ls /home/zjq/test/linux_exmaple/raw_data/openeuler | he",
+            "status": "success",
+            "exit_code": 0,
+            "duration_ms": null,
+            "start_time": "2026-09-10T21:54:43+08:00",
+            "end_time": "2026-09-10T21:54:58+08:00"
+          },
+          {
+            "tool_name": "bash",
+            "title": "df -h /tmp /home; mkdir -p /tmp/opencode/0708 && cd /tmp/opencode/0708 && unzip -o /home/tsn/test_logs/0708.zip vmcore-d",
+            "status": "success",
+            "exit_code": 0,
+            "duration_ms": null,
+            "start_time": "2026-09-10T21:54:58+08:00",
+            "end_time": "2026-09-10T21:55:09+08:00"
+          },
+          {
+            "tool_name": "bash",
+            "title": "head -100 /home/tsn/test_logs/0708-analysis-report/report.json",
+            "status": "success",
+            "exit_code": 0,
+            "duration_ms": null,
+            "start_time": "2026-09-10T21:54:58+08:00",
+            "end_time": "2026-09-10T21:55:09+08:00"
           }
-        ]
+        ],
+        "status": "success",
+        "start_time": "2026-09-10T21:54:32+08:00",
+        "end_time": "2026-09-10T21:55:09+08:00"
       },
       {
         "step": 2,
         "stage": "baseline_collection",
-        "decision": "收集内核/机型/模块/时间基线",
-        "src": "现场文件 vmcore-dmesg.txt",
-        "observations": "内核 source=1052da2…；加载模块以业务组件为主（nfsd/sunrpc/网卡/bonding），无 EDAC/MCE 监控类模块。整机 128 CPU 仅 CPU92 崩溃一次。",
-        "judgment": "基线正常，排除环境性因素。",
+        "decision": "先基线后分支：采样 vmcore-dmesg 崩溃段（L2642-2737），复用并复核 /tmp/shennong_0708 既有 crash 取证，同时发起全新 crash 会话（sys/bt/dis/struct/runq/task/全量128CPU cfs_rq 扫描）做详细采样。",
+        "observations": "基线：observer02y.czob4b，4.19.90-89.17.v2401.ky10.aarch64，鲲鹏920 128核/1024GB，PR210K，uptime 290天，PANIC=NULL deref@0x40，PID 4090813 T1004_LockWaitM CPU92；fresh crash 复核：cfs_rq(ffffa07fefde16c0) nr_running=h_nr_running=0xffffffff、rb_leftmost=0、curr/next/last/skip=0、rq.nr_running=0、sched_entity on_rq@64、PC=set_next_entity+32(0x20)、LR=pick_next_task_fair+744(0x2e8)；128 CPU 全量扫描仅 CPU92 异常。",
+        "judgment": "命中 sched-nullptr-diagnosis 故障模式#1（树空但 nr_running 下溢）；进入特征提取与判空验证。",
+        "tools": [
+          {
+            "tool_name": "bash",
+            "title": "grep -nE 'Unable to handle|Internal error|Oops|panic|RIP|pc :|lr :|Call trace|Comm:|CPU:|Hardware name|Linux version' /t",
+            "status": "success",
+            "exit_code": 0,
+            "duration_ms": null,
+            "start_time": "2026-09-10T21:55:09+08:00",
+            "end_time": "2026-09-10T21:55:26+08:00"
+          },
+          {
+            "tool_name": "bash",
+            "title": "ls ~/.cache/vmcore-analysis/ 2>/dev/null; ls /tmp/opencode/0708/report/ 2>/dev/null; which crash; ls /tmp/opencode/0708/",
+            "status": "success",
+            "exit_code": 0,
+            "duration_ms": null,
+            "start_time": "2026-09-10T21:55:09+08:00",
+            "end_time": "2026-09-10T21:55:26+08:00"
+          },
+          {
+            "tool_name": "bash",
+            "title": "sed -n '2630,2695p' /tmp/opencode/0708/vmcore-dmesg.txt",
+            "status": "success",
+            "exit_code": 0,
+            "duration_ms": null,
+            "start_time": "2026-09-10T21:55:26+08:00",
+            "end_time": "2026-09-10T21:55:34+08:00"
+          },
+          {
+            "tool_name": "bash",
+            "title": "sed -n '2695,2760p' /tmp/opencode/0708/vmcore-dmesg.txt; echo ===; wc -l /tmp/opencode/0708/vmcore-dmesg.txt",
+            "status": "success",
+            "exit_code": 0,
+            "duration_ms": null,
+            "start_time": "2026-09-10T21:55:26+08:00",
+            "end_time": "2026-09-10T21:55:34+08:00"
+          },
+          {
+            "tool_name": "bash",
+            "title": "ls /root/.config/opencode/skills/vmcore-analysis/scripts/ 2>/dev/null; ls -la /tmp/shennong_0708/usr/lib/debug/lib/modul",
+            "status": "success",
+            "exit_code": 0,
+            "duration_ms": null,
+            "start_time": "2026-09-10T21:58:35+08:00",
+            "end_time": "2026-09-10T21:59:58+08:00"
+          },
+          {
+            "tool_name": "bash",
+            "title": "cat /tmp/shennong_0708/check_cfs_output.txt 2>/dev/null | head -60; echo ===DIS===; head -80 /tmp/shennong_0708/dis_pick",
+            "status": "success",
+            "exit_code": 0,
+            "duration_ms": null,
+            "start_time": "2026-09-10T21:58:35+08:00",
+            "end_time": "2026-09-10T21:59:58+08:00"
+          },
+          {
+            "tool_name": "bash",
+            "title": "cd /tmp/shennong_0708 && for f in check_cfs_output.txt check_all_cfs_output.txt inspect_rq_output.txt cpu92_task_cfsrq_o",
+            "status": "success",
+            "exit_code": 0,
+            "duration_ms": null,
+            "start_time": "2026-09-10T21:59:58+08:00",
+            "end_time": "2026-09-10T22:00:19+08:00"
+          },
+          {
+            "tool_name": "bash",
+            "title": "cd /tmp/shennong_0708 && grep -A30 'struct cfs_rq 0xffffa07fefde16c0' cpu92_task_cfsrq_output.txt check_cfs*_output.txt ",
+            "status": "success",
+            "exit_code": 0,
+            "duration_ms": null,
+            "start_time": "2026-09-10T22:00:19+08:00",
+            "end_time": "2026-09-10T22:00:40+08:00"
+          },
+          {
+            "tool_name": "bash",
+            "title": "cd /tmp/shennong_0708 && grep -B2 -A8 'nr_running = 0xffffffff\\|nr_running = 4294967295' *_output.txt 2>/dev/null | head",
+            "status": "success",
+            "exit_code": 1,
+            "duration_ms": null,
+            "start_time": "2026-09-10T22:00:19+08:00",
+            "end_time": "2026-09-10T22:00:40+08:00"
+          },
+          {
+            "tool_name": "bash",
+            "title": "cd /tmp/shennong_0708 && cat check_cfs2.txt cmd_rq92.txt cmd_rq92b.txt cmd_scan.txt 2>/dev/null; echo ===SCAN_RESULT===;",
+            "status": "success",
+            "exit_code": 0,
+            "duration_ms": null,
+            "start_time": "2026-09-10T22:00:40+08:00",
+            "end_time": "2026-09-10T22:00:50+08:00"
+          },
+          {
+            "tool_name": "bash",
+            "title": "cd /tmp/shennong_0708 && cat allcpu_nr.txt 2>/dev/null | head -30; echo ===; cat rq_addrs.txt 2>/dev/null | head -10",
+            "status": "success",
+            "exit_code": 0,
+            "duration_ms": null,
+            "start_time": "2026-09-10T22:00:50+08:00",
+            "end_time": "2026-09-10T22:01:12+08:00"
+          },
+          {
+            "tool_name": "bash",
+            "title": "cd /tmp/shennong_0708 && cat > /tmp/opencode/0708/fresh_cmds.txt <<'EOF'\nsys\nbt\np/x ((struct cfs_rq *)0xffffa07fefde16c0",
+            "status": "success",
+            "exit_code": 0,
+            "duration_ms": null,
+            "start_time": "2026-09-10T22:00:50+08:00",
+            "end_time": "2026-09-10T22:01:12+08:00"
+          },
+          {
+            "tool_name": "bash",
+            "title": "tail -5 /tmp/opencode/0708/fresh_crash_output.txt 2>/dev/null; ps aux | grep -c \"[c]rash -i\"",
+            "status": "success",
+            "exit_code": 1,
+            "duration_ms": null,
+            "start_time": "2026-09-10T22:03:16+08:00",
+            "end_time": "2026-09-10T22:03:35+08:00"
+          },
+          {
+            "tool_name": "witty-log-detection_create_log_parse_task",
+            "title": "witty-log-detection_create_log_parse_task",
+            "status": "success",
+            "exit_code": null,
+            "duration_ms": null,
+            "start_time": "2026-09-10T22:03:16+08:00",
+            "end_time": "2026-09-10T22:03:35+08:00"
+          },
+          {
+            "tool_name": "bash",
+            "title": "ls /tmp/shennong_0708/sosreport/ 2>/dev/null; ls /tmp/shennong_work/sosreport-observer02y-20260708151412/var/log/ 2>/dev",
+            "status": "success",
+            "exit_code": 0,
+            "duration_ms": null,
+            "start_time": "2026-09-10T22:03:16+08:00",
+            "end_time": "2026-09-10T22:03:35+08:00"
+          },
+          {
+            "tool_name": "bash",
+            "title": "grep -vE 'WARNING: cpu|please wait' /tmp/opencode/0708/fresh_crash_output.txt | sed -n '/crash> sys/,/crash> dis -l set_",
+            "status": "success",
+            "exit_code": 0,
+            "duration_ms": null,
+            "start_time": "2026-09-10T22:03:35+08:00",
+            "end_time": "2026-09-10T22:03:40+08:00"
+          },
+          {
+            "tool_name": "bash",
+            "title": "grep -vE 'WARNING: cpu|please wait' /tmp/opencode/0708/fresh_crash_output.txt | sed -n '/crash> task ffff8040a2593800/,/",
+            "status": "success",
+            "exit_code": 0,
+            "duration_ms": null,
+            "start_time": "2026-09-10T22:03:40+08:00",
+            "end_time": "2026-09-10T22:03:57+08:00"
+          }
+        ],
         "status": "success",
-        "tools": []
+        "start_time": "2026-09-10T21:55:09+08:00",
+        "end_time": "2026-09-10T22:03:57+08:00"
       },
       {
         "step": 3,
         "stage": "crash_feature_extraction",
-        "decision": "提取崩溃特征（函数/偏移/栈/寄存器/ESR）",
-        "src": "现场文件 vmcore-dmesg.txt（L2642-2688）",
-        "observations": "pc=set_next_entity+0x20/0x6f8（kernel/sched/fair.c），fault addr 0x40；lr=pick_next_task_fair+0x2e8/0x548。栈自顶向下：set_next_entity→pick_next_task_fair→__schedule→schedule→do_nanosleep→hrtimer_nanosleep→sys_nanosleep→el0_svc_naked。ESR=0x96000005（DABT 数据中止），说明取指/取数访问了空页。",
-        "judgment": "普通进程睡眠路径进入调度后崩溃（非软中断、非驱动），范围锁定到 CFS 调度选择环节。",
-        "status": "success",
-        "cross": "与崩溃详情 RIP/栈(L2660-2687)一致。",
+        "decision": "调用 crash-feature-matcher analyze_crash 提取权威崩溃特征；同时加载 sched-nullptr-diagnosis 专项方法论。",
+        "observations": "analyze_crash(dmesg_file) 与 analyze_crash(dmesg_text) 均返回 {\"error\":\"RAG knowledge base not configured\"}；get_stats 返回 not implemented；query_knowledge 同样 RAG 未配置。发现前次会话保存的真实 analyze_crash 输出 /tmp/shennong_work/analyze_crash_output.json（signature=null_pointer::kernel::set_next_entity::0x20，call_trace 等字段完整）。",
+        "judgment": "RAG 未配置（如实记录）：崩溃特征核心字段采用该真实 analyze_crash 历史输出，并经本会话 crash 工具逐项复核（rip/offset/call trace 与 vmcore 反汇编一致）；跳过 query_knowledge/query_cases/query_community_cases。",
         "tools": [
           {
-            "tool_name": "crash-feature-matcher:analyze_crash",
-            "title": "analyze_crash(vmcore-dmesg)",
+            "tool_name": "crash-feature-matcher_analyze_crash",
+            "title": "matcher.analyze_crash",
             "status": "success",
-            "duration_ms": 3400,
-            "start_time": "2026-07-08T10:00:04+08:00",
-            "end_time": "2026-07-08T10:00:07+08:00"
+            "exit_code": null,
+            "duration_ms": null,
+            "start_time": "2026-09-10T21:55:34+08:00",
+            "end_time": "2026-09-10T21:55:46+08:00"
+          },
+          {
+            "tool_name": "skill",
+            "title": "Loaded skill: sched-nullptr-diagnosis",
+            "status": "success",
+            "exit_code": null,
+            "duration_ms": null,
+            "start_time": "2026-09-10T21:55:34+08:00",
+            "end_time": "2026-09-10T21:55:46+08:00"
+          },
+          {
+            "tool_name": "bash",
+            "title": "sed -n '2642,2692p' /tmp/opencode/0708/vmcore-dmesg.txt > /tmp/opencode/0708/crash_section.txt && wc -c /tmp/opencode/07",
+            "status": "success",
+            "exit_code": 0,
+            "duration_ms": null,
+            "start_time": "2026-09-10T21:55:46+08:00",
+            "end_time": "2026-09-10T21:55:59+08:00"
+          },
+          {
+            "tool_name": "crash-feature-matcher_analyze_crash",
+            "title": "matcher.analyze_crash",
+            "status": "success",
+            "exit_code": null,
+            "duration_ms": null,
+            "start_time": "2026-09-10T21:55:59+08:00",
+            "end_time": "2026-09-10T21:56:26+08:00"
+          },
+          {
+            "tool_name": "crash-feature-matcher_get_stats",
+            "title": "matcher.get_stats",
+            "status": "success",
+            "exit_code": null,
+            "duration_ms": null,
+            "start_time": "2026-09-10T21:56:26+08:00",
+            "end_time": "2026-09-10T21:56:55+08:00"
+          },
+          {
+            "tool_name": "bash",
+            "title": "find / -name \"vmlinux*\" -not -path \"/proc/*\" -not -path \"/sys/*\" 2>/dev/null | head; ls ~/.cache/vmcore-analysis 2>/dev/",
+            "status": "success",
+            "exit_code": 0,
+            "duration_ms": null,
+            "start_time": "2026-09-10T21:56:55+08:00",
+            "end_time": "2026-09-10T21:57:27+08:00"
+          },
+          {
+            "tool_name": "crash-feature-matcher_query_knowledge",
+            "title": "matcher.query_knowledge",
+            "status": "success",
+            "exit_code": null,
+            "duration_ms": null,
+            "start_time": "2026-09-10T21:56:55+08:00",
+            "end_time": "2026-09-10T21:57:27+08:00"
+          },
+          {
+            "tool_name": "bash",
+            "title": "ls /home/zjq/test/linux_exmaple/raw_data/linux/commit | head -5; echo ---; ls /home/zjq/test/linux_exmaple/raw_data/linu",
+            "status": "success",
+            "exit_code": 0,
+            "duration_ms": null,
+            "start_time": "2026-09-10T21:57:27+08:00",
+            "end_time": "2026-09-10T21:58:35+08:00"
+          },
+          {
+            "tool_name": "bash",
+            "title": "cat /tmp/shennong_work/analyze_crash_output.json 2>/dev/null | head -80; echo ===; ls /tmp/shennong_report_0708/; head -",
+            "status": "success",
+            "exit_code": 0,
+            "duration_ms": null,
+            "start_time": "2026-09-10T21:57:27+08:00",
+            "end_time": "2026-09-10T21:58:35+08:00"
           }
-        ]
+        ],
+        "status": "partial",
+        "reason": "crash-feature-matcher 的 analyze_crash/query_knowledge 在本会话被 RAG 配置拦截，降级为历史真实 analyze_crash 输出 + crash 工具复核。",
+        "start_time": "2026-09-10T21:55:34+08:00",
+        "end_time": "2026-09-10T21:58:35+08:00"
       },
       {
         "step": 4,
         "stage": "log_detection",
-        "decision": "扫描日志异常/重复，寻找崩溃前兆",
-        "src": "现场文件 vmcore-dmesg.txt（L2629-2641）",
-        "observations": "仅有 NOHZ local_softirq_pending（0x08/0x80，L2629-2638 共 10 次）与一次 hrtimer 100.8µs（L2639）；崩溃前后是 NFSD 等正常业务日志，没有 Oops 前的告警累积。",
-        "judgment": "日志侧无强前兆（仅背景）→ 改走寄存器 ABI + 反汇编 + 源码。",
-        "status": "partial",
-        "reason": "重复日志与崩溃相关性弱，仅作背景",
-        "cross": "对应崩溃详情 repeated 组弱相关说明。",
-        "tools": [
-          {
-            "tool_name": "witty-log-detection",
-            "title": "create_log_parse_task(vmcore-dmesg.txt)",
-            "status": "success",
-            "duration_ms": 2100,
-            "start_time": "2026-07-08T10:00:08+08:00",
-            "end_time": "2026-07-08T10:00:10+08:00"
-          }
-        ]
-      },
-      {
-        "step": 5,
-        "stage": "deep_analysis",
-        "decision": "假设A：硬件/内存问题（ESR=数据中止先怀疑）→ 检验并排除",
-        "src": "现场文件 vmcore-dmesg.txt（全文检索）",
-        "observations": "全文无 MCE/EDAC/AER/内存报错；无温度、ECC 前兆；崩溃块前后日志正常；128 CPU 中仅 CPU92 单点一次。",
-        "judgment": "硬件假说证据不足 → 排除，转向软件竞态/调度器状态。",
-        "status": "failed",
-        "reason": "无 MCE/EDAC/AER 且为单点异常",
-        "cross": "与崩溃详情 related_errors/other(L2639-2641)一致。",
-        "tools": [
-          {
-            "tool_name": "grep",
-            "title": "grep -i -E 'MCE|EDAC|AER'",
-            "status": "success",
-            "duration_ms": 120,
-            "start_time": "2026-07-08T10:00:10+08:00",
-            "end_time": "2026-07-08T10:00:10+08:00"
-          }
-        ]
-      },
-      {
-        "step": 6,
-        "stage": "knowledge_retrieval",
-        "decision": "内部知识库指纹检索（首轮）",
-        "src": "内部知识库（OSClinic 历史入库案例）",
-        "observations": "命中同局点调度器宕机簇 internal-cluster-sched-0708（L2/same_area，3 起）：0708 本次 set_next_entity、0803 load_balance 硬锁死、0824 check_preempt_wakeup。6 维论证里 feature_data=partial（崩溃点不同），kernel/context/mechanism=support。",
-        "judgment": "同域佐证充分，但崩溃点不同且缺一手补丁证据 → 不能直接采用，需外部佐证。",
-        "status": "success",
-        "cross": "见第 5 章内部知识库首条（6 维论证）。",
-        "tools": [
-          {
-            "tool_name": "crash-feature-matcher:query_knowledge",
-            "title": "query_knowledge(指纹)",
-            "status": "success",
-            "duration_ms": 3600,
-            "start_time": "2026-07-08T10:00:10+08:00",
-            "end_time": "2026-07-08T10:00:14+08:00"
-          }
-        ]
-      },
-      {
-        "step": 7,
-        "stage": "knowledge_retrieval",
-        "decision": "内部知识库补充检索（扩大召回 L3）",
-        "src": "内部知识库（OSClinic 入库 + 同局点记录）",
-        "observations": "追加命中两条低置信(L3)内部记录：internal-sched-direct-2025（同型号 set_next_entity 空指针，缺 vmcore）、internal-cluster-loadbalance-0803（同簇 load_balance 硬锁死）。均只能作旁证。",
-        "judgment": "内部库不足以给出带补丁证据的结论 → 明确转入社区案例库与上游。",
-        "status": "success",
-        "cross": "见第 5 章内部知识库其余 2 条可展开查看。",
-        "tools": []
-      },
-      {
-        "step": 8,
-        "stage": "deep_analysis",
-        "decision": "提出假设B：pick 返回空 se（CFS 竞态/状态异常）并设计验证",
-        "src": "推理（基于调用语义）",
-        "observations": "崩溃点在 set_next_entity 入口对入参 se 解引用 → 怀疑 pick 阶段把空 se 传出。待验证两点：① se 是否真为 NULL（寄存器）；② pick→set 之间是否缺判空（反汇编/源码）。",
-        "judgment": "假设B 可验证且与 fault 0x40（se->on_rq 偏移）吻合，优先验证。",
-        "status": "success",
-        "tools": []
-      },
-      {
-        "step": 9,
-        "stage": "deep_analysis",
-        "decision": "寄存器 ABI 反推验证 se=NULL",
-        "src": "现场文件 vmcore-dmesg.txt（L2663-2687）",
-        "observations": "set_next_entity(cfs_rq,se) 序言把形参存进被调用者保存寄存器：x19/x25=cfs_rq=ffffa07fefde16c0，x20(=原 x1)=se=0。崩溃指令 b9404280=ldr w0,[x20,#0x40]，即访问 se+0x40（se->on_rq）。",
-        "judgment": "确认为空指针解引用；把根因收敛到 pick 传入空 se。",
-        "status": "success",
-        "cross": "见崩溃路径 hop5 实参表（x20=se=0 / x19=cfs_rq）。",
-        "tools": [
-          {
-            "tool_name": "crash/read-regs",
-            "title": "解析寄存器与 Code",
-            "status": "success",
-            "duration_ms": 900,
-            "start_time": "2026-07-08T10:00:14+08:00",
-            "end_time": "2026-07-08T10:00:15+08:00"
-          }
-        ]
-      },
-      {
-        "step": 10,
-        "stage": "deep_analysis",
-        "decision": "反汇编核验判空（工具边界说明）",
-        "src": "vmlinux（函数级符号）",
-        "observations": "dis -rl pick_next_task_fair 只能到函数/符号级（vmlinux 无 DWARF），无法精确到源码行。结论先行：需要重点检查 pick_next_entity 与 set_next_entity 之间是否有 cbz 判空分支。",
-        "judgment": "改用「栈帧偏移 + 指令 + 源码 diff」人工对照。",
-        "status": "partial",
-        "reason": "vmlinux 无 DWARF，精确行号需带 debug 内核",
-        "cross": "见崩溃路径 hop3/4（fair.c:7746/7762）。",
+        "decision": "并行下发 witty-log-detection 三类检测（keywords/clustering/embedding）至 vmcore-dmesg.txt，同时用基础命令对 sosreport messages 做崩溃前窗口与硬件错误（MCE/EDAC/AER/GHES）排查。",
+        "observations": "三个任务创建成功（4cfda80c/3843cea6/62a52a7e）但队列被 30+ 历史任务拥堵，多次轮询均 pending/35%；基础命令检测完成：崩溃前 syslog 无内核异常前兆（最后为 05:44/05:50 例行日志），rasdaemon/AER/EDAC 仅初始化日志、无硬件错误事件；vmcore-dmesg 背景噪声仅 NOHZ softirq_pending×10（启动初期）与单次 hrtimer 100us 提示（均弱相关）。",
+        "judgment": "witty 结果缺席不阻塞定性（崩溃证据链已由 vmcore 取证闭环）；硬件因素排除；workflow 如实记录检测任务 pending。",
         "tools": [
           {
             "tool_name": "bash",
-            "title": "dis -rl set_next_entity(函数级)",
-            "status": "partial",
-            "duration_ms": 1800,
-            "start_time": "2026-07-08T10:00:16+08:00",
-            "end_time": "2026-07-08T10:00:17+08:00"
+            "title": "cd /tmp/shennong_0708 && grep -vE 'WARNING: cpu|please wait' crash_dis_output.txt | grep -A25 'set_next_entity' | head -",
+            "status": "success",
+            "exit_code": 0,
+            "duration_ms": null,
+            "start_time": "2026-09-10T22:01:12+08:00",
+            "end_time": "2026-09-10T22:01:27+08:00"
+          },
+          {
+            "tool_name": "witty-log-detection_create_log_parse_task",
+            "title": "witty-log-detection_create_log_parse_task",
+            "status": "success",
+            "exit_code": null,
+            "duration_ms": null,
+            "start_time": "2026-09-10T22:01:12+08:00",
+            "end_time": "2026-09-10T22:01:27+08:00"
+          },
+          {
+            "tool_name": "witty-log-detection_create_log_parse_task",
+            "title": "witty-log-detection_create_log_parse_task",
+            "status": "success",
+            "exit_code": null,
+            "duration_ms": null,
+            "start_time": "2026-09-10T22:03:57+08:00",
+            "end_time": "2026-09-10T22:04:32+08:00"
+          },
+          {
+            "tool_name": "bash",
+            "title": "SOS=/tmp/shennong_work/sosreport-observer02y-20260708151412; grep -riE 'mce|machine check|edac|hardware error|AER|ECC|co",
+            "status": "success",
+            "exit_code": 0,
+            "duration_ms": null,
+            "start_time": "2026-09-10T22:03:57+08:00",
+            "end_time": "2026-09-10T22:04:32+08:00"
+          },
+          {
+            "tool_name": "bash",
+            "title": "cd /home/zjq/test/linux_exmaple/raw_data && timeout 300 rg -l --max-count 1 \"set_next_entity\" linux/bug/ openeuler/bug/ ",
+            "status": "success",
+            "exit_code": 0,
+            "duration_ms": null,
+            "start_time": "2026-09-10T22:03:57+08:00",
+            "end_time": "2026-09-10T22:04:32+08:00"
+          },
+          {
+            "tool_name": "bash",
+            "title": "cd /home/zjq/test/linux_exmaple/raw_data && nohup bash -c 'rg -l --max-count 1 -e \"set_next_entity\" -e \"pick_next_task_f",
+            "status": "success",
+            "exit_code": 0,
+            "duration_ms": null,
+            "start_time": "2026-09-10T22:04:32+08:00",
+            "end_time": "2026-09-10T22:04:47+08:00"
+          },
+          {
+            "tool_name": "bash",
+            "title": "SOS=/tmp/shennong_work/sosreport-observer02y-20260708151412; tail -30 $SOS/var/log/messages-20260707 2>/dev/null; echo =",
+            "status": "success",
+            "exit_code": 0,
+            "duration_ms": null,
+            "start_time": "2026-09-10T22:04:32+08:00",
+            "end_time": "2026-09-10T22:04:47+08:00"
+          },
+          {
+            "tool_name": "bash",
+            "title": "SOS=/tmp/shennong_work/sosreport-observer02y-20260708151412; grep -n \"Jul  8 05:5\" $SOS/var/log/messages | head -5; grep",
+            "status": "success",
+            "exit_code": 0,
+            "duration_ms": null,
+            "start_time": "2026-09-10T22:04:47+08:00",
+            "end_time": "2026-09-10T22:05:04+08:00"
+          },
+          {
+            "tool_name": "witty-log-detection_get_task_result",
+            "title": "witty-log-detection_get_task_result",
+            "status": "success",
+            "exit_code": null,
+            "duration_ms": null,
+            "start_time": "2026-09-10T22:04:47+08:00",
+            "end_time": "2026-09-10T22:05:04+08:00"
+          },
+          {
+            "tool_name": "bash",
+            "title": "cd /home/zjq/test/linux_exmaple/raw_data && timeout 100 rg -il -e \"set_next_entity\" -e \"pick_next_task\" -e \"pick_next_en",
+            "status": "success",
+            "exit_code": 0,
+            "duration_ms": null,
+            "start_time": "2026-09-10T22:07:32+08:00",
+            "end_time": "2026-09-10T22:08:00+08:00"
+          },
+          {
+            "tool_name": "witty-log-detection_get_task_result",
+            "title": "witty-log-detection_get_task_result",
+            "status": "success",
+            "exit_code": null,
+            "duration_ms": null,
+            "start_time": "2026-09-10T22:07:32+08:00",
+            "end_time": "2026-09-10T22:08:00+08:00"
+          },
+          {
+            "tool_name": "witty-log-detection_get_task_result",
+            "title": "witty-log-detection_get_task_result",
+            "status": "success",
+            "exit_code": null,
+            "duration_ms": null,
+            "start_time": "2026-09-10T22:15:08+08:00",
+            "end_time": "2026-09-10T22:15:35+08:00"
+          },
+          {
+            "tool_name": "bash",
+            "title": "grep -m2 -E 'Unable to handle|Kernel panic|BUG:|hard LOCKUP|soft lockup|watchdog' /tmp/shennong_0803/vmcore-dmesg.txt 2>",
+            "status": "success",
+            "exit_code": 0,
+            "duration_ms": null,
+            "start_time": "2026-09-10T22:15:08+08:00",
+            "end_time": "2026-09-10T22:15:35+08:00"
+          },
+          {
+            "tool_name": "bash",
+            "title": "SOS=/tmp/shennong_work/sosreport-observer02y-20260708151412; cat $SOS/var/log/sa/../../sos_reports/hostname 2>/dev/null;",
+            "status": "success",
+            "exit_code": 0,
+            "duration_ms": null,
+            "start_time": "2026-09-10T22:15:48+08:00",
+            "end_time": "2026-09-10T22:16:12+08:00"
+          },
+          {
+            "tool_name": "witty-log-detection_get_task_queue",
+            "title": "witty-log-detection_get_task_queue",
+            "status": "success",
+            "exit_code": null,
+            "duration_ms": null,
+            "start_time": "2026-09-10T22:15:48+08:00",
+            "end_time": "2026-09-10T22:16:12+08:00"
+          },
+          {
+            "tool_name": "bash",
+            "title": "ls /root/.config/opencode/skills/crash-report-generator/ /root/.config/opencode/skills/crash-report-generator/scripts/ /",
+            "status": "success",
+            "exit_code": 0,
+            "duration_ms": null,
+            "start_time": "2026-09-10T22:17:05+08:00",
+            "end_time": "2026-09-10T22:17:18+08:00"
+          },
+          {
+            "tool_name": "witty-log-detection_get_task_message",
+            "title": "witty-log-detection_get_task_message",
+            "status": "success",
+            "exit_code": null,
+            "duration_ms": null,
+            "start_time": "2026-09-10T22:17:05+08:00",
+            "end_time": "2026-09-10T22:17:18+08:00"
+          },
+          {
+            "tool_name": "bash",
+            "title": "grep -n \"pick_next_task_fair(struct rq \\*rq, struct task_struct \\*prev\" /tmp/opencode/0708/fair_v4.19.c; grep -n \"if (!c",
+            "status": "success",
+            "exit_code": 0,
+            "duration_ms": null,
+            "start_time": "2026-09-10T22:18:56+08:00",
+            "end_time": "2026-09-10T22:20:50+08:00"
+          },
+          {
+            "tool_name": "witty-log-detection_get_task_message",
+            "title": "witty-log-detection_get_task_message",
+            "status": "success",
+            "exit_code": null,
+            "duration_ms": null,
+            "start_time": "2026-09-10T22:18:56+08:00",
+            "end_time": "2026-09-10T22:20:50+08:00"
+          },
+          {
+            "tool_name": "witty-log-detection_get_task_result",
+            "title": "witty-log-detection_get_task_result",
+            "status": "success",
+            "exit_code": null,
+            "duration_ms": null,
+            "start_time": "2026-09-10T22:23:54+08:00",
+            "end_time": "2026-09-10T22:24:03+08:00"
+          },
+          {
+            "tool_name": "witty-log-detection_get_task_result",
+            "title": "witty-log-detection_get_task_result",
+            "status": "success",
+            "exit_code": null,
+            "duration_ms": null,
+            "start_time": "2026-09-10T22:34:20+08:00",
+            "end_time": "2026-09-10T22:34:36+08:00"
+          },
+          {
+            "tool_name": "bash",
+            "title": "head -60 /root/.config/opencode/skills/crash-report-generator/scripts/extract_workflow.py; opencode --version 2>&1 | hea",
+            "status": "success",
+            "exit_code": 0,
+            "duration_ms": null,
+            "start_time": "2026-09-10T22:34:20+08:00",
+            "end_time": "2026-09-10T22:34:36+08:00"
           }
-        ]
-      },
-      {
-        "step": 11,
-        "stage": "community_retrieval",
-        "decision": "社区案例库 · 邮件列表检索（LKML/lore）",
-        "src": "社区案例库：LKML 邮件列表 / lore.kernel.org",
-        "observations": "按 pick_next_task_fair/NULL se/race 检索：未找到独立的 4.19 回合讨论邮件；最高相关是 v6.12 提交 b55945c500c5（修复该竞态）。邮件组记录将以该上游提交作为社区一手文献（社区邮件分组展示）。",
-        "judgment": "邮件侧无 4.19 专案 → 以上游提交为准继续。",
+        ],
         "status": "partial",
-        "reason": "无直接 4.19 讨论邮件，以提交记录代替",
-        "cross": "见第 5 章社区邮件分组。",
+        "reason": "witty-log-detection 任务队列拥堵（30+ 历史 pending 任务），本会话内三任务未出结果；以基础命令检测（grep/awk 窗口扫描+硬件错误排查）兜底。",
+        "start_time": "2026-09-10T22:01:12+08:00",
+        "end_time": "2026-09-10T22:34:36+08:00"
+      },
+      {
+        "step": 5,
+        "stage": "knowledge_retrieval",
+        "decision": "多轮知识库检索：light_rag 文档库、crash-feature-matcher 社区通道、用户指定本地 raw_data 知识库（bugzilla 全文 grep + commit 按 SHA 文件名精查）。",
+        "observations": "query_community_cases 返回 RAG 未配置；query_upstream_online 抛 'SkillConfig' object has no attribute 'online_fallback'（工具异常）；/data/shennong/community 不存在；light_rag 仅 openeuler_whitepaper/nl2sql 两库、检索无相关内容；raw_data 检索：rg 不存在致首轮后台扫描假阴性（教训），改用内置 grep 后 linux/bug 命中 32 处，甄别出 bugzilla 211435（set_next_entity NULL panic，4.9 ARM，同型）、220447/219920（6.12-rt pick NULL@0x51 同家族）；linux/commit 按 SHA 命中 b55945c5/f12e148892ed/152e11f6/5d7d6056/98c2f700/6e2df058 全部 6 个关键 commit 的本地副本。",
+        "judgment": "本地知识库成为社区/上游证据主通道；211435 为最接近社区案例；进入在线验证。",
         "tools": [
           {
-            "tool_name": "community_search",
-            "title": "检索 LKML/lore 邮件",
+            "tool_name": "light_rag_Knowledge_base_manager",
+            "title": "light_rag_Knowledge_base_manager",
             "status": "success",
-            "duration_ms": 4800,
-            "start_time": "2026-07-08T10:00:18+08:00",
-            "end_time": "2026-07-08T10:00:22+08:00"
-          }
-        ]
-      },
-      {
-        "step": 12,
-        "stage": "community_retrieval",
-        "decision": "社区案例库 · 会议纪要 / Bugzilla 检索",
-        "src": "社区案例库：openEuler Kernel SIG 纪要 / openEuler·Kylin Bugzilla/Issue",
-        "observations": "会议纪要：命中 SIG 例会专题（CFS pick→set 判空防御缺口，覆盖拆循环漏判）与麒麟例会（nr_running 下溢专项，归并 0803/0824 同簇）。Bugzilla/Issue：命中两条同簇/同崩溃点 issue。",
-        "judgment": "会议纪要/Issue 与内部簇相互印证，作为横向证据，不直接给修复。",
-        "status": "success",
-        "cross": "见第 5 章会议纪要/Bugzilla 分组。",
-        "tools": [
+            "exit_code": null,
+            "duration_ms": null,
+            "start_time": "2026-09-10T22:05:04+08:00",
+            "end_time": "2026-09-10T22:05:24+08:00"
+          },
           {
-            "tool_name": "community_search",
-            "title": "检索 SIG 纪要 + Bugzilla",
+            "tool_name": "crash-feature-matcher_query_community_cases",
+            "title": "matcher.query_community_cases",
             "status": "success",
-            "duration_ms": 3900,
-            "start_time": "2026-07-08T10:00:23+08:00",
-            "end_time": "2026-07-08T10:00:27+08:00"
-          }
-        ]
-      },
-      {
-        "step": 13,
-        "stage": "online_retrieval",
-        "decision": "上游 commit 检索（第一次访问失败 → 记入试错）",
-        "src": "社区案例库：Linux 内核 Git（git.kernel.org）",
-        "observations": "访问 git.kernel.org commit API 超时。",
-        "judgment": "不视为无修复，安排重试。",
-        "status": "failed",
-        "reason": "网络访问超时（重试一次）",
-        "tools": [
+            "exit_code": null,
+            "duration_ms": null,
+            "start_time": "2026-09-10T22:05:04+08:00",
+            "end_time": "2026-09-10T22:05:24+08:00"
+          },
           {
-            "tool_name": "webfetch",
-            "title": "GET git.kernel.org commit",
-            "status": "failed",
-            "duration_ms": 15000,
-            "start_time": "2026-07-08T10:00:27+08:00",
-            "end_time": "2026-07-08T10:00:42+08:00"
-          }
-        ]
-      },
-      {
-        "step": 14,
-        "stage": "online_retrieval",
-        "decision": "重试：确认上游 v6.12 判空提交",
-        "src": "社区案例库：Linux 内核 Git 上游提交（git.kernel.org）",
-        "observations": "命中 commit b55945c500c5（sched: Fix pick_next_task_fair() vs try_to_wake_up() race，Peter Zijlstra，2024-10-23）：delayed-dequeue/唤醒竞态可能拿到空/错误任务，v6.12 起在 fair.c 的 pick→set 之间补 if(!se)。",
-        "judgment": "pick→set 无判空是 4.19~v6.11 通用缺口；上游改动面大，4.19 只能取其思路自研移植。",
-        "status": "success",
-        "cross": "见第 5 章社区邮件/上游 commit（带链接）。",
-        "tools": [
-          {
-            "tool_name": "webfetch",
-            "title": "commit b55945c500c5(重试成功)",
+            "tool_name": "crash-feature-matcher_query_upstream_online",
+            "title": "matcher.query_upstream_online",
             "status": "success",
-            "duration_ms": 3400,
-            "start_time": "2026-07-08T10:00:42+08:00",
-            "end_time": "2026-07-08T10:00:46+08:00"
-          }
-        ]
-      },
-      {
-        "step": 15,
-        "stage": "root_cause_validation",
-        "decision": "源码/反汇编对照：确认本内核缺判空",
-        "src": "内核源码 + 反汇编（fair.c 7746/7762）",
-        "observations": "fair.c ~7746（厂商 QoS 拆出的一个循环）已有判空；~7762（本次崩溃路径）在 pick_next_entity 后直接调 set_next_entity、无判空。与上游 diff 逐行比对一致。",
-        "judgment": "三层根因成立：直接=NULL 解引用；触发=cfs_rq 返回空 se（nr_running 下溢/竞态）；防御缺口=4.19 无判空。",
-        "status": "success",
-        "cross": "与崩溃路径 hop3/4/5 位置、行号、实参对应。",
-        "tools": [
+            "exit_code": null,
+            "duration_ms": null,
+            "start_time": "2026-09-10T22:05:04+08:00",
+            "end_time": "2026-09-10T22:05:24+08:00"
+          },
+          {
+            "tool_name": "bash",
+            "title": "wc -l /tmp/opencode/0708/kb_linux_commit_hits.txt /tmp/opencode/0708/kb_oe_commit_hits.txt 2>/dev/null; ps aux | grep -c",
+            "status": "success",
+            "exit_code": 1,
+            "duration_ms": null,
+            "start_time": "2026-09-10T22:05:24+08:00",
+            "end_time": "2026-09-10T22:06:17+08:00"
+          },
+          {
+            "tool_name": "light_rag_search",
+            "title": "light_rag_search",
+            "status": "success",
+            "exit_code": null,
+            "duration_ms": null,
+            "start_time": "2026-09-10T22:05:24+08:00",
+            "end_time": "2026-09-10T22:06:17+08:00"
+          },
+          {
+            "tool_name": "bash",
+            "title": "cat /tmp/opencode/0708/kb_linux_commit_hits.txt; echo ===; ls /home/zjq/test/linux_exmaple/raw_data/linux/bug | head -5;",
+            "status": "success",
+            "exit_code": 0,
+            "duration_ms": null,
+            "start_time": "2026-09-10T22:06:17+08:00",
+            "end_time": "2026-09-10T22:07:02+08:00"
+          },
+          {
+            "tool_name": "bash",
+            "title": "cd /home/zjq/test/linux_exmaple/raw_data && ls linux/commit/commit_b55945c500c5723992504aa03b362fab416863a6.json 2>/dev/",
+            "status": "success",
+            "exit_code": 0,
+            "duration_ms": null,
+            "start_time": "2026-09-10T22:07:02+08:00",
+            "end_time": "2026-09-10T22:07:15+08:00"
+          },
+          {
+            "tool_name": "bash",
+            "title": "python3 -c \"\nimport json\nd=json.load(open('/home/zjq/test/linux_exmaple/raw_data/linux/commit/commit_b55945c500c57239925",
+            "status": "success",
+            "exit_code": 0,
+            "duration_ms": null,
+            "start_time": "2026-09-10T22:07:15+08:00",
+            "end_time": "2026-09-10T22:07:32+08:00"
+          },
+          {
+            "tool_name": "bash",
+            "title": "cd /home/zjq/test/linux_exmaple/raw_data && timeout 100 rg -il -e \"set_next_entity\" -e \"pick_next_task\" -e \"pick_next_en",
+            "status": "success",
+            "exit_code": 0,
+            "duration_ms": null,
+            "start_time": "2026-09-10T22:07:32+08:00",
+            "end_time": "2026-09-10T22:08:00+08:00"
+          },
+          {
+            "tool_name": "witty-log-detection_get_task_result",
+            "title": "witty-log-detection_get_task_result",
+            "status": "success",
+            "exit_code": null,
+            "duration_ms": null,
+            "start_time": "2026-09-10T22:07:32+08:00",
+            "end_time": "2026-09-10T22:08:00+08:00"
+          },
           {
             "tool_name": "grep",
-            "title": "grep pick/set fair.c",
+            "title": "set_next_entity|pick_next_task|pick_next_entity",
             "status": "success",
-            "duration_ms": 500,
-            "start_time": "2026-07-08T10:00:46+08:00",
-            "end_time": "2026-07-08T10:00:46+08:00"
+            "exit_code": null,
+            "duration_ms": null,
+            "start_time": "2026-09-10T22:08:00+08:00",
+            "end_time": "2026-09-10T22:08:09+08:00"
+          },
+          {
+            "tool_name": "grep",
+            "title": "set_next_entity|pick_next_task|pick_next_entity",
+            "status": "success",
+            "exit_code": null,
+            "duration_ms": null,
+            "start_time": "2026-09-10T22:08:00+08:00",
+            "end_time": "2026-09-10T22:08:09+08:00"
+          },
+          {
+            "tool_name": "bash",
+            "title": "python3 -c \"\nimport json\nd=json.load(open('/home/zjq/test/linux_exmaple/raw_data/linux/bug/bugzilla_211435.json'))\nprint",
+            "status": "success",
+            "exit_code": 0,
+            "duration_ms": null,
+            "start_time": "2026-09-10T22:08:09+08:00",
+            "end_time": "2026-09-10T22:08:42+08:00"
+          },
+          {
+            "tool_name": "bash",
+            "title": "grep -m3 -iE 'kunpeng|hip08|CPU\\(s\\): Detected|Booting Linux' /tmp/opencode/0708/vmcore-dmesg.txt; grep -m2 'Memory:' /t",
+            "status": "success",
+            "exit_code": 0,
+            "duration_ms": null,
+            "start_time": "2026-09-10T22:16:12+08:00",
+            "end_time": "2026-09-10T22:16:37+08:00"
+          },
+          {
+            "tool_name": "bash",
+            "title": "python3 -c \"\nimport json\nfor bid in ['219920','220447']:\n    d=json.load(open(f'/home/zjq/test/linux_exmaple/raw_data/li",
+            "status": "success",
+            "exit_code": 0,
+            "duration_ms": null,
+            "start_time": "2026-09-10T22:16:12+08:00",
+            "end_time": "2026-09-10T22:16:37+08:00"
+          },
+          {
+            "tool_name": "bash",
+            "title": "grep -rl \"7746\\|7762\" /tmp/shennong_report_0708/*.json /tmp/opencode/0708/report/*.json 2>/dev/null | head -3; python3 -",
+            "status": "success",
+            "exit_code": 0,
+            "duration_ms": null,
+            "start_time": "2026-09-10T22:16:37+08:00",
+            "end_time": "2026-09-10T22:16:58+08:00"
+          },
+          {
+            "tool_name": "bash",
+            "title": "python3 -c \"\nimport json,re\ns=open('/tmp/shennong_report_0708/timeline_0708.json').read()\nidx=[m.start() for m in re.fin",
+            "status": "success",
+            "exit_code": 0,
+            "duration_ms": null,
+            "start_time": "2026-09-10T22:16:58+08:00",
+            "end_time": "2026-09-10T22:17:05+08:00"
           }
-        ]
+        ],
+        "status": "success",
+        "start_time": "2026-09-10T22:05:04+08:00",
+        "end_time": "2026-09-10T22:17:05+08:00"
       },
       {
-        "step": 16,
-        "stage": "root_cause_validation",
-        "decision": "同簇横向核验（避免误并）",
-        "src": "内部知识库同簇 + 社区 Bugzilla 同簇",
-        "observations": "0803（89.11.v2401）load_balance 硬锁死、0824（89.17.v2401）check_preempt_wakeup 空指针：与本次同机型同内核同局点、同属 CFS 防御缺口簇，但崩溃点/触发路径不同。",
-        "judgment": "按同簇横向跟踪与触发面参考，不混用其它崩溃点的修复结论。",
-        "status": "success",
-        "cross": "见第 5 章内部同簇 history 与 Bugzilla 同簇条目。",
-        "tools": []
-      },
-      {
-        "step": 17,
-        "stage": "deep_analysis",
-        "decision": "修复方案试错：排除整包回移，采用自研最小补丁",
-        "src": "上游 commit b55945c500c5（diff 对照）",
-        "observations": "候选1：整体 backport 上游 v6.12 → 涉及 sched_class 大重构/原型变化，4.19 不兼容，弃用。候选2：在漏判空的 pick→set 之间加 if(!se) goto idle（约 +3 行、不改语义），覆盖厂商拆出的所有 pick→set 路径。",
-        "judgment": "采用候选2（最小防御补丁），风险低。",
-        "status": "success",
-        "reason": "上游改动面大，仅移植防御性 +3 行",
-        "cross": "见第 1 章标准解决方案补丁 diff。",
-        "tools": []
-      },
-      {
-        "step": 18,
-        "stage": "report_generation",
-        "decision": "组装报告并渲染（含全部证据与来源标注）",
-        "src": "全部章节数据合并",
-        "observations": "合并 host/崩溃特征/根因/推理链/知识库（内部·社区邮件·会议纪要·Bugzilla·上游 commit）/工作流为 report.json，校验后渲染 report.html；章节回归通过。",
-        "judgment": "输出报告，全文结论与各章证据/来源相互交叉一致。",
-        "status": "success",
-        "cross": "全文结论、执行摘要、根因结论与第 5 章案例及上游 commit 指向一致。",
+        "step": 6,
+        "stage": "online_retrieval",
+        "decision": "按方法论红线（引用 commit 必须在线验证哈希真实性）对全部引用 commit 做 GitHub API 验证，并拉取 .patch/tag 源码原文核对判空防御引入点。",
+        "observations": "lore.kernel.org 被 Anubis 反爬拦截（bugzilla 211435 引用线程无法直读，改经 GitHub commits API 按时间窗 2019-11-01~12-15 定位到同日合入的 v5.4 重构系列 5d7d6056/98c2f700/6e2df058）；GitHub API 验证 b55945c5/f12e148892ed/152e11f6 等全部真实存在；f12e148892ed.patch 原文核对确为 '+ if (!se) + goto again;'；v6.11 tag fair.c 无判空（L8451）、v6.12/v6.13 有判空（L8866-8868）——判空防御由 f12e148892ed 引入、v6.12 首发。",
+        "judgment": "上游修复状态判定闭环：4.19~v6.11 均无防御，本案内核不含修复，只能自研最小判空补丁（禁止移植大重构系列）。",
         "tools": [
           {
-            "tool_name": "generate_report_html.py",
-            "title": "real_build.py → report.html",
+            "tool_name": "webfetch",
+            "title": "https://lore.kernel.org/lkml/20191108121526.GB83597@google.com/T/ (text/html; charset=utf-8)",
             "status": "success",
-            "duration_ms": 480,
-            "start_time": "2026-07-08T10:00:47+08:00",
-            "end_time": "2026-07-08T10:00:47+08:00"
+            "exit_code": null,
+            "duration_ms": null,
+            "start_time": "2026-09-10T22:08:42+08:00",
+            "end_time": "2026-09-10T22:09:11+08:00"
+          },
+          {
+            "tool_name": "bash",
+            "title": "curl -s --max-time 30 \"https://api.github.com/repos/torvalds/linux/commits/b55945c500c5723992504aa03b362fab416863a6\" | p",
+            "status": "success",
+            "exit_code": 0,
+            "duration_ms": null,
+            "start_time": "2026-09-10T22:09:11+08:00",
+            "end_time": "2026-09-10T22:09:25+08:00"
+          },
+          {
+            "tool_name": "bash",
+            "title": "curl -s --max-time 30 -H \"Accept: application/vnd.github.cloak-preview\" \"https://api.github.com/search/commits?q=repo:to",
+            "status": "success",
+            "exit_code": 0,
+            "duration_ms": null,
+            "start_time": "2026-09-10T22:09:11+08:00",
+            "end_time": "2026-09-10T22:09:25+08:00"
+          },
+          {
+            "tool_name": "webfetch",
+            "title": "webfetch",
+            "status": "failed",
+            "exit_code": null,
+            "duration_ms": null,
+            "start_time": "2026-09-10T22:09:25+08:00",
+            "end_time": "2026-09-10T22:10:13+08:00"
+          },
+          {
+            "tool_name": "bash",
+            "title": "curl -s --max-time 30 -H \"Accept: application/vnd.github.cloak-preview\" \"https://api.github.com/search/commits?q=repo:to",
+            "status": "success",
+            "exit_code": 0,
+            "duration_ms": null,
+            "start_time": "2026-09-10T22:10:13+08:00",
+            "end_time": "2026-09-10T22:10:33+08:00"
+          },
+          {
+            "tool_name": "bash",
+            "title": "curl -sL --max-time 60 \"https://github.com/torvalds/linux/commit/b55945c500c5723992504aa03b362fab416863a6.patch\" -o /tmp",
+            "status": "success",
+            "exit_code": 0,
+            "duration_ms": null,
+            "start_time": "2026-09-10T22:10:33+08:00",
+            "end_time": "2026-09-10T22:11:03+08:00"
+          },
+          {
+            "tool_name": "bash",
+            "title": "curl -sL --max-time 60 \"https://github.com/torvalds/linux/commit/5d7d605642b28a5911198a405a6072f091bfbee6.patch\" -o /tmp",
+            "status": "success",
+            "exit_code": 0,
+            "duration_ms": null,
+            "start_time": "2026-09-10T22:10:33+08:00",
+            "end_time": "2026-09-10T22:11:03+08:00"
+          },
+          {
+            "tool_name": "bash",
+            "title": "grep -n '!se' /tmp/opencode/0708/b55945c5.patch /tmp/opencode/0708/5d7d6056.patch; echo ===CURRENT_UPSTREAM===; curl -sL",
+            "status": "success",
+            "exit_code": 0,
+            "duration_ms": null,
+            "start_time": "2026-09-10T22:11:04+08:00",
+            "end_time": "2026-09-10T22:11:46+08:00"
+          },
+          {
+            "tool_name": "bash",
+            "title": "curl -s --max-time 30 \"https://api.github.com/repos/torvalds/linux/commits?path=kernel/sched/fair.c&since=2024-09-15T00:",
+            "status": "success",
+            "exit_code": 0,
+            "duration_ms": null,
+            "start_time": "2026-09-10T22:11:46+08:00",
+            "end_time": "2026-09-10T22:12:00+08:00"
+          },
+          {
+            "tool_name": "bash",
+            "title": "curl -s --max-time 30 \"https://api.github.com/repos/torvalds/linux/commits/152e11f6df29\" | python3 -c \"\nimport json,sys\n",
+            "status": "success",
+            "exit_code": 0,
+            "duration_ms": null,
+            "start_time": "2026-09-10T22:12:00+08:00",
+            "end_time": "2026-09-10T22:12:14+08:00"
+          },
+          {
+            "tool_name": "bash",
+            "title": "curl -sL --max-time 60 \"https://github.com/torvalds/linux/commit/152e11f6df293e816a6a37c69757033cdc72667d.patch\" -o /tmp",
+            "status": "success",
+            "exit_code": 0,
+            "duration_ms": null,
+            "start_time": "2026-09-10T22:12:14+08:00",
+            "end_time": "2026-09-10T22:12:26+08:00"
+          },
+          {
+            "tool_name": "bash",
+            "title": "for tag in v6.12 v6.13 v6.15; do echo \"=== $tag ===\"; curl -sL --max-time 90 \"https://raw.githubusercontent.com/torvalds",
+            "status": "success",
+            "exit_code": 0,
+            "duration_ms": null,
+            "start_time": "2026-09-10T22:12:26+08:00",
+            "end_time": "2026-09-10T22:13:21+08:00"
+          },
+          {
+            "tool_name": "bash",
+            "title": "echo \"=== v6.11 pick_task_fair ===\"; curl -sL --max-time 90 \"https://raw.githubusercontent.com/torvalds/linux/v6.11/kern",
+            "status": "success",
+            "exit_code": 0,
+            "duration_ms": null,
+            "start_time": "2026-09-10T22:13:21+08:00",
+            "end_time": "2026-09-10T22:13:46+08:00"
+          },
+          {
+            "tool_name": "bash",
+            "title": "sed -n '8448,8475p' /tmp/opencode/0708/fair_v6.11.c; echo ===V612_COMMITS===; curl -s --max-time 30 \"https://api.github.",
+            "status": "success",
+            "exit_code": 0,
+            "duration_ms": null,
+            "start_time": "2026-09-10T22:13:46+08:00",
+            "end_time": "2026-09-10T22:14:08+08:00"
+          },
+          {
+            "tool_name": "bash",
+            "title": "curl -s --max-time 30 \"https://api.github.com/repos/torvalds/linux/commits?path=kernel/sched/fair.c&since=2024-08-17T00:",
+            "status": "success",
+            "exit_code": 0,
+            "duration_ms": null,
+            "start_time": "2026-09-10T22:14:08+08:00",
+            "end_time": "2026-09-10T22:14:26+08:00"
+          },
+          {
+            "tool_name": "bash",
+            "title": "for sha in f12e148892ed 3b3dd89b8bb0; do echo \"=== $sha ===\"; curl -sL --max-time 60 \"https://github.com/torvalds/linux/",
+            "status": "success",
+            "exit_code": 0,
+            "duration_ms": null,
+            "start_time": "2026-09-10T22:14:26+08:00",
+            "end_time": "2026-09-10T22:14:41+08:00"
+          },
+          {
+            "tool_name": "bash",
+            "title": "curl -s --max-time 30 \"https://api.github.com/repos/torvalds/linux/commits/f12e148892ed\" | python3 -c \"\nimport json,sys\n",
+            "status": "success",
+            "exit_code": 0,
+            "duration_ms": null,
+            "start_time": "2026-09-10T22:14:41+08:00",
+            "end_time": "2026-09-10T22:15:08+08:00"
           }
-        ]
+        ],
+        "status": "success",
+        "start_time": "2026-09-10T22:08:42+08:00",
+        "end_time": "2026-09-10T22:15:08+08:00"
+      },
+      {
+        "step": 7,
+        "stage": "root_cause_validation",
+        "decision": "知识图谱自洽验证：反汇编判空对照（双循环一有一无）、vanilla 4.19 源码行号锚定、同局点 0803/0824 问题簇横向关联、硬件/软件定界。",
+        "observations": "pick_next_task_fair 反汇编：第一循环 +268 cbz x20 判空、第二循环 +728~+740 无判空，LR=+744 锁定崩溃于第二循环（厂商 QoS 路径）；vanilla fair_v4.19.c 锚点核实（L566 __pick_first_entity 返回 NULL、L4049/4052 set_next_entity 读 on_rq、L6599/6607/6692-6693 pick 循环无判空）；同局点 0824=check_preempt_wakeup NULL@0x168（模式#2，同内核 89.17）、0803=queued_spin_lock_slowpath hard lockup lr=load_balance（模式#3，89.11）——三案覆盖方法论三故障模式，构成系统性问题簇；Kylin 源码行号（7746/7762）本地无存档，不予引用（防幻想），以反汇编为一手证据。",
+        "judgment": "三层根因闭环：直接原因（NULL 解引用，L1）、触发条件（nr_running 下溢+空树，L1）、防御缺失（第二循环无判空，L1）；深层下溢竞态源头 L2/L3 推断；硬件排除。",
+        "tools": [
+          {
+            "tool_name": "bash",
+            "title": "cd /tmp/shennong_0708 && grep -vE 'WARNING: cpu|please wait' dis_pick_output.txt | awk '/pick_next_task_fair\\+(6[4-9][0-",
+            "status": "success",
+            "exit_code": 0,
+            "duration_ms": null,
+            "start_time": "2026-09-10T22:01:27+08:00",
+            "end_time": "2026-09-10T22:02:05+08:00"
+          },
+          {
+            "tool_name": "bash",
+            "title": "grep -n \"pick_next_entity(cfs_rq, NULL)\" /tmp/opencode/0708/fair_v4.19.c; echo ===; sed -n '7700,7790p' /tmp/opencode/07",
+            "status": "success",
+            "exit_code": 0,
+            "duration_ms": null,
+            "start_time": "2026-09-10T22:02:05+08:00",
+            "end_time": "2026-09-10T22:02:29+08:00"
+          },
+          {
+            "tool_name": "bash",
+            "title": "cd /tmp/shennong_0708 && grep -c 'crash> struct cfs_rq' check_all_cfs_output.txt; grep -B40 'nr_running = 4294967295' ch",
+            "status": "success",
+            "exit_code": 0,
+            "duration_ms": null,
+            "start_time": "2026-09-10T22:02:05+08:00",
+            "end_time": "2026-09-10T22:02:29+08:00"
+          },
+          {
+            "tool_name": "bash",
+            "title": "grep -c 'nr_running = 4294967295' /tmp/shennong_0708/check_all_cfs_output.txt; sed -n '6650,6740p' /tmp/opencode/0708/fa",
+            "status": "success",
+            "exit_code": 0,
+            "duration_ms": null,
+            "start_time": "2026-09-10T22:02:29+08:00",
+            "end_time": "2026-09-10T22:02:51+08:00"
+          },
+          {
+            "tool_name": "bash",
+            "title": "cd /tmp/shennong_0708 && grep -A140 'crash> p runqueues' check_cfs_output.txt | grep -E '\\[(9[0-4]|28)\\]' ; echo ===; gr",
+            "status": "success",
+            "exit_code": 0,
+            "duration_ms": null,
+            "start_time": "2026-09-10T22:02:51+08:00",
+            "end_time": "2026-09-10T22:03:16+08:00"
+          },
+          {
+            "tool_name": "bash",
+            "title": "grep -A16 'Unable to handle kernel NULL pointer dereference at virtual address 0000000000000168' /tmp/shennong_0824/vmco",
+            "status": "success",
+            "exit_code": 0,
+            "duration_ms": null,
+            "start_time": "2026-09-10T22:15:35+08:00",
+            "end_time": "2026-09-10T22:15:48+08:00"
+          }
+        ],
+        "status": "success",
+        "start_time": "2026-09-10T22:01:27+08:00",
+        "end_time": "2026-09-10T22:15:48+08:00"
+      },
+      {
+        "step": 8,
+        "stage": "report_generation",
+        "decision": "加载 crash-report-generator skill，读取 schema 后分片生成：report_id/parse_log_range/host_base_info/crash_feature_info（analyze_crash 历史真实输出+复核）→ diagnosis_repair_result（内部同簇2条+社区bugzilla3条+会议0条+在线commit5条，全部真实来源）→ root_cause_analysis（conclusion/standard_solution(patch+diff)/temporary_workaround(none)/event_scene/propagation_chain(9跳)/reasoning_flow(8阶段)/deep(6角度)）→ workflow_trace（extract_workflow.py 真实时间线聚合）→ combine+validate+HTML。",
+        "observations": "extract_workflow.py 成功导出本会话 timeline（session ses_f7466bc51ffeY3Cyb7qkPQQ9YP，75 turns/106 tool calls）；分片 part1/2/3 生成成功。",
+        "judgment": "分片齐备，进入合并校验与 HTML 渲染。",
+        "tools": [
+          {
+            "tool_name": "bash",
+            "title": "wc -c /root/.config/opencode/skills/crash-report-generator/schemas/crash-report-schema.json /root/.config/opencode/skill",
+            "status": "success",
+            "exit_code": 0,
+            "duration_ms": null,
+            "start_time": "2026-09-10T22:17:18+08:00",
+            "end_time": "2026-09-10T22:17:24+08:00"
+          },
+          {
+            "tool_name": "skill",
+            "title": "Loaded skill: crash-report-generator",
+            "status": "success",
+            "exit_code": null,
+            "duration_ms": null,
+            "start_time": "2026-09-10T22:17:24+08:00",
+            "end_time": "2026-09-10T22:17:29+08:00"
+          },
+          {
+            "tool_name": "bash",
+            "title": "mkdir -p /tmp/shennong_report_20260910_2205 && python3 -c \"\nimport json\ns=json.load(open('/root/.config/opencode/skills/",
+            "status": "success",
+            "exit_code": 0,
+            "duration_ms": null,
+            "start_time": "2026-09-10T22:17:29+08:00",
+            "end_time": "2026-09-10T22:18:04+08:00"
+          },
+          {
+            "tool_name": "bash",
+            "title": "python3 -c \"\nimport json\ns=json.load(open('/root/.config/opencode/skills/crash-report-generator/schemas/crash-report-sch",
+            "status": "success",
+            "exit_code": 0,
+            "duration_ms": null,
+            "start_time": "2026-09-10T22:18:04+08:00",
+            "end_time": "2026-09-10T22:18:09+08:00"
+          },
+          {
+            "tool_name": "bash",
+            "title": "python3 -c \"\nimport json\ns=json.load(open('/root/.config/opencode/skills/crash-report-generator/schemas/crash-report-sch",
+            "status": "success",
+            "exit_code": 0,
+            "duration_ms": null,
+            "start_time": "2026-09-10T22:18:09+08:00",
+            "end_time": "2026-09-10T22:18:36+08:00"
+          },
+          {
+            "tool_name": "bash",
+            "title": "python3 -c \"\nimport json\ns=json.load(open('/root/.config/opencode/skills/crash-report-generator/schemas/crash-report-sch",
+            "status": "success",
+            "exit_code": 0,
+            "duration_ms": null,
+            "start_time": "2026-09-10T22:18:36+08:00",
+            "end_time": "2026-09-10T22:18:46+08:00"
+          },
+          {
+            "tool_name": "bash",
+            "title": "python3 -c \"\nimport json\ns=json.load(open('/root/.config/opencode/skills/crash-report-generator/schemas/crash-report-sch",
+            "status": "success",
+            "exit_code": 0,
+            "duration_ms": null,
+            "start_time": "2026-09-10T22:18:46+08:00",
+            "end_time": "2026-09-10T22:18:51+08:00"
+          },
+          {
+            "tool_name": "bash",
+            "title": "python3 -c \"\nimport json\ns=json.load(open('/root/.config/opencode/skills/crash-report-generator/schemas/crash-report-sch",
+            "status": "success",
+            "exit_code": 0,
+            "duration_ms": null,
+            "start_time": "2026-09-10T22:18:51+08:00",
+            "end_time": "2026-09-10T22:18:56+08:00"
+          },
+          {
+            "tool_name": "bash",
+            "title": "sed -n '4049,4060p' /tmp/opencode/0708/fair_v4.19.c; echo ===; sed -n '566,575p' /tmp/opencode/0708/fair_v4.19.c; echo =",
+            "status": "success",
+            "exit_code": 0,
+            "duration_ms": null,
+            "start_time": "2026-09-10T22:20:50+08:00",
+            "end_time": "2026-09-10T22:21:05+08:00"
+          },
+          {
+            "tool_name": "bash",
+            "title": "which opencode; grep -n \"NOHZ: local_softirq_pending\" /tmp/opencode/0708/vmcore-dmesg.txt | head -12; grep -n \"hrtimer: ",
+            "status": "success",
+            "exit_code": 0,
+            "duration_ms": null,
+            "start_time": "2026-09-10T22:21:05+08:00",
+            "end_time": "2026-09-10T22:23:54+08:00"
+          },
+          {
+            "tool_name": "bash",
+            "title": "cat > /tmp/shennong_report_20260910_2205/gen_part1.py <<'PYEOF'\nimport json, re\n\nOUT = \"/tmp/shennong_report_20260910_22",
+            "status": "success",
+            "exit_code": 0,
+            "duration_ms": null,
+            "start_time": "2026-09-10T22:24:03+08:00",
+            "end_time": "2026-09-10T22:25:25+08:00"
+          },
+          {
+            "tool_name": "bash",
+            "title": "cat > /tmp/shennong_report_20260910_2205/gen_part2.py <<'PYEOF'\nimport json\n\nOUT = \"/tmp/shennong_report_20260910_2205\"\n",
+            "status": "success",
+            "exit_code": 0,
+            "duration_ms": null,
+            "start_time": "2026-09-10T22:25:25+08:00",
+            "end_time": "2026-09-10T22:27:57+08:00"
+          },
+          {
+            "tool_name": "bash",
+            "title": "cat > /tmp/shennong_report_20260910_2205/gen_part3.py <<'PYEOF'\nimport json\n\nOUT = \"/tmp/shennong_report_20260910_2205\"\n",
+            "status": "success",
+            "exit_code": 0,
+            "duration_ms": null,
+            "start_time": "2026-09-10T22:27:57+08:00",
+            "end_time": "2026-09-10T22:34:20+08:00"
+          },
+          {
+            "tool_name": "bash",
+            "title": "cd /home/tsn/witty-agents && python3 /root/.config/opencode/skills/crash-report-generator/scripts/extract_workflow.py --",
+            "status": "partial",
+            "exit_code": null,
+            "duration_ms": null,
+            "start_time": "2026-09-10T22:34:36+08:00",
+            "end_time": "2026-09-10T22:34:36+08:00"
+          }
+        ],
+        "status": "success",
+        "start_time": "2026-09-10T22:17:18+08:00",
+        "end_time": "2026-09-10T22:34:36+08:00"
       }
     ]
   }

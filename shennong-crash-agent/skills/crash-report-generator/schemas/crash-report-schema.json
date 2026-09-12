@@ -295,7 +295,9 @@
         "event_scene",
         "propagation_chain",
         "reasoning_flow",
-        "deep"
+        "deep",
+        "overview_brief",
+        "trigger_scenario"
       ],
       "properties": {
         "conclusion": {
@@ -306,12 +308,6 @@
           "additionalProperties": false,
           "properties": {
             "type": {
-              "type": "string"
-            },
-            "claim_tag": {
-              "type": "string"
-            },
-            "short": {
               "type": "string"
             },
             "basis": {
@@ -334,9 +330,6 @@
                   }
                 }
               }
-            },
-            "fixed_in": {
-              "type": "string"
             },
             "patch_list": {
               "type": "array",
@@ -368,12 +361,6 @@
                 }
               }
             },
-            "method_steps": {
-              "type": "array",
-              "items": {
-                "type": "string"
-              }
-            },
             "detail": {
               "type": "string"
             },
@@ -390,8 +377,21 @@
               "items": {
                 "type": "string"
               }
+            },
+            "brief": {
+              "type": "string",
+              "description": "规避手段一句话说明：给出的是什么补丁，不含编译/灰度等过程。"
+            },
+            "fixed_brief": {
+              "type": "string",
+              "description": "上游修复状态一句话：哪个内核版本的哪个补丁修复了什么问题（该补丁即生成 patch 的来源）。"
             }
-          }
+          },
+          "required": [
+            "type",
+            "brief",
+            "fixed_brief"
+          ]
         },
         "temporary_workaround": {
           "type": "object",
@@ -444,10 +444,10 @@
                     "type": "string",
                     "enum": [
                       "process",
-                      "kernel",
+                      "cpu",
                       "hardware"
                     ],
-                    "description": "固定三类泳道：process=进程、kernel=内核（含调度器/定时器/CPU）、hardware=硬件。"
+                    "description": "泳道三类：process=进程、cpu=CPU 核（name 写「编号 · 型号」）、hardware=外部硬件；内核内部活动（调度/cfs_rq/hrtimer）不单独建泳道，事件 from/to 指向 cpu。"
                   },
                   "init": {
                     "type": "string"
@@ -735,24 +735,10 @@
           "type": "object",
           "additionalProperties": false,
           "required": [
-            "mechanism_summary",
-            "judgment"
+            "flow",
+            "evidence"
           ],
           "properties": {
-            "lead": {
-              "type": "string"
-            },
-            "mechanism": {
-              "type": "string"
-            },
-            "mechanism_summary": {
-              "type": "string",
-              "description": "面向读者的人话机制概述：说明发生了什么、为什么会崩溃以及影响，不重复技术触发链、函数名、寄存器和地址。"
-            },
-            "judgment": {
-              "type": "string",
-              "description": "当前判断：用一句话给出根因判断和处置方向，不重复机制过程。"
-            },
             "evidence": {
               "type": "array",
               "items": {
@@ -796,17 +782,27 @@
                         }
                       }
                     }
+                  },
+                  "connect": {
+                    "type": "string",
+                    "description": "四部分证据之间的逻辑串联过渡句（第 2/3/4 部分使用）。"
                   }
                 }
               }
             },
-            "confidence": {
-              "type": "string"
-            },
-            "scope": {
-              "type": "string"
+            "flow": {
+              "type": "string",
+              "description": "故障流程梳理：只描述触发流程（箭头链），不含根因判定与处置方向。"
             }
           }
+        },
+        "overview_brief": {
+          "type": "string",
+          "description": "故障总览一句话通俗结论：发生了什么、为什么、是否与业务/硬件有关；不含函数名/寄存器/地址/版本/commit/PID，不含与结论无关的信息。"
+        },
+        "trigger_scenario": {
+          "type": "string",
+          "description": "易触发场景：在某场景下某主体做某操作就容易触发；不写具体业务名。"
         }
       }
     },
