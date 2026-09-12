@@ -523,10 +523,30 @@
                     "type": "string"
                   },
                   "m": {
-                    "type": "string"
+                    "type": "string",
+                    "enum": [
+                      "user",
+                      "sys",
+                      "kern",
+                      "hw"
+                    ],
+                    "description": "事件执行模式：user=用户态、sys=用户→内核、kern=内核态、hw=硬件。"
                   },
                   "kind": {
-                    "type": "string"
+                    "type": "string",
+                    "enum": [
+                      "call",
+                      "irq",
+                      "softirq",
+                      "hw",
+                      "mutex",
+                      "alloc",
+                      "race",
+                      "free",
+                      "global",
+                      "crash"
+                    ],
+                    "description": "事件类型：call=调用、irq=中断、softirq=软中断、hw=硬件、mutex=加锁、alloc=分配、race=竞态、free=释放、global=全局、crash=崩溃。"
                   },
                   "from": {
                     "type": "string"
@@ -573,7 +593,15 @@
                       }
                     }
                   }
-                }
+                },
+                "required": [
+                  "from",
+                  "to",
+                  "kind",
+                  "m",
+                  "t",
+                  "dt_ms"
+                ]
               }
             }
           }

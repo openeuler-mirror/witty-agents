@@ -737,7 +737,7 @@ function renderMechanism(){
       const tLabel = e.t || e.m || '';
       const CIRC = ['①','②','③','④','⑤','⑥','⑦','⑧','⑨','⑩','⑪','⑫','⑬','⑭','⑮'];
       const kindLabel = {call:'调用',irq:'中断',softirq:'软中断',hw:'硬件',mutex:'加锁',alloc:'分配',race:'竞态',free:'释放',global:'全局',crash:'崩溃'}[kind] || '';
-      const modeLabel = {user:'用户态', kern:'内核态', hw:'硬件'}[e.m] || '';
+      const modeLabel = {user:'用户态', sys:'用户→内核', kern:'内核态', hw:'硬件'}[e.m] || '';
       const stepLabel = (CIRC[i]||(''+(i+1))) + (kindLabel ? (' ' + kindLabel) : '') + (tLabel ? (' · ' + tLabel) : '');
       h += `<div class="seq-cell" style="grid-column:${fromIdx+1};grid-row:${row}"><div class="${cls}"><span class="step-label">${esc(stepLabel)}</span>${modeLabel?`<span class="step-mode">${esc(modeLabel)}</span>`:''}<b>${esc(e.title||'')}</b>${has(e.val)?`<code>${esc(e.val)}</code>`:''}${has(e.full)?`<small>${esc(e.full)}</small>`:''}${has(e.src)?`<small>${esc(e.src)}</small>`:''}</div></div>`;
       row++;
