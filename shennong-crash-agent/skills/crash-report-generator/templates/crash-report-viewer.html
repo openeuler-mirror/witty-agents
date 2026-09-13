@@ -754,10 +754,16 @@ function renderMechanism(){
   if(es && toArr(es.participants).length && toArr(es.events).length){
     const catOrder = {process:0, cpu:1, hardware:2};
     const rawParts = toArr(es.participants).filter(Boolean).slice().sort((a,b)=>(catOrder[a.type]??9)-(catOrder[b.type]??9));
+    /* 只保留崩溃机制相关事件：去掉 panic/kdump 等崩溃之后的流程 */
+    const events = [...toArr(es.events)].filter(e=>!/panic|kdump|kexec/i.test(String(e.t||e.title||''))).sort((a,b)=>(a.dt_ms||0)-(b.dt_ms||0));
+    /* 只给有事件的参与者建泳道，避免出现空列 */
+    const activeIds = new Set();
+    events.forEach(e=>{ if(e.from!=null) activeIds.add(e.from); if(e.to!=null) activeIds.add(e.to); });
     const lanes = [];
     const laneIdx = {};
     let cpuLaneIdx = -1;
     rawParts.forEach(p=>{
+      if(p.id!=null && !activeIds.has(p.id)) return;
       if(p.type === 'kernel'){
         /* 内核内部活动：归入 CPU 泳道 */
         if(cpuLaneIdx < 0){
@@ -772,8 +778,6 @@ function renderMechanism(){
       }
     });
     const nc = Math.max(lanes.length, 1);
-    /* 只保留崩溃机制相关事件：去掉 panic/kdump 等崩溃之后的流程 */
-    const events = [...toArr(es.events)].filter(e=>!/panic|kdump|kexec/i.test(String(e.t||e.title||''))).sort((a,b)=>(a.dt_ms||0)-(b.dt_ms||0));
     h += `<div class="mechanism">`;
     h += `<div class="sequence-intro"><b>事件时序</b><span>按 进程 / CPU / 硬件 分组 · 沿箭头向下阅读 · 相对顺序，不表示精确耗时</span></div>`;
     h += `<div class="swimlane" style="--nc:${nc}">`;
