@@ -50,8 +50,8 @@
 
 /* A compact, unified first-screen overview. */
 .topbar{height:60px}.layout{padding-top:25px}.report-header{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin:0 0 4px;padding:0 0 20px;border-bottom:1px solid var(--line)}.report-header-main{min-width:0}.report-header-kicker{font-size:11px;letter-spacing:1.8px;color:var(--muted);font-weight:650;margin-bottom:7px}.report-header h1{font-size:24px;letter-spacing:-.5px;line-height:1.3}.report-header .subline{margin:9px 0 0;font-size:13px;gap:14px}.overview-tools{display:flex;align-items:flex-end;flex-direction:column;gap:7px}.hero{padding:23px 25px}.hero h2{font-size:20px;max-width:none}.hero-copy{font-size:14px;margin:9px 0 17px;max-width:none;line-height:1.7}.facts{padding-top:15px;grid-template-columns:.95fr 1.15fr 1.15fr}.fact-label{font-size:11px;margin-bottom:5px}.fact-value{font-size:13px}.fact-note{font-size:11px}.fact-note a{margin:0}.overview-treatment{margin-top:18px;border-top:1px solid var(--line);padding-top:14px}.treatment-heading{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}.treatment-heading>h3{font-size:16px}.treatment-heading>span{font-size:11px;color:var(--subtle)}.overview-treatment .plan{display:grid;grid-template-columns:1fr;gap:18px}.overview-treatment .plan-card{border:1px solid var(--line);border-radius:7px;padding:13px 14px;background:var(--surface-2)}.overview-treatment .plan-card.secondary{background:var(--surface-2)}.overview-treatment .small-label{font-size:11px;letter-spacing:0;margin-bottom:4px}.overview-treatment .plan-card h3{font-size:14px;margin-bottom:6px}.overview-treatment .plan-card p{font-size:12px;line-height:1.7;margin-bottom:7px}.overview-treatment .reading-group{margin-top:10px;padding:0;border:0;background:transparent}.overview-treatment summary{font-size:11px;padding:8px 0}.overview-treatment .reading-group>details:last-child{border-top:1px solid var(--line)}.overview-treatment .notice{margin-top:10px;font-size:11px!important}.overview-treatment .detail-body p{font-size:12px}.overview-treatment .detail-body{font-size:12px}
-.crash-facts>div:nth-last-child(2){border-bottom:1px solid var(--line)}.crash-facts>div:last-child{grid-column:1/-1;border-right:0;border-bottom:0;background:var(--surface-2)}.crash-facts>div:last-child .source-label{display:block;margin-bottom:0}
-@media(max-width:600px){.topbar{height:52px}.layout{padding-top:8px}.report-header{align-items:flex-start;gap:8px}.report-header h1{font-size:21px;overflow-wrap:anywhere}.report-header .subline{font-size:11px;gap:2px 8px}.overview-tools .status{font-size:11px}.overview-tools .text-button{font-size:11px}.hero{padding:18px 16px}.hero h2{font-size:20px}.hero-copy{font-size:13px}.facts{grid-template-columns:1fr;gap:10px}.fact-label{margin-bottom:3px}.fact,.fact:first-child{padding:0 0 10px}.overview-treatment .plan{grid-template-columns:1fr;gap:10px}.treatment-heading{align-items:flex-start}.treatment-heading>span{max-width:115px;text-align:right}.overview-treatment .plan-card{padding:12px}.crash-facts>div:last-child{grid-column:auto}}
+.crash-facts>div:last-child{border-right:0;border-bottom:0}
+@media(max-width:600px){.topbar{height:52px}.layout{padding-top:8px}.report-header{align-items:flex-start;gap:8px}.report-header h1{font-size:21px;overflow-wrap:anywhere}.report-header .subline{font-size:11px;gap:2px 8px}.overview-tools .status{font-size:11px}.overview-tools .text-button{font-size:11px}.hero{padding:18px 16px}.hero h2{font-size:20px}.hero-copy{font-size:13px}.facts{grid-template-columns:1fr;gap:10px}.fact-label{margin-bottom:3px}.fact,.fact:first-child{padding:0 0 10px}.overview-treatment .plan{grid-template-columns:1fr;gap:10px}.treatment-heading{align-items:flex-start}.treatment-heading>span{max-width:115px;text-align:right}.overview-treatment .plan-card{padding:12px}}
 @media print{.overview-tools{display:none}.report-header h1{font-size:22px}.hero{padding:18px}.overview-treatment .plan{grid-template-columns:1.15fr 1fr}}
 
 /* 泳道流向箭头、间距与标签（对齐 yg 版式） */
@@ -140,6 +140,8 @@
 /* 宕机栈现场初印象 */
 .stack-impression{font-size:13px;padding:13px 16px;background:var(--surface-3);border-left:3px solid var(--accent);margin:16px 0 22px;color:var(--muted);line-height:1.7}
 .stack-impression b{font-weight:600;color:var(--accent-strong)}
+/* 宕机栈代码块：中性浅灰底 + 绿色左边条，替代绿色调灰底 */
+.crash-stack{background:#f7f8f9;border-left:3px solid var(--accent);border-radius:6px;max-height:340px;overflow-y:auto}
 /* 泳道类别标签 + 头部悬停 */
 .lane-cat{display:inline-block;font-size:11px;font-weight:600;padding:1px 7px;border-radius:var(--radius);margin-bottom:5px}
 .lane-cat-process,.lane-cat-cpu,.lane-cat-hardware{background:var(--surface);color:var(--accent-strong);border:1px solid var(--line-strong)}
@@ -148,9 +150,10 @@
 .step-mode{display:inline-block;font-size:9px;font-weight:600;padding:0 6px;border-radius:8px;margin:2px 0 0 6px;vertical-align:middle;background:#eef2f7;color:#475569;border:1px solid #dbe2ea}
 .seq-event.crash .step-mode{background:#f7e2de;color:#a8483c;border-color:#e5b7af}
 /* 证据链逻辑串联 */
-.evidence-connect{display:flex;align-items:center;gap:10px;padding:9px 0 9px 14px}
-.evidence-connect span{color:var(--accent);font-size:16px;line-height:1}
-.evidence-connect p{margin:0;font-size:12px;color:var(--muted);line-height:1.7}
+.evidence-connect{display:flex;align-items:flex-start;gap:10px;padding:10px 14px;margin:14px 0;border-left:3px solid var(--accent);background:var(--accent-soft);border-radius:6px}
+.evidence-connect span{color:var(--accent-strong);font-size:15px;line-height:1.5;font-weight:650;flex-shrink:0}
+.evidence-connect p{margin:0;font-size:13px;color:var(--accent-strong);line-height:1.6}
+.evidence-summary-label{display:inline-block;font-size:11px;font-weight:650;color:var(--accent-strong);background:var(--accent-soft);border:1px solid var(--line-strong);border-radius:4px;padding:0 6px;margin-right:6px;vertical-align:1px}
 @media print{.evidence-connect{break-inside:avoid}}
 /* 完整技术传播链 */
 .propagation-list{list-style:none;padding:0;margin:0}
@@ -492,17 +495,23 @@ function renderOverview(){
   }
   h += `</article>`;
 
-  /* 临时规避手段：一句话描述 + 默认收起的修复细节（shell 命令/配置） */
-  if(wa && has(wa.summary) && String(wa.summary).trim()!=='无'){
-    const waTitle = has(wa.title) ? wa.title : firstSentence(wa.summary);
+  /* 临时规避手段：始终渲染；无针对性方案时写「暂无临时规避手段」 */
+  {
+    const hasWorkaround = wa && has(wa.summary) && !/^(无|暂无)$/.test(String(wa.summary).trim());
     h += `<article class="plan-card secondary"><div class="small-label">临时规避手段 · 运维人员</div>`;
-    h += `<h3>${esc(waTitle)}</h3>`;
-    h += `<p>${linkifyBody(wa.summary)}</p>`;
-    if(toArr(wa.steps).length){
-      h += `<div class="reading-group"><details><summary>规避细节与命令<span class="chevron" aria-hidden="true"></span></summary><div class="detail-body"><pre><code>${esc(toArr(wa.steps).join('\n'))}</code></pre></div></details></div>`;
+    if(hasWorkaround){
+      const waTitle = has(wa.title) ? wa.title : firstSentence(wa.summary);
+      h += `<h3>${esc(waTitle)}</h3>`;
+      h += `<p>${linkifyBody(wa.summary)}</p>`;
+      if(toArr(wa.steps).length){
+        h += `<div class="reading-group"><details><summary>规避细节与命令<span class="chevron" aria-hidden="true"></span></summary><div class="detail-body"><pre><code>${esc(toArr(wa.steps).join('\n'))}</code></pre></div></details></div>`;
+      }
+      if(has(wa.risk)) h += `<p class="notice">${linkifyBody(wa.risk)}</p>`;
+      else h += `<p class="notice">仅降低触发概率，不能根治。</p>`;
+    } else {
+      h += `<h3>暂无临时规避手段</h3>`;
+      h += `<p>未检索到针对本缺陷的有效临时规避方案，根治依赖内核补丁。</p>`;
     }
-    if(has(wa.risk)) h += `<p class="notice">${linkifyBody(wa.risk)}</p>`;
-    else h += `<p class="notice">仅降低触发概率，不能根治。</p>`;
     h += `</article>`;
   }
 
@@ -603,7 +612,7 @@ function renderFeatures(){
   if(frames.length){
     h += `<h3 class="subsection-title">宕机栈</h3>`;
     h += `<p class="caption">栈顶在上，按日志顺序列出调用帧。</p>`;
-    h += `<pre><code>${esc(frames.join('\n'))}</code></pre>`;
+    h += `<pre class="crash-stack"><code>${esc(frames.join('\n'))}</code></pre>`;
     h += `<p class="stack-impression"><b>现场初印象：</b>线程通过 nanosleep 进入睡眠并让出 CPU，内核在 CFS 调度器挑选下一任务、设置调度实体时发生空指针解引用。调用栈定位了崩溃路径，但不能单独证明空实体产生的原因。</p>`;
   }
 
@@ -661,7 +670,7 @@ function renderEvidence(){
   h += `<div class="section-heading"><span class="section-no">04</span><h2 id="evidence-title">为什么得出这个结论</h2></div>`;
   const evs = toArr(deep.evidence).filter(has);
   if(evs.length){
-    h += `<p class="section-intro">按 <b>崩在哪里 → 为什么拿到空任务 → 为什么没拦住 → 社区确认</b> 四步递进，逐步锁定根因。</p>`;
+    h += `<p class="section-intro">从崩溃现场出发，一步步追溯根因并交叉验证。</p>`;
     evs.forEach((e,i)=>{
       const isObj = typeof e === 'object' && e !== null;
       const title = isObj ? (e.title || ('依据 '+(i+1))) : evidenceTitle(e, i);
@@ -671,7 +680,7 @@ function renderEvidence(){
       if(has(connect)) h += `<div class="evidence-connect"><span aria-hidden="true">↓</span><p>${esc(connect)}</p></div>`;
       h += `<article class="evidence"><div class="evidence-number">${i+1}</div><div>`;
       h += `<h3>${esc(title)}</h3>`;
-      if(has(summary)) h += `<p>${linkifyBody(summary)}</p>`;
+      if(has(summary)) h += `<p class="evidence-summary"><span class="evidence-summary-label">结论</span>${linkifyBody(summary)}</p>`;
       if(reasoning.length){
         h += `<details><summary>查看推理细节与证据<span class="chevron" aria-hidden="true"></span></summary><div class="detail-body"><ol class="reasoning">`;
         reasoning.forEach(st=>{
