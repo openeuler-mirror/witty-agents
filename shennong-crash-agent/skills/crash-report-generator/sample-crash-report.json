@@ -242,6 +242,8 @@
     "conclusion": "这台服务器在连续运行约 290 天后，内核调度器中某个处理器运行队列的任务计数在一次极罕见的并发窗口中被多减了一次而变为负值，调度器因此误以为空队列上仍有任务可选，绕过正常的空闲保护去空队列取任务并得到空结果，又因该内核版本缺少对空结果的最后一道防御检查而访问无效地址，整机随即宕机并自动转储重启。该问题与硬件故障无关，属内核调度器已知缺陷家族（上游社区已在后续大版本确认并加入防御检查，社区补丁已确认）；同一局点此外两次宕机与本问题属同一调度器问题簇，需统一修复与监控。",
     "standard_solution": {
       "type": "patch",
+      "claim_tag": "自研最小防御补丁（移植上游 v6.12 f12e148892ed 判空模式，必须覆盖厂商 QoS 双循环的全部 pick→set 路径）",
+      "short": "要做什么：给内核调度器的挑选任务路径补上一道对'空结果'的防御检查，使运行队列异常为空时安全转入空闲任务，而不是直接崩溃。为什么：这台服务器的内核版本缺少这道防御，当运行队列计数因极罕见的并发窗口被多减一次而变成负数时，调度器会绕过'队列已空'的正常保护、在空队列上取任务并拿到空结果，随后不加检查就使用它，导致整机宕机；上游社区直到多年后的大版本才加入同样的防御，现有版本无法直接套用。怎么做：参照上游公开的修复模式，在调度器挑选任务函数的全部循环（含厂商特性引入的两处循环）各插入数行判空代码，重新编译内核或制作热补丁，灰度批量上线。",
       "basis": [
         {
           "kind": "commit",
@@ -262,6 +264,7 @@
           "text": "第一循环 +268 已有 cbz x20 判空而第二循环 +728~+740 无判空、LR=+744 锁定崩溃于第二循环——补丁必须覆盖所有 pick→set 循环，只修一处无效。"
         }
       ],
+      "fixed_in": "上游 v6.12 首次引入判空防御（f12e148892ed，2024-09 随 sched-core-2024-09-19 合入；竞态修复 b55945c5 同期）；4.19.y 主线与 Kylin 4.19.90-89.17.v2401 均不含该防御（v6.11 对照同样无判空；本 vmcore 反汇编实证第二循环无 cbz）。上游补丁依赖 v6.12 delayed-dequeue 重构、不可整体回移植，4.19 修复只能自研最小防御补丁；禁止移植 LKML 1911.1/00528 大重构系列（7 文件重构，基线不兼容，方法论红线）。",
       "patch_list": [
         {
           "sha": "自研（模式移植自 f12e148892ede8d9ee82bcd3e469e6d01fc077ac）",
@@ -274,6 +277,14 @@
           "diff": "--- a/kernel/sched/fair.c\n+++ b/kernel/sched/fair.c\n@@ -6689,6 +6689,16 @@ pick_next_task_fair(struct rq *rq, struct task_struct *prev, struct rq_flags *rf)\n \tput_prev_task(rq, prev);\n \n \tdo {\n \t\tse = pick_next_entity(cfs_rq, NULL);\n+\t\t/*\n+\t\t * Defensive NULL check (mirrors upstream v6.12 f12e148892ed):\n+\t\t * cfs_rq->nr_running may underflow to -1 via a rare\n+\t\t * enqueue/dequeue race, bypassing the !nr_running idle check\n+\t\t * above while the rb-tree is empty. pick_next_entity() then\n+\t\t * legitimately returns NULL -- fall back to idle instead of\n+\t\t * dereferencing NULL in set_next_entity().\n+\t\t */\n+\t\tif (unlikely(!se))\n+\t\t\tgoto idle;\n \t\tset_next_entity(cfs_rq, se);\n \t\tcfs_rq = group_cfs_rq(se);\n \t} while (cfs_rq);\n@@ 厂商 QoS 第二循环（本次崩溃路径，Kylin 源码树中定位方法见 method_steps）@@\n \tdo {\n \t\tse = pick_next_entity(cfs_rq, NULL);\n+\t\tif (unlikely(!se))\n+\t\t\tgoto idle;   /* 同上：第二循环必须同步补判空，本次崩溃即发生于此循环 */\n \t\tset_next_entity(cfs_rq, se);\n \t\tcfs_rq = se->my_q;\n \t} while (cfs_rq);"
         }
       ],
+      "method_steps": [
+        "1. 在 Kylin 4.19.90-89.17.v2401 源码树 kernel/sched/fair.c 中定位 pick_next_task_fair()：grep -n 'pick_next_entity(cfs_rq, NULL)' 找出全部 pick→set 循环（vanilla 基线 1 处；Kylin QoS 改造后为 2 处，本次崩溃发生在第二处——可用 'dis -l pick_next_task_fair 对照 +716~+748 无 cbz' 的反汇编特征在源码中确认对应循环）。",
+        "2. 对每一处循环，在 se = pick_next_entity(...) 与 set_next_entity(cfs_rq, se) 之间插入 'if (unlikely(!se)) goto idle;'（含注释说明防御来源 f12e148892ed）。",
+        "3. 逐个循环核验（方法论红线：厂商改造可能拆出多个循环，只修一处无效）：编译后 crash/objdump 反汇编确认每个 'bl pick_next_entity' 与 'bl set_next_entity' 之间均出现 cbz 判空分支。",
+        "4. 编译内核（或制作 livepatch 热补丁）：make -j$(nproc) binrpm-pkg 或厂商热补丁框架；确认无新编译告警。",
+        "5. 灰度上线：先在同局点 1~2 台金丝雀机器部署，观察 ≥72h 无调度异常后批量推广至同内核版本机群；保留 kdump 配置不变以便对比。",
+        "6. 同步推动厂商（麒麟）排查 nr_running 下溢的深层竞态源头（enqueue/dequeue/load_balance/QoS 计数路径），并评估升级至含调度器调试手段的内核版本。"
+      ],
       "detail": "三层根因对应三层处置：① 直接原因（set_next_entity NULL 解引用）与防御缺失（QoS 第二循环无判空）——本补丁立即消除宕机后果，队列异常为空时安全转入 idle（此时 rq->nr_running=0，本就该运行 idle 任务，语义正确）；② 触发条件（cfs_rq->nr_running/h_nr_running 下溢为 0xffffffff）——判空补丁是防御性治标，下溢本身是深层 enqueue/dequeue 计数竞态（double-decrement 类；prev 线程 nr_migrations=4100 万次的高频迁移显著扩大竞态窗口；上游 b55945c5 证明 pick vs ttwu 竞态家族真实存在），需厂商带调试手段（如 count 校验 WARN、sched debug 内核）联合定位；③ 问题簇（同局点 0708/0803/0824 三种调度器形态宕机）——统一建簇监控、统一补丁覆盖 pick 路径，0824 的 check_preempt_wakeup 路径判空（se/rq->curr 相关）建议在同一补丁系列中一并评估。补丁量级 +3~10 行/循环，不改数据结构、不改锁语义、无 KABI 影响，可热补丁化。",
       "rollback": "热补丁形态：livepatch disable / rmmod 对应热补丁模块即可即时恢复原逻辑（无数据结构变更，回退零风险）；整内核形态：grub 菜单选择上一版本内核（4.19.90-89.17.v2401.ky10.aarch64）启动，确认稳定后 grubby --set-default /boot/vmlinuz-4.19.90-89.17.v2401.ky10.aarch64 恢复默认项；若补丁引发调度行为回归（理论上仅新增 NULL→idle 分支，概率极低），直接回退并保留 vmcore/dmesg 供再分析。",
       "verification": "1) 编译零新告警（W=1 对比基线）；2) 反汇编核验：crash> dis -l pick_next_task_fair 确认每个 bl pick_next_entity 与 bl set_next_entity 之间均存在 cbz 判空分支（含 QoS 第二循环）；3) 功能回归：schbench/hackbench/cgroup 层级压测 + CPU 热插拔/迁移压力，确认调度行为无回归（队列空时正常走 idle）；4) 长时观察：该竞态窗口极窄（290 天 uptime 一遇），需数天~数周长时压力/生产观察，监控 dmesg/kdump 无新 set_next_entity/check_preempt_wakeup 类 Oops；5) 建簇监控：对同局点 0708(NULL@0x40)/0803(hard lockup@load_balance)/0824(NULL@0x168) 三种形态建立告警聚类，复发即升级厂商联合排查。",
@@ -281,12 +292,21 @@
       "brief": "已给出自研最小防御补丁：在 pick_next_task_fair 的每个 pick→set 循环（含厂商 QoS 双循环）中，为 pick_next_entity 返回值增加 if(!se) 判空，命中时转入 idle，避免空指针进入 set_next_entity。"
     },
     "temporary_workaround": {
-      "type": "none",
-      "summary": "无",
-      "case_refs": [],
-      "steps": [],
-      "risk": "",
-      "detail": "检索到的全部案例（bugzilla 211435/220447/219920、上游 commit 系列）均未提供可落地的临时规避措施：该缺陷是极窄并发窗口的计数竞态，无内核参数/配置项可关闭触发路径（nanosleep 调度为业务必经路径），降低迁移频率等业务侧调整无案例依据支撑，故如实标注'无'。根治依赖判空防御补丁（见标准解决方案）。"
+      "type": "config",
+      "title": "降低线程迁移与睡眠唤醒频率，压缩竞态窗口",
+      "summary": "补丁合入前，通过 CPU 亲和性绑核减少线程跨核迁移、并降低高频 nanosleep 睡眠/唤醒频率，压缩调度器计数下溢的竞态窗口，显著降低触发概率。",
+      "steps": [
+        "# 1. 绑核减少线程跨核迁移（缩小竞态窗口）",
+        "taskset -pc <核心列表> <业务进程PID>",
+        "# 或用 cgroup cpuset：",
+        "mkdir -p /sys/fs/cgroup/cpuset/biz && echo '0-7' > /sys/fs/cgroup/cpuset/biz/cpuset.cpus",
+        "",
+        "# 2. 业务侧降低高频睡眠/唤醒频率",
+        "# 将高频 nanosleep 轮询改为聚合/批处理，减少单位时间的睡眠-唤醒次数"
+      ],
+      "risk": "仅压缩竞态窗口、降低触发概率，不能根治；根治依赖 fair.c 判空补丁。",
+      "detail": "该缺陷是长时间运行累积的窄窗口计数竞态，触发前提是线程高频睡眠/唤醒并频繁迁移。绑核减少迁移、降低 nanosleep 频率可压缩竞态窗口，但无法根治。",
+      "case_refs": []
     },
     "event_scene": {
       "participants": [
@@ -297,6 +317,30 @@
           "init": "运行于 CPU92，即将 nanosleep 睡眠",
           "tip": "OceanBase 类租户锁等待线程；nr_migrations=40991638（4100 万次迁移，高频跨核）",
           "mode": "user"
+        },
+        {
+          "id": "sched",
+          "name": "CPU92 内核调度器 (__schedule)",
+          "type": "kernel",
+          "init": "响应睡眠请求执行上下文切换",
+          "tip": "kernel/sched/core.c __schedule → fair.c pick_next_task_fair",
+          "mode": "kern"
+        },
+        {
+          "id": "cfsrq",
+          "name": "CPU92 根 cfs_rq (ffffa07fefde16c0)",
+          "type": "kernel",
+          "init": "nr_running=0xffffffff（已下溢）、红黑树空",
+          "tip": "运行队列状态对象；下溢使 !nr_running 空队列检查被绕过",
+          "mode": "kern"
+        },
+        {
+          "id": "hrtimer",
+          "name": "hrtimer/nanosleep 定时器",
+          "type": "kernel",
+          "init": "为进程设置睡眠定时器",
+          "tip": "kernel/time/hrtimer.c do_nanosleep",
+          "mode": "kern"
         },
         {
           "id": "cpu92",
@@ -348,7 +392,7 @@
         {
           "m": "user",
           "from": "proc1",
-          "to": "cpu92",
+          "to": "hrtimer",
           "kind": "call",
           "dt_ms": 0,
           "t": "nanosleep() 系统调用陷入内核（SYSCALLNO=0x65）",
@@ -358,8 +402,8 @@
         },
         {
           "m": "kern",
-          "from": "cpu92",
-          "to": "cpu92",
+          "from": "hrtimer",
+          "to": "sched",
           "kind": "call",
           "dt_ms": 1,
           "t": "do_nanosleep 置 TASK_INTERRUPTIBLE 并调用 schedule()",
@@ -369,8 +413,8 @@
         },
         {
           "m": "kern",
-          "from": "cpu92",
-          "to": "cpu92",
+          "from": "sched",
+          "to": "cfsrq",
           "kind": "call",
           "dt_ms": 2,
           "t": "deactivate_task：prev 摘出运行队列（dequeue）",
@@ -388,8 +432,8 @@
         },
         {
           "m": "kern",
-          "from": "cpu92",
-          "to": "cpu92",
+          "from": "sched",
+          "to": "cfsrq",
           "kind": "global",
           "dt_ms": 3,
           "t": "pick_next_task_fair 检查 !cfs_rq->nr_running —— 因下溢值 0xffffffff≠0 被绕过，未走 idle",
@@ -399,8 +443,8 @@
         },
         {
           "m": "kern",
-          "from": "cpu92",
-          "to": "cpu92",
+          "from": "sched",
+          "to": "cfsrq",
           "kind": "call",
           "dt_ms": 4,
           "t": "第二个 pick 循环：pick_next_entity(cfs_rq, NULL) 在空树上返回 NULL",
@@ -418,8 +462,8 @@
         },
         {
           "m": "kern",
-          "from": "cpu92",
-          "to": "cpu92",
+          "from": "sched",
+          "to": "sched",
           "kind": "race",
           "dt_ms": 5,
           "t": "未判空直接调用 set_next_entity(cfs_rq, NULL)（第一循环 +268 有 cbz 判空，崩溃的第二循环 +728~+740 无）",
@@ -430,13 +474,36 @@
         {
           "m": "kern",
           "from": "cpu92",
-          "to": "cpu92",
+          "to": "sched",
           "kind": "crash",
           "dt_ms": 6,
           "t": "执行 ldr w0,[x20,#64]（读 se->on_rq）：x20=0 → 访问虚地址 0x40 → DABT 翻译故障",
           "val": "ESR=0x96000005（DABT current EL, ISS=0x05 translation fault, WnR=0 读）；[0x40] pgd=0 pud=0",
           "evidence_level": "L1",
           "evidence": "pc=set_next_entity+0x20；Code:(b9404280)；Mem abort info 段"
+        },
+        {
+          "m": "kern",
+          "from": "sched",
+          "to": "cpu92",
+          "kind": "crash",
+          "dt_ms": 7,
+          "t": "do_mem_abort→do_page_fault→die_kernel_fault→die：内核 Oops，panic 流程启动",
+          "val": "Internal error: Oops: 96000005 [#1] SMP",
+          "evidence_level": "L1",
+          "evidence": "dmesg L2653；bt 帧#3-#9（die/crash_kexec 链）"
+        },
+        {
+          "m": "kern",
+          "from": "sched",
+          "to": "cpu92",
+          "kind": "crash",
+          "dt_ms": 1500,
+          "t": "kdump：SMP 停其它 CPU 失败(0-91,93-127)，machine_kexec WARNING 'Some CPUs may be stale'，仍捕获 3.8GB vmcore 后重启",
+          "val": "06:03:36 系统重新引导（syslog）",
+          "evidence_level": "L1",
+          "evidence": "dmesg L2688-2737 'Bye!'；messages Jul 8 06:03:36 Booting Linux",
+          "full": "注：其它 CPU 的 NT_PRSTATUS 缺失使非崩溃 CPU 状态参考性下降，但 CPU92 崩溃现场（寄存器/栈/结构体）完整可信。"
         }
       ]
     },
@@ -1103,86 +1170,109 @@
       }
     ],
     "deep": {
-      "flow": "业务线程在 CPU92 上通过 nanosleep 睡眠、让出 CPU → 内核调度器摘出当前任务、挑选下一任务 → 运行队列计数在极罕见并发窗口中被多减一次变为负值，绕过「队列空则转空闲」的检查 → 在空队列上取任务取到空值 → 又因缺少空值检查而直接使用该空值 → 访问无效地址，内核崩溃并经 kdump 转储后重启。",
+      "lead": "CPU92 根 cfs_rq 的 nr_running/h_nr_running 下溢为 0xffffffff 绕过空队列检查，空红黑树上 pick_next_entity 返回 NULL，Kylin QoS 第二个 pick 循环无判空防御，set_next_entity 首条访存指令读 se->on_rq@0x40 触发 NULL 解引用宕机。",
+      "mechanism_summary": "服务器连续运行 290 天后，内核调度器某 CPU 运行队列的'队列上任务数'计数在一次极罕见的并发窗口中被多减了一次，变成'负一'。调度器据此误以为队列上还有任务可跑，绕过了'队列空则切到空闲任务'的正常保护，转而去空队列上取任务，取到'空结果'后又因为没有最后一道防线（对空结果不做检查就直接使用）而访问了无效内存地址，整个系统随即宕机重启。与硬件故障无关；同局点此前另两次宕机属同一调度器缺陷家族。",
+      "judgment": "根因判定为：cfs_rq->nr_running 计数下溢（深层竞态，窗口未完全定位）+ Kylin QoS 第二 pick 循环判空防御缺失（可立即修复层）。处置方向：自研最小判空防御补丁（移植上游 v6.12 f12e148892ed 模式，覆盖全部 pick→set 循环）消除宕机后果，并推动厂商定位下溢竞态源头；同局点按问题簇统一监控。",
+      "mechanism": "技术触发链：T1004_LockWaitM(PID 4090813) 在 CPU92 nanosleep → __schedule deactivate prev（se 出树、计数递减）→ pick_next_task_fair：fair.c L6607 'if (!cfs_rq->nr_running) goto idle' 因 nr_running=0xffffffff(-1)≠0 被绕过 → 第二 pick 循环（Kylin 二进制 +716~+748）pick_next_entity(cfs_rq, NULL) → __pick_first_entity(L566) rb_leftmost=0x0 → return NULL → +728 mov x20,x0（x20=se=NULL）→ +740 bl set_next_entity（+728~+740 间无 cbz x20；对照第一循环 +268 有判空）→ set_next_entity+16 mov x20,x1 / +32(0x20) ldr w0,[x20,#64]（se->on_rq，偏移 0x40）→ 访问虚地址 0x40（pgd=pud=0）→ DABT ESR=0x96000005 → do_mem_abort→do_page_fault→die→Oops→crash_kexec→kdump。下溢语义：nr_running 与 h_nr_running 同时为 0xffffffff 指向 enqueue/dequeue 计数竞态（double-decrement 类），prev 线程 nr_migrations=4100 万（高频迁移）扩大窗口；真实 rq->nr_running=0 证明崩溃时刻该 CPU 本应走 idle 路径。",
       "evidence": [
         {
           "title": "宕机栈分析：崩在哪里、为什么崩",
-          "summary": "调用栈显示：线程 nanosleep 睡眠让出 CPU 后，内核在挑选下一个任务时，在 set_next_entity 读取一个空指针的成员时崩溃。",
+          "summary": "崩在 set_next_entity 读一个空指针的成员（x20=0，读地址 0x40）。",
           "reasoning": [
             {
               "step": "谁触发的",
-              "detail": "业务线程 T1004_LockWaitM 调用 nanosleep 睡眠、让出 CPU，内核进入调度流程。",
+              "detail": "业务线程调用 nanosleep 睡眠、主动让出 CPU，内核开始切换任务。",
               "evidence": "调用栈：sys_nanosleep → do_nanosleep → schedule → __schedule → pick_next_task_fair → set_next_entity"
             },
             {
               "step": "崩在哪一行",
-              "detail": "崩溃指令是 ldr w0,[x20,#64]，即“读 x20 指向的地址 +64 处”。x20 此刻是 0（空指针），于是读了 0+64=0x40 这个非法地址，触发崩溃。",
+              "detail": "崩溃指令是「读 x20 指向地址 +64 处」。此时 x20 是 0（空指针），等于去读 0x40 这个无效地址，触发崩溃。",
               "evidence": "pc=set_next_entity+0x20；机器码 b9404280=ldr w0,[x20,#64]；x20=0；故障地址 0x40"
             }
           ]
         },
         {
-          "title": "结构体取证：为什么调度器拿到了空任务",
-          "summary": "运行队列的“任务数”计数器变成了 -1（0xffffffff），调度器误以为队列里还有任务；但队列实际上是空的，取任务自然取到了空值。",
-          "connect": "栈定位了“崩在 set_next_entity 读空指针”，接下来解释调度器为什么会拿到这个空任务。",
+          "title": "空指针从哪来：这个空指针是怎么传进来的",
+          "summary": "set_next_entity 的参数 se=NULL，是上层 pick_next_task_fair 把 pick_next_entity 的返回值（空）直接传下来的。",
+          "connect": "崩点还原了「读空指针」，接下来追溯这个空指针是谁传进来的。",
+          "reasoning": [
+            {
+              "step": "崩溃函数的上层是谁",
+              "detail": "set_next_entity 由 pick_next_task_fair 调用（返回地址落在它里面），所以崩溃发生在挑选下一任务的主流程里。",
+              "evidence": "dmesg lr : pick_next_task_fair+0x2e8/0x548"
+            },
+            {
+              "step": "参数就是返回值",
+              "detail": "反汇编显示：先调用 pick_next_entity 拿到结果，随后把这个结果直接传给 set_next_entity，中间没做任何检查——所以传进来的就是那个空值。",
+              "evidence": "反汇编 +724 bl pick_next_entity / +728 mov x20,x0 / +740 bl set_next_entity；x20=0"
+            }
+          ]
+        },
+        {
+          "title": "结构体取证：为什么 pick_next_entity 返回了空",
+          "summary": "运行队列计数下溢成 -1，调度器误以为还有任务；但队列实际是空的（rb_leftmost=0），取任务返回空。",
+          "connect": "空指针来自 pick_next_entity 的返回值，接下来解释它为什么返回空。",
           "reasoning": [
             {
               "step": "计数被多减了一次",
-              "detail": "运行队列的 nr_running 计数在一个极罕见的并发窗口中被多减了一次，变成 -1（0xffffffff）。内核判断“队列是否为空”用的是“计数是否为 0”，-1 不等于 0，于是误判队列里还有任务。",
+              "detail": "运行队列的「任务数」计数在一次极窄的并发窗口里被多减了一次，变成 -1。内核用「是否等于 0」判断队列空不空，-1 不等于 0，就被误判成还有任务。",
               "evidence": "nr_running = h_nr_running = 0xffffffff（32 位无符号 -1）"
             },
             {
               "step": "队列其实是空的",
-              "detail": "红黑树、候选任务等字段全为 0，队列上确实没有任何可运行的任务，取任务必然返回空值。",
+              "detail": "红黑树、候选任务等字段全为 0，队列里其实没有任何可运行任务，取任务自然取到空值。",
               "evidence": "rb_leftmost=0、curr/next/last/skip 全 0"
             },
             {
               "step": "只有 CPU92 出现",
-              "detail": "对全部 128 个 CPU 的运行队列逐一检查，只有 CPU92 出现这个 -1，说明不是内存被大面积破坏，而是一次性的窄窗口竞态。",
+              "detail": "逐一检查全部 128 个 CPU，只有 CPU92 出现这个 -1，说明不是内存大面积损坏，而是一次性的窄窗口竞态。",
               "evidence": "128 个 cfs_rq 全量扫描，仅 CPU92 一处 0xffffffff"
             }
           ]
         },
         {
-          "title": "对照反编译源码：为什么空值没有被拦住",
-          "summary": "把本机内核的反编译结果与上游源码对照，发现“取任务”和“用任务”之间少了一道空值检查：第一处循环有检查，崩溃所在的第二处循环漏掉了；上游也是到 v6.12 才补上这道检查。",
-          "connect": "结构体证明了“计数异常导致取到空任务”，接下来对照反编译和源码，解释这个空任务为什么没有被一道空值检查拦住。",
+          "title": "对照反编译源码：为什么空值没被拦住",
+          "summary": "「取任务」和「用任务」之间少了道空值检查：厂商 QoS 第二循环漏判空，上游 v6.12 才补上。",
+          "connect": "pick_next_entity 会合法返回空，接下来看调用方为什么没有检查拦住它。",
           "reasoning": [
             {
               "step": "本机反编译：两处循环一有一无",
-              "detail": "反编译 pick_next_task_fair 能看到两处“取任务→用任务”的循环。第一处在用任务之前有 cbz 判空（为空就跳过）；第二处（厂商 QoS 改造拆出的）在调用 set_next_entity 之前没有任何判空分支，本次崩溃就发生在这一处。",
+              "detail": "反编译能看到两处「取任务→用任务」的循环。第一处用任务前有判空，第二处（厂商改造拆出的）用任务前没有任何判空，崩溃就发生在第二处。",
               "evidence": "反汇编：第一循环 +268 有 cbz x20；第二循环 +728~+740 无任何判空分支"
             },
             {
               "step": "崩溃点落在无判空的那一处",
-              "detail": "崩溃时返回地址 LR 指向 +744，恰好是第二循环里 bl set_next_entity 的返回地址（第一循环的返回地址是 +284），证明崩溃发生在漏了判空的第二处循环。",
+              "detail": "崩溃时返回地址 LR 落在第二处循环的调用点（与第一处的返回地址不同），证明崩溃发生在漏了判空的那一处。",
               "evidence": "dmesg lr=+744 ↔ 反汇编 +740 bl set_next_entity"
             },
             {
               "step": "上游源码对照：v6.12 才补上",
-              "detail": "对照上游源码，v6.11 的公平调度同样没有判空，v6.12 起才加上 if(!se) 判空（由 f12e148892ed 引入）。说明这道检查确实是后来才补上的防护，当前 4.19 内核普遍缺这一道。",
+              "detail": "对照上游源码：v6.11 也没有判空，v6.12 起才加上这道检查。说明这是后来才补上的防护，当前 4.19 普遍缺这道。",
               "evidence": "v6.11/v6.12 fair.c 源码对照；f12e148892ed 补丁"
             }
           ]
         },
         {
           "title": "社区与上游交叉验证：确认是已知缺陷",
-          "summary": "社区 bugzilla #211435 是同类崩溃（同一个函数、同样罕见的触发条件）；上游直到 v6.12 才补上判空，当前 4.19 内核没有这道防护，需要自行打补丁。",
-          "connect": "反汇编与源码对照证明“缺一道判空”，接下来用社区和上游案例交叉验证，确认这是已知缺陷家族。",
+          "summary": "bugzilla #211435 是同类崩溃；4.19 内核无现成修复，需自研判空补丁。",
+          "connect": "源码对照证明缺一道判空，接下来用社区案例确认这是已知缺陷。",
           "reasoning": [
             {
               "step": "同型案例佐证",
-              "detail": "bugzilla #211435 与本崩溃同型：同样在 set_next_entity 入口空指针、同样在压测下极罕见地命中，证明这是这个缺陷家族的典型表现。",
+              "detail": "bugzilla #211435 是同类崩溃：同样在 set_next_entity 入口空指针、同样压测下极罕见命中，证明这是同一缺陷家族。",
               "evidence": "bugzilla #211435（4.9 ARM，同函数对）"
             },
             {
               "step": "修复只能自研",
-              "detail": "上游的判空补丁依赖 v6.12 的大改版（函数签名都变了），不能直接搬回 4.19；唯一可行的办法是参考它的思路，自行写一个最小的判空补丁。",
+              "detail": "上游补丁依赖 v6.12 的大改版，不能直接搬回 4.19；只能参考它的思路，自行写一个最小判空补丁。",
               "evidence": "f12e148892ed 依赖 v6.12 delayed-dequeue 重构，不可整体回移植"
             }
           ]
         }
-      ]
+      ],
+      "confidence": "高——直接原因（NULL 解引用）、触发条件（nr_running 下溢+空树）、防御缺失（第二循环无判空）均为 L1 级 vmcore/反汇编实证；深层下溢竞态的具体路径为 L2/L3 推断（窗口极窄，290 天 uptime 仅一遇，无法从单次现场唯一还原）。",
+      "scope": "Kylin 4.19.90-89.x.v2401.ky10 aarch64（QoS 双循环改造，第二循环漏判空）；vanilla 4.19~上游 v6.11 同代际内核均无判空防御（v6.12 起才有）；同局点鲲鹏920/PR210K + OceanBase 类高频迁移业务为高危场景（prev 线程 nr_migrations=4100 万）。",
+      "flow": "业务线程在 CPU92 上通过 nanosleep 睡眠、让出 CPU → 内核调度器摘出当前任务、挑选下一任务 → 运行队列计数在极罕见并发窗口中被多减一次变为负值，绕过「队列空则转空闲」的检查 → 在空队列上取任务取到空值 → 又因缺少空值检查而直接使用该空值 → 访问无效地址，内核崩溃并经 kdump 转储后重启。"
     },
     "overview_brief": "内核调度器在一次让出 CPU、挑选下一任务时，误以为空队列里还有任务，去取却取到空结果，又因该内核版本缺少一道空值检查，直接访问了无效地址，导致整机宕机并重启。这是内核调度器的已知缺陷，与业务程序和硬件无关。",
     "trigger_scenario": "在类高频迁移业务的线程频繁睡眠/唤醒（如 nanosleep 让出 CPU）的场景下，内核调度器挑选下一任务时即可能触发。"

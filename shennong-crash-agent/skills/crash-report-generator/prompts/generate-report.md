@@ -12,6 +12,7 @@
 6. **结论三要素**：每条结论含「发生了什么 → 为什么 → 是否与业务/硬件有关」，简洁但关键信息不丢。
 7. **摘要 + 细节**：长内容拆「一句话摘要 + 可展开细节」。
 8. **不含无关信息**：不写与结论无关的信息（运行时长、具体业务名等）。
+9. **每个描述都尽量短**：一句话能说清的不写两句；正文能短就不啰嗦。默认口径——`conclusion` 1–3 句、`overview_brief`/`trigger_scenario`/`summary`/案例 `lead`/`how`/`applicability` 各 1–2 句；专业细节一律下沉到 `deep`/`propagation_chain`/附录，不在结论层展开。
 
 ## 输出规则
 
@@ -135,7 +136,7 @@
       - `detail`（完整说明）：用通俗、书面、少术语的语言把「发生了什么、为什么要这么修、修的是什么、影响面」讲完整（专业细节收进可展开的补充信息）。
       - `rollback`（回退方案，**必填**）：说明补丁/配置合入失败或引发回归时的回退动作（如卸载热补丁、还原 sysctl/启动参数、回滚到原内核包、重启回退等），给出可执行命令或步骤；若为纯配置/命令行修复，给出还原命令。
       - `verification`（验证方案，**必填**）：说明合入后如何验证修复生效（编译无告警、长时压力回归、观察 dmesg 无新 Oops、监控同类 panic 建簇统计、验证触发路径不再崩溃等），给出具体验证口径。
-   - **`temporary_workaround`**（结构化对象）：`type`（`config`=命令行/配置规避、`none`=无有效临时规避方案）、`case_refs`、`summary`、`steps`（命令/操作）、`risk`、`detail`。只有某个检索案例明确提供该措施时才填写 `case_refs`（案例标识或标题）；没有案例依据时必须为 `[]`，HTML 将隐藏整块“临时缓解”，即使存在通用建议也不展示。**无有效方案时** `type` 取 `none`、`summary` 写「无」、`steps` 置空。有案例依据时 `steps` 必须给出**可直接执行**的命令/操作，优先考虑内核/系统配置、服务与资源控制、换机/分散部署、关闭触发特性或降低并发等。`risk` 说明无法根治的原因与回退方式。
+   - **`temporary_workaround`**（结构化对象）：`type`（`config`=命令行/配置规避、`none`=无方案）、`title`、`case_refs`、`summary`、`steps`（命令/操作）、`risk`、`detail`。**从 `trigger_scenario` 出发写针对性手段**（如针对高频迁移/睡眠唤醒的绑核、降频），**禁止周期性重启/kdump 兜底等任何宕机都能套的通用手段**；无针对性方案时 `type=none`、`summary=暂无`、`steps=[]`（HTML 仍渲染该卡并显示「暂无临时规避手段」）。有方案时 `steps` 必须给出**可直接执行**的命令/操作（优先内核/系统配置、关闭触发特性、降低迁移/并发等）。`risk` 说明无法根治的原因与回退方式。
    - **`event_scene`**（事件时序图，**必填**，采用“固定骨架 + 有限推断”，避免同一日志生成互相矛盾的时序）：
      - **泳道固定为三类**：`process`（进程/用户态业务线程）、`cpu`（CPU 核，name 写「编号 · 型号」）、`hardware`（外部硬件，如网卡/磁盘）。内核内部活动（调度器、cfs_rq、hrtimer）不单独建泳道，其事件 from/to 指向所属 `cpu`。
      - **主链路固定结构**：触发动作 → 进入内核 → 关键调度/中断处理 → 异常状态 → 崩溃指令。只展示到崩溃指令为止，不写崩溃之后的 panic/kdump 流程；只展示能由证据支持的关键节点，建议 4–8 步；不要为了“完整”重复拆分同一函数调用。
@@ -168,15 +169,11 @@
      精确行号需 vmlinux 调试信息或本地源码树；`dis -rl` 无法给出行号时注明工具边界。
    - **`deep.flow`**（故障流程梳理，必填）：用箭头链只描述触发流程，不含根因判定与处置方向。
      - 特化：`业务线程在 CPU92 上通过 nanosleep 睡眠、让出 CPU → 内核调度器摘出当前任务、挑选下一任务 → 运行队列计数在极罕见并发窗口中被多减一次变为负值，绕过「队列空则转空闲」的检查 → 在空队列上取任务取到空值 → 又因缺少空值检查而直接使用该空值 → 访问无效地址，内核崩溃并经 kdump 转储后重启。`
-   - **`deep.evidence`**（判断依据，四部分递进，必填）：输出**恰好 4 条** `{title,summary,reasoning[],connect}`。标题**固定用下面四个前缀**（冒号后副标题按本次根因自适应），按此顺序递进、通俗少术语；第 2/3/4 条**必填** `connect`（一句话说明这一步如何引出下一步，第 1 条不填）。
-     1. `宕机栈分析`：崩在哪里、为什么崩——调用栈 + 崩溃指令还原崩溃点。
-     2. `结构体取证`：关键数据结构为何异常——结构体取值还原数据被破坏/异常的来源。
-     3. `对照反编译源码`：这条路径为何会出问题——本机反编译 + 上游源码对照。
-     4. `社区与上游交叉验证`：确认是已知缺陷——社区同型案例 + 上游修复口径。
-     - 特化标题（前缀固定，副标题自适应）：
-       `宕机栈分析：崩在哪里、为什么崩` / `结构体取证：为什么调度器拿到了空任务` / `对照反编译源码：为什么空值没有被拦住` / `社区与上游交叉验证：确认是已知缺陷`。
-     - `reasoning[]` 每条至少 2 步，每步 `{step,detail,evidence}`，最后一步可补 `conclusion`。
-     - `connect`（特化）：`结构体证明了「计数异常导致取到空任务」，接下来解释这个空任务为什么没有被一道空值检查拦住。`
+   - **`deep.evidence[]`**（判断依据，必填）：按**自然分析流程逐步递进**，从崩溃现象出发，每一步回答一个「为什么 / 怎么知道」的问题，用 `connect` 把上一步结论自然引到下一步问题；**步数不限、标题自适应**，不要为了套固定框架而跳过必要的中间环节。每条 `{title,summary,reasoning[],connect}`，第 1 条不填 `connect`，其余每条**必填** `connect`（引用上一条结论 + 引出下一条要回答的问题）。
+     - 典型递进（仅供参考，按本次根因自适应，可增删）：崩溃点还原 → 空值/异常对象从哪传进来的 → 为什么会产生这个异常 → 为什么没有防御拦住 → 社区/上游交叉验证。
+     - **禁止跳步**：例如「崩在哪」到「为什么空」之间，必须先交代「这个空值是谁传进来的」（用 LR/反汇编/参数追溯），否则前后脱节。
+      - `reasoning[]` 每条至少 2 步，每步 `{step,detail,evidence}`，最后一步可补 `conclusion`。
+      - **通俗简洁**：`summary` 用一句话直接回答本条标题的问题；`reasoning[].detail` 用 1–2 句通俗短句、只保留核心因果（如「计数被多减了一次，-1 不等于 0，被误判成还有任务」），函数名/寄存器/地址/反汇编偏移等专业细节一律放到 `evidence`，不在 detail 里展开。
    - **`reasoning_flow`**（三部分根因，每步 `{stage,stage_name,color,title,short,text,evidence,ev_plain,path_mini,refs[],branch}`）。该字段仍为 schema 必填，用于后端追踪与原始数据兼容；不要把它当作 HTML 第 3 章的页面级总推理链，页面只展示 `deep.evidence[].reasoning[]`。`stage` **必须**用以下枚举，否则报告第 4 章三部分会渲染不完整：
      | `stage` | 归属部分 |
      |---|---|
@@ -187,7 +184,7 @@
       2. **崩溃链路分析**：`stage=path_analysis`，`path_mini` **必须等于 `propagation_chain` 的完整数组（逐跳复制，每一跳一个元素）**，查看器才会把每一跳渲染成一张函数卡片；**禁止写 null / 空数组 / 只写函数名数组**，否则崩溃链路只会显示一步、所有内容挤在一张卡里。
      3. **相关案例分析**：`stage` 用 `internal`/`community`/`commit`/`source_compare`/`conclusion`——内部案例 → 社区邮件/会议纪要/Bugzilla → 上游 commit → 当前内核对应位置源码逐行对照 → 结论。**只要执行了对应检索，就必须有对应的 stage**（`internal`/`community`/`commit`/`source_compare` 均要覆盖到，最后以 `conclusion` 收尾）；即使某类检索**未命中**，也要保留该 `stage` 并在 `text` 中如实写明「未检索到…」（此时不虚构对应案例与 anchor），而不是直接删掉该 stage。每步 `refs` 用 `anchor`（`kb-internal`/`kb-mail`/`kb-meeting`/`kb-bugzilla`/`kb-commit`）跳转到第 5 章对应卡片。
      （注：`build_analysis_chain` 工具返回的 `propagation_chain`/`source_clues` 是**数据字段**，不是 `stage` 取值；`stage` 仍用上表枚举。）
-   - **`deep`**（根因结论详细）：`flow`（故障流程梳理）、`evidence`（四部分证据）。
+   - **`deep`**（根因结论详细）：`flow`（故障流程梳理）、`evidence`（逐条判断依据，按自然流程递进）。
 7. **`diagnosis_repair_result.json`**（脚本/工具生成）：复用第 6 步开头的匹配工具响应，逐字节复制；社区案例走双通道（rag_core / 本地 grep+find，取 Top 3-4）。**未命中的分类写空数组 `[]`，严禁编造/幻想条目**（内部案例、社区邮件、会议纪要、Bugzilla、上游 commit 各自独立：有命中才填，没有就空）。当 RAG 未配置、`query_knowledge` 不可用时，在报告输出目录/`reports/` 目录查找同主机/同内核/同机型的既有诊断报告（`report_*.json` / `crash-report_*.html`），把崩溃点不同但同属同一子系统的案例作为内部同簇案例填入 `internal_kernel_result`（`verdict=same_area`、`match_level=L2/L3`，不得标 `confirmed`），并在 `history.cases` 记录各次崩溃点。
     - **⚠️ 与 `standard_solution` 对齐（强制，见第 6 步「修复依据 ↔ 技术附件对齐」四条规则）**：`standard_solution.basis`/`patch_list` 引用的每个上游 commit，必须在 `online_result` 中有 url/sha 可匹配的对应条目——`mode=full/part` 时该条目 `verdict="confirmed"` 且 `how`/`fix_scope`/`diff`/`files` 完整；`mode=pick` 时可为 `same_area`，但 `how`/`fix_scope` 必须写明「为何不能直接采用 + 借鉴了什么思路」，与 `basis[].text` 口径一致。反向同样成立：`online_result` 里的 confirmed commit 必须被 `basis`/`patch_list` 引用。严禁「第 1 章引用了某 commit，第 5 章却找不到对应条目」或「第 5 章有 confirmed 修复，第 1 章却不采用」。
 8. **`workflow_trace.json`**（基于真实会话数据，非记忆）：
