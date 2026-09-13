@@ -372,12 +372,6 @@
               "type": "string",
               "description": "验证方案：合入后如何验证修复生效（编译无告警、压力回归、观察 dmesg 无新 Oops、监控同类 panic 建簇等）。"
             },
-            "commands": {
-              "type": "array",
-              "items": {
-                "type": "string"
-              }
-            },
             "brief": {
               "type": "string",
               "description": "规避手段一句话说明：给出的是什么补丁，不含编译/灰度等过程。"
@@ -385,6 +379,25 @@
             "fixed_brief": {
               "type": "string",
               "description": "上游修复状态一句话：哪个内核版本的哪个补丁修复了什么问题（该补丁即生成 patch 的来源）。"
+            },
+            "claim_tag": {
+              "type": "string",
+              "description": "修复主张标签：一句话概括修复方案的性质与覆盖范围。"
+            },
+            "short": {
+              "type": "string",
+              "description": "规避手段短描述：分「要做什么·为什么·怎么做」三句，通俗书面、只写结论。"
+            },
+            "fixed_in": {
+              "type": "string",
+              "description": "修复版本判定：哪个内核版本/commit 首次引入对应修复。"
+            },
+            "method_steps": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "合入步骤：可执行步骤列表。"
             }
           },
           "required": [
@@ -421,6 +434,10 @@
             },
             "detail": {
               "type": "string"
+            },
+            "title": {
+              "type": "string",
+              "description": "临时规避方案标题（可选，一句话）。"
             }
           }
         },
@@ -445,9 +462,10 @@
                     "enum": [
                       "process",
                       "cpu",
-                      "hardware"
+                      "hardware",
+                      "kernel"
                     ],
-                    "description": "泳道三类：process=进程、cpu=CPU 核（name 写「编号 · 型号」）、hardware=外部硬件；内核内部活动（调度/cfs_rq/hrtimer）不单独建泳道，事件 from/to 指向 cpu。"
+                    "description": "泳道类型：process=进程、cpu=CPU 核、hardware=外部硬件、kernel=内核内部活动（归入 CPU 泳道）。"
                   },
                   "init": {
                     "type": "string"
@@ -821,6 +839,30 @@
             "flow": {
               "type": "string",
               "description": "故障流程梳理：只描述触发流程（箭头链），不含根因判定与处置方向。"
+            },
+            "lead": {
+              "type": "string",
+              "description": "根因一句话结论（技术口径）。"
+            },
+            "mechanism_summary": {
+              "type": "string",
+              "description": "给读者看的 1-3 句人话概述：发生了什么、为什么崩溃、影响是什么。"
+            },
+            "judgment": {
+              "type": "string",
+              "description": "当前根因判断与处置方向。"
+            },
+            "mechanism": {
+              "type": "string",
+              "description": "技术触发链，供泳道图下方详细链条展示。"
+            },
+            "confidence": {
+              "type": "string",
+              "description": "置信度说明。"
+            },
+            "scope": {
+              "type": "string",
+              "description": "影响范围与受影响版本。"
             }
           }
         },
