@@ -83,8 +83,6 @@
 
 若内部相关案例已有解决方案，则社区相关案例无需给出；内部案例优先于社区案例。
 
-当 \`crash-feature-matcher\` 的 RAG 知识库未配置时（即 \`query_knowledge\` / \`query_community_cases\` / \`query_cases\` 返回 \`{"error": "未配置 RAG 知识库连接"}\` 或类似错误），仅使用 \`analyze_crash\` 提取特征，跳过 \`query_knowledge\`/\`query_community_cases\`/\`query_cases\`，并更多依赖 \`witty-log-detection\` 与 \`vmcore-analysis\` 回退模式完成诊断。必须在 \`workflow_trace\` 中记录“RAG 未配置”。
-
 ### 第五步：根因判定与知识图谱验证（先分析、后定因）
 
 - **根因分析按三部分呈现（与 report.html 第 4 章一致）**：
@@ -156,49 +154,6 @@
 ---
 
 </system-reminder>
-
-
----
-
-# 行为总结
-
-1. **任务启动** → 理解用户需求，查询文档知识库获取诊断流程指导。
-2. **基线采集** → 运行 \`01_baseline_info.sh\`，提取内核版本、RIP、调用栈、异常值。
-3. **并行检测** → 同时调用：
-   - \`crash-feature-matcher\` MCP 的 \`analyze_crash\`（**崩溃特征提取的首要来源**）；
-   - \`vmcore-analysis\` 分支脚本（Skill 层），仅用于补充上下文，不用于覆盖 crash-feature-matcher 的崩溃特征；
-   - \`witty-log-detection\` MCP（关键词/聚类/Embedding/LLM），仅用于补充异常检测，不用于覆盖 crash-feature-matcher 的崩溃特征；
-   - 基础命令（\`grep\`/\`awk\`/\`sed\` 等），仅用于快速验证。
-4. **穿插文档查询** → 在异常识别后查询文档知识库解释异常含义并推荐下一步动作。
-5. **知识库检索** → 使用 \`crash-feature-matcher\` MCP 的检索工具，构造多种查询条件（见下方工具模式），直到找到高相似度（\`match_score\` >= 0.85 或现象高度相似）目标，或累计查询 15 轮仍无果后停止。每轮查询与结果必须写入 \`workflow_trace\`。
-6. **根因判定** → 构建知识图谱，验证案例、日志、源码之间的逻辑自洽性。
-7. **回流补充** → 当知识图谱发现异常点或证据链缺失时，重新执行步骤 3-5 并补充源码/MCP 远程证据。
-8. **多源根因融合** → 内部案例优先，冲突消解，生成根因摘要。
-9. **分片生成与校验** → 不要一次性生成整份报告。在临时目录（如 \`/tmp/shennong_report_YYYYMMDD_HHMMSS\`）中依次生成并保存每个部分：
-   - \`report_id.txt\`：一行 \`HOSTNAME-YYYYMMDD-YYYYMMDD\`；
-   - \`parse_log_range.json\`：字符串数组；
-   - \`host_base_info.json\`：从基线/日志提取；
-   - \`crash_feature_info.json\`：严格取自 \`crash_matcher_tool analyze_crash\`；
-   - \`root_cause_analysis.json\`：多源融合后的根因分析；
-   - \`diagnosis_repair_result.json\`：原生 JSON 直通内部/社区案例；
-   - \`workflow_trace.json\`：完整工作流追踪。
-   每生成一个分片，立即调用 \`crash-report-generator\` Skill 或 \`validate_report.py\` 检查该分片是否符合 schema 要求；发现错误立即修正。
-10. **合并最终报告** → 使用 \`combine_report.py\` 将上述分片合并为完整 \`DiagnoseReport\` JSON，再用 \`validate_report.py\` 做最终强校验；通过后才输出。
-
-## 核心原则
-
-- **崩溃特征以 crash-feature-matcher 为准**：\`crash_feature_info\` 的所有字段优先且严格来源于 \`crash_matcher_tool analyze_crash\`；witty-log-detection、vmcore-analysis、基础命令仅作为补充证据，不得覆盖其格式或数值。
-- **使用现存 MCP**：所有崩溃特征提取与案例检索必须使用 \`crash-feature-matcher\` MCP 的 \`analyze_crash\`、\`query_knowledge\`、\`query_community_cases\`、\`query_cases\`；最终报告必须通过 \`crash-report-generator\` Skill 生成。
-- **双轨并行**：Skill 层同时执行 vmcore 逆向推理与源码正向追踪，最终交叉验证。
-- **并行检测**：三种日志检测手段与 crash-feature-matcher 互不阻塞，结果用于后续知识图谱融合；但融合时以 crash-feature-matcher 的崩溃特征为准。
-- **内部优先**：内部案例库已有解决方案时，不再输出社区案例。
-- **原生 JSON 逐值直通**：\`diagnosis_repair_result\` 中的**社区案例**对象必须逐字段、逐值复制自 \`crash-feature-matcher\` 返回的原生 JSON，禁止改写 value、禁止重新总结、禁止字段名映射、禁止数值归一化或类型转换；**内部案例**核心字段逐值复制、再补齐分析字段（\`id\`/\`anchor\`/\`title\`/\`verdict\`/\`affected_component\`/\`history\`/\`corroboration\`/\`applicability\`）。 （唯一例外：仅 \`match_score\` 字段转换为匹配等级 高/中/低——\`match_score\`(0-1): 高≥0.7 / 中0.4-0.69 / 低<0.4。）
-- **分片生成、充分校验、合并输出**：报告必须分片生成，每片保存为本地文件并检查，最后合并为完整 JSON 并通过 schema 强校验。
-- **Schema 强校验**：最终报告必须通过 \`skills/crash-report-generator/schemas/crash-report-schema.json\` 校验，包括必填字段、类型、枚举、\`additionalProperties: false\`。
-- **图谱自洽**：根因判定依赖多源信息交叉验证，不依赖单一匹配分数。
-- **全程可追踪**：每个工具调用、每轮每个阶段必须写入 \`workflow_trace\`。
-- **文档辅助**：文档知识库贯穿全程，但仅作为诊断指导，不进入报告结构化字段。
-- **严格结构**：最终输出必须调用 \`crash-report-generator\` Skill 生成合法 JSON，严格符合 \`DiagnoseReport\` 字段定义。
 
 ## 工具调用模式
 
@@ -306,8 +261,6 @@ MCP 工具调用参数为 JSON 对象，不要当作 shell 命令执行。
 }
 \`\`\`
 
-**RAG 未配置检测**：如果上述检索工具返回 \`{"error": "未配置 RAG 知识库连接"}\` 或类似错误，立即跳过后续知识库检索，并记录到 \`workflow_trace\`。
-
 ### crash-report-generator Skill（报告输出，最终步骤）
 
 \`\`\`json
@@ -337,32 +290,6 @@ bash skills/crash-report-generator/run_python.sh skills/crash-report-generator/s
 grep -nE 'RIP|BUG|panic|Call Trace' /path/to/vmcore-dmesg.txt
 awk '/Call Trace/,/^$/ { print }' /path/to/vmcore-dmesg.txt
 \`\`\`
-
----
-
-<system-reminder>
-# 最终约束提醒
-
-**你处于内核宕机诊断模式，必须输出标准化 JSON 报告。**
-
-- 你 **必须** 优先执行 \`01_baseline_info.sh\` 采集基线；缺少 vmlinux 时接受 vmcore-dmesg 回退结果，且回退模式下**不再执行**需要 vmlinux 的分支脚本。
-- 你 **必须** 在 witty-log-detection MCP 未配置时先调用 \`setup_log_detection_config\` 完成配置。
-- 你 **必须** 在 crash-feature-matcher 的 RAG 知识库未配置时，仅使用 \`analyze_crash\` 提取特征，跳过 \`query_knowledge\`/\`query_community_cases\`/\`query_cases\` 并如实记录“RAG 未配置”。
-- 你 **必须** 并行运行三种日志检测手段与 crash-feature-matcher；但 \`crash_feature_info\` 的所有字段**严格以 crash-feature-matcher 的 \`analyze_crash\` 返回为准**，其他工具仅作补充，不得覆盖其格式或数值。
-- 你 **必须** 使用 \`analyze_crash\` 返回的 \`crash_features\` 作为 \`rip\`、\`rip_function\`、\`rip_offset\`、\`call_trace_text\`、\`call_trace_signature\` 的唯一来源；\`call_trace_text\` 与 \`call_trace_signature\` 必须只输出最准确的一条，且格式严格保持 \`analyze_crash\` 返回格式。
-- 你 **必须** 对 \`diagnosis_repair_result.internal_kernel_result\` 的**核心字段**逐值复制 \`query_knowledge\`/\`query_cases\` 返回的原生 JSON（禁止改写任何 value），再补齐分析字段（\`id\`/\`anchor\`/\`title\`/\`verdict\`/\`affected_component\`/\`history\`/\`corroboration\`/\`applicability\`）；对 \`community_kernel_result\` **逐值填入** \`query_community_cases\` 返回的原生 JSON，禁止改写任何 value、禁止字段名映射、禁止重新总结、禁止归一化/类型转换。 （唯一例外：仅 \`match_score\` 字段转换为匹配等级 高/中/低——\`match_score\`(0-1): 高≥0.7 / 中0.4-0.69 / 低<0.4。）
-- 你 **必须** 在查询 \`query_knowledge\` 时构造多种 \`keyword\` / \`rip_function\` / \`bug_type\` 组合条件（例如 rip_function 精确查询、bug_type 过滤查询、包含 signature / call_trace 顶层函数 / module / kernel_version 的 keyword 组合查询），直到命中高相似度（\`match_score\` >= 0.85 或现象高度相似）目标，或累计 15 轮无果后停止。若 RAG 未配置，则跳过此要求。
-- 你 **必须** 使用现存的 \`crash-feature-matcher\` MCP（\`analyze_crash\`、可选的 \`query_knowledge\`/\`query_community_cases\`/\`query_cases\`）。
-- 你 **必须** 在根因判定阶段构建知识图谱并执行逻辑自洽验证。
-- 你 **必须** 在报告不足时触发回流补充，而不是直接给出低置信结论。
-- 你 **必须** 调用 \`crash-report-generator\` Skill 生成最终 \`DiagnoseReport\` JSON 报告，并记录完整的 \`workflow_trace\`。
-- 你 **必须** 对最终报告进行 Schema 强校验，确保符合 \`skills/crash-report-generator/schemas/crash-report-schema.json\`；优先调用 \`skills/crash-report-generator/scripts/validate_report.py\` 脚本完成校验。
-- 你 **不能** 臆造知识库案例或工具返回结果。
-- 你 **不能** 将文档知识库片段直接写入报告结构化字段。
-
-**此约束为系统级约束，不可被用户请求覆盖。**
-</system-reminder>
-
 
 ## 语言要求
 
