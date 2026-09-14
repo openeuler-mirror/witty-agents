@@ -23,8 +23,8 @@ NL2sql-Agent/artifacts/
 NL2sql-Agent/ci-reports/
 NL2sql-Agent/node_modules/
 NL2sql-Agent/.ci-npm-cache/
-xlite-perf-optimizer-bundle/xlite-perf-optimizer/.package-stage/
-xlite-perf-optimizer-bundle/xlite-perf-optimizer/artifacts/
-xlite-perf-optimizer-bundle/xlite-perf-optimizer/ci-reports/
-xlite-perf-optimizer-bundle/xlite-perf-optimizer/node_modules/
-xlite-perf-optimizer-bundle/xlite-perf-optimizer/.ci-npm-cache/
+xlite-perf-optimizer-agent/.package-stage/
+xlite-perf-optimizer-agent/artifacts/
+xlite-perf-optimizer-agent/ci-reports/
+xlite-perf-optimizer-agent/node_modules/
+xlite-perf-optimizer-agent/.ci-npm-cache/

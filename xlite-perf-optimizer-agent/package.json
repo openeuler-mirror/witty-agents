@@ -2,30 +2,35 @@
   "name": "@openeuler/agent-xlite-perf-optimizer",
   "version": "0.1.0",
   "description": "xlite 性能优化自动化 Agent — 分析、算子优化、测试验证、HTML 报告与原子回滚",
-  "license": "MIT",
-  "publishConfig": {
-    "access": "public",
-    "registry": "https://registry.npmjs.org/"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://atomgit.com/openeuler/witty-agents",
-    "directory": "xlite-perf-optimizer-agent"
-  },
   "bin": {
-    "xlite-opt-init": "./bin/xlite-opt-init.js"
+    "xlite-opt-init": "./bin/xlite-opt-init.js",
+    "xlite-perf-optimizer-configure": "./bin/configure.mjs"
   },
   "scripts": {
-    "postinstall": "node scripts/postinstall.js"
+    "validate": "node scripts/validate.mjs",
+    "pack:variant": "node scripts/build-package.mjs",
+    "ci:verify-artifacts": "node scripts/verify-ci-artifacts.mjs",
+    "test:install-contract": "node tests/test-install-contract.mjs",
+    "test": "node tests/test-install-contract.mjs"
   },
   "files": [
     "agent/",
     "skills/",
     "helpers/",
     "bin/",
+    "lib/",
     "scripts/",
     "README.md"
   ],
+  "wittyAgentDistribution": {
+    "packageNames": {
+      "organization": "@openeuler/agent-xlite-perf-optimizer",
+      "plain": "openeuler-agent-xlite-perf-optimizer"
+    }
+  },
+  "dependencies": {
+    "jsonc-parser": "^3.3.1"
+  },
   "keywords": [
     "xlite",
     "ascend",
@@ -36,7 +41,8 @@
     "llm-inference"
   ],
   "author": "",
+  "license": "MIT",
   "engines": {
-    "node": ">=18"
+    "node": ">=20.0.0"
   }
 }

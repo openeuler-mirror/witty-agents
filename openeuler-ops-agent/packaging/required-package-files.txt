@@ -1,0 +1,7 @@
+# 打包时必须包含的文件（相对 package 根目录）
+agent.md
+bin/cli.js
+lib/configure.mjs
+install.sh
+scripts/verify.sh
+README.md

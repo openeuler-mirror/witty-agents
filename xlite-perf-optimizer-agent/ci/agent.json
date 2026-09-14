@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "id": "xlite-perf-optimizer",
+  "displayName": "XLite Perf Optimizer",
+  "directory": "xlite-perf-optimizer-agent",
+  "driver": "ci/driver.mjs",
+  "changedPathPrefixes": [
+    "xlite-perf-optimizer-agent/"
+  ],
+  "variants": [
+    "online",
+    "offline"
+  ],
+  "defaultVariant": "online",
+  "packageStyles": [
+    "organization",
+    "plain"
+  ],
+  "supportedArchitectures": [
+    "x86_64",
+    "aarch64"
+  ],
+  "publishRequiresAllVariants": true
+}

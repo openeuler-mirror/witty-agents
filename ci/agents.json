@@ -11,30 +11,27 @@
     },
     {
       "id": "nl2sql",
-      "enabled": false,
-      "directory": "NL2sql-Agent",
+      "enabled": true,
+      "configPath": "NL2sql-Agent/ci/agent.json",
       "changedPathPrefixes": [
         "NL2sql-Agent/"
-      ],
-      "reason": "NL2SQL 尚未补齐标准 npm 包、setup/configure 和安装契约，完成后再启用"
+      ]
     },
     {
       "id": "openeuler-ops",
-      "enabled": false,
-      "directory": "openeuler-ops-agent",
+      "enabled": true,
+      "configPath": "openeuler-ops-agent/ci/agent.json",
       "changedPathPrefixes": [
         "openeuler-ops-agent/"
-      ],
-      "reason": "openEuler Ops Agent 尚未迁移到统一的无副作用安装和 CI driver 契约"
+      ]
     },
     {
       "id": "xlite-perf-optimizer",
-      "enabled": false,
-      "directory": "xlite-perf-optimizer-bundle",
+      "enabled": true,
+      "configPath": "xlite-perf-optimizer-agent/ci/agent.json",
       "changedPathPrefixes": [
-        "xlite-perf-optimizer-bundle/"
-      ],
-      "reason": "XLite Perf Optimizer 尚未补齐统一的变体、报告和真实安装验证契约"
+        "xlite-perf-optimizer-agent/"
+      ]
     }
   ]
 }

@@ -1,0 +1,6 @@
+# 打包时必须包含的文件（相对 package 根目录）
+opencode_plugin/role-prompt.md
+opencode_plugin/skills/nl2sql/SKILL.md
+bin/configure.mjs
+lib/configure.mjs
+README.md

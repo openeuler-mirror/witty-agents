@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "id": "openeuler-ops",
+  "displayName": "openEuler Ops Agent",
+  "directory": "openeuler-ops-agent",
+  "driver": "ci/driver.mjs",
+  "changedPathPrefixes": [
+    "openeuler-ops-agent/"
+  ],
+  "variants": [
+    "online",
+    "offline"
+  ],
+  "defaultVariant": "online",
+  "packageStyles": [
+    "organization",
+    "plain"
+  ],
+  "supportedArchitectures": [
+    "x86_64",
+    "aarch64"
+  ],
+  "publishRequiresAllVariants": true
+}

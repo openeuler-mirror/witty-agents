@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "id": "nl2sql",
+  "displayName": "NL2SQL Agent",
+  "directory": "NL2sql-Agent",
+  "driver": "ci/driver.mjs",
+  "changedPathPrefixes": [
+    "NL2sql-Agent/"
+  ],
+  "variants": [
+    "online",
+    "offline"
+  ],
+  "defaultVariant": "online",
+  "packageStyles": [
+    "organization",
+    "plain"
+  ],
+  "supportedArchitectures": [
+    "x86_64",
+    "aarch64"
+  ],
+  "publishRequiresAllVariants": true
+}
