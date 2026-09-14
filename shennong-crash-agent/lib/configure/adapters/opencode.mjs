@@ -17,6 +17,8 @@ const SHENNONG_PACKAGE_NAMES = new Set([
   "openeuler-agent-shennong-crash-online",
   "openeuler-agent-shennong-crash-offline",
   "witty-agent-shennong",
+  "witty-agent-shennong-online",
+  "witty-agent-shennong-offline",
 ])
 const SHENNONG_MCP_NAMES = new Set([
   "crash-feature-matcher",
@@ -45,6 +47,8 @@ function isShennongPackageSpec(spec) {
           || pluginPath.includes("/openeuler-agent-shennong-crash-online/")
           || pluginPath.includes("/openeuler-agent-shennong-crash-offline/")
           || pluginPath.includes("/witty-agent-shennong/")
+          || pluginPath.includes("/witty-agent-shennong-online/")
+          || pluginPath.includes("/witty-agent-shennong-offline/")
         )
       )
     } catch {
