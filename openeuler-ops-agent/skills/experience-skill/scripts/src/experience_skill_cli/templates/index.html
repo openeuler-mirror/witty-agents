@@ -1,0 +1,1157 @@
+<!doctype html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>经验管理</title>
+        <style>
+            *,
+            *::before,
+            *::after {
+                box-sizing: border-box;
+                margin: 0;
+                padding: 0;
+            }
+
+            body {
+                font-family:
+                    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans SC",
+                    sans-serif;
+                background: #f8f9fa;
+                color: #333;
+                line-height: 1.6;
+            }
+
+            .container {
+                max-width: 960px;
+                margin: 0 auto;
+                padding: 24px 16px;
+            }
+
+            h1 {
+                font-size: 1.5rem;
+                font-weight: 600;
+                color: #1a1a1a;
+                margin-bottom: 20px;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+            }
+
+            .title-icon {
+                width: 26px;
+                height: 26px;
+                flex-shrink: 0;
+            }
+
+            /* 工具栏 */
+            .toolbar {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 10px;
+                margin-bottom: 16px;
+                align-items: center;
+            }
+
+            .toolbar > * {
+                flex-shrink: 0;
+            }
+
+            /* 标签组 */
+            .tag-group {
+                display: flex;
+                border-radius: 6px;
+                overflow: hidden;
+                border: 1px solid #d0d5dd;
+            }
+
+            .tag-group button {
+                border: none;
+                background: #fff;
+                color: #555;
+                padding: 6px 16px;
+                cursor: pointer;
+                font-size: 0.875rem;
+                transition: all 0.15s;
+                border-right: 1px solid #d0d5dd;
+            }
+
+            .tag-group button:last-child {
+                border-right: none;
+            }
+
+            .tag-group button:hover {
+                background: #f0f0f0;
+            }
+
+            .tag-group button.active {
+                background: #e8e8e8;
+                color: #222;
+                font-weight: 600;
+            }
+
+            /* 搜索框 */
+            .search-box {
+                display: flex;
+                flex: 1;
+                gap: 6px;
+            }
+
+            .search-box input {
+                border: 1px solid #d0d5dd;
+                border-radius: 6px;
+                padding: 6px 12px;
+                font-size: 0.875rem;
+                flex: 1;
+                min-width: 150px;
+                outline: none;
+                transition: border-color 0.15s;
+            }
+
+            .search-box input:focus {
+                border-color: #888;
+            }
+
+            .search-box button {
+                border: 1px solid #d0d5dd;
+                border-radius: 6px;
+                padding: 6px 14px;
+                background: #fff;
+                cursor: pointer;
+                font-size: 0.875rem;
+                color: #444;
+                transition: all 0.15s;
+            }
+
+            .search-box button:hover {
+                background: #e8e8e8;
+            }
+
+            /* 热门切换 */
+            .toggle-label {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                font-size: 0.875rem;
+                cursor: pointer;
+                color: #555;
+            }
+
+            .toggle-label input {
+                accent-color: #555;
+            }
+
+            .match-badge {
+                display: inline-block;
+                padding: 2px 8px;
+                border-radius: 10px;
+                font-size: 0.75rem;
+                font-weight: 600;
+                white-space: nowrap;
+            }
+            .match-badge.both {
+                background: #dcfce7;
+                color: #166534;
+            }
+            .match-badge.metadata {
+                background: #dbeafe;
+                color: #1e40af;
+            }
+            .match-badge.content {
+                background: #fef3c7;
+                color: #92400e;
+            }
+            .score-cell {
+                font-variant-numeric: tabular-nums;
+                font-size: 0.85rem;
+            }
+
+            /* 关键词勾选区 */
+            .kw-section {
+                background: #fff;
+                border: 1px solid #e9ecef;
+                border-radius: 8px;
+                padding: 12px 16px;
+                margin-bottom: 16px;
+            }
+
+            .kw-section-header {
+                font-size: 0.8rem;
+                color: #888;
+                margin-bottom: 8px;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                flex-wrap: wrap;
+            }
+
+            .kw-section-header .kw-search-input {
+                flex: 1;
+                min-width: 140px;
+                border: 1px solid #d0d5dd;
+                border-radius: 4px;
+                padding: 4px 8px;
+                font-size: 0.8rem;
+                outline: none;
+                color: #333;
+            }
+
+            .kw-section-header .kw-search-input:focus {
+                border-color: #888;
+            }
+
+            .kw-section-header .kw-search-input::placeholder {
+                color: #bbb;
+            }
+
+            .kw-section-header button {
+                font-size: 0.75rem;
+                color: #666;
+                border: 1px solid #ddd;
+                background: #fff;
+                border-radius: 4px;
+                padding: 4px 10px;
+                cursor: pointer;
+                white-space: nowrap;
+                transition: all 0.15s;
+            }
+
+            .kw-section-header button:hover {
+                background: #f0f0f0;
+            }
+
+            .kw-section-header .kw-toggle-btn {
+                font-size: 0.75rem;
+                color: #888;
+                border: none;
+                background: none;
+                padding: 2px 4px;
+                cursor: pointer;
+            }
+
+            .kw-section-header .kw-toggle-btn:hover {
+                color: #444;
+            }
+
+            .kw-list {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 4px 8px;
+                max-height: 160px;
+                overflow-y: auto;
+                padding: 4px 0;
+                transition: max-height 0.25s ease;
+            }
+
+            .kw-list.collapsed {
+                max-height: 0;
+                overflow: hidden;
+                padding: 0;
+            }
+
+            .kw-list::-webkit-scrollbar {
+                width: 4px;
+            }
+
+            .kw-list::-webkit-scrollbar-thumb {
+                background: #d0d5dd;
+                border-radius: 2px;
+            }
+
+            .kw-list label {
+                font-size: 0.78rem;
+                color: #555;
+                cursor: pointer;
+                display: inline-flex;
+                align-items: center;
+                gap: 4px;
+                white-space: nowrap;
+                padding: 2px 8px;
+                border-radius: 12px;
+                border: 1px solid #e0e0e0;
+                background: #fafafa;
+                transition: all 0.15s;
+                user-select: none;
+            }
+
+            .kw-list label:hover {
+                border-color: #b0b0b0;
+                background: #f0f0f0;
+            }
+
+            .kw-list label input {
+                accent-color: #555;
+                width: 13px;
+                height: 13px;
+                margin: 0;
+            }
+
+            .kw-list label.checked {
+                font-weight: 500;
+                color: #1a6fb5;
+                border-color: #90caf9;
+                background: #e3f2fd;
+            }
+
+            .kw-list .kw-count {
+                font-size: 0.7rem;
+                color: #aaa;
+            }
+
+            .kw-list .kw-empty {
+                width: 100%;
+                font-size: 0.78rem;
+                color: #bbb;
+                padding: 8px 0;
+                text-align: center;
+            }
+
+            /* 表格 */
+            .table-wrap {
+                overflow-x: auto;
+            }
+
+            table {
+                width: 100%;
+                border-collapse: collapse;
+                font-size: 0.85rem;
+            }
+
+            th,
+            td {
+                text-align: left;
+                padding: 10px 12px;
+                border-bottom: 1px solid #e9ecef;
+            }
+
+            th {
+                color: #777;
+                font-weight: 500;
+                font-size: 0.8rem;
+                text-transform: uppercase;
+                letter-spacing: 0.03em;
+                background: #fafbfc;
+                white-space: nowrap;
+            }
+
+            tr:hover td {
+                background: #f5f5f5;
+            }
+
+            .badge {
+                display: inline-block;
+                padding: 2px 8px;
+                border-radius: 4px;
+                font-size: 0.75rem;
+                font-weight: 600;
+                letter-spacing: 0.02em;
+            }
+
+            .badge-skill {
+                background: #e3f2fd;
+                color: #1565c0;
+            }
+
+            .badge-wiki {
+                background: #f3e5f5;
+                color: #7b1fa2;
+            }
+
+            .badge-hot {
+                background: #fff3e0;
+                color: #e65100;
+                margin-left: 4px;
+            }
+
+            .name-cell {
+                font-weight: 500;
+                color: #1a1a1a;
+            }
+
+            .desc-cell {
+                max-width: 300px;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                color: #666;
+            }
+
+            .kw-cell {
+                max-width: 180px;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+            .kw-tag {
+                display: inline-block;
+                padding: 1px 6px;
+                margin: 1px;
+                border-radius: 3px;
+                background: #f0f0f0;
+                color: #555;
+                font-size: 0.75rem;
+                max-width: 120px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+                vertical-align: middle;
+            }
+
+            .source-cell {
+                max-width: 200px;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                font-family: ui-monospace, "SF Mono", monospace;
+                font-size: 0.8rem;
+                color: #888;
+            }
+
+            /* 分页 */
+            .pagination {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                gap: 8px;
+                margin-top: 20px;
+            }
+
+            .pagination button {
+                border: 1px solid #d0d5dd;
+                border-radius: 6px;
+                padding: 6px 12px;
+                background: #fff;
+                cursor: pointer;
+                font-size: 0.875rem;
+                color: #444;
+            }
+
+            .pagination button:hover:not(:disabled) {
+                background: #e8e8e8;
+            }
+
+            .pagination button:disabled {
+                opacity: 0.4;
+                cursor: default;
+            }
+
+            .pagination .page-info {
+                font-size: 0.85rem;
+                color: #777;
+            }
+
+            /* 状态区 */
+            .empty {
+                text-align: center;
+                padding: 48px 0;
+                color: #999;
+            }
+
+            .loading {
+                text-align: center;
+                padding: 48px 0;
+                color: #aaa;
+            }
+
+            .error {
+                text-align: center;
+                padding: 48px 0;
+                color: #c0392b;
+            }
+
+            /* 表格行可点击 */
+            tbody tr {
+                cursor: pointer;
+                transition: background 0.1s;
+            }
+
+            tbody tr:hover td {
+                background: #eef1f5;
+            }
+
+            /* 模态框 */
+            .modal-overlay {
+                display: none;
+                position: fixed;
+                inset: 0;
+                background: rgba(0, 0, 0, 0.45);
+                z-index: 1000;
+                justify-content: center;
+                align-items: flex-start;
+                padding: 40px 16px;
+                overflow-y: auto;
+            }
+
+            .modal-overlay.active {
+                display: flex;
+            }
+
+            .modal {
+                background: #fff;
+                border-radius: 12px;
+                width: 100%;
+                max-width: 800px;
+                max-height: calc(100vh - 80px);
+                display: flex;
+                flex-direction: column;
+                box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
+                animation: modalIn 0.2s ease;
+            }
+
+            @keyframes modalIn {
+                from {
+                    opacity: 0;
+                    transform: translateY(-16px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+
+            .modal-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                padding: 16px 24px;
+                border-bottom: 1px solid #e9ecef;
+                flex-shrink: 0;
+            }
+
+            .modal-header h2 {
+                font-size: 1.15rem;
+                font-weight: 600;
+                color: #1a1a1a;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+
+            .modal-close {
+                border: none;
+                background: none;
+                font-size: 1.4rem;
+                cursor: pointer;
+                color: #888;
+                padding: 4px 8px;
+                border-radius: 4px;
+                line-height: 1;
+            }
+
+            .modal-close:hover {
+                background: #f0f0f0;
+                color: #333;
+            }
+
+            .modal-meta {
+                padding: 12px 24px;
+                background: #fafbfc;
+                border-bottom: 1px solid #e9ecef;
+                font-size: 0.8rem;
+                color: #777;
+                flex-shrink: 0;
+            }
+
+            .modal-meta .meta-row {
+                display: flex;
+                flex-wrap: nowrap;
+                align-items: center;
+                gap: 6px 16px;
+                min-width: 0;
+            }
+
+            .modal-meta .meta-row + .meta-row {
+                margin-top: 6px;
+            }
+
+            .modal-meta .meta-item {
+                display: flex;
+                align-items: center;
+                gap: 4px;
+                white-space: nowrap;
+            }
+
+            .modal-meta .meta-kw-row {
+                display: flex;
+                flex-wrap: nowrap;
+                align-items: center;
+                gap: 4px;
+                overflow-x: auto;
+                scrollbar-width: none;
+                flex: 1;
+                min-width: 0;
+            }
+
+            .modal-meta .meta-kw-row::-webkit-scrollbar {
+                display: none;
+            }
+
+            .modal-meta .meta-kw-tag {
+                display: inline-block;
+                padding: 1px 8px;
+                border-radius: 12px;
+                background: #e8f0fe;
+                color: #1a6fb5;
+                font-size: 0.73rem;
+                max-width: 200px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+                border: 1px solid #d0e3f7;
+                flex-shrink: 0;
+            }
+
+            .modal-body {
+                padding: 24px;
+                flex: 1;
+                min-height: 0;
+                overflow-y: auto;
+                scrollbar-width: none;
+                line-height: 1.75;
+            }
+
+            .modal-body::-webkit-scrollbar {
+                display: none;
+            }
+
+            /* Markdown 内容样式 */
+            .modal-body h1 {
+                font-size: 1.5rem;
+                margin: 0 0 16px;
+                color: #1a1a1a;
+            }
+            .modal-body h2 {
+                font-size: 1.25rem;
+                margin: 24px 0 12px;
+                color: #222;
+                border-bottom: 1px solid #eee;
+                padding-bottom: 6px;
+            }
+            .modal-body h3 {
+                font-size: 1.1rem;
+                margin: 20px 0 8px;
+                color: #333;
+            }
+            .modal-body p {
+                margin: 8px 0;
+            }
+            .modal-body ul,
+            .modal-body ol {
+                padding-left: 24px;
+                margin: 8px 0;
+            }
+            .modal-body li {
+                margin: 4px 0;
+            }
+            .modal-body code {
+                background: #f4f4f4;
+                padding: 2px 6px;
+                border-radius: 3px;
+                font-family: ui-monospace, "SF Mono", monospace;
+                font-size: 0.85em;
+            }
+            .modal-body pre {
+                background: #f8f9fa;
+                border: 1px solid #e9ecef;
+                border-radius: 6px;
+                padding: 16px;
+                overflow-x: auto;
+                font-size: 0.85rem;
+                line-height: 1.5;
+            }
+            .modal-body pre code {
+                background: none;
+                padding: 0;
+            }
+            .modal-body blockquote {
+                border-left: 3px solid #d0d5dd;
+                padding-left: 16px;
+                color: #666;
+                margin: 12px 0;
+            }
+            .modal-body table {
+                border-collapse: collapse;
+                margin: 12px 0;
+            }
+            .modal-body th,
+            .modal-body td {
+                border: 1px solid #d0d5dd;
+                padding: 8px 12px;
+            }
+            .modal-body a {
+                color: #2563eb;
+            }
+            .modal-body hr {
+                border: none;
+                border-top: 1px solid #e9ecef;
+                margin: 20px 0;
+            }
+
+            .modal-loading {
+                text-align: center;
+                padding: 48px;
+                color: #aaa;
+            }
+        </style>
+    </head>
+
+    <body>
+        <div class="container">
+            <h1>
+                <img
+                    class="title-icon"
+                    src="data:image/svg+xml,%3C%3Fxml%20version%3D%221.0%22%20encoding%3D%22UTF-8%22%3F%3E%3Csvg%20version%3D%221.1%22%20width%3D%2224px%22%20height%3D%2224px%22%20viewBox%3D%220%200%2024.0%2024.0%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20xmlns%3Axlink%3D%22http%3A%2F%2Fwww.w3.org%2F1999%2Fxlink%22%3E%3Cdefs%3E%3CclipPath%20id%3D%22i0%22%3E%3Cpath%20d%3D%22M1920%2C0%20L1920%2C1080%20L0%2C1080%20L0%2C0%20L1920%2C0%20Z%22%3E%3C%2Fpath%3E%3C%2FclipPath%3E%3CclipPath%20id%3D%22i1%22%3E%3Cpath%20d%3D%22M11.2892089%2C0.356345957%20L18.7107911%2C4.77644474%20C19.5085564%2C5.25157268%2020%2C6.12964533%2020%2C7.07990122%20L20%2C15.492%20L16.0338995%2C13.2799439%20C16.1903699%2C12.714441%2016.2741498%2C12.1173133%2016.2741498%2C11.5%20C16.2741498%2C7.92551042%2013.4651173%2C5.02781408%2010%2C5.02781408%20C6.53488272%2C5.02781408%203.72585015%2C7.92551042%203.72585015%2C11.5%20C3.72585015%2C15.0744896%206.53488272%2C17.9721859%2010%2C17.9721859%20C11.9110647%2C17.9721859%2013.6225688%2C17.0907966%2014.7733471%2C15.700583%20L18.9720315%2C18.0453591%20C18.8891365%2C18.1096916%2018.8019643%2C18.1692549%2018.7107911%2C18.2235553%20L11.2892089%2C22.643654%20C10.4914436%2C23.118782%209.50855635%2C23.118782%208.71079113%2C22.643654%20L1.28920887%2C18.2235553%20C0.491443646%2C17.7484273%200%2C16.8703547%200%2C15.9200988%20L0%2C7.07990122%20C0%2C6.12964533%200.491443646%2C5.25157268%201.28920887%2C4.77644474%20L8.71079113%2C0.356345957%20C9.50855635%2C-0.118781986%2010.4914436%2C-0.118781986%2011.2892089%2C0.356345957%20Z%22%3E%3C%2Fpath%3E%3C%2FclipPath%3E%3ClinearGradient%20id%3D%22i2%22%20x1%3D%2220px%22%20y1%3D%2223px%22%20x2%3D%225.70835302px%22%20y2%3D%222.80969047px%22%20gradientUnits%3D%22userSpaceOnUse%22%3E%3Cstop%20stop-color%3D%22%23C8FCFF%22%20offset%3D%220%25%22%3E%3C%2Fstop%3E%3Cstop%20stop-color%3D%22%23389BFF%22%20offset%3D%2239.7278259%25%22%3E%3C%2Fstop%3E%3Cstop%20stop-color%3D%22%239C69FF%22%20offset%3D%22100%25%22%3E%3C%2Fstop%3E%3C%2FlinearGradient%3E%3CclipPath%20id%3D%22i3%22%3E%3Cpath%20d%3D%22M3.33007861%2C0.00018796359%20C5.12313128%2C-0.025423555%206.53979457%2C2.56953783%206.49428462%2C5.79619644%20C6.44877468%2C9.02285505%204.95832519%2C11.6593409%203.16527252%2C11.6849524%20C1.37221984%2C11.7105639%20-0.0444434486%2C9.11560256%200.00106649645%2C5.88894395%20C0.0465764415%2C2.66228534%201.53702593%2C0.0257994822%203.33007861%2C0.00018796359%20Z%22%3E%3C%2Fpath%3E%3C%2FclipPath%3E%3ClinearGradient%20id%3D%22i4%22%20x1%3D%226.49535112px%22%20y1%3D%223.59098906px%22%20x2%3D%221.94071772px%22%20y2%3D%226.15599152px%22%20gradientUnits%3D%22userSpaceOnUse%22%3E%3Cstop%20stop-color%3D%22%230B5DBB%22%20offset%3D%220%25%22%3E%3C%2Fstop%3E%3Cstop%20stop-color%3D%22rgba%2848%2C%20131%2C%20255%2C%200%29%22%20offset%3D%22100%25%22%3E%3C%2Fstop%3E%3C%2FlinearGradient%3E%3CclipPath%20id%3D%22i5%22%3E%3Cpath%20d%3D%22M3.17499814%2C0.000225285839%20C4.97749815%2C0.0281922907%206.47899927%2C2.65297887%206.52869476%2C5.86285019%20C6.57839025%2C9.07272151%205.15746142%2C11.6521646%203.35496141%2C11.6241976%20C1.5524614%2C11.5962306%200.0509602747%2C8.97144403%200.00126478905%2C5.76157271%20C-0.0484306966%2C2.55170138%201.37249812%2C-0.027741719%203.17499814%2C0.000225285839%20Z%22%3E%3C%2Fpath%3E%3C%2FclipPath%3E%3ClinearGradient%20id%3D%22i6%22%20x1%3D%226.52995955px%22%20y1%3D%223.57232982px%22%20x2%3D%221.95105822px%22%20y2%3D%226.1240042px%22%20gradientUnits%3D%22userSpaceOnUse%22%3E%3Cstop%20stop-color%3D%22%230B5DBB%22%20offset%3D%220%25%22%3E%3C%2Fstop%3E%3Cstop%20stop-color%3D%22rgba%2848%2C%20131%2C%20255%2C%200%29%22%20offset%3D%22100%25%22%3E%3C%2Fstop%3E%3C%2FlinearGradient%3E%3CclipPath%20id%3D%22i7%22%3E%3Cpath%20d%3D%22M3.34595432%2C0%20C5.17675454%2C-0.00956172075%206.64709904%2C2.54401387%206.63006068%2C5.70359763%20C6.61302232%2C8.86318139%205.11505317%2C11.4323032%203.28425295%2C11.4419188%20C1.45345273%2C11.4514805%20-0.0168917651%2C8.89790492%200.000146596626%2C5.73832116%20C0.0171849583%2C2.57873739%201.5151541%2C0.00961555213%203.34595432%2C0%20Z%22%3E%3C%2Fpath%3E%3C%2FclipPath%3E%3ClinearGradient%20id%3D%22i8%22%20x1%3D%226.63020727px%22%20y1%3D%223.51624404px%22%20x2%3D%221.98101081px%22%20y2%3D%226.02785698px%22%20gradientUnits%3D%22userSpaceOnUse%22%3E%3Cstop%20stop-color%3D%22%230B5DBB%22%20offset%3D%220%25%22%3E%3C%2Fstop%3E%3Cstop%20stop-color%3D%22rgba%2848%2C%20131%2C%20255%2C%200%29%22%20offset%3D%22100%25%22%3E%3C%2Fstop%3E%3C%2FlinearGradient%3E%3CclipPath%20id%3D%22i9%22%3E%3Cpath%20d%3D%22M3.16497028%2C0.000154442341%20C4.9537488%2C0.0233967573%206.43732059%2C2.66411887%206.47862062%2C5.89837237%20C6.51992064%2C9.13262587%205.10330943%2C11.7356647%203.31453091%2C11.7124224%20C1.5257524%2C11.6891801%200.0421806067%2C9.048458%200.000880577179%2C5.8142045%20C-0.0404194524%2C2.57995101%201.37619176%2C-0.0230878726%203.16497028%2C0.000154442341%20Z%22%3E%3C%2Fpath%3E%3C%2FclipPath%3E%3ClinearGradient%20id%3D%22i10%22%20x1%3D%226.47950119px%22%20y1%3D%223.59942063px%22%20x2%3D%221.93598199px%22%20y2%3D%226.17044567px%22%20gradientUnits%3D%22userSpaceOnUse%22%3E%3Cstop%20stop-color%3D%22%230B5DBB%22%20offset%3D%220%25%22%3E%3C%2Fstop%3E%3Cstop%20stop-color%3D%22rgba%2848%2C%20131%2C%20255%2C%200%29%22%20offset%3D%22100%25%22%3E%3C%2Fstop%3E%3C%2FlinearGradient%3E%3CclipPath%20id%3D%22i11%22%3E%3Cpath%20d%3D%22M3.31123201%2C0.000147010387%20C5.09920894%2C-0.0225340217%206.51597885%2C2.58211455%206.47567618%2C5.81779243%20C6.43537351%2C9.05347031%204.95326007%2C11.6948921%203.16528314%2C11.7175731%20C1.37730622%2C11.7402542%20-0.0394636932%2C9.13560559%200.000838974502%2C5.89992772%20C0.0411416422%2C2.66424984%201.52325509%2C0.0228280424%203.31123201%2C0.000147010387%20Z%22%3E%3C%2Fpath%3E%3C%2FclipPath%3E%3ClinearGradient%20id%3D%22i12%22%20x1%3D%226.47651515px%22%20y1%3D%223.60100123px%22%20x2%3D%221.93508981px%22%20y2%3D%226.17315526px%22%20gradientUnits%3D%22userSpaceOnUse%22%3E%3Cstop%20stop-color%3D%22%230B5DBB%22%20offset%3D%220%25%22%3E%3C%2Fstop%3E%3Cstop%20stop-color%3D%22rgba%2848%2C%20131%2C%20255%2C%200%29%22%20offset%3D%22100%25%22%3E%3C%2Fstop%3E%3C%2FlinearGradient%3E%3C%2Fdefs%3E%3Cg%20transform%3D%22translate%28-24.0%20-12.0%29%22%3E%3Cg%20clip-path%3D%22url%28%23i0%29%22%3E%3Cg%20transform%3D%22translate%2824.0%2012.0%29%22%3E%3Cg%20transform%3D%22translate%282.0%200.5%29%22%3E%3Cg%20clip-path%3D%22url%28%23i1%29%22%3E%3Cpolygon%20points%3D%220%2C0%2020%2C0%2020%2C23%200%2C23%200%2C0%22%20stroke%3D%22none%22%20fill%3D%22url%28%23i2%29%22%3E%3C%2Fpolygon%3E%3Cg%20transform%3D%22translate%283.6569722087348877%201.0897685084147302%29%20rotate%28-33.0%29%22%3E%3Cg%20clip-path%3D%22url%28%23i3%29%22%3E%3Cpolygon%20points%3D%222.27343535e-13%2C-1.14575016e-13%206.49535112%2C-1.14575016e-13%206.49535112%2C11.6851404%202.27343535e-13%2C11.6851404%202.27343535e-13%2C-1.14575016e-13%22%20stroke%3D%22none%22%20fill%3D%22url%28%23i4%29%22%3E%3C%2Fpolygon%3E%3C%2Fg%3E%3C%2Fg%3E%3Cg%20transform%3D%22translate%2816.98418130159498%201.020141454636434%29%20rotate%2843.00000000000001%29%22%3E%3Cg%20clip-path%3D%22url%28%23i5%29%22%3E%3Cpolygon%20points%3D%226.39488462e-14%2C1.73743398e-17%206.52995955%2C1.73743398e-17%206.52995955%2C11.6244229%206.39488462e-14%2C11.6244229%206.39488462e-14%2C1.73743398e-17%22%20stroke%3D%22none%22%20fill%3D%22url%28%23i6%29%22%3E%3C%2Fpolygon%3E%3C%2Fg%3E%3C%2Fg%3E%3Cg%20transform%3D%22translate%28-2.4495037481518684%2011.019866109128307%29%20rotate%28-80.0%29%22%3E%3Cg%20clip-path%3D%22url%28%23i7%29%22%3E%3Cpolygon%20points%3D%22-3.49399119e-16%2C0.498710614%206.63020727%2C0.498710614%206.63020727%2C11.4419456%20-3.49399119e-16%2C11.4419456%20-3.49399119e-16%2C0.498710614%22%20stroke%3D%22none%22%20fill%3D%22url%28%23i8%29%22%3E%3C%2Fpolygon%3E%3C%2Fg%3E%3C%2Fg%3E%3Cg%20transform%3D%22translate%284.292508756143779%2023.833760804500628%29%20rotate%28-152.0%29%22%3E%3Cg%20clip-path%3D%22url%28%23i9%29%22%3E%3Cpolygon%20points%3D%22-5.68434189e-14%2C2.27333668e-13%206.47950119%2C2.27333668e-13%206.47950119%2C11.7125769%20-5.68434189e-14%2C11.7125769%20-5.68434189e-14%2C2.27333668e-13%22%20stroke%3D%22none%22%20fill%3D%22url%28%23i10%29%22%3E%3C%2Fpolygon%3E%3C%2Fg%3E%3C%2Fg%3E%3Cg%20transform%3D%22translate%2817.31345948670518%2023.549756705558988%29%20rotate%28153.0%29%22%3E%3Cg%20clip-path%3D%22url%28%23i11%29%22%3E%3Cpolygon%20points%3D%222.27377145e-13%2C0%206.47651515%2C0%206.47651515%2C11.7177201%202.27377145e-13%2C11.7177201%202.27377145e-13%2C0%22%20stroke%3D%22none%22%20fill%3D%22url%28%23i12%29%22%3E%3C%2Fpolygon%3E%3C%2Fg%3E%3C%2Fg%3E%3C%2Fg%3E%3C%2Fg%3E%3C%2Fg%3E%3C%2Fg%3E%3C%2Fg%3E%3C%2Fsvg%3E"
+                    alt=""
+                />经验管理
+            </h1>
+
+            <!-- 工具栏 -->
+            <div class="toolbar">
+                <div class="tag-group" id="type-filter">
+                    <button data-type="" class="active">全部</button>
+                    <button data-type="skill">Skill</button>
+                    <button data-type="wiki">Wiki</button>
+                </div>
+
+                <div class="search-box">
+                    <input type="text" id="name-filter" placeholder="名称搜索…" />
+                    <button id="search-btn">搜索</button>
+                </div>
+
+                <div class="tag-group" id="mode-selector">
+                    <button data-mode="hybrid" class="active">混合</button>
+                    <button data-mode="metadata">元数据</button>
+                    <button data-mode="content">正文</button>
+                </div>
+
+                <label class="toggle-label">
+                    <input type="checkbox" id="hot-toggle" />
+                    仅热门
+                </label>
+            </div>
+
+            <!-- 关键词勾选区 -->
+            <div class="kw-section">
+                <div class="kw-section-header">
+                    <span>关键词过滤</span>
+                    <input type="text" class="kw-search-input" id="kw-search" placeholder="搜索关键词…" />
+                    <button id="kw-clear">清除勾选</button>
+                    <button class="kw-toggle-btn" id="kw-toggle" title="折叠/展开">▲</button>
+                    <span class="kw-count" id="kw-info"></span>
+                </div>
+                <div class="kw-list" id="kw-list">加载中…</div>
+            </div>
+
+            <!-- 表格容器 -->
+            <div id="content">
+                <div class="loading">加载中…</div>
+            </div>
+        </div>
+
+        <!-- 内容预览模态框 -->
+        <div class="modal-overlay" id="modal-overlay">
+            <div class="modal">
+                <div class="modal-header">
+                    <h2 id="modal-title"></h2>
+                    <button class="modal-close" id="modal-close">&times;</button>
+                </div>
+                <div class="modal-meta" id="modal-meta"></div>
+                <div class="modal-body" id="modal-body">
+                    <div class="modal-loading">加载中…</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- marked.js CDN -->
+        <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+        <script>
+            const state = {
+                type: "",
+                name: "",
+                isHot: false,
+                page: 1,
+                pageSize: 20,
+                selectedKw: new Set(),
+                searchMode: "hybrid",
+            };
+
+            const modeSelector = document.getElementById("mode-selector");
+            modeSelector.querySelectorAll("button").forEach((btn) => {
+                btn.addEventListener("click", () => {
+                    modeSelector.querySelectorAll("button").forEach((b) => b.classList.remove("active"));
+                    btn.classList.add("active");
+                    state.searchMode = btn.dataset.mode;
+                    if (state.name) {
+                        state.page = 1;
+                        loadList();
+                    }
+                });
+            });
+            const typeBtns = document.querySelectorAll("#type-filter button");
+            const nameInput = document.getElementById("name-filter");
+            const searchBtn = document.getElementById("search-btn");
+            const hotToggle = document.getElementById("hot-toggle");
+            const kwList = document.getElementById("kw-list");
+            const kwClear = document.getElementById("kw-clear");
+            const kwSearch = document.getElementById("kw-search");
+            const kwToggle = document.getElementById("kw-toggle");
+            const kwInfo = document.getElementById("kw-info");
+            const content = document.getElementById("content");
+
+            // ----- 类型切换 -----
+            typeBtns.forEach((btn) => {
+                btn.addEventListener("click", () => {
+                    typeBtns.forEach((b) => b.classList.remove("active"));
+                    btn.classList.add("active");
+                    state.type = btn.dataset.type;
+                    state.page = 1;
+                    state.selectedKw.clear();
+                    // 清空关键词搜索框
+                    if (kwSearch) kwSearch.value = "";
+                    // 重新加载关键词（会根据 state.type 过滤）
+                    loadKeywords().then(() => {
+                        // 关键词列表更新后再加载列表，确保视觉一致
+                        loadList();
+                    });
+                });
+            });
+
+            // ----- 名称搜索 -----
+            searchBtn.addEventListener("click", () => {
+                state.name = nameInput.value.trim();
+                state.page = 1;
+                loadList();
+            });
+            nameInput.addEventListener("keydown", (e) => {
+                if (e.key === "Enter") searchBtn.click();
+            });
+
+            // ----- 热门切换 -----
+            hotToggle.addEventListener("change", () => {
+                state.isHot = hotToggle.checked;
+                state.page = 1;
+                loadList();
+            });
+
+            // ----- 关键词搜索过滤 -----
+            let kwSearchTerm = "";
+            kwSearch.addEventListener("input", () => {
+                kwSearchTerm = kwSearch.value.trim().toLowerCase();
+                // 重新渲染关键词列表（保留勾选状态）
+                renderKeywords(allKeywords);
+            });
+
+            // ----- 折叠/展开关键词列表 -----
+            kwToggle.addEventListener("click", () => {
+                const collapsed = kwList.classList.toggle("collapsed");
+                kwToggle.textContent = collapsed ? "▼" : "▲";
+                kwToggle.title = collapsed ? "展开" : "折叠";
+            });
+
+            // ----- 清除关键词勾选 -----
+            kwClear.addEventListener("click", () => {
+                state.selectedKw.clear();
+                state.page = 1;
+                // 重新渲染关键词列表
+                renderKeywords(allKeywords);
+                loadList();
+            });
+
+            // ----- 缓存所有关键词（未过滤的原始列表）-----
+            let allKeywords = [];
+
+            // ----- 加载关键词列表 -----
+            async function loadKeywords() {
+                try {
+                    const params = new URLSearchParams();
+                    if (state.type) params.set("exp_type", state.type);
+                    const resp = await fetch(`/api/keywords?${params}`);
+                    const data = await resp.json();
+                    allKeywords = data.keywords || [];
+                    kwSearchTerm = "";
+                    if (kwSearch) kwSearch.value = "";
+                    renderKeywords(allKeywords);
+                } catch (e) {
+                    kwList.innerHTML = '<span class="kw-empty" style="color:#c0392b">加载关键词失败</span>';
+                }
+            }
+
+            function renderKeywords(keywords) {
+                // 过滤：根据搜索词
+                let filtered = keywords;
+                if (kwSearchTerm) {
+                    filtered = keywords.filter((k) => k.toLowerCase().includes(kwSearchTerm));
+                }
+
+                // 更新计数：显示 过滤后数量 / 总数量
+                const total = keywords.length;
+                const shown = filtered.length;
+                if (kwSearchTerm && shown !== total) {
+                    kwInfo.textContent = `（${shown}/${total} 个）`;
+                } else if (total > 0) {
+                    kwInfo.textContent = `（共 ${total} 个）`;
+                } else {
+                    kwInfo.textContent = "";
+                }
+
+                if (!filtered.length) {
+                    kwList.innerHTML = '<span class="kw-empty">暂无匹配关键词</span>';
+                    return;
+                }
+
+                const current = state.selectedKw;
+                kwList.innerHTML = filtered
+                    .map((k) => {
+                        const checked = current.has(k);
+                        return `<label class="${checked ? "checked" : ""}"><input type="checkbox" value="${esc(k)}" ${checked ? "checked" : ""}>${esc(k)}</label>`;
+                    })
+                    .join("");
+
+                // 委托事件：勾选/取消勾选
+                kwList.querySelectorAll("input").forEach((cb) => {
+                    cb.addEventListener("change", () => {
+                        if (cb.checked) {
+                            state.selectedKw.add(cb.value);
+                            cb.parentElement.classList.add("checked");
+                        } else {
+                            state.selectedKw.delete(cb.value);
+                            cb.parentElement.classList.remove("checked");
+                        }
+                        state.page = 1;
+                        loadList();
+                    });
+                });
+            }
+
+            // ----- 加载列表 -----
+            async function loadList() {
+                content.innerHTML = '<div class="loading">加载中…</div>';
+                try {
+                    // 有搜索关键词时走搜索 API
+                    if (state.name) {
+                        const params = new URLSearchParams({
+                            query: state.name,
+                            top_k: String(state.pageSize),
+                        });
+                        if (state.type) params.set("exp_type", state.type);
+                        if (state.isHot) params.set("is_hot", "true");
+                        if (state.searchMode) params.set("search_mode", state.searchMode);
+                        for (const kw of state.selectedKw) {
+                            params.append("kw", kw);
+                        }
+
+                        const resp = await fetch(`/api/experiences/search?${params}`);
+                        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+                        const data = await resp.json();
+                        // 转换为统一格式，补全缺失字段
+                        const items = (data.items || []).map((r) => ({
+                            ...r,
+                            _search: true,
+                            match_type: r.match_type || data.mode || "metadata",
+                        }));
+                        renderList({
+                            items,
+                            total: items.length,
+                            page: 1,
+                            page_size: items.length,
+                            _searchMode: data.mode,
+                        });
+                    } else {
+                        const params = new URLSearchParams({
+                            page: state.page,
+                            page_size: state.pageSize,
+                        });
+                        if (state.type) params.set("exp_type", state.type);
+                        if (state.isHot) params.set("is_hot", "true");
+                        for (const kw of state.selectedKw) {
+                            params.append("kw", kw);
+                        }
+
+                        const resp = await fetch(`/api/experiences?${params}`);
+                        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+                        const data = await resp.json();
+                        data.items = (data.items || []).map((r) => ({ ...r, _search: false }));
+                        renderList(data);
+                    }
+                } catch (e) {
+                    content.innerHTML = `<div class="error">加载失败: ${e.message}</div>`;
+                }
+            }
+
+            // ----- 渲染列表 -----
+            function renderList(data) {
+                if (!data.items || data.items.length === 0) {
+                    content.innerHTML = '<div class="empty">暂无数据</div>';
+                    return;
+                }
+                content.innerHTML = buildTable(data.items) + buildPagination(data);
+            }
+
+            function buildTable(items) {
+                const isSearch = items.length > 0 && items[0]._search;
+                const matchLabels = { both: "元数据+正文", metadata: "仅元数据", content: "仅正文" };
+                const rows = items
+                    .map((e) => {
+                        let matchCol = "";
+                        if (isSearch && e.match_type) {
+                            const label = matchLabels[e.match_type] || e.match_type;
+                            matchCol = `<td><span class="match-badge ${e.match_type}">${label}</span></td>`;
+                        }
+                        return `
+    <tr data-id="${esc(e.id)}">
+      <td><span class="badge badge-${e.type}">${e.type}</span>${e.is_hot ? '<span class="badge badge-hot">热</span>' : ""}</td>
+      <td class="name-cell">${esc(e.name)}</td>
+      <td class="desc-cell" title="${esc(e.description)}">${esc(e.description)}</td>
+      <td class="kw-cell">${(e.keywords || [])
+          .slice(0, 5)
+          .map((k) => `<span class="kw-tag" title="${esc(k)}">${esc(k)}</span>`)
+          .join("")}</td>
+      ${matchCol}
+      <td class="source-cell" title="${esc(e.source)}">${esc(e.source)}</td>
+    </tr>
+  `;
+                    })
+                    .join("");
+
+                const searchCols = isSearch ? "<th>匹配方式</th>" : "";
+                return `
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>类型</th><th>名称</th><th>描述</th><th>关键词</th>${searchCols}<th>来源</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+  `;
+            }
+
+            function buildPagination(data) {
+                const totalPages = Math.ceil(data.total / data.page_size) || 1;
+                if (totalPages <= 1) return "";
+                return `
+    <div class="pagination">
+      <button ${data.page <= 1 ? "disabled" : ""} id="prev-btn">上一页</button>
+      <span class="page-info">${data.page} / ${totalPages}（共 ${data.total} 条）</span>
+      <button ${data.page >= totalPages ? "disabled" : ""} id="next-btn">下一页</button>
+    </div>
+  `;
+            }
+
+            // ----- 委托分页 -----
+            content.addEventListener("click", (e) => {
+                if (e.target.id === "prev-btn" && state.page > 1) {
+                    state.page--;
+                    loadList();
+                }
+                if (e.target.id === "next-btn") {
+                    state.page++;
+                    loadList();
+                }
+            });
+
+            function esc(s) {
+                return (s || "")
+                    .replace(/&/g, "&amp;")
+                    .replace(/</g, "&lt;")
+                    .replace(/>/g, "&gt;")
+                    .replace(/"/g, "&quot;");
+            }
+
+            // ----- 模态框元素 -----
+            const modalOverlay = document.getElementById("modal-overlay");
+            const modalTitle = document.getElementById("modal-title");
+            const modalMeta = document.getElementById("modal-meta");
+            const modalBody = document.getElementById("modal-body");
+            const modalClose = document.getElementById("modal-close");
+
+            // ----- 关闭模态框 -----
+            function closeModal() {
+                modalOverlay.classList.remove("active");
+                document.body.style.overflow = "";
+            }
+
+            modalClose.addEventListener("click", closeModal);
+            modalOverlay.addEventListener("click", (e) => {
+                if (e.target === modalOverlay) closeModal();
+            });
+            document.addEventListener("keydown", (e) => {
+                if (e.key === "Escape" && modalOverlay.classList.contains("active")) {
+                    closeModal();
+                }
+            });
+
+            // ----- 点击行：预览内容 -----
+            content.addEventListener("click", (e) => {
+                const row = e.target.closest("tr[data-id]");
+                if (!row) return;
+                const expId = row.dataset.id;
+                if (expId) openPreview(expId);
+            });
+
+            async function openPreview(expId) {
+                // 打开模态框
+                modalOverlay.classList.add("active");
+                document.body.style.overflow = "hidden";
+                modalTitle.textContent = "";
+                modalMeta.innerHTML = "";
+                modalBody.innerHTML = '<div class="modal-loading">加载中…</div>';
+
+                try {
+                    const resp = await fetch(`/api/experiences/${encodeURIComponent(expId)}`);
+                    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+                    const exp = await resp.json();
+                    renderPreview(exp);
+                } catch (err) {
+                    modalBody.innerHTML = `<div class="error">加载失败: ${err.message}</div>`;
+                }
+            }
+
+            function renderPreview(exp) {
+                // 标题
+                const typeLabel = exp.type === "skill" ? "Skill" : "Wiki";
+                const badgeClass = exp.type === "skill" ? "badge-skill" : "badge-wiki";
+                modalTitle.innerHTML = `<span class="badge ${badgeClass}">${typeLabel}</span> ${esc(exp.name)}${exp.is_hot ? ' <span class="badge badge-hot">热</span>' : ""}`;
+
+                // 元信息
+                const allKw = exp.keywords || [];
+                const kwTagsHtml = allKw
+                    .map((k) => `<span class="meta-kw-tag" title="${esc(k)}">${esc(k)}</span>`)
+                    .join("");
+                modalMeta.innerHTML = `
+                    <div class="meta-row">
+                        <span class="meta-item">📅 ${esc(exp.created_at)}</span>
+                        <span class="meta-item">📂 ${esc(exp.source)}</span>
+                    </div>
+                    ${
+                        allKw.length > 0
+                            ? `
+                    <div class="meta-row">
+                        <span class="meta-item">🏷️</span>
+                        <span class="meta-kw-row">${kwTagsHtml}</span>
+                    </div>`
+                            : ""
+                    }
+                `;
+
+                // 正文：使用 marked 渲染 Markdown
+                const rawContent = exp.content || "";
+                if (typeof marked !== "undefined" && rawContent) {
+                    // 配置 marked
+                    marked.setOptions?.({ breaks: true, gfm: true });
+                    const html = marked.parse(rawContent);
+                    modalBody.innerHTML = html;
+                } else if (rawContent) {
+                    // 降级：显示纯文本
+                    modalBody.innerHTML = `<pre style="white-space: pre-wrap; font-family: ui-monospace, 'SF Mono', monospace; font-size: 0.85rem;">${esc(rawContent)}</pre>`;
+                } else {
+                    modalBody.innerHTML = '<div class="empty">暂无内容</div>';
+                }
+            }
+
+            // ----- 初始加载 -----
+            loadKeywords();
+            loadList();
+        </script>
+    </body>
+</html>

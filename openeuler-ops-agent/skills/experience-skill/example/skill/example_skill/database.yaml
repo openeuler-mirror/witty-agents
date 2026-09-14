@@ -1,0 +1,6 @@
+- testcase1:
+    question: 这是一个测试用例，测试experience-skill的基本功能。
+    answer: 这是一个测试用例的答案，验证experience-skill是否能够正确处理基本功能。
+- testcase2:
+    question: 这是另一个测试用例，测试experience-skill在处理复杂输入时的表现。
+    answer: 这是另一个测试用例的答案，验证experience-skill在处理复杂输入时是否能够正确响应。

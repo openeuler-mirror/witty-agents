@@ -1,0 +1,16 @@
+{
+  "include": ["src/experience_skill_cli"],
+  "exclude": ["src/experience_skill_cli/tokenizer"],
+  "extraPaths": ["src"],
+  "venvPath": ".",
+  "venv": ".venv",
+  "reportUnknownMemberType": "none",
+  "reportMissingTypeArgument": "none",
+  "reportUnknownParameterType": "none",
+  "reportUnknownArgumentType": "none",
+  "reportUnknownVariableType": "none",
+  "reportUnusedCallResult": "none",
+  "reportExplicitAny": "none",
+  "reportAny": "none",
+  "reportReturnType": "none",
+}
