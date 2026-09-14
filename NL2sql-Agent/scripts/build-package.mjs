@@ -22,7 +22,7 @@ const DEFAULT_OUTPUT_DIR = join(PROJECT_ROOT, "artifacts")
 const ONLINE_MAX_BYTES = Number(process.env.ONLINE_MAX_BYTES || 10 * 1024 * 1024)
 const REQUIRED_FILES_MANIFEST = join(PROJECT_ROOT, "packaging", "required-package-files.txt")
 
-const COPY_ITEMS = ["opencode_plugin", "bin", "lib", "README.md"]
+const COPY_ITEMS = ["dist", "opencode_plugin", "bin", "lib", "README.md"]
 const REQUIREMENTS_FILE = join(PROJECT_ROOT, "requirements.txt")
 const OFFLINE_PYTHON_ITEMS = ["nl2sql_core", "apps", "requirements.txt"]
 
@@ -252,6 +252,7 @@ function writeStagePackageJson(stageDir, basePackage, variant, packageStyle, arc
     name: variant === "offline" ? `${packageBaseName}-offline-${arch}` : `${packageBaseName}-online`,
     description: `${basePackage.description} (${variant}${variant === "offline" ? ` ${arch}` : ""} package)`,
     files: [
+      "dist",
       "opencode_plugin",
       "bin",
       "lib",

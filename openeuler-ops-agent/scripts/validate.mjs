@@ -22,9 +22,11 @@ for (const path of manifest) {
   assert(existsSync(join(PROJECT_ROOT, path)), `required package file is missing: ${path}`)
 }
 
-for (const checkable of ["bin/cli.js", "lib/configure.mjs"]) {
+for (const checkable of ["bin/cli.js", "lib/configure.mjs", "lib/validate-plugin.mjs", "scripts/validate-dist.mjs"]) {
   execFileSync(process.execPath, ["--check", join(PROJECT_ROOT, checkable)], { stdio: "inherit" })
 }
+
+execFileSync(process.execPath, [join(PROJECT_ROOT, "scripts/validate-dist.mjs")], { stdio: "inherit" })
 
 const packageJson = JSON.parse(readFileSync(join(PROJECT_ROOT, "package.json"), "utf8"))
 assert(

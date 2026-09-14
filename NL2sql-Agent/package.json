@@ -3,11 +3,16 @@
   "version": "0.1.0",
   "description": "NL2SQL Agent — 自然语言转 Elasticsearch 只读查询，通过本地 NL2SQL Web API 执行",
   "type": "module",
+  "main": "dist/index.js",
+  "exports": {
+    ".": "./dist/index.js"
+  },
   "bin": {
     "nl2sql-agent": "./bin/configure.mjs",
     "nl2sql-setup": "./bin/nl2sql-setup.mjs"
   },
   "files": [
+    "dist/",
     "opencode_plugin/",
     "bin/",
     "lib/",
@@ -15,6 +20,7 @@
   ],
   "scripts": {
     "validate": "node scripts/validate.mjs",
+    "validate:dist": "node scripts/validate-dist.mjs",
     "pack:variant": "node scripts/build-package.mjs",
     "ci:verify-artifacts": "node scripts/verify-ci-artifacts.mjs",
     "test:install-contract": "node tests/test-install-contract.mjs",

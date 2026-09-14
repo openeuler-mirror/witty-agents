@@ -22,7 +22,7 @@ const DEFAULT_OUTPUT_DIR = join(PROJECT_ROOT, "artifacts")
 const ONLINE_MAX_BYTES = Number(process.env.ONLINE_MAX_BYTES || 10 * 1024 * 1024)
 const REQUIRED_FILES_MANIFEST = join(PROJECT_ROOT, "packaging", "required-package-files.txt")
 
-const COPY_ITEMS = ["agent.md", "bin", "lib", "scripts", "install.sh", "README.md"]
+const COPY_ITEMS = ["agent.md", "dist", "skills", "bin", "lib", "scripts", "install.sh", "README.md"]
 
 function parseArgs(argv) {
   const options = {
@@ -167,6 +167,8 @@ function writeStagePackageJson(stageDir, basePackage, variant, packageStyle, arc
     description: `${basePackage.description} (${variant}${variant === "offline" ? ` ${arch}` : ""} package)`,
     files: [
       "agent.md",
+      "dist",
+      "skills",
       "bin",
       "lib",
       "scripts",

@@ -6,25 +6,23 @@ import {
   mkdirSync,
   openSync,
   readFileSync,
+  realpathSync,
   renameSync,
   rmSync,
   writeFileSync,
 } from "node:fs"
 import { homedir } from "node:os"
 import { dirname, join, resolve } from "node:path"
+import { pathToFileURL } from "node:url"
 import { applyEdits, modify, parse, printParseErrorCode } from "jsonc-parser"
 
 const AGENT_KEY = "xlite-perf-optimizer"
 const OWNER = "xlite-perf-optimizer"
-const SKILLS = [
-  "xlite-analyzer",
-  "xlite-complexity-estimator",
-  "xlite-operator-dev",
-  "xlite-atomic-journal",
-  "xlite-profiler",
-  "xlite-ascend-runner",
-  "xlite-gitcode-runner",
-  "xlite-html-reporter",
+const XLITE_PACKAGE_SEGMENTS = [
+  "witty-agent-xlite",
+  "xlite-perf-optimizer",
+  "-xlite-online",
+  "-xlite-offline",
 ]
 
 export function resolveConfigPath() {
@@ -115,16 +113,29 @@ function applyModify(raw, path, value, formattingOptions) {
   return applyEdits(raw, modify(raw, path, value, { formattingOptions }))
 }
 
-function agentEntry(packageRoot) {
-  return {
-    description: "xlite 性能优化专家 — 自动分析算子瓶颈、设计并实现优化、在昇腾容器内验证、生成 HTML 报告并支持原子回退",
-    prompt: `{file:${join(packageRoot, "agent", "agent.md")}}`,
-    skills: SKILLS,
+function getLocalPluginSpec(packageRoot) {
+  const pluginPath = join(packageRoot, "dist", "index.js")
+  if (!existsSync(pluginPath)) {
+    throw new Error(`OpenCode plugin entry is missing: ${pluginPath}`)
   }
+  const entry = lstatSync(pluginPath)
+  if (entry.isSymbolicLink() || !entry.isFile()) {
+    throw new Error(`refusing to register non-regular OpenCode plugin entry: ${pluginPath}`)
+  }
+  return pathToFileURL(realpathSync(pluginPath)).href
 }
 
-function sameJson(left, right) {
-  return JSON.stringify(left) === JSON.stringify(right)
+function isPluginSpec(spec) {
+  if (typeof spec !== "string") return false
+  if (spec === AGENT_KEY) return true
+  if (!spec.startsWith("file://")) return false
+  try {
+    const pluginPath = new URL(spec).pathname.replaceAll("\\", "/")
+    if (!pluginPath.endsWith("/dist/index.js")) return false
+    return XLITE_PACKAGE_SEGMENTS.some((segment) => pluginPath.includes(segment))
+  } catch {
+    return false
+  }
 }
 
 export function registerAgent(packageRoot, configPath = resolveConfigPath()) {
@@ -133,18 +144,22 @@ export function registerAgent(packageRoot, configPath = resolveConfigPath()) {
     ...readManagedFile(configPath),
   }
   const config = parseConfig(raw, path)
-  const desired = agentEntry(packageRoot)
-  const current = config.agent?.[AGENT_KEY]
+  const desired = getLocalPluginSpec(packageRoot)
+  const current = config.plugin || []
+  const plugins = current.filter((plugin) => !isPluginSpec(plugin))
+  plugins.push(desired)
 
-  if (sameJson(current, desired)) {
-    return { changed: false, configPath: path, agentKey: AGENT_KEY }
+  const changed = plugins.length !== current.length
+    || plugins.some((plugin, index) => plugin !== current[index])
+  if (!changed) {
+    return { changed: false, configPath: path, agentKey: AGENT_KEY, pluginSpec: desired }
   }
 
   const eol = raw.includes("\r\n") ? "\r\n" : "\n"
   const formattingOptions = { insertSpaces: true, tabSize: 2, eol }
-  const updated = applyModify(raw, ["agent", AGENT_KEY], desired, formattingOptions)
+  const updated = applyModify(raw, ["plugin"], plugins, formattingOptions)
   const { backupPath } = writeManagedFile({ path, before: raw, after: updated, mode, existed })
-  return { changed: true, configPath: path, agentKey: AGENT_KEY, backupPath }
+  return { changed: true, configPath: path, agentKey: AGENT_KEY, pluginSpec: desired, backupPath }
 }
 
 export function removeAgent(configPath = resolveConfigPath()) {
@@ -153,17 +168,21 @@ export function removeAgent(configPath = resolveConfigPath()) {
     ...readManagedFile(configPath),
   }
   if (!existed) {
-    return { changed: false, configPath: path, agentKey: AGENT_KEY }
+    return { changed: false, configPath: path, agentKey: AGENT_KEY, removedPluginSpecs: [] }
   }
   const config = parseConfig(raw, path)
-  if (!Object.hasOwn(config.agent || {}, AGENT_KEY)) {
-    return { changed: false, configPath: path, agentKey: AGENT_KEY }
+  const current = config.plugin || []
+  const removedPluginSpecs = current.filter(isPluginSpec)
+  const plugins = current.filter((plugin) => !isPluginSpec(plugin))
+  if (removedPluginSpecs.length === 0) {
+    return { changed: false, configPath: path, agentKey: AGENT_KEY, removedPluginSpecs }
   }
+
   const eol = raw.includes("\r\n") ? "\r\n" : "\n"
   const formattingOptions = { insertSpaces: true, tabSize: 2, eol }
-  const updated = applyModify(raw, ["agent", AGENT_KEY], undefined, formattingOptions)
+  const updated = applyModify(raw, ["plugin"], plugins, formattingOptions)
   const { backupPath } = writeManagedFile({ path, before: raw, after: updated, mode, existed })
-  return { changed: true, configPath: path, agentKey: AGENT_KEY, backupPath }
+  return { changed: true, configPath: path, agentKey: AGENT_KEY, removedPluginSpecs, backupPath }
 }
 
 export function agentStatus(configPath = resolveConfigPath()) {
@@ -172,13 +191,15 @@ export function agentStatus(configPath = resolveConfigPath()) {
     ...readManagedFile(configPath),
   }
   if (!existed) {
-    return { changed: false, configured: false, configPath: path, agentKey: AGENT_KEY }
+    return { changed: false, configured: false, configPath: path, agentKey: AGENT_KEY, pluginSpecs: [] }
   }
   const config = parseConfig(raw, path)
+  const pluginSpecs = (config.plugin || []).filter(isPluginSpec)
   return {
     changed: false,
-    configured: Object.hasOwn(config.agent ?? {}, AGENT_KEY),
+    configured: pluginSpecs.length > 0,
     configPath: path,
     agentKey: AGENT_KEY,
+    pluginSpecs,
   }
 }

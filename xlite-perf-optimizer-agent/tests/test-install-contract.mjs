@@ -72,7 +72,12 @@ function exerciseConfigure(project, configPath, environment) {
   assert(after.includes("keep-this-comment"), "configure: JSONC comment was removed")
   assert(config.custom?.token === "keep-me", "configure: unrelated custom config was changed")
   assert(config.agent?.["other-agent"], "configure: unrelated agent was removed")
-  assert(config.agent?.["xlite-perf-optimizer"], "configure: xlite-perf-optimizer was not registered")
+  assert(
+    Array.isArray(config.plugin) && config.plugin.some((spec) => (
+      typeof spec === "string" && spec.endsWith("/dist/index.js") && spec.includes("xlite-perf-optimizer")
+    )),
+    "configure: xlite-perf-optimizer plugin was not registered",
+  )
   assert(listBackups(configPath).length === backupsBefore + 1, "configure: did not create exactly one backup")
 
   execFileSync("npm", ["exec", "--offline", "--", "xlite-perf-optimizer-configure", "register"], {
@@ -92,7 +97,12 @@ function exerciseRemove(project, configPath, environment) {
   assert(after.includes("keep-this-comment"), "configure remove: JSONC comment was removed")
   assert(config.custom?.token === "keep-me", "configure remove: unrelated custom config was changed")
   assert(config.agent?.["other-agent"], "configure remove: unrelated agent was removed")
-  assert(!config.agent?.["xlite-perf-optimizer"], "configure remove: xlite-perf-optimizer registration remains")
+  assert(
+    !Array.isArray(config.plugin) || !config.plugin.some((spec) => (
+      typeof spec === "string" && spec.endsWith("/dist/index.js") && spec.includes("xlite-perf-optimizer")
+    )),
+    "configure remove: xlite-perf-optimizer plugin registration remains",
+  )
   assert(listBackups(configPath).length === backupsBefore + 1, "configure remove: did not create exactly one backup")
 
   execFileSync("npm", ["exec", "--offline", "--", "xlite-perf-optimizer-configure", "remove"], {
