@@ -3,10 +3,12 @@
 import { execFileSync } from "node:child_process"
 import {
   existsSync,
+  lstatSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
   readdirSync,
+  readlinkSync,
   rmSync,
   writeFileSync,
 } from "node:fs"
@@ -80,6 +82,10 @@ function exerciseConfigure(project, configPath, environment) {
   )
   assert(listBackups(configPath).length === backupsBefore + 1, "configure: did not create exactly one backup")
 
+  const skillLink = join(environment.XDG_CONFIG_HOME, "opencode", "skills", "nl2sql")
+  assert(lstatSync(skillLink).isSymbolicLink(), "configure: nl2sql skill link is missing")
+  assert(existsSync(join(readlinkSync(skillLink), "SKILL.md")), "configure: nl2sql skill link target has no SKILL.md")
+
   execFileSync("npm", ["exec", "--offline", "--", "nl2sql-agent", "configure"], {
     cwd: project, stdio: "inherit", env: environment,
   })
@@ -102,6 +108,10 @@ function exerciseRemove(project, configPath, environment) {
       typeof spec === "string" && spec.endsWith("/dist/index.js") && spec.includes("nl2sql")
     )),
     "configure remove: nl2sql plugin registration remains",
+  )
+  assert(
+    !existsSync(join(environment.XDG_CONFIG_HOME, "opencode", "skills", "nl2sql")),
+    "configure remove: nl2sql skill link remains",
   )
   assert(listBackups(configPath).length === backupsBefore + 1, "configure remove: did not create exactly one backup")
 

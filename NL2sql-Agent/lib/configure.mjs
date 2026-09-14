@@ -6,9 +6,11 @@ import {
   mkdirSync,
   openSync,
   readFileSync,
+  readlinkSync,
   realpathSync,
   renameSync,
   rmSync,
+  symlinkSync,
   writeFileSync,
 } from "node:fs"
 import { homedir } from "node:os"
@@ -140,6 +142,46 @@ function isPluginSpec(spec) {
   }
 }
 
+export function resolveSkillsDir() {
+  if (process.env.NL2SQL_OPENCODE_CONFIG) {
+    return resolve(join(dirname(resolve(process.env.NL2SQL_OPENCODE_CONFIG)), "skills"))
+  }
+  const configHome = process.env.XDG_CONFIG_HOME
+    ? resolve(process.env.XDG_CONFIG_HOME)
+    : join(homedir(), ".config")
+  return join(configHome, "opencode", "skills")
+}
+
+export function linkSkills(packageRoot, skillsDir = resolveSkillsDir()) {
+  const source = join(packageRoot, "opencode_plugin", "skills", AGENT_KEY)
+  if (!existsSync(source)) {
+    throw new Error(`nl2sql skill source is missing: ${source}`)
+  }
+  const sourceReal = realpathSync(source)
+  mkdirSync(skillsDir, { recursive: true, mode: 0o700 })
+  const linkPath = join(skillsDir, AGENT_KEY)
+  if (existsSync(linkPath)) {
+    const existing = lstatSync(linkPath)
+    const alreadyLinked = existing.isSymbolicLink()
+      && realpathSync(linkPath) === sourceReal
+    return { changed: false, linkPath, alreadyLinked, ...(alreadyLinked ? {} : { conflict: linkPath }) }
+  }
+  symlinkSync(source, linkPath)
+  return { changed: true, linkPath }
+}
+
+export function unlinkSkills(skillsDir = resolveSkillsDir()) {
+  const linkPath = join(skillsDir, AGENT_KEY)
+  if (!existsSync(linkPath)) {
+    return { changed: false, linkPath }
+  }
+  if (!lstatSync(linkPath).isSymbolicLink()) {
+    return { changed: false, linkPath, conflict: linkPath }
+  }
+  rmSync(linkPath)
+  return { changed: true, linkPath }
+}
+
 export function registerAgent(packageRoot, configPath = resolveConfigPath()) {
   const { configPath: path, raw, mode, existed } = {
     configPath,
@@ -147,6 +189,7 @@ export function registerAgent(packageRoot, configPath = resolveConfigPath()) {
   }
   const config = parseConfig(raw, path)
   const desired = getLocalPluginSpec(packageRoot)
+  const link = linkSkills(packageRoot)
   const current = config.plugin || []
   const plugins = current.filter((plugin) => !isPluginSpec(plugin))
   plugins.push(desired)
@@ -154,14 +197,14 @@ export function registerAgent(packageRoot, configPath = resolveConfigPath()) {
   const changed = plugins.length !== current.length
     || plugins.some((plugin, index) => plugin !== current[index])
   if (!changed) {
-    return { changed: false, configPath: path, agentKey: AGENT_KEY, pluginSpec: desired }
+    return { changed: false, configPath: path, agentKey: AGENT_KEY, pluginSpec: desired, link }
   }
 
   const eol = raw.includes("\r\n") ? "\r\n" : "\n"
   const formattingOptions = { insertSpaces: true, tabSize: 2, eol }
   const updated = applyModify(raw, ["plugin"], plugins, formattingOptions)
   const { backupPath } = writeManagedFile({ path, before: raw, after: updated, mode, existed })
-  return { changed: true, configPath: path, agentKey: AGENT_KEY, pluginSpec: desired, backupPath }
+  return { changed: true, configPath: path, agentKey: AGENT_KEY, pluginSpec: desired, link, backupPath }
 }
 
 export function removeAgent(configPath = resolveConfigPath()) {
@@ -183,8 +226,9 @@ export function removeAgent(configPath = resolveConfigPath()) {
   const eol = raw.includes("\r\n") ? "\r\n" : "\n"
   const formattingOptions = { insertSpaces: true, tabSize: 2, eol }
   const updated = applyModify(raw, ["plugin"], plugins, formattingOptions)
+  const link = unlinkSkills()
   const { backupPath } = writeManagedFile({ path, before: raw, after: updated, mode, existed })
-  return { changed: true, configPath: path, agentKey: AGENT_KEY, removedPluginSpecs, backupPath }
+  return { changed: true, configPath: path, agentKey: AGENT_KEY, removedPluginSpecs, link, backupPath }
 }
 
 export function agentStatus(configPath = resolveConfigPath()) {

@@ -23,12 +23,21 @@ if (["-h", "--help", "help"].includes(arg)) {
   console.log(result.changed
     ? `Agent 已注册到 ${result.configPath}`
     : `Agent 已存在，无需变更：${result.configPath}`)
+  if (result.link?.alreadyLinked) {
+    console.log(`Skill 已链接（存在）：${result.link.linkPath}`)
+  } else if (result.link?.changed) {
+    console.log(`Skill 已链接：${result.link.linkPath}`)
+  } else if (result.link?.conflict) {
+    console.error(`Skill 链接冲突（未覆盖）：${result.link.conflict}`)
+    process.exitCode = 1
+  }
   process.exit(0)
 } else if (arg === "remove") {
   const result = removeAgent(resolveConfigPath())
   console.log(result.changed
     ? `Agent 已从 ${result.configPath} 移除`
     : `Agent 未注册，无需变更：${result.configPath}`)
+  if (result.link?.changed) console.log(`Skill 链接已移除：${result.link.linkPath}`)
   process.exit(0)
 } else if (arg === "status") {
   const result = agentStatus(resolveConfigPath())
