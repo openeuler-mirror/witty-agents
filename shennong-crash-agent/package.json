@@ -27,7 +27,7 @@
   "wittyAgentDistribution": {
     "packageNames": {
       "organization": "@openeuler/agent-shennong-crash",
-      "plain": "openeuler-agent-shennong-crash"
+      "plain": "witty-agent-shennong"
     }
   },
   "engines": {
