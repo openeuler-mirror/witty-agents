@@ -27,7 +27,7 @@ function spawnShell(script) {
 if (["-h", "--help", "help"].includes(arg)) {
   printUsage();
   process.exit(0);
-} else if (arg === "configure") {
+} else if (arg === "configure" || arg === "register") {
   const result = registerAgent(rootDir, resolveConfigPath());
   console.log(result.changed
     ? `Agent 已注册到 ${result.configPath}`

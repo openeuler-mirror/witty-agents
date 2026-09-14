@@ -3,10 +3,12 @@
 import { execFileSync } from "node:child_process"
 import {
   existsSync,
+  lstatSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
   readdirSync,
+  readlinkSync,
   rmSync,
   writeFileSync,
 } from "node:fs"
@@ -80,6 +82,11 @@ function exerciseConfigure(project, configPath, environment) {
   )
   assert(listBackups(configPath).length === backupsBefore + 1, "configure: did not create exactly one backup")
 
+  const skillsDir = join(process.env.XDG_CONFIG_HOME || "", "opencode", "skills")
+  const skillLink = join(skillsDir, "cool-agent-tools")
+  assert(existsSync(skillLink) && lstatSync(skillLink).isSymbolicLink(), "configure: openeuler-ops skill link is missing")
+  assert(existsSync(join(readlinkSync(skillLink), "SKILL.md")), "configure: openeuler-ops skill link target has no SKILL.md")
+
   execFileSync("npm", ["exec", "--offline", "--", "openeuler-ops-agent", "configure"], {
     cwd: project, stdio: "inherit", env: environment,
   })
@@ -104,6 +111,10 @@ function exerciseRemove(project, configPath, environment) {
     "configure remove: openeuler-ops plugin registration remains",
   )
   assert(listBackups(configPath).length === backupsBefore + 1, "configure remove: did not create exactly one backup")
+
+  const skillsDir = join(process.env.XDG_CONFIG_HOME || "", "opencode", "skills")
+  const skillLink = join(skillsDir, "cool-agent-tools")
+  assert(!existsSync(skillLink), "configure remove: openeuler-ops skill link was not removed")
 
   execFileSync("npm", ["exec", "--offline", "--", "openeuler-ops-agent", "remove"], {
     cwd: project, stdio: "inherit", env: environment,

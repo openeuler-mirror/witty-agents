@@ -5,13 +5,13 @@ import { registerAgent, removeAgent, agentStatus, resolveConfigPath } from "../l
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const rootDir = join(__dirname, "..");
-const arg = process.argv[2] || "register";
+const arg = process.argv[2] || "configure";
 
 function printUsage() {
   console.log(`Usage:
-  xlite-perf-optimizer-configure register   # 注册 Agent 到 opencode 配置（幂等）
-  xlite-perf-optimizer-configure remove     # 从 opencode 配置移除 Agent（幂等）
-  xlite-perf-optimizer-configure status     # 查看注册状态
+  xlite-perf-optimizer-configure configure   # 注册 Agent 到 opencode 配置（幂等）
+  xlite-perf-optimizer-configure remove      # 从 opencode 配置移除 Agent（幂等）
+  xlite-perf-optimizer-configure status      # 查看注册状态
 `);
 }
 

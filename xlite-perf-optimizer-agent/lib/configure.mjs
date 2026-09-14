@@ -6,9 +6,11 @@ import {
   mkdirSync,
   openSync,
   readFileSync,
+  readlinkSync,
   realpathSync,
   renameSync,
   rmSync,
+  symlinkSync,
   writeFileSync,
 } from "node:fs"
 import { homedir } from "node:os"
@@ -23,6 +25,16 @@ const XLITE_PACKAGE_SEGMENTS = [
   "xlite-perf-optimizer",
   "-xlite-online",
   "-xlite-offline",
+]
+const SKILLS = [
+  "xlite-analyzer",
+  "xlite-complexity-estimator",
+  "xlite-operator-dev",
+  "xlite-atomic-journal",
+  "xlite-profiler",
+  "xlite-ascend-runner",
+  "xlite-gitcode-runner",
+  "xlite-html-reporter",
 ]
 
 export function resolveConfigPath() {
@@ -138,12 +150,64 @@ function isPluginSpec(spec) {
   }
 }
 
+export function resolveSkillsDir() {
+  if (process.env.XLITE_OPENCODE_CONFIG) {
+    return resolve(join(dirname(resolve(process.env.XLITE_OPENCODE_CONFIG)), "skills"))
+  }
+  const configHome = process.env.XDG_CONFIG_HOME
+    ? resolve(process.env.XDG_CONFIG_HOME)
+    : join(homedir(), ".config")
+  return join(configHome, "opencode", "skills")
+}
+
+export function linkSkills(packageRoot, skillsDir = resolveSkillsDir()) {
+  mkdirSync(skillsDir, { recursive: true, mode: 0o700 })
+  const linked = []
+  const conflicts = []
+  for (const skill of SKILLS) {
+    const source = join(packageRoot, "skills", skill)
+    if (!existsSync(source)) continue
+    const linkPath = join(skillsDir, skill)
+    if (existsSync(linkPath)) {
+      const existing = lstatSync(linkPath)
+      const alreadyLinked = existing.isSymbolicLink()
+        && realpathSync(linkPath) === realpathSync(source)
+      if (alreadyLinked) {
+        linked.push({ skill, linkPath, alreadyLinked: true, changed: false })
+      } else {
+        conflicts.push({ skill, linkPath })
+      }
+      continue
+    }
+    symlinkSync(source, linkPath)
+    linked.push({ skill, linkPath, changed: true })
+  }
+  return { linked, conflicts }
+}
+
+export function unlinkSkills(skillsDir = resolveSkillsDir()) {
+  const removed = []
+  const conflicts = []
+  for (const skill of SKILLS) {
+    const linkPath = join(skillsDir, skill)
+    if (!existsSync(linkPath)) continue
+    if (!lstatSync(linkPath).isSymbolicLink()) {
+      conflicts.push({ skill, linkPath })
+      continue
+    }
+    rmSync(linkPath)
+    removed.push({ skill, linkPath })
+  }
+  return { removed, conflicts }
+}
+
 export function registerAgent(packageRoot, configPath = resolveConfigPath()) {
   const { configPath: path, raw, mode, existed } = {
     configPath,
     ...readManagedFile(configPath),
   }
   const config = parseConfig(raw, path)
+  const link = linkSkills(packageRoot)
   const desired = getLocalPluginSpec(packageRoot)
   const current = config.plugin || []
   const plugins = current.filter((plugin) => !isPluginSpec(plugin))
@@ -152,14 +216,14 @@ export function registerAgent(packageRoot, configPath = resolveConfigPath()) {
   const changed = plugins.length !== current.length
     || plugins.some((plugin, index) => plugin !== current[index])
   if (!changed) {
-    return { changed: false, configPath: path, agentKey: AGENT_KEY, pluginSpec: desired }
+    return { changed: false, configPath: path, agentKey: AGENT_KEY, pluginSpec: desired, link }
   }
 
   const eol = raw.includes("\r\n") ? "\r\n" : "\n"
   const formattingOptions = { insertSpaces: true, tabSize: 2, eol }
   const updated = applyModify(raw, ["plugin"], plugins, formattingOptions)
   const { backupPath } = writeManagedFile({ path, before: raw, after: updated, mode, existed })
-  return { changed: true, configPath: path, agentKey: AGENT_KEY, pluginSpec: desired, backupPath }
+  return { changed: true, configPath: path, agentKey: AGENT_KEY, pluginSpec: desired, link, backupPath }
 }
 
 export function removeAgent(configPath = resolveConfigPath()) {
@@ -181,8 +245,9 @@ export function removeAgent(configPath = resolveConfigPath()) {
   const eol = raw.includes("\r\n") ? "\r\n" : "\n"
   const formattingOptions = { insertSpaces: true, tabSize: 2, eol }
   const updated = applyModify(raw, ["plugin"], plugins, formattingOptions)
+  const link = unlinkSkills()
   const { backupPath } = writeManagedFile({ path, before: raw, after: updated, mode, existed })
-  return { changed: true, configPath: path, agentKey: AGENT_KEY, removedPluginSpecs, backupPath }
+  return { changed: true, configPath: path, agentKey: AGENT_KEY, removedPluginSpecs, link, backupPath }
 }
 
 export function agentStatus(configPath = resolveConfigPath()) {
