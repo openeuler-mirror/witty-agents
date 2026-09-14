@@ -82,7 +82,7 @@ function exerciseConfigure(project, configPath, environment) {
   )
   assert(listBackups(configPath).length === backupsBefore + 1, "configure: did not create exactly one backup")
 
-  const skillsDir = join(process.env.XDG_CONFIG_HOME || "", "opencode", "skills")
+  const skillsDir = join(dirname(configPath), "skills")
   const skillLink = join(skillsDir, "cool-agent-tools")
   assert(existsSync(skillLink) && lstatSync(skillLink).isSymbolicLink(), "configure: openeuler-ops skill link is missing")
   assert(existsSync(join(readlinkSync(skillLink), "SKILL.md")), "configure: openeuler-ops skill link target has no SKILL.md")
@@ -112,7 +112,7 @@ function exerciseRemove(project, configPath, environment) {
   )
   assert(listBackups(configPath).length === backupsBefore + 1, "configure remove: did not create exactly one backup")
 
-  const skillsDir = join(process.env.XDG_CONFIG_HOME || "", "opencode", "skills")
+  const skillsDir = join(dirname(configPath), "skills")
   const skillLink = join(skillsDir, "cool-agent-tools")
   assert(!existsSync(skillLink), "configure remove: openeuler-ops skill link was not removed")
 

@@ -82,7 +82,7 @@ function exerciseConfigure(project, configPath, environment) {
   )
   assert(listBackups(configPath).length === backupsBefore + 1, "configure: did not create exactly one backup")
 
-  const skillsDir = join(process.env.XDG_CONFIG_HOME || "", "opencode", "skills")
+  const skillsDir = join(dirname(configPath), "skills")
   const skillLink = join(skillsDir, "xlite-analyzer")
   assert(existsSync(skillLink) && lstatSync(skillLink).isSymbolicLink(), "configure: xlite skill link is missing")
   assert(existsSync(join(readlinkSync(skillLink), "SKILL.md")), "configure: xlite skill link target has no SKILL.md")
@@ -112,7 +112,7 @@ function exerciseRemove(project, configPath, environment) {
   )
   assert(listBackups(configPath).length === backupsBefore + 1, "configure remove: did not create exactly one backup")
 
-  const skillLink = join(process.env.XDG_CONFIG_HOME || "", "opencode", "skills", "xlite-analyzer")
+  const skillLink = join(dirname(configPath), "skills", "xlite-analyzer")
   assert(!existsSync(skillLink), "configure remove: xlite skill link was not removed")
 
   execFileSync("npm", ["exec", "--offline", "--", "xlite-perf-optimizer-configure", "remove"], {
