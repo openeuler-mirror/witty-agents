@@ -89,7 +89,7 @@
   1. **崩溃特征分析（含函数栈）**：从 `analyze_crash` 的 `call_trace_text` / `call_trace_signature` 与寄存器还原「在哪条路径、以什么方式崩」（RIP / fault addr / ESR / 关键寄存器）。
   2. **崩溃链路分析**：把函数栈拆成逐跳扩散链 `propagation_chain`，每一跳必须给出：栈帧符号 ↔ 内核源码（目录/文件/行号/函数）、关键输入输出参数（寄存器值），并明确「实参/寄存器 ↔ 源码形参」的对应关系，异常参数标红；精确源码行需 `vmlinux` 调试信息或本地源码树，`dis -rl <func>` 无法给出行号时注明工具边界。
   3. **相关案例分析**：以崩溃栈特征为锚，交叉分析 内部知识库案例 → 社区邮件/会议纪要/Bugzilla → 上游 commit → 当前内核对应位置源码逐行对照 → 得出结论（`verdict` 已确认则去掉「推测」标注）。
- - **先分析、后定因**：按三部分组织根因推理（对应 report.html 第 4 章）：`reasoning_flow`（①崩溃特征分析含函数栈 ②崩溃链路分析 ③相关案例分析；每步带 stage/stage_name/title/short/text/evidence/refs/branch，refs 用 anchor 跳转第 5 章案例卡）+ `deep`（根因结论：flow 故障流程梳理 + evidence 四部分递进）+ `propagation_chain`（逐跳 栈帧↔源码 目录/文件/行号/函数 + 实参/寄存器↔源码形参）+ `event_scene`（事件时序图）。
+ - **先分析、后定因**：按三部分组织根因推理（对应 report.html 第 4 章）：`reasoning_flow`（①崩溃特征分析含函数栈 ②崩溃链路分析 ③相关案例分析；每步带 stage/stage_name/title/short/text/evidence/refs/branch，refs 用 anchor 跳转第 5 章案例卡）+ `deep`（根因结论：flow 故障流程梳理 + evidence 五环节递进证据链（崩在哪→空指针从哪传进来→为什么产生异常→为什么没防御→社区交叉验证，每条用 connect 串联、禁止跳步，规则详见 crash-report-generator/generate-report.md））+ `propagation_chain`（逐跳 栈帧↔源码 目录/文件/行号/函数 + 实参/寄存器↔源码形参）+ `event_scene`（事件时序图）。
 - 将内部案例 Top 1-2、社区案例 Top 3-4、三种日志检测产物、本地内核源码（如有）、在线爬取的 commit/patch/邮件（如触发）作为节点构建局部知识图谱；
 - 建立案例根因、修复方案、受影响版本、调用栈、模块、RIP、异常值、源码函数/指针校验/锁操作等节点之间的关联边；
 - 执行逻辑自洽验证：案例根因是否解释当前日志异常、修复方案涉及的源码改动是否与崩溃现场一致、受影响版本/模块/业务场景是否与主机基线匹配；
@@ -108,7 +108,7 @@
 
 - 内部案例优先于社区案例；
 - 对冲突信息进行消解，生成根因摘要；
-- 输出 `conclusion`（结论）、`overview_brief`（总览一句话）、`trigger_scenario`（易触发场景）、`standard_solution`（标准解决方案，结构化，含 brief/fixed_brief）、`temporary_workaround`（临时规避方案，结构化），并补齐 `deep`（flow + evidence 四部分）/ `reasoning_flow` / `propagation_chain` / `event_scene`（字段说明见第 8 步 root_cause_analysis.json）。
+- 输出 `conclusion`（结论）、`overview_brief`（总览一句话）、`trigger_scenario`（易触发场景）、`standard_solution`（标准解决方案，结构化，含 brief/fixed_brief）、`temporary_workaround`（临时规避方案，结构化），并补齐 `deep`（flow + evidence 五环节递进证据链）/ `reasoning_flow` / `propagation_chain` / `event_scene`（字段说明见第 8 步 root_cause_analysis.json）。
 
 ### 第八步：标准化 JSON 报告生成（分片生成、脚本优先、总结补充、合并输出）
 
@@ -126,7 +126,7 @@
     - \`event_scene\`：固定骨架+有限推断的事件时序图；泳道固定为 process/cpu/hardware，内核内部活动（调度器、cfs_rq、hrtimer）归入所属 cpu，cpu 泳道 name 写「编号 · 型号」；主链路建议 4-8 步、只写到崩溃指令不写 panic/kdump 之后；不绘制竞态窗口。每条事件增加 \`evidence_level\`（L1 直接证据/L2 强推断/L3 机制补全）和 \`evidence\`，主图只放 L1/L2，L3 只能放 \`full\` 并标注推断。\`participants\`、\`anchor\`、\`gvars\`/\`ginit\` 与 \`events\` 的其他字段保持原有定义；
    - \`propagation_chain\`：崩溃链路**必须拆成一步步**（from/to/type/src_dir/file/line/stack/fn_ctx/crash/source_url/detail/evidence/params），\`from\`/\`to\` 用函数名、\`stack\` 写 \`func+offset/size (L行号)\`、params 给**寄存器值 ↔ 实际变量/形参**（io/reg/n/formal/v/bad，异常参数 bad=true 标红，每个有实参的跳都要给 params）；**每一跳都应给 source_url（在线源码/commit/patch 链接）**；
    - \`reasoning_flow\`：三部分根因，\`stage\` 必须用枚举 \`stack\`/\`hypothesis\`（①崩溃特征分析含函数栈，**两步都要有**）、\`path_analysis\`（②崩溃链路分析，\`path_mini\` **必须等于 propagation_chain 完整数组，禁止 null/空数组/函数名数组**）、\`internal\`/\`community\`/\`commit\`/\`source_compare\`/\`conclusion\`（③相关案例分析，**执行了对应检索就必须有对应 stage，未命中也要保留该 stage 并如实写「未检索到…」，最后以 conclusion 收尾**），refs 用 anchor 跳第 5 章案例卡；
-   - \`deep\`：根因结论详细（lead/mechanism/evidence/confidence/scope）。
+   - \`deep\`：根因结论详细（lead/mechanism/evidence/confidence/scope）；evidence 必须按「崩在哪 → 这个空指针/异常值从哪传进来 → 为什么产生这个异常 → 为什么没防御拦住 → 社区/上游交叉验证」五环节递进，每条用 connect 串联（首条除外）、禁止跳步；每条 title 用**设问式**（含「为什么 / 怎么 / 在哪」等疑问词，禁止结论式平铺标题）、summary 用一句口语短句直接回答 title 的问题，规则详见 crash-report-generator 的 generate-report.md。
    当知识库检索（query_knowledge/query_cases/query_community_cases）均无匹配案例时，**必须**调用 git skill 查询相关 commit/issue 作为根因参考（查询过程记入 root_cause_validation 阶段的 tool_calls）；若 git skill 也无相关结果，则标注「推测」。
 7. \`workflow_trace.json\`：**基于 opencode 真实会话数据 + LLM 语义摘要**。先运行 \`scripts/extract_workflow.py\` 提取当前会话的真实时间线（opencode export 获取工具调用、时间戳、耗时、状态、reasoning），再读 timeline.json 把连续相关 turns 聚合为 5-8 个关键决策 steps，每个 step 写 decision/observations/judgment/tools/status/reason/start_time/end_time；tools 必须从 timeline 原样复制（tool_name/title/status/duration_ms/timestamps），禁止编造工具、状态或时间戳。若脚本失败则 source=manual 并注明。
 
