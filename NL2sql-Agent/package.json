@@ -23,7 +23,7 @@
   "wittyAgentDistribution": {
     "packageNames": {
       "organization": "@openeuler/agent-nl2sql",
-      "plain": "openeuler-agent-nl2sql"
+      "plain": "witty-agent-nl2sql"
     }
   },
   "dependencies": {

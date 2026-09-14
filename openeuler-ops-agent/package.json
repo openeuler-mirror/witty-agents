@@ -24,7 +24,7 @@
   "wittyAgentDistribution": {
     "packageNames": {
       "organization": "@openeuler/agent-openeuler-ops",
-      "plain": "openeuler-agent-openeuler-ops"
+      "plain": "witty-agent-openeuler-ops"
     }
   },
   "dependencies": {

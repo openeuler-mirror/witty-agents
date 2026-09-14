@@ -103,8 +103,8 @@ Jenkins Job → Initialize Parameters → Resolve Build Plan → Prepare Agents
 
 ### 打包产物命名（本次已落地架构后缀）
 
-- online：`{base}-online`，如 `openeuler-agent-nl2sql-online`
-- offline：`{base}-offline-{x86_64|aarch64}`，如 `openeuler-agent-nl2sql-offline-aarch64`
+- online：`{base}-online`，如 `witty-agent-nl2sql-online`
+- offline：`{base}-offline-{x86_64|aarch64}`，如 `witty-agent-nl2sql-offline-aarch64`
 
 产物位于各 Agent 的 `artifacts/`：
 
