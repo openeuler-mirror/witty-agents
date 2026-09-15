@@ -36,8 +36,10 @@ export function prepareRegistryPackage({ sourcePath, registryPackageName, workin
   }
   const packageJson = JSON.parse(readFileSync(packageJsonPath, "utf8"))
   const sourcePackageName = packageJson.name
-  if (packageJson.shennongVariant !== "online") {
-    throw new Error(`only the online Shennong package may be prepared for npm; got ${packageJson.shennongVariant}`)
+  const variant = packageJson.shennongVariant
+    ?? (packageJson.name === registryPackageName ? "online" : null)
+  if (variant !== "online") {
+    throw new Error(`only online packages may be prepared for npm; got ${packageJson.shennongVariant ?? packageJson.name}`)
   }
   packageJson.name = registryPackageName
   packageJson.wittySourcePackageName = sourcePackageName

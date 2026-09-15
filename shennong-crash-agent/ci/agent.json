@@ -21,7 +21,7 @@
     "aarch64"
   ],
   "registryPackages": {
-    "online": "witty-agent-shennong"
+    "online": "witty-agent-shennong-online"
   },
   "publishRequiresAllVariants": true
 }

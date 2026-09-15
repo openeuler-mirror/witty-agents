@@ -20,5 +20,8 @@
     "x86_64",
     "aarch64"
   ],
+  "registryPackages": {
+    "online": "witty-agent-nl2sql-online"
+  },
   "publishRequiresAllVariants": true
 }

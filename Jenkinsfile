@@ -75,6 +75,11 @@ pipeline {
             description: 'Jenkins Secret Text credential containing the npm token.'
         )
         string(
+            name: 'GIT_CREDENTIAL_ID',
+            defaultValue: '',
+            description: 'Optional Jenkins username/password credential used to push auto-bumped package versions back to the source branch. Leave empty to keep the bump commit in the workspace only.'
+        )
+        string(
             name: 'NPM_REGISTRY',
             defaultValue: 'https://registry.npmjs.org/',
             description: 'npm registry used only by the publish stage.'
@@ -111,6 +116,7 @@ pipeline {
                     env.STRICT_OFFLINE_NETWORK_CHECK = String.valueOf(params.STRICT_OFFLINE_NETWORK_CHECK == null ? true : params.STRICT_OFFLINE_NETWORK_CHECK)
                     env.PUBLISH = String.valueOf(params.PUBLISH == null ? false : params.PUBLISH)
                     env.NPM_CREDENTIAL_ID = params.NPM_CREDENTIAL_ID?.trim() ?: 'npm-token'
+                    env.GIT_CREDENTIAL_ID = params.GIT_CREDENTIAL_ID?.trim() ?: ''
                     env.NPM_REGISTRY = params.NPM_REGISTRY?.trim() ?: 'https://registry.npmjs.org/'
                     env.NPM_DIST_TAG = params.NPM_DIST_TAG?.trim() ?: 'latest'
                 }
@@ -189,10 +195,19 @@ pipeline {
                 '''
                 script {
                     withCredentials([string(credentialsId: env.NPM_CREDENTIAL_ID, variable: 'NPM_TOKEN')]) {
-                        sh '''
-                            set +x
-                            node ci/scripts/publish-packages.mjs --plan=ci-artifacts/build-plan.json
-                        '''
+                        if (env.GIT_CREDENTIAL_ID) {
+                            withCredentials([usernamePassword(credentialsId: env.GIT_CREDENTIAL_ID, usernameVariable: 'GIT_AUTH_USER', passwordVariable: 'GIT_AUTH_PASS')]) {
+                                sh '''
+                                    set +x
+                                    node ci/scripts/publish-packages.mjs --plan=ci-artifacts/build-plan.json
+                                '''
+                            }
+                        } else {
+                            sh '''
+                                set +x
+                                node ci/scripts/publish-packages.mjs --plan=ci-artifacts/build-plan.json
+                            '''
+                        }
                     }
                 }
             }
