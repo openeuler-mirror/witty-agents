@@ -132,6 +132,22 @@ function main() {
       "opencode_plugin/role-prompt.md is missing or too short",
     )
 
+    // The legacy nl2sql CLI must be registered and functional (non-TTY stdin -> defaults).
+    assert(existsSync(join(projectDir, "node_modules", ".bin", "nl2sql")), "nl2sql bin is not registered")
+    execFileSync("npm", ["exec", "--", "nl2sql", "init"], {
+      cwd: projectDir,
+      env: environment,
+      input: "",
+      stdio: ["pipe", "inherit", "inherit"],
+      maxBuffer: 64 * 1024 * 1024,
+    })
+    const generatedEnv = join(packageRoot, ".env")
+    assert(existsSync(generatedEnv), "nl2sql init did not generate .env")
+    assert(
+      readFileSync(generatedEnv, "utf8").includes("NL2SQL_LLM_BASE_URL="),
+      "nl2sql init generated an incomplete .env",
+    )
+
     // Python backend ships in BOTH variants; only the wheelhouse is offline-only.
     for (const required of ["nl2sql_core", "apps", "requirements.txt", "configs", "fixtures", "scripts", ".env.example"]) {
       assert(existsSync(join(packageRoot, required)), `bundled backend path is missing: ${required}`)

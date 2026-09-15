@@ -2,6 +2,8 @@
 opencode_plugin/role-prompt.md
 opencode_plugin/skills/nl2sql/SKILL.md
 bin/configure.mjs
+bin/nl2sql.js
+bin/nl2sql-setup.mjs
 lib/configure.mjs
 README.md
 # Python 后端（online/offline 均需；offline 额外携带 python-wheels）

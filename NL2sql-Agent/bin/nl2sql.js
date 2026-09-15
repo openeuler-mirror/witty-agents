@@ -1,12 +1,13 @@
 #!/usr/bin/env node
 "use strict";
 
-const fs = require("fs");
-const path = require("path");
-const readline = require("readline");
-const { spawn, spawnSync } = require("child_process");
+import fs from "node:fs";
+import path from "node:path";
+import readline from "node:readline";
+import { spawn, spawnSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 
-const PKG_ROOT = path.resolve(__dirname, "..");
+const PKG_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
 function usage() {
   console.log(`Usage:
