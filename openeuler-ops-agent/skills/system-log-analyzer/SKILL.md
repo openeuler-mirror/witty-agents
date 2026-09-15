@@ -1,5 +1,5 @@
 ---
-name: log-analyzer
+name: system-log-analyzer
 description: 纯本地日志分析系统，支持日志统计、重复检测、错误分析和异常识别
 metadata:
   {

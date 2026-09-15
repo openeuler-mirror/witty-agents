@@ -1,3 +1,12 @@
+---
+name: xlite-ascend-runner
+description: |
+  在昇腾 NPU 容器内自动构建本地 xlite 代码并运行性能测试。默认本地代码构建容器
+  （拉取 vllm-ascend 镜像、注入本地代码、编译运行），也可复用已有容器
+  （XLITE_TEST_MODE=container_reuse）。本地具备 NPU 环境时优先使用。
+  Triggers: 容器测试、昇腾测试、NPU 测试、本地构建容器、性能测试运行。
+---
+
 # xlite-ascend-runner
 
 ## 用途

@@ -1,5 +1,5 @@
 ---
-name: ssh-remote-skill
+name: ssh-remote-sanitized
 description: SSH 远程服务器管理工具。支持多服务器连接管理、命令执行、文件传输、系统监控、服务管理、日志分析、安全检查等功能，适用于 Linux/Unix 服务器运维。
 ---
 

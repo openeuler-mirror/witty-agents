@@ -1,3 +1,12 @@
+---
+name: xlite-analyzer
+description: |
+  读取 xlite 源码结构、profiling 数据与模型配置，识别算子级与流程级性能瓶颈
+  （如 decode 路径被按 prefill 处理、可融合链路），输出 bottleneck_report.json、
+  process_bottleneck.md、optimization_candidates.md。性能优化任务的第一步。
+  Triggers: 性能优化、瓶颈分析、profiling 分析、识别瓶颈、优化候选。
+---
+
 # xlite-analyzer
 
 ## 用途

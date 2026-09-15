@@ -1,3 +1,12 @@
+---
+name: xlite-gitcode-runner
+description: |
+  将本地 xlite 修改推送到 GitCode 仓库，由远端 CI/NPU 环境运行测试；用户把
+  测试结果贴回后解析并继续优化流程。本地无 NPU/容器环境或用户选择 gitcode
+  测试模式（XLITE_TEST_MODE=gitcode）时使用。
+  Triggers: 远端测试、GitCode 测试、推送测试分支、无 NPU 测试。
+---
+
 # xlite-gitcode-runner
 
 ## 用途

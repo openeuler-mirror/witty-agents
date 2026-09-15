@@ -1,3 +1,11 @@
+---
+name: buddy-log-analyzer
+description: |
+  日志智能分析工具：确定性规则 + AI 推理（mini-swe-agent 极简理念）。
+  对系统/应用日志做错误提取、模式聚类与根因定位，输出结构化分析结论。
+  Triggers: 日志分析、分析 log、错误日志、日志排查、log analyzer。
+---
+
 # Log Analyzer Skill
 
 日志智能分析工具，基于 mini-swe-agent 极简理念：确定性规则 + AI 推理。

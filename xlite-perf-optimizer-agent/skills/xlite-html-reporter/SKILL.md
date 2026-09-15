@@ -1,3 +1,12 @@
+---
+name: xlite-html-reporter
+description: |
+  汇总瓶颈分析、复杂度估算、优化前后性能对比（wall/tpot/throughput）与原子
+  修改记录，生成静态 HTML 性能报告到 .xlite-opt/reports/report-*.html。
+  每次优化迭代完成后或用户要求查看报告时调用。
+  Triggers: 生成报告、HTML 报告、性能报告、优化总结。
+---
+
 # xlite-html-reporter
 
 ## 用途

@@ -1,6 +1,6 @@
 {
   "name": "@openeuler/agent-xlite-perf-optimizer",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "xlite 性能优化自动化 Agent — 分析、算子优化、测试验证、HTML 报告与原子回滚",
   "type": "module",
   "main": "dist/index.js",

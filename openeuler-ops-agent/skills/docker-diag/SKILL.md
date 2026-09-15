@@ -1,5 +1,5 @@
 ---
-name: Docker Pro Diagnostic
+name: docker-diag
 description: Advanced log analysis for Docker containers using signal extraction.
 bins: ["python3", "docker"]
 ---

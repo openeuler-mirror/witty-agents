@@ -4,6 +4,7 @@ import { execFileSync } from "node:child_process"
 import { existsSync, readFileSync } from "node:fs"
 import { dirname, join, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
+import { validateSkills } from "../lib/validate-plugin.mjs"
 
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url))
 const PROJECT_ROOT = resolve(SCRIPT_DIR, "..")
@@ -25,6 +26,9 @@ for (const path of manifest) {
 for (const checkable of ["bin/cli.js", "lib/configure.mjs", "lib/validate-plugin.mjs", "scripts/validate-dist.mjs"]) {
   execFileSync(process.execPath, ["--check", join(PROJECT_ROOT, checkable)], { stdio: "inherit" })
 }
+
+validateSkills(join(PROJECT_ROOT, "skills"))
+console.log("skills frontmatter: PASS")
 
 execFileSync(process.execPath, [join(PROJECT_ROOT, "scripts/validate-dist.mjs")], { stdio: "inherit" })
 

@@ -1,5 +1,5 @@
 ---
-name: agent-tools
+name: cool-agent-tools
 description: AI Agent 通用工具集 - 提供系统监控、日志分析、进程管理、文件处理、网络诊断等实用命令封装，帮助 agent 高效完成日常运维和数据处理任务。
 metadata:
   {

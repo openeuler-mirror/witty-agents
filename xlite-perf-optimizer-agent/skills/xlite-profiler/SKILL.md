@@ -1,3 +1,12 @@
+---
+name: xlite-profiler
+description: |
+  配置 xlite 三级时间打点（XProf serve 端到端逐相 / msprof 设备级时间线 /
+  内核微基准隔离脚本），聚合统计算子耗时并输出 JSON/CSV/Markdown。
+  用于获取性能数据、定位耗时算子与逐相（prefill/decode）分析。
+  Triggers: 打点、profiling、性能统计、算子耗时、XProf、msprof。
+---
+
 # xlite-profiler
 
 ## 用途

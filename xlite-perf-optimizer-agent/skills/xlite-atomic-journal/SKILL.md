@@ -1,3 +1,12 @@
+---
+name: xlite-atomic-journal
+description: |
+  原子修改记录器：每次源码修改前保存 before.patch/after.patch（或 .bak），
+  测试通过标记 kept、失败或性能退化标记 rolled_back 并支持回滚。一次只改一个
+  独立行为；无 wall/tpot/throughput 或 golden 数据禁止标记。
+  Triggers: 原子修改、保存 patch、回滚、kept、rolled_back、修改记录。
+---
+
 # xlite-atomic-journal
 
 ## 用途

@@ -1,3 +1,12 @@
+---
+name: xlite-operator-dev
+description: |
+  根据优化方案编写或修改 xlite 的 AscendC 算子、C++ 管线、Python 模型适配
+  代码与测试用例。在 xlite-analyzer 识别瓶颈并制定方案后调用；修改前须先经
+  xlite-atomic-journal 保存快照。
+  Triggers: 编写算子、修改算子、AscendC、优化实现、改代码。
+---
+
 # xlite-operator-dev
 
 ## 用途
