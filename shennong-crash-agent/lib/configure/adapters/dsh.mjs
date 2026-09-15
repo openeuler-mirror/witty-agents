@@ -69,10 +69,12 @@ export const dshAdapter = Object.freeze({
     install: false,
     remove: false,
     status: true,
+    "sync-skills": false,
     reason: "witty-log-detection must expose and pass Streamable HTTP /mcp tests first",
   }),
   install: unsupported,
   remove: unsupported,
+  "sync-skills": unsupported,
   status({ packageRoot, options }) {
     return getDshStatus(packageRoot, options.profile)
   },

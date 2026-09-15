@@ -167,7 +167,6 @@ var SHENNONG_BEHAVIORAL_SUMMARY = `## \u8F93\u51FA\u683C\u5F0F (Output Format)
     "related_modules": [],
     "call_trace_signature": [],
     "call_trace_text": "",
-    "kernel_version": "",
     "raw_crash_log": "",
     "log_features": {}
   },

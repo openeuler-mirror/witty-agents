@@ -4,6 +4,21 @@ import { join, resolve } from "node:path"
 import { fileURLToPath, pathToFileURL } from "node:url"
 import { applyEdits, modify, parse, printParseErrorCode } from "jsonc-parser"
 import { readManagedFile, writeManagedFile } from "../backup.mjs"
+import { syncAllSkills } from "../../sync-skills.mjs"
+
+/* install/sync-skills 时强制同步到用户级目录的核心 skill（OpenCode 优先解析用户级副本） */
+export const CORE_SKILLS = Object.freeze([
+  "crash-report-generator",
+  "vmcore-analysis",
+])
+
+function syncCoreSkills(packageRoot) {
+  try {
+    return syncAllSkills(packageRoot, CORE_SKILLS, join(homedir(), ".config", "opencode", "skills"))
+  } catch (error) {
+    return { root: "", results: [], error: String(error && error.message || error) }
+  }
+}
 
 const SCHEMA_URL = "https://opencode.ai/config.json"
 const SHENNONG_PACKAGE_NAMES = new Set([
@@ -313,14 +328,19 @@ export function getOpenCodeStatus() {
 export const opencodeAdapter = Object.freeze({
   id: "opencode",
   label: "OpenCode",
-  capabilities: Object.freeze({ install: true, remove: true, status: true }),
+  capabilities: Object.freeze({ install: true, remove: true, status: true, "sync-skills": true }),
   install({ packageRoot }) {
-    return registerOpenCodePlugin(packageRoot)
+    const result = registerOpenCodePlugin(packageRoot)
+    const skillSync = syncCoreSkills(packageRoot)
+    return { ...result, skillSync }
   },
   remove() {
     return removeOpenCodePlugin()
   },
   status() {
     return getOpenCodeStatus()
+  },
+  "sync-skills"({ packageRoot }) {
+    return { skillSync: syncCoreSkills(packageRoot) }
   },
 })

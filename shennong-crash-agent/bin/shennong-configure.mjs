@@ -31,11 +31,34 @@ function printOpenCodeResult(action, result) {
 }
 
 function printResult(adapter, action, result) {
-  if (adapter.id === "opencode") {
+  if (adapter.id === "opencode" && action !== "sync-skills") {
     printOpenCodeResult(action, result)
+    printSkillSync(result.skillSync)
+    return
+  }
+  if (action === "sync-skills") {
+    printSkillSync(result.skillSync)
+    if (result.skillSync?.error) process.exitCode = 1
     return
   }
   console.log(JSON.stringify({ framework: adapter.id, ...result }, null, 2))
+}
+
+function printSkillSync(skillSync) {
+  if (!skillSync || !Array.isArray(skillSync.results)) return
+  if (skillSync.error) {
+    console.warn(`[shennong-configure] skill 同步失败: ${skillSync.error}`)
+    return
+  }
+  for (const r of skillSync.results) {
+    if (r.skipped) {
+      console.warn(`[shennong-configure] skill ${r.skill} 源目录缺失，跳过（${r.reason}）`)
+    } else if (r.changed) {
+      console.log(`[shennong-configure] skill ${r.skill} 已同步到 ${skillSync.root}/${r.skill}（${r.files} 个文件）${r.backupPath ? `；旧副本备份: ${r.backupPath}` : ""}`)
+    } else {
+      console.log(`[shennong-configure] skill ${r.skill} 已是最新（${r.files} 个文件一致），无需同步`)
+    }
+  }
 }
 
 try {
