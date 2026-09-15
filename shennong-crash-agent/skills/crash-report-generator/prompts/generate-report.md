@@ -15,6 +15,7 @@
 9. **每个描述都尽量短**：一句话能说清的不写两句；正文能短就不啰嗦。默认口径——`conclusion` 1–3 句、`overview_brief`/`trigger_scenario`/`summary`/案例 `lead`/`how`/`applicability` 各 1–2 句；专业细节一律下沉到 `deep`/`propagation_chain`/附录，不在结论层展开。
 10. **关键内核变量做用途解释**：正文/摘要里出现的关键内核变量、结构体字段（如 `se`、`nr_running`、`rb_leftmost`、`cfs_rq`），用括号一句话说明它是干什么的（如「se（内核给每个任务建的记录）」「nr_running（待运行任务数）」）——内核变量多、读者不知道各自用途，值得说明；但**不要解释基本常识**（如「空指针＝什么都没指向」「0xffffffff 即 -1」「反汇编＝把机器码翻译回汇编指令」这类一看就懂的），也**不要逐名词展开**；术语原始写法仍保留在 `evidence` 里。
 11. **数值与操作必有来由**：正文/`evidence` 里出现的任何**偏移、地址、寄存器值、机器码、计数器取值**，都要说明「它是什么 + 为什么是这个值 + 出处」，而不是只报一个数。例如崩溃指令 `ldr w0,[x20,#64]` 要写清 `#64 = offsetof(struct sched_entity, on_rq) = 64 = 0x40`（由 crash `struct sched_entity -o` 实证的字段偏移），否则「读 0x40 无效地址」就缺了「这个 0x40 从哪来」这一环；`nr_running = 0xffffffff` 要说清这是「32 位计数器下溢为 -1（实测值）」，并把「为什么会下溢」的机制（如 double-decrement 计数竞态）标注为**推断**而非既定事实。属常识的换算（十六进制↔十进制、`0xffffffff` 即 -1 之类）仍不用解释——本条要求的「来由」指**值的来源与成因**，不是数值的读法。
+12. **工具输出必须翻译成人话**：正文/`evidence` 里**禁止**出现检索工具的原始输出标识——`query_knowledge`、`query_community_cases`、`query_upstream_online`、`match_score=0.xx`、`commits=[]`、`patch_mails=[]`、`issue-xxx-139` 这类工具名/issue-id/原始分数一律不得直接出现；检索结果要写成人类可读的一句话，如「内部库命中 1 条同位置旧案例（匹配度中等）· 未给出根因与修复」「社区案例库 0 条 · 上游 commit/邮件 0 条」。原始标识只允许留在 `workflow_trace`（那里本来就是工具流水）。
 
 ## 输出规则
 
@@ -107,6 +108,8 @@
 5. **`crash_feature_info.json`**：
    - **基础字段**（脚本/工具生成）：严格取自 `analyze_crash` 的 `crash_features`（crash_time、signature、bug_type、bug_key、bug_summary、rip、rip_function、rip_offset、related_modules、call_trace_signature、call_trace_text、kernel_version）。`crash_time` 非合法 ISO 8601 时从日志推导或填 `"unknown"`。
    - **`raw_crash_log`**（**必填**，从原始日志文件逐字提取）：**完整连续的崩溃日志段**——从崩溃首行（如 `Unable to handle kernel ...` / `BUG: ...` / `Kernel panic ...`）起，到 `Code: ...` 机器码行止（x86 无 Code 行则到 Call Trace 结束，可再含紧随的 SMP stopping/kdump 启动行）。必须用 `sed -n '<起>,<止>p' <dmesg文件>` 原样复制，**不得截断寄存器行、不得省略 ESR/pstate/lr/sp/Call trace 任何一行、不得改写时间戳**。HTML「原始崩溃日志」区优先渲染本字段，并把连续同类行合并为语义块（崩溃首行/ESR/现场信息/pc·lr/寄存器/Call trace/Code/kdump 等）整块着色、附块级悬停解读；行越连续完整，语义块越完整、解读覆盖越高；缺失本字段会退化为 related_errors 摘录拼装，语义块将被打散、大量内容失去解读。
+   - **`stack_impression`**（宕机栈现场初印象，一句话）：按**本次实际宕机栈**概括「谁在什么路径做什么时、以什么方式崩、成因是否已定位」（如「chunkserver 进程在 NVMe 完成中断释放 DMA 映射的链表遍历中崩溃：链表提前遇结束标记而记录段数仍是 32……深层成因尚需源码与厂商定位」）；HTML「宕机现场 · 现场初印象」优先渲染本字段，缺失时模板按调用栈动态生成通用文案。**禁止**写与本次宕机栈无关的固定话术。
+   - **`local_source`**（内核源码摘录，本地源码分析时填写）：诊断中对照过的源码片段，每条 ref = `id`（锚点，报告内唯一，如 `src-nvme-pci-unmap`）+ `file`（相对路径）+ `lines` + `func`（函数与用途一句话）+ `excerpt`（**逐字真实摘录**，多段用 `……` 分隔，禁止改写/臆造）+ `note`（与崩溃/补丁的关系）+ `origin`（`本地源码`/`上游基线`，如实标注；本地树未归档、取上游同版本对照时标 `上游基线`）+ `url`（在线对照链接，纯本地可留空）+ `path`（本地树路径，可考据才填）。HTML 渲染为技术附件「内核源码摘录」卡（默认收起），并与补丁「涉及文件」、传播链 source_url 互链——**自研补丁必须**把 diff 落点文件列入 refs。
     - **`log_features`**（LLM 生成，供「崩溃详情」扩展）：从日志提炼三类异常，每条标注来源文件与行号，**并且每条必须标注 `relevance` 相关性等级（`强相关`/`一般相关`/`弱相关` 三选一）**：
       - `related_ref`（对象：file/lines）与 `related_errors`（数组：file/lines/line/relevance）——与崩溃直接相关的报错行（一般为 `强相关`）；
       - `repeated`（数组：title/count/window/ref{file,lines}/note/examples[]/relevance）——重复出现的可疑日志；`relevance` 必须如实标注：直接触发崩溃的重复日志标 `强相关`，同子系统/上下文相关但非直接原因的标 `一般相关`，背景噪声/无关的标 `弱相关`；
@@ -128,6 +131,8 @@
       - `patch_list[].mode` **三选一**：`full`（整体合入）、`part`（局部合入/最小改动）、`pick`（取其思路改造/自研移植）。
       - `patch_list[].diff` **必须给出可直接合入的具体补丁示例**（diff 格式，含文件与 `+/-` 行）。自研/移植补丁也要给适配本内核的示意补丁代码，**禁止留空**；确实只能参考上游思路时 `mode=pick`，`diff` 仍须写「适配本内核的示意补丁」而非空串。
       - `type=patch` 时**必须**至少一条 `patch_list`。
+      - **⚠️ 上游无补丁时的直写口径（与第 1 章「上游修复状态」联动）**：当内部/社区/在线三路检索均无 `verdict=confirmed` 补丁时，`fixed_brief` **不得写成「已有对应补丁」类表述**，必须直写「上游无对应补丁（内部库/社区/在线检索均未命中），需自研适配或提供更多信息（如内核源码、复现路径）诊断」；此时 `brief`/`claim_tag` 如实标注补丁来源。
+      - **⚠️ 有本地源码且知识库无案例 → 必须基于源码出自研补丁**：当用户提供了本地内核源码、且知识库未命中可确认修复时，不得只给「升级/反馈厂商」了事——必须对照源码定位缺陷代码位置，产出 `patch_list`（`mode=pick`，diff 基于真实源码撰写、注明内核版本基线与厂商树落点），`claim_tag` 写明补丁来源（如「自研最小防御补丁（上游无 confirmed 补丁，来源=本地源码分析）」），并把对照过的源码片段填入 `local_source`（见下）供附件「内核源码摘录」互链。
       - **⚠️ 修复依据 ↔ 技术附件对齐（强制自检，历史多次出错）**：第 1 章「规避手段 · 修复依据」（`basis`/`patch_list`）引用的每一个 commit / URL，必须与第 5 章技术附件（`diagnosis_repair_result`）中的案例条目**一一对应**，规则如下：
         1. **禁止孤儿引用**：`basis[].url` / `patch_list[].sha` 引用的 commit，必须能在 `online_result`（优先）或 `community_kernel_result` 中找到 url 或 sha 匹配的条目；找不到就**先补附件条目，或删除该 basis 引用**，二者必居其一。HTML 正文链接依赖这个对应关系跳转到技术附件，孤儿引用会导致链接无处可跳。
         2. **verdict 必须与采用方式一致**：
@@ -175,6 +180,9 @@
       - **必须覆盖的环节（缺一不可，可再加步）**：① 崩在哪（崩溃点还原）→ ② **这个异常值/空指针是从哪传进来的**（用 LR/反汇编/参数追溯，说明是谁把它传给了崩溃函数）→ ③ 为什么会产生这个异常（结构体/计数器取证）→ ④ 为什么没有防御拦住（源码/反汇编对照）→ ⑤ 社区/上游交叉验证。
       - **禁止跳步**：例如「崩在哪」直接跳「为什么空」、漏掉「这个空值是谁传进来的」这一环，会导致前后脱节、读者看不懂 se=NULL 从哪来。
       - `reasoning[]` 每条至少 2 步，每步 `{step,detail,evidence}`，最后一步可补 `conclusion`；`step` 用**口语设问式短句**（如「谁触发的」「崩在哪一行」「这个空值是怎么传进来的」），**不要**用「确定崩溃指令」「确认异常值为 NULL」这类动作式技术命名。
+      - **`title` 必填**：每条 evidence 的 `title` 都是必填字段——缺失会被 HTML 渲染成「依据 N」这种无信息标题（历史实证）；务必逐条写设问式 title。
+      - **`evidence` 用结构化多行清单**：每行一条、以类别前缀开头——类别用 `汇编 / 寄存器 / 结构体 / 内存取证 / 日志 / 反汇编 / 源码 / 宏定义 / 检索记录 / 定性` 等，格式如 `汇编 ｜ mov 0x18(%r14),%r15d（读 r14+0x18 处 4 字节）`；HTML 在等宽块中逐行渲染。**推断结论只写在 `detail` 里并标注「（推断）」**，`evidence` 只放事实。
+      - **根治与临时规避口径一致**：`temporary_workaround` 为空方案时，其语境中的「根治途径」必须与 `standard_solution.type` 同源（patch→合入修复补丁 / upgrade→升级内核 / none→待补齐信息后确定），禁止两者各说各话。
       - **通俗简洁**：`title` 设问式（见上）；`summary` 用一句**口语短句**直接回答 title 的问题（如「崩在内核函数 set_next_entity 里：它读了一个空指针的成员，一读就崩」），不堆术语；`reasoning[].detail` 用 1–2 句通俗短句、只保留核心因果（如「计数被多减了一次，-1 不等于 0，被误判成还有任务」），函数名/寄存器/地址/反汇编偏移等专业细节一律放到 `evidence`，不在 detail 里展开；关键内核变量的用途可加一句括号说明（见写作铁律第 10 条），基本常识不解释；**偏移/地址/寄存器值的来由要讲清**：detail 用通俗语言点明「为什么是这个偏移、这个值」（如「这个 +64 是 on_rq 字段在结构体里的字节偏移」），具体实证（crash `struct -o`、反汇编对照）放 `evidence`（见写作铁律第 11 条）。
    - **`reasoning_flow`**（三部分根因，每步 `{stage,stage_name,color,title,short,text,evidence,ev_plain,path_mini,refs[],branch}`）。该字段仍为 schema 必填，用于后端追踪与原始数据兼容；不要把它当作 HTML 第 3 章的页面级总推理链，页面只展示 `deep.evidence[].reasoning[]`。`stage` **必须**用以下枚举，否则报告第 4 章三部分会渲染不完整：
      | `stage` | 归属部分 |
