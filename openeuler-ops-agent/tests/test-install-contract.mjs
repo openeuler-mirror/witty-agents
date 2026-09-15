@@ -66,7 +66,7 @@ function installVariant(variant, configPath, environment) {
 
 function exerciseConfigure(project, configPath, environment) {
   const backupsBefore = listBackups(configPath).length
-  execFileSync("npm", ["exec", "--offline", "--", "openeuler-ops-agent", "configure"], {
+  execFileSync("npm", ["exec", "--offline", "--", "openeuler-ops-configure", "install"], {
     cwd: project, stdio: "inherit", env: environment,
   })
   const after = readFileSync(configPath, "utf8")
@@ -87,7 +87,7 @@ function exerciseConfigure(project, configPath, environment) {
   assert(existsSync(skillLink) && lstatSync(skillLink).isSymbolicLink(), "configure: openeuler-ops skill link is missing")
   assert(existsSync(join(readlinkSync(skillLink), "SKILL.md")), "configure: openeuler-ops skill link target has no SKILL.md")
 
-  execFileSync("npm", ["exec", "--offline", "--", "openeuler-ops-agent", "configure"], {
+  execFileSync("npm", ["exec", "--offline", "--", "openeuler-ops-configure", "install"], {
     cwd: project, stdio: "inherit", env: environment,
   })
   assert(readFileSync(configPath, "utf8") === after, "configure: repeated run changed config bytes")
@@ -96,7 +96,7 @@ function exerciseConfigure(project, configPath, environment) {
 
 function exerciseRemove(project, configPath, environment) {
   const backupsBefore = listBackups(configPath).length
-  execFileSync("npm", ["exec", "--offline", "--", "openeuler-ops-agent", "remove"], {
+  execFileSync("npm", ["exec", "--offline", "--", "openeuler-ops-configure", "remove"], {
     cwd: project, stdio: "inherit", env: environment,
   })
   const after = readFileSync(configPath, "utf8")
@@ -116,7 +116,7 @@ function exerciseRemove(project, configPath, environment) {
   const skillLink = join(skillsDir, "cool-agent-tools")
   assert(!existsSync(skillLink), "configure remove: openeuler-ops skill link was not removed")
 
-  execFileSync("npm", ["exec", "--offline", "--", "openeuler-ops-agent", "remove"], {
+  execFileSync("npm", ["exec", "--offline", "--", "openeuler-ops-configure", "remove"], {
     cwd: project, stdio: "inherit", env: environment,
   })
   assert(readFileSync(configPath, "utf8") === after, "configure remove: repeated run changed config")

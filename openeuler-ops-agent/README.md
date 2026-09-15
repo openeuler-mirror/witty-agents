@@ -19,29 +19,31 @@ echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
 source ~/.bashrc
 ```
 
-## 安装
+## 安装（统一双命令）
+
+四个 Agent 统一为 `<agent>-setup` + `<agent>-configure` 两个命令：
 
 ```bash
-npm install -g ./openeuler-ops-agent-1.0.0.tgz
-openeuler-ops-agent install
+npm install -g ./openeuler-ops-agent-2.0.0.tgz
+openeuler-ops-setup install                     # 可选：在线准备 skillhub 与 10 个 Skill
+openeuler-ops-configure install --target=opencode
 ```
 
-`install` 会自动完成以下操作：
+`setup install` 会自动完成以下操作（**不写 opencode 配置**，注册统一由 configure 完成）：
 
 | 步骤 | 操作 | 说明 |
 |------|------|------|
 | Step 1 | 检查/安装 **skillhub CLI** | 多路径搜索，不存在则自动下载安装并验证 |
 | Step 2 | 初始化 **experience-skill** 知识库 | `uv sync` + `sync` 索引 |
 | Step 3 | 安装 **10 个 Skill** | 通过 skillhub 安装到 opencode skills 目录 |
-| Step 4 | 注册 **Agent** | 写入 opencode 配置文件 |
 
-> **注意**：如果 skillhub CLI 安装失败，Step 3 会被跳过，Agent 仍可正常使用（知识检索降级为 openEuler MCP 实时查询）。手动安装 skillhub 后重新运行 `openeuler-ops-agent install` 即可。
+> **注意**：本 Agent 无 Python/后端服务。skillhub CLI 安装失败时 Step 3 会被跳过，Agent 仍可正常使用（知识检索降级为 openEuler MCP 实时查询）。手动安装 skillhub 后重新运行 `openeuler-ops-setup install` 即可。
 
 重启 opencode 后直接在对话中输入运维问题。
 
 ```bash
-openeuler-ops-agent verify    # 验证安装完整性
-openeuler-ops-agent configure # 重新注册 Agent（无需重新 install）
+openeuler-ops-setup check                       # 只读验证安装完整性
+openeuler-ops-configure install --target=opencode   # 重新注册 Agent（无需重新 setup）
 ```
 
 ## 架构
@@ -483,7 +485,7 @@ Layer 3: openEuler MCP 实时查询 (兜底)
 ## 验证
 
 ```bash
-openeuler-ops-agent verify
+openeuler-ops-setup check
 ```
 
 预期输出：
@@ -558,8 +560,8 @@ Agent 将降级为 openEuler MCP 实时查询作为兜底，不影响基本使�
 ### 重装/升级
 
 ```bash
-openeuler-ops-agent configure   # 仅更新 Agent 配置，不重新下载 Skill
-openeuler-ops-agent install     # 完整重装（覆盖 Skill + 配置）
+openeuler-ops-configure install --target=opencode   # 仅更新 Agent 注册，不重新下载 Skill
+openeuler-ops-setup install                          # 完整重装在线 Skill（不触碰注册配置）
 ```
 
 ## 基于的 openEuler 版本
