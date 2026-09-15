@@ -13,14 +13,26 @@ import {
 } from "node:fs"
 import { tmpdir } from "node:os"
 import { basename, dirname, join, resolve } from "node:path"
-import { pathToFileURL } from "node:url"
+import { pathToFileURL, fileURLToPath } from "node:url"
 import { parse } from "jsonc-parser"
+
+const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url))
+const PROJECT_ROOT = resolve(SCRIPT_DIR, "..")
+const BASE_PACKAGE = JSON.parse(readFileSync(join(PROJECT_ROOT, "package.json"), "utf8"))
 
 const VENV_NAMES = [
   "crash-feature-matcher",
   "witty-log-detection",
   "crash-report-generator",
 ]
+
+function resolveExpectedPackageName(packageStyle, variant) {
+  const baseName = BASE_PACKAGE.wittyAgentDistribution?.packageNames?.[packageStyle]
+  if (typeof baseName !== "string" || baseName.length === 0) {
+    throw new Error(`package name for style ${packageStyle} is not configured in package.json`)
+  }
+  return `${baseName}-${variant}`
+}
 
 function parseArgs(argv) {
   const options = {
@@ -160,10 +172,7 @@ function main() {
     )
     assert(readFileSync(configPath, "utf8") === initialConfig, "npm install changed OpenCode configuration")
 
-    const packageBaseName = options.packageStyle === "organization"
-      ? "@openeuler/agent-shennong-crash"
-      : "openeuler-agent-shennong-crash"
-    const packageName = `${packageBaseName}-${options.variant}`
+    const packageName = resolveExpectedPackageName(options.packageStyle, options.variant)
     const packageRoot = join(projectDir, "node_modules", ...packageName.split("/"))
     const packageCacheKey = packageName.replace(/^@/, "").replace(/\//g, "-")
     const venvCacheRoot = environment.SHENNONG_VENV_CACHE
