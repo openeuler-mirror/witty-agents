@@ -1,0 +1,44 @@
+ARG OPEN_EULER_IMAGE=openeuler/openeuler:24.03-lts
+FROM ${OPEN_EULER_IMAGE}
+
+ARG OPENCODE_VERSION=1.18.23
+
+RUN dnf install -y \
+        ca-certificates \
+        curl \
+        findutils \
+        gcc \
+        gcc-c++ \
+        git \
+        git-lfs \
+        glib2 \
+        iproute \
+        libffi-devel \
+        libglvnd-glx \
+        libSM \
+        libXext \
+        libXrender \
+        make \
+        nodejs \
+        npm \
+        openssl-devel \
+        procps-ng \
+        python3 \
+        python3-devel \
+        python3-pip \
+        tar \
+        unzip \
+        xz \
+    && dnf clean all \
+    && rm -rf /var/cache/dnf \
+    && npm install --global "opencode-ai@${OPENCODE_VERSION}" \
+    && npm cache clean --force \
+    && git lfs install --system \
+    && node -e 'const major=Number(process.versions.node.split(".")[0]); if (major < 20) throw new Error(`Node.js 20+ required, got ${process.version}`)' \
+    && python3 -c 'import sys; assert sys.version_info >= (3, 11), sys.version' \
+    && npm --version \
+    && opencode --version \
+    && test -e /usr/lib64/libGL.so.1
+
+LABEL org.opencontainers.image.title="Witty Agents Jenkins runtime"
+LABEL org.opencontainers.image.description="Native openEuler runtime for Witty Agents npm build and installation gates"

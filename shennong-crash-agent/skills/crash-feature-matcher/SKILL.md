@@ -29,7 +29,7 @@ allowed-tools: Bash(python3:*) Bash(pip:*) Bash(curl:*) Bash(crash:*) Bash(cat:*
 
 ## Dependencies
 
-**Python packages:** `fastmcp>=2.0.0`, `pydantic>=2.0.0`, `httpx>=0.27.0`, `click>=8.0.0`, `jieba>=0.42.0`, `synonyms>=3.23.0` (see `requirements.txt` or `pyproject.toml`)
+**Python packages:** `fastmcp>=2.0.0,<4.0.0`, `pydantic>=2.0.0`, `httpx>=0.27.0`, `click>=8.0.0`, `jieba>=0.42.0`, `synonyms>=3.23.0` (see `requirements.txt` or `pyproject.toml`)
 
 **External tools:** `crash` (required for vmcore analysis, plus matching vmlinux)
 
@@ -631,4 +631,3 @@ Ensure euler-copilot-rag is running on `http://localhost:9988` and call:
 5. Case association only triggers when `matched=true` and the known issue has no solution yet.
 6. Community retrieval uses custom scoring (0-100) because the current RAG API does not return raw similarity scores.
 7. Chinese queries are tokenized using jieba; English/technical tokens are preserved as-is. This supports mixed-language retrieval.
-

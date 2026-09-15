@@ -1,0 +1,39 @@
+services:
+  jenkins:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: witty-agents-jenkins-controller:lts-jdk21
+    container_name: witty-agents-jenkins
+    restart: unless-stopped
+    user: "1000:1000"
+    group_add:
+      - "${DOCKER_GID}"
+    ports:
+      - "127.0.0.1:${JENKINS_HTTP_PORT:-18081}:8080"
+    environment:
+      JAVA_OPTS: >-
+        -Djenkins.install.runSetupWizard=false
+        -Djava.awt.headless=true
+      JENKINS_ADMIN_USER: "${JENKINS_ADMIN_USER:-admin}"
+      JENKINS_ADMIN_PASSWORD_FILE: /run/secrets/jenkins-admin-password
+      WITTY_AGENTS_JOB_NAME: "${WITTY_AGENTS_JOB_NAME:-witty-agent-package-ci}"
+      WITTY_AGENTS_REPO_URL: "${WITTY_AGENTS_REPO_URL}"
+      WITTY_AGENTS_BRANCH: "${WITTY_AGENTS_BRANCH:-*/master}"
+      WITTY_AGENTS_SCRIPT_PATH: "${WITTY_AGENTS_SCRIPT_PATH:-Jenkinsfile}"
+      WITTY_AGENTS_GIT_CREDENTIAL_ID: "${WITTY_AGENTS_GIT_CREDENTIAL_ID:-}"
+    volumes:
+      - "${JENKINS_DATA_ROOT:-/home/witty-agents-jenkins}/home:/var/jenkins_home"
+      - /var/run/docker.sock:/var/run/docker.sock
+    secrets:
+      - jenkins-admin-password
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8080/login"]
+      interval: 10s
+      timeout: 5s
+      retries: 18
+      start_period: 30s
+
+secrets:
+  jenkins-admin-password:
+    file: "${JENKINS_ADMIN_PASSWORD_SOURCE:-./secrets/admin-password}"

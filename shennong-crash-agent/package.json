@@ -1,8 +1,13 @@
 {
   "name": "@openeuler/agent-shennong-crash",
-  "version": "0.10.5",
+  "version": "0.10.6",
   "description": "Minimal OpenCode plugin for kernel crash diagnosis using Shennong agent and core skills.",
-  "keywords": ["shennong", "kernel-crash", "diagnosis", "opencode-plugin"],
+  "keywords": [
+    "shennong",
+    "kernel-crash",
+    "diagnosis",
+    "opencode-plugin"
+  ],
   "license": "MIT",
   "type": "module",
   "main": "dist/index.js",
@@ -24,6 +29,12 @@
   "publishConfig": {
     "access": "public"
   },
+  "wittyAgentDistribution": {
+    "packageNames": {
+      "organization": "@openeuler/agent-shennong-crash",
+      "plain": "witty-agent-shennong"
+    }
+  },
   "engines": {
     "node": ">=20.0.0"
   },
@@ -33,7 +44,10 @@
     "pack:variant": "node scripts/build-package.mjs",
     "pack:online": "node scripts/build-package.mjs --variant=online",
     "pack:offline": "node scripts/build-package.mjs --variant=offline",
-    "test:install-contract": "node tests/test-install-contract.mjs"
+    "test:install-contract": "node tests/test-install-contract.mjs",
+    "ci:prepare-ocr": "node scripts/prepare-ocr-models.mjs",
+    "ci:verify-artifacts": "node scripts/verify-ci-artifacts.mjs",
+    "ci:driver": "node ci/driver.mjs"
   },
   "dependencies": {
     "jsonc-parser": "^3.3.1"

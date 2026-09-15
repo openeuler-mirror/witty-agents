@@ -57,7 +57,7 @@
 已发布的 npm 包最短三步（详见「安装」）：
 
 ```bash
-npm install @openeuler/agent-shennong-crash-online   # ① 装包
+npm install witty-agent-shennong --foreground-scripts # ① 从 npm 装在线包并显示下一步提示
 npm exec --offline -- shennong-setup install         # ② 装 Python 依赖
 npm exec --offline -- shennong-configure             # ③ 登记 OpenCode 插件 + MCP
 # 重启 opencode 后：@ shennong <vmcore 路径 / 日志路径>
@@ -73,16 +73,18 @@ npm exec --offline -- shennong-configure             # ③ 登记 OpenCode 插�
 在线包：
 
 ```bash
-npm install @openeuler/agent-shennong-crash-online
+npm install witty-agent-shennong --foreground-scripts
 ```
 
-离线 Python 依赖包：
+离线 Python 依赖包由 Jenkins 按目标平台生成并以 tgz 文件分发：
 
 ```bash
-npm install @openeuler/agent-shennong-crash-offline
+npm install /path/to/openeuler-agent-shennong-crash-offline-<version>.tgz --offline --foreground-scripts
 ```
 
 `npm install` 只安装插件、Skill 和命令文件，不修改 Python 环境和 OpenCode 配置。
+安装脚本只打印后续的 `shennong-setup`、`shennong-configure` 命令；npm 默认可能收起
+依赖包的生命周期输出，需要明确看到提示时使用 `--foreground-scripts`。
 
 #### openEuler 系统运行库
 
@@ -102,6 +104,10 @@ sudo dnf install -y \
 目标操作系统前置条件，不属于 Python wheelhouse；正式离线环境应将它们固化在
 基础镜像或系统安装介质中。已在 openEuler 24.03 LTS SP4 x86_64、CPython 3.11
 环境通过 `--network none` 安装和运行验证。
+
+`shennong-setup check/install` 会在创建 Python 环境之前检查这些动态库。缺失时会
+直接列出库名和上述 `dnf` 命令，避免 Python 依赖全部下载完成后才在 `import cv2`
+阶段失败。setup 不会自行调用 `sudo` 或修改系统 RPM。
 
 ### 第二步：显式安装 Python 依赖
 
@@ -464,9 +470,10 @@ npm run pack:variant -- --variant=online --out-dir=artifacts
 npm run pack:variant -- --variant=offline --out-dir=artifacts
 ```
 
-源码基座包名为 `@openeuler/agent-shennong-crash`。为让 npm 上的两个产物可并存，
-发布包名分别为 `@openeuler/agent-shennong-crash-online` 和
-`@openeuler/agent-shennong-crash-offline`；对应 tgz 文件名由 npm 生成。
+源码基座包名为 `@openeuler/agent-shennong-crash`。本地构建仍生成带 online/offline
+后缀的两个独立 tgz，便于区分内容和验收。公开 npm 只发布 online 内容，发布前由
+流水线把候选包名转换为 `witty-agent-shennong`；offline 包体积大且绑定操作系统、
+CPU 架构和 Python ABI，只作为 Jenkins Artifact 或受控文件分发，不上传 npm。
 在线包在脚本内强制不超过
 10 MiB；离线包不设置体积上限，但会将体积、平台、wheel 数量和 SHA256
 写入 `artifacts/*-package-report.json`。
@@ -479,9 +486,12 @@ openEuler 架构和 Python 3.11 环境中生成。可用 `--python=/path/to/pyth
 wheel 清单闭合、SHA256、Python ABI、操作系统、CPU 架构、SOABI 与 libc。
 任何一项不完整都会让 `shennong-setup check` 和发布门禁失败。
 
-离线依赖解析还会读取 `packaging/offline-constraints.txt`。该文件将
-PaddleOCR 的 OpenCV 扩展依赖与项目现有 `opencv-python==4.9.0.80`
-保持一致，避免 pip 在多个几十 MiB 的候选 wheel 之间反复回溯下载。
+PaddleOCR 2.9.1 会直接依赖 `opencv-python`、`opencv-contrib-python`，同时其固定的
+Albumentations 1.4.10 又依赖 `opencv-python-headless`。当前 requirements 与
+`packaging/offline-constraints.txt` 将三者统一锁定在 `4.9.0.80`，避免混装
+4.9/4.11 的 `cv2` 二进制文件，也避免 pip 在多个几十 MiB 的候选 wheel 之间反复
+回溯下载。非 headless OpenCV 仍要求系统提供 `libGL.so.1`，不能由 Python wheel
+替代。
 
 OCR 模型文件使用 Git LFS 管理，根目录 `.gitattributes` 会将 `*.pdiparams` 交给
 LFS filter。构建离线包前必须先执行 `git lfs pull`，并确认仓库服务端已启用 LFS；
@@ -544,8 +554,9 @@ shennong-crash-agent/
 
 ## 版本
 
-- `0.10.5`
-- npm 包：`@openeuler/agent-shennong-crash-online` / `@openeuler/agent-shennong-crash-offline`
+- `0.10.4`
+- npm 在线包：`witty-agent-shennong`
+- 本地构建产物：带 online/offline 后缀的独立 tgz
 
 ## 常见问题
 

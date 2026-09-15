@@ -1,25 +1,50 @@
 {
-  "name": "nl2sql",
-  "version": "0.1.0",
-  "description": "NL2SQL Agent: Python Web/API source distribution with init/start CLI",
+  "name": "@openeuler/agent-nl2sql",
+  "version": "0.1.3",
+  "description": "NL2SQL Agent — 自然语言转 Elasticsearch 只读查询，通过本地 NL2SQL Web API 执行",
+  "type": "module",
+  "main": "dist/index.js",
+  "exports": {
+    ".": "./dist/index.js"
+  },
   "bin": {
-    "nl2sql": "./bin/nl2sql.js"
+    "nl2sql": "./bin/nl2sql.js",
+    "nl2sql-agent": "./bin/configure.mjs",
+    "nl2sql-setup": "./bin/nl2sql-setup.mjs"
   },
   "files": [
-    "bin",
-    "apps",
-    "nl2sql_core",
-    "configs",
-    "scripts",
-    "fixtures",
-    "docs",
-    "requirements.txt",
-    ".env.example",
+    "dist/",
+    "opencode_plugin/",
+    "bin/",
+    "lib/",
     "README.md"
   ],
-  "engines": {
-    "node": ">=18"
+  "scripts": {
+    "validate": "node scripts/validate.mjs",
+    "validate:dist": "node scripts/validate-dist.mjs",
+    "pack:variant": "node scripts/build-package.mjs",
+    "ci:verify-artifacts": "node scripts/verify-ci-artifacts.mjs",
+    "test:install-contract": "node tests/test-install-contract.mjs",
+    "test": "node tests/test-install-contract.mjs"
   },
-  "license": "UNLICENSED",
-  "private": true
+  "wittyAgentDistribution": {
+    "packageNames": {
+      "organization": "@openeuler/agent-nl2sql",
+      "plain": "witty-agent-nl2sql"
+    }
+  },
+  "dependencies": {
+    "jsonc-parser": "^3.3.1"
+  },
+  "keywords": [
+    "nl2sql",
+    "opencode",
+    "agent",
+    "elasticsearch",
+    "openeuler"
+  ],
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "license": "MulanPSL-2.0"
 }

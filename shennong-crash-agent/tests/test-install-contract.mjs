@@ -73,7 +73,18 @@ async function installVariant(variant, configPath, environment) {
       : []),
     tgz,
   ]
-  execFileSync("npm", installArgs, { cwd: project, stdio: "inherit", env: environment })
+  const installResult = spawnSync("npm", installArgs, {
+    cwd: project,
+    encoding: "utf8",
+    env: environment,
+  })
+  process.stdout.write(installResult.stdout || "")
+  process.stderr.write(installResult.stderr || "")
+  assert(installResult.status === 0, `${variant}: npm install failed`)
+  assert(
+    `${installResult.stdout}\n${installResult.stderr}`.includes("npm exec -- shennong-setup install"),
+    `${variant}: npm install did not show the setup next-step hint`,
+  )
   assert(
     readFileSync(configPath, "utf8") === configBeforeInstall,
     `${variant}: npm install unexpectedly changed OpenCode configuration`,
@@ -303,6 +314,14 @@ async function exerciseExplicitSetup(installation, environment) {
 printf '%s\n' "$*" >> "$SETUP_PYTHON_LOG"
 if [ "$1" = "-c" ]; then
   case "$2" in
+    *platform.python_version*) printf '%s\n' '${pythonInfoJson}' ;;
+    *ctypes.CDLL*)
+      if [ "$SETUP_MISSING_RUNTIME" = "1" ]; then
+        printf '%s\n' '["libGL.so.1"]'
+      else
+        printf '%s\n' '[]'
+      fi
+      ;;
     *sys.prefix*) exit 0 ;;
     *importlib.import_module*)
       if [ "$SETUP_FAIL_IMPORT" = "1" ]; then exit 42; fi
@@ -381,6 +400,22 @@ server.listen(0, "127.0.0.1", () => {
   const command = [
     "exec", "--offline", "--", "shennong-setup", "install", `--python=${setupPython}`,
   ]
+  const missingRuntime = spawnSync("npm", [
+    "exec", "--offline", "--", "shennong-setup", "check", `--python=${setupPython}`,
+  ], {
+    cwd: installation.project,
+    encoding: "utf8",
+    env: { ...setupEnvironment, SETUP_MISSING_RUNTIME: "1" },
+  })
+  assert(missingRuntime.status !== 0, "setup: missing Linux runtime library was not rejected")
+  assert(
+    `${missingRuntime.stdout}\n${missingRuntime.stderr}`.includes("sudo dnf install -y libglvnd-glx"),
+    "setup: missing Linux runtime library did not produce an actionable openEuler command",
+  )
+  assert(
+    !readFileSync(setupLog, "utf8").includes("-m pip install"),
+    "setup: Python dependencies were installed before the Linux runtime preflight passed",
+  )
   execFileSync("npm", command, {
     cwd: installation.project,
     stdio: "inherit",

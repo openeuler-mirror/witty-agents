@@ -1,0 +1,11 @@
+# 打包时必须包含的文件（相对 package 根目录）
+agent/agent.md
+bin/configure.mjs
+bin/xlite-opt-init.js
+lib/configure.mjs
+lib/validate-plugin.mjs
+dist/index.js
+skills/xlite-analyzer/SKILL.md
+skills/xlite-html-reporter/SKILL.md
+helpers/parse-perf-log.py
+README.md

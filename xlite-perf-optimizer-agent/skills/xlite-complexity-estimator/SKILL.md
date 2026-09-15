@@ -1,3 +1,12 @@
+---
+name: xlite-complexity-estimator
+description: |
+  建立单算子时间复杂度模型与端到端 latency 公式，按用户给定的
+  (input_tokens, output_tokens, batch_size) 估算推理耗时并与实际 profiling 对比，
+  输出 complexity_report.json。用于优化前评估理论收益、优化后验证偏差。
+  Triggers: 复杂度估算、latency 估算、理论耗时、端到端时间模型。
+---
+
 # xlite-complexity-estimator
 
 ## 用途

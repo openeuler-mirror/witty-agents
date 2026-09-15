@@ -43,6 +43,8 @@ const COMPONENTS = [
 function parseArgs(argv) {
   const options = {
     variant: null,
+    packageStyle: process.env.PACKAGE_STYLE || "organization",
+    packageVersion: process.env.PACKAGE_VERSION_OVERRIDE || null,
     outputDir: DEFAULT_OUTPUT_DIR,
     python: process.env.PYTHON_BIN || null,
   }
@@ -53,6 +55,14 @@ function parseArgs(argv) {
       options.variant = arg.slice("--variant=".length)
     } else if (arg === "--variant") {
       options.variant = argv[++index]
+    } else if (arg.startsWith("--package-style=")) {
+      options.packageStyle = arg.slice("--package-style=".length)
+    } else if (arg === "--package-style") {
+      options.packageStyle = argv[++index]
+    } else if (arg.startsWith("--version=")) {
+      options.packageVersion = arg.slice("--version=".length)
+    } else if (arg === "--version") {
+      options.packageVersion = argv[++index]
     } else if (arg.startsWith("--out-dir=")) {
       options.outputDir = resolve(PROJECT_ROOT, arg.slice("--out-dir=".length))
     } else if (arg === "--out-dir") {
@@ -68,6 +78,15 @@ function parseArgs(argv) {
 
   if (!['online', 'offline'].includes(options.variant)) {
     throw new Error("--variant must be online or offline")
+  }
+  if (!["organization", "plain"].includes(options.packageStyle)) {
+    throw new Error("--package-style must be organization or plain")
+  }
+  if (options.packageVersion && process.env.ALLOW_PACKAGE_VERSION_OVERRIDE !== "true") {
+    throw new Error("package version override requires ALLOW_PACKAGE_VERSION_OVERRIDE=true")
+  }
+  if (options.packageVersion && !/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/.test(options.packageVersion)) {
+    throw new Error("--version must be a valid semantic version")
   }
   return options
 }
@@ -396,20 +415,34 @@ function writeContentManifest(stageDir, requiredFiles, lfsPointers) {
   return manifest
 }
 
-function writeStagePackageJson(stageDir, basePackage, variant) {
+function resolvePackageBaseName(basePackage, packageStyle) {
+  const names = basePackage.wittyAgentDistribution?.packageNames
+  const packageName = names?.[packageStyle]
+  if (!packageName || typeof packageName !== "string") {
+    throw new Error(`package name for style ${packageStyle} is not configured`)
+  }
+  if (packageStyle === "organization" && !packageName.startsWith("@")) {
+    throw new Error(`organization package name must be scoped: ${packageName}`)
+  }
+  if (packageStyle === "plain" && packageName.startsWith("@")) {
+    throw new Error(`plain package name must be unscoped: ${packageName}`)
+  }
+  return packageName
+}
+
+function writeStagePackageJson(stageDir, basePackage, variant, packageStyle, packageVersion) {
   const {
     scripts: _baseScripts,
     devDependencies: _baseDevDependencies,
+    wittyAgentDistribution: _distribution,
     ...publishableBase
   } = basePackage
+  const packageBaseName = resolvePackageBaseName(basePackage, packageStyle)
   const packageJson = {
     ...publishableBase,
-    name: variant === "online"
-      ? basePackage.name
-      : `${basePackage.name}-${variant}`,
-    description: variant === "online"
-      ? basePackage.description
-      : `${basePackage.description} (${variant} package)`,
+    name: `${packageBaseName}-${variant}`,
+    version: packageVersion || basePackage.version,
+    description: `${basePackage.description} (${variant} package)`,
     files: [
       "dist",
       "skills",
@@ -422,6 +455,10 @@ function writeStagePackageJson(stageDir, basePackage, variant) {
       ...(variant === "offline" ? ["python-wheels", "python-wheel-manifest.json"] : []),
     ],
     shennongVariant: variant,
+    wittyPackageStyle: packageStyle,
+    scripts: {
+      postinstall: "node bin/postinstall.mjs",
+    },
     ...(variant === "offline"
       ? { bundledDependencies: Object.keys(basePackage.dependencies || {}) }
       : {}),
@@ -452,7 +489,7 @@ function main() {
   }
   const basePackage = JSON.parse(readFileSync(join(PROJECT_ROOT, "package.json"), "utf8"))
   const requiredFiles = readRequiredPackageFiles()
-  const stageDir = join(PROJECT_ROOT, ".package-stage", options.variant)
+  const stageDir = join(PROJECT_ROOT, ".package-stage", options.packageStyle, options.variant)
   rmSync(stageDir, { recursive: true, force: true })
   mkdirSync(stageDir, { recursive: true })
 
@@ -469,6 +506,7 @@ function main() {
 
   const variantMetadata = {
     variant: options.variant,
+    packageStyle: options.packageStyle,
     pythonDependencies: options.variant === "offline" ? "bundled-wheels" : "download-on-install",
     wheelPlatform: pythonWheelManifest?.platform || null,
     contentComplete: contentManifest.contentComplete,
@@ -476,7 +514,13 @@ function main() {
     lfsPointerWarnings: contentManifest.lfsPointerWarnings,
   }
   writeFileSync(join(stageDir, "package-variant.json"), `${JSON.stringify(variantMetadata, null, 2)}\n`)
-  writeStagePackageJson(stageDir, basePackage, options.variant)
+  writeStagePackageJson(
+    stageDir,
+    basePackage,
+    options.variant,
+    options.packageStyle,
+    options.packageVersion,
+  )
 
   const { npm: npmResult, tgzPath } = packStage(stageDir, options.outputDir)
   validatePackedFiles(npmResult, [
@@ -505,8 +549,11 @@ function main() {
 
   const report = {
     variant: options.variant,
+    packageStyle: options.packageStyle,
     packageName: npmResult.name,
     version: npmResult.version,
+    sourceVersion: basePackage.version,
+    versionOverrideApplied: Boolean(options.packageVersion),
     filename: npmResult.filename,
     size: actualSize,
     unpackedSize: npmResult.unpackedSize,

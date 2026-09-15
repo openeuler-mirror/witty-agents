@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "agents": [
+    {
+      "id": "shennong-crash",
+      "enabled": true,
+      "configPath": "shennong-crash-agent/ci/agent.json",
+      "changedPathPrefixes": [
+        "shennong-crash-agent/"
+      ]
+    },
+    {
+      "id": "nl2sql",
+      "enabled": true,
+      "configPath": "NL2sql-Agent/ci/agent.json",
+      "changedPathPrefixes": [
+        "NL2sql-Agent/"
+      ]
+    },
+    {
+      "id": "openeuler-ops",
+      "enabled": true,
+      "configPath": "openeuler-ops-agent/ci/agent.json",
+      "changedPathPrefixes": [
+        "openeuler-ops-agent/"
+      ]
+    },
+    {
+      "id": "xlite-perf-optimizer",
+      "enabled": true,
+      "configPath": "xlite-perf-optimizer-agent/ci/agent.json",
+      "changedPathPrefixes": [
+        "xlite-perf-optimizer-agent/"
+      ]
+    }
+  ]
+}
