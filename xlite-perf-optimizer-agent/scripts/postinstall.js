@@ -1,15 +1,17 @@
 #!/usr/bin/env node
+// Dormant hint script (the package deliberately declares no npm postinstall
+// hook; npm install stays side-effect free). Kept ESM-valid for manual use.
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const path = require('path');
-
-const initCmd = 'npx xlite-opt-init';
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const pkgName = path.basename(path.dirname(__dirname));
 
 console.log(`\n[${pkgName}] 已安装。\n`);
-console.log(`请在需要使用的 xlite 项目根目录下执行初始化命令：\n`);
-console.log(`  ${initCmd}\n`);
-console.log(`该命令会：`);
-console.log(`  1. 将 Agent role prompt 安装到 ~/.config/opencode/agents/xlite-perf-optimizer/`);
-console.log(`  2. 将内置 skill 安装到 ~/.config/opencode/skills/`);
-console.log(`  3. 在当前项目的 opencode.jsonc 中追加 agent 配置`);
-console.log(`  4. 在当前项目创建 .xlite-opt/journal/ 与 .xlite-opt/reports/\n`);
+console.log(`统一安装流程（与其他 Agent 一致）：\n`);
+console.log('  xlite-perf-optimizer-setup install');
+console.log('  xlite-perf-optimizer-configure install --target=opencode\n');
+console.log(`说明：`);
+console.log(`  1. setup 无后端依赖，仅做包完整性校验`);
+console.log(`  2. configure 以 plugin 方式注册并软链内置 Skills（幂等，可重复执行）`);
+console.log(`  3. 反注册执行 xlite-perf-optimizer-configure remove\n`);

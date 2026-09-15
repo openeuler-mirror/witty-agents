@@ -3,9 +3,12 @@
  * scripts/smoke-test.js
  * Basic structural smoke test for the xlite-perf-optimizer package.
  */
-const fs = require('fs');
-const path = require('path');
+import fs from 'node:fs';
+import path from 'node:path';
+import { execFileSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, '..');
 const expectedSkills = [
   'xlite-analyzer',
@@ -49,32 +52,15 @@ for (const skill of expectedSkills) {
 assert(exists('helpers/ascend-container-test.sh'), 'helper ascend-container-test.sh exists');
 assert(exists('helpers/parse-perf-log.py'), 'helper parse-perf-log.py exists');
 
-// Init script
-assert(exists('bin/xlite-opt-init.js'), 'bin/xlite-opt-init.js exists');
-
-// Init script syntax: run node --check
-const initFile = path.join(root, 'bin/xlite-opt-init.js');
-try {
-  require('child_process').execFileSync(process.execPath, ['--check', initFile], { stdio: 'pipe' });
-  assert(true, 'xlite-opt-init.js has valid Node.js syntax');
-} catch (e) {
-  assert(false, 'xlite-opt-init.js has valid Node.js syntax');
-}
-
-// Local opencode config has the agent (if present)
-const opencodePath = path.join(process.cwd(), 'opencode.jsonc');
-if (fs.existsSync(opencodePath)) {
-  const configText = fs.readFileSync(opencodePath, 'utf-8');
-  assert(configText.includes('xlite-perf-optimizer'), 'opencode.jsonc references xlite-perf-optimizer');
-  const promptMatch = configText.match(/"xlite-perf-optimizer"[\s\S]*?"prompt"\s*:\s*"\{file:([^}]+)\}"/);
-  if (promptMatch) {
-    const promptFile = promptMatch[1];
-    assert(fs.existsSync(promptFile), `agent prompt file exists: ${promptFile}`);
-  } else {
-    assert(false, 'agent prompt file reference is parseable');
+// Unified CLI bins (shennong-style: <agent>-setup + <agent>-configure)
+for (const bin of ['bin/xlite-perf-optimizer-setup.mjs', 'bin/configure.mjs']) {
+  assert(exists(bin), `${bin} exists`);
+  try {
+    execFileSync(process.execPath, ['--check', path.join(root, bin)], { stdio: 'pipe' });
+    assert(true, `${bin} has valid Node.js syntax`);
+  } catch (e) {
+    assert(false, `${bin} has valid Node.js syntax`);
   }
-} else {
-  assert(false, 'opencode.jsonc exists in current working directory');
 }
 
 const failed = checks.filter((c) => !c.ok).length;

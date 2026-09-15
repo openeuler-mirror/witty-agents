@@ -100,7 +100,15 @@ function main() {
     const packageRoot = join(projectDir, "node_modules", ...packageName.split("/"))
     assert(existsSync(packageRoot), `installed package is missing: ${packageRoot}`)
 
-    const configure = ["exec", "--offline", "--", "xlite-perf-optimizer-configure", "configure"]
+    // Unified shennong-style bins must both be registered.
+    assert(existsSync(join(projectDir, "node_modules", ".bin", "xlite-perf-optimizer-setup")), "xlite-perf-optimizer-setup bin is not registered")
+    assert(existsSync(join(projectDir, "node_modules", ".bin", "xlite-perf-optimizer-configure")), "xlite-perf-optimizer-configure bin is not registered")
+    const setupOutput = run("npm", ["exec", "--offline", "--", "xlite-perf-optimizer-setup", "install"], {
+      cwd: projectDir, env: environment, encoding: "utf8",
+    })
+    assert(setupOutput.includes('"status": "ready"'), "setup install did not report readiness")
+
+    const configure = ["exec", "--offline", "--", "xlite-perf-optimizer-configure", "install"]
     run("npm", configure, { cwd: projectDir, env: environment })
     const configAfterFirst = readFileSync(configPath, "utf8")
     assert(listBackups(configPath).length === 1, "configure did not create exactly one backup")
