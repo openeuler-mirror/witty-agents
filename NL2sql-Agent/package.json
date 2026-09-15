@@ -1,6 +1,6 @@
 {
   "name": "@openeuler/agent-nl2sql",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "NL2SQL Agent — 自然语言转 Elasticsearch 只读查询，通过本地 NL2SQL Web API 执行",
   "type": "module",
   "main": "dist/index.js",

@@ -24,7 +24,17 @@ const REQUIRED_FILES_MANIFEST = join(PROJECT_ROOT, "packaging", "required-packag
 
 const COPY_ITEMS = ["dist", "opencode_plugin", "bin", "lib", "README.md"]
 const REQUIREMENTS_FILE = join(PROJECT_ROOT, "requirements.txt")
-const OFFLINE_PYTHON_ITEMS = ["nl2sql_core", "apps", "requirements.txt"]
+// Python backend is required by BOTH variants: online downloads the third-party
+// wheels from PyPI at setup time, offline additionally bundles a wheelhouse.
+const PYTHON_RUNTIME_ITEMS = [
+  "nl2sql_core",
+  "apps",
+  "requirements.txt",
+  "configs",
+  "fixtures",
+  "scripts",
+  ".env.example",
+]
 
 function parseArgs(argv) {
   const options = {
@@ -164,10 +174,10 @@ function buildWheelhouse(stageDir) {
   return manifest
 }
 
-function copyOfflineBackend(stageDir) {
-  for (const item of OFFLINE_PYTHON_ITEMS) {
+function copyPythonRuntime(stageDir) {
+  for (const item of PYTHON_RUNTIME_ITEMS) {
     const source = join(PROJECT_ROOT, item)
-    if (!existsSync(source)) throw new Error(`required offline path is missing: ${source}`)
+    if (!existsSync(source)) throw new Error(`required runtime path is missing: ${source}`)
     cpSync(source, join(stageDir, item), { recursive: true, filter: (candidate) => shouldCopy(candidate) })
   }
 }
@@ -259,8 +269,15 @@ function writeStagePackageJson(stageDir, basePackage, variant, packageStyle, arc
       "README.md",
       "package-variant.json",
       "package-content-manifest.json",
+      "nl2sql_core",
+      "apps",
+      "requirements.txt",
+      "configs",
+      "fixtures",
+      "scripts",
+      ".env.example",
       ...(variant === "offline"
-        ? ["node_modules", "nl2sql_core", "apps", "requirements.txt", "python-wheels", "python-wheel-manifest.json"]
+        ? ["node_modules", "python-wheels", "python-wheel-manifest.json"]
         : []),
     ],
     wittyPackageStyle: packageStyle,
@@ -290,9 +307,11 @@ function main() {
   copyPackageFiles(stageDir)
   const bundledRuntimeDependencies = bundleRuntimeDependencies(stageDir, basePackage, options.variant)
 
+  // Both variants ship the complete Python backend; offline adds the wheelhouse.
+  copyPythonRuntime(stageDir)
+
   let pythonWheelManifest = null
   if (options.variant === "offline") {
-    copyOfflineBackend(stageDir)
     pythonWheelManifest = buildWheelhouse(stageDir)
   }
 

@@ -132,13 +132,26 @@ function main() {
       "opencode_plugin/role-prompt.md is missing or too short",
     )
 
-    if (options.variant === "offline") {
-      for (const required of ["nl2sql_core", "apps", "requirements.txt", "python-wheels", "python-wheel-manifest.json"]) {
-        assert(existsSync(join(packageRoot, required)), `offline bundled backend path is missing: ${required}`)
-      }
-      run("npm", ["exec", "--offline", "--", "nl2sql-setup", "install"], { cwd: projectDir, env: environment })
-      run("npm", ["exec", "--offline", "--", "nl2sql-setup", "check"], { cwd: projectDir, env: environment })
+    // Python backend ships in BOTH variants; only the wheelhouse is offline-only.
+    for (const required of ["nl2sql_core", "apps", "requirements.txt", "configs", "fixtures", "scripts", ".env.example"]) {
+      assert(existsSync(join(packageRoot, required)), `bundled backend path is missing: ${required}`)
     }
+    assert(existsSync(join(packageRoot, "apps", "web", "main.py")), "web entry apps/web/main.py is missing")
+    assert(existsSync(join(packageRoot, "scripts", "start_web.sh")), "scripts/start_web.sh is missing")
+    const offline = options.variant === "offline"
+    if (offline) {
+      for (const required of ["python-wheels", "python-wheel-manifest.json"]) {
+        assert(existsSync(join(packageRoot, required)), `offline wheelhouse path is missing: ${required}`)
+      }
+    }
+    // setup must succeed in both variants: online pip-installs from PyPI, offline from the wheelhouse.
+    const execSetup = (command) => run(
+      "npm",
+      ["exec", ...(offline ? ["--offline"] : []), "--", "nl2sql-setup", command],
+      { cwd: projectDir, env: environment },
+    )
+    execSetup("install")
+    execSetup("check")
 
     run("npm", configure, { cwd: projectDir, env: environment })
     assert(readFileSync(configPath, "utf8") === configAfterFirst, "repeated configure changed configuration")
@@ -172,6 +185,8 @@ function main() {
       packageName,
       networkIsolation: process.env.NL2SQL_NETWORK_ISOLATION || "none",
       npmInstallPreservedConfig: true,
+      pythonBackendBundled: true,
+      setupVerified: true,
       configureBackupCount: 1,
       configureIdempotent: true,
       removeBackupCount: 1,

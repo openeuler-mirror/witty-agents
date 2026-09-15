@@ -4,3 +4,15 @@ opencode_plugin/skills/nl2sql/SKILL.md
 bin/configure.mjs
 lib/configure.mjs
 README.md
+# Python 后端（online/offline 均需；offline 额外携带 python-wheels）
+requirements.txt
+.env.example
+nl2sql_core/__init__.py
+nl2sql_core/config.py
+apps/web/main.py
+configs/app.yaml
+configs/datasources.yaml
+configs/rag_core.yaml
+fixtures/rules/README.md
+scripts/start_web.sh
+scripts/start_all.sh
