@@ -1,6 +1,6 @@
 {
   "name": "@openeuler/agent-openeuler-ops",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "openEuler 运维 Agent — 覆盖16个场景的智能运维助手，在 opencode 中直接对话使用",
   "type": "module",
   "main": "dist/index.js",
