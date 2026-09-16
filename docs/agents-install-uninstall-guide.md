@@ -5,13 +5,34 @@
 | Agent | npm 包 | 版本 |
 |---|---|---|
 | 神农崩溃分析 | `witty-agent-shennong-online` | 0.10.6 |
-| NL2SQL | `witty-agent-nl2sql-online` | 0.1.3 |
-| openEuler 运维 | `witty-agent-openeuler-ops-online` | 1.0.1 |
-| xlite 性能优化 | `witty-agent-xlite-perf-optimizer-online` | 0.1.1 |
+| NL2SQL | `witty-agent-nl2sql-online` | 0.2.0 |
+| openEuler 运维 | `witty-agent-openeuler-ops-online` | 2.0.0 |
+| xlite 性能优化 | `witty-agent-xlite-perf-optimizer-online` | 0.2.0 |
 
 环境：openEuler / Linux（macOS 同样适用）。所有注册信息写入
 `~/.config/opencode/opencode.jsonc`，skill 以**符号链接**落在
 `~/.config/opencode/skills/`。
+
+## 统一命令约定
+
+四个 Agent 全部采用神农同款**双命令**结构：
+
+| 命令 | 职责 |
+|---|---|
+| `<agent>-setup install` | 准备本机依赖：venv / 模型 / 在线 Skills / 起服务所需环境（**不写 opencode 配置**） |
+| `<agent>-configure install --target=opencode` | 注册 Agent（plugin + skill 软链，幂等） |
+| `<agent>-configure remove --target=opencode` | 反注册（幂等，自动备份配置） |
+| `<agent>-configure status` | 查看注册状态（JSON） |
+| `<agent>-setup check` | 只读环境/完整性校验 |
+
+四个命令名：`shennong-setup` / `shennong-configure`、
+`nl2sql-setup` / `nl2sql-configure`、
+`openeuler-ops-setup` / `openeuler-ops-configure`、
+`xlite-perf-optimizer-setup` / `xlite-perf-optimizer-configure`。
+
+> 旧的 `nl2sql`、`nl2sql-agent`、`openeuler-ops-agent`、`xlite-opt-init`、
+> `xlite-perf-optimizer-configure configure/register` 已随本版本移除，
+> 不保留别名，请直接改用新命令。
 
 ---
 
@@ -24,27 +45,27 @@
    `file://.../dist/index.js`；神农另有 `mcp` 配置两项。
 3. **skill 符号链接**：`~/.config/opencode/skills/<skill>` → 包内 skill 目录。
 4. **Python 虚拟环境 / 模型缓存**（神农、NL2SQL）：`~/.cache/witty-agents/<包名>/`。
-5. **常驻服务**（仅神农）：`witty-log-detection` SSE MCP，监听 `127.0.0.1:12144`。
+5. **常驻服务**（神农 SSE MCP：`127.0.0.1:12144`；NL2SQL Web：`127.0.0.1:8199`）。
 6. **配置备份文件**：每次改配置自动生成 `opencode.jsonc.<owner>-backup-<时间戳>`。
 7. **历史遗留**（仅用过旧引导才会有）：
    - xlite：旧版 `xlite-opt-init` 复制的 `~/.config/opencode/agents/xlite-perf-optimizer/`
      与实体 skill 目录、项目 `opencode.jsonc` 片段。
-   - ops：`install.sh` 经 skillhub 安装的 `~/.config/opencode/skills/@chuangyinbot-boop/`。
+   - ops：`openeuler-ops-setup install` 经 skillhub 安装的 `~/.config/opencode/skills/@chuangyinbot-boop/`。
 
 > 卸载顺序固定为：**停服务 → 反注册（删 plugin + skill 链接）→ npm 卸载 → 清缓存/残留**。
 > 若先删 npm 包，反注册命令会丢失，需按第五节手动清理。
 
 ---
 
-## 二、安装流程（回顾）
+## 二、安装流程
 
-每个 agent 都是三步：**① 装包 → ② 装依赖/起服务（需要后端的）→ ③ configure 注册并链接 skill → 重启 OpenCode**。
+统一三步：**① 装包 → ② setup 准备依赖（无后端者为 no-op/可选）→ ③ configure 注册并链接 skill → 重启 OpenCode**。
 
 ### 神农
 
 ```bash
 npm install -g witty-agent-shennong-online
-shennong-setup install                      # 建 3 个 venv、下载 OCR 模型、拉起 MCP
+shennong-setup install                      # 建 3 个 venv、下载 OCR 模型、准备 MCP
 shennong-configure install --target=opencode
 ```
 
@@ -52,24 +73,32 @@ shennong-configure install --target=opencode
 
 ```bash
 npm install -g witty-agent-nl2sql-online
-nl2sql init                                 # 交互配置 LLM/rag/ES/Web → .env
-nl2sql start                                # 自建 .venv、装依赖、起 Web(8199)
-nl2sql-agent configure                      # register 为别名
-# 备选: nl2sql-setup install && start_all.sh（CI/合同模型）
+nl2sql-setup install                        # 建共享 venv、装后端依赖（~/.cache/witty-agents/...）
+nl2sql-configure install --target=opencode  # 注册 + 软链 skill
+
+# 可选：交互配置 LLM/rag/ES/Web（写 .env 与 configs/datasources.yaml，CI 管道下取默认值）
+nl2sql-setup init
+# 后台启动 Web（pid/日志在包内 .runtime/），然后浏览器打开 http://127.0.0.1:8199
+nl2sql-setup start
+nl2sql-setup status                         # 或 curl http://127.0.0.1:8199/api/health
+nl2sql-setup stop
+# 备选一键编排（自带 ES/rag 检查，包内自建 .venv，前台运行）：scripts/start_all.sh
 ```
 
 ### openEuler Ops（无后端）
 
 ```bash
 npm install -g witty-agent-openeuler-ops-online
-openeuler-ops-agent configure               # register 为别名
+openeuler-ops-setup install                 # 可选：装 skillhub 并在线拉取 Skill（失败自动降级）
+openeuler-ops-configure install --target=opencode
 ```
 
 ### xlite 性能优化（无后端）
 
 ```bash
 npm install -g witty-agent-xlite-perf-optimizer-online
-xlite-perf-optimizer-configure configure    # register 为别名
+xlite-perf-optimizer-setup install          # 无后端依赖，校验包完整性后直接成功
+xlite-perf-optimizer-configure install --target=opencode
 ```
 
 > 项目内（非全局）安装时，把命令写为 `npm exec -- <命令> ...`，最后用
@@ -101,8 +130,9 @@ rm -rf ~/.cache/witty-agents/witty-agent-shennong-online
 ### 2. NL2SQL
 
 ```bash
-# (1) 反注册并移除 skill 软链
-nl2sql-agent remove
+# (1) 停止后台 Web 并反注册
+nl2sql-setup stop
+nl2sql-configure remove
 
 # (2) 卸载 npm 包
 npm uninstall -g witty-agent-nl2sql-online
@@ -112,19 +142,19 @@ rm -rf ~/.cache/witty-agents/witty-agent-nl2sql-online
 ```
 
 自定义缓存位置：`NL2SQL_VENV_CACHE/<包名>/venvs/nl2sql`。
-NL2SQL 无常驻服务。
+包内 `.runtime/`（pid/日志）随 npm 卸载一并删除；手工配置过的 `.env` 也在包目录内。
 
 ### 3. openEuler Ops
 
 ```bash
 # (1) 反注册并移除全部 11 个 skill 软链
-openeuler-ops-agent remove
+openeuler-ops-configure remove
 
 # (2) 卸载 npm 包
 npm uninstall -g witty-agent-openeuler-ops-online
 ```
 
-无 venv / 无服务。仅在你用过 `install.sh` 的 skillhub 在线安装时，再清理：
+无 venv / 无服务。仅在你用过 `openeuler-ops-setup install` 的 skillhub 在线安装时，再清理：
 
 ```bash
 # 可选：删除 skillhub 装的 @namespace 嵌套 skill（OpenCode 本就不扫描该目录）
@@ -192,21 +222,22 @@ ls -l ~/.config/opencode/skills/ | grep -E 'shennong|nl2sql|xlite|cool-agent|bud
 
 # 3) 神农 MCP 配置与端口
 grep -n "crash-feature-matcher\|witty-log-detection" ~/.config/opencode/opencode.jsonc || echo "mcp 已清理"
-ss -lntp | grep 12144 || echo "12144 端口已释放"
+ss -lntp | grep -E '12144|8199' || echo "12144/8199 端口已释放"
 
-# 4) 命令应不存在
-command -v shennong-configure nl2sql-agent openeuler-ops-agent xlite-perf-optimizer-configure || echo "命令已移除"
+# 4) 旧命令应不存在（新命令为各 <agent>-setup / <agent>-configure）
+command -v shennong-setup nl2sql-setup openeuler-ops-setup xlite-perf-optimizer-setup >/dev/null || echo "包已卸载"
 
 # 5) 缓存目录
 ls ~/.cache/witty-agents/ 2>/dev/null || echo "缓存已清空"
 ```
 
-用各命令自带的 status 也可确认（删包前执行）：
+删包前可用各命令自带的 status 确认：
 
 ```bash
 shennong-configure status --target=opencode
-nl2sql-agent status
-openeuler-ops-agent status
+nl2sql-configure status
+nl2sql-setup status                # NL2SQL Web 服务状态
+openeuler-ops-configure status
 xlite-perf-optimizer-configure status
 ```
 
@@ -227,11 +258,12 @@ xlite-perf-optimizer-configure status
    find ~/.config/opencode/skills -maxdepth 1 -xtype l -delete  # 确认后删除
    ```
 
-3. 神农服务仍在运行时按端口/进程停掉：
+3. 服务仍在运行时按端口/进程停掉：
 
    ```bash
-   # 找到并结束 SSE 服务进程
+   # 神农 SSE MCP / NL2SQL Web
    fuser -k 12144/tcp 2>/dev/null || true
+   fuser -k 8199/tcp  2>/dev/null || true
    ```
 
 4. 删除缓存目录（同第三节各 agent 的 `~/.cache/witty-agents/<包名>`）。
@@ -247,8 +279,11 @@ xlite-perf-optimizer-configure status
 
 | 动作 | 神农 | NL2SQL | openEuler Ops | xlite |
 |---|---|---|---|---|
-| 停服务 | `shennong-setup stop` | — | — | — |
-| 反注册 | `shennong-configure remove --target=opencode` | `nl2sql-agent remove` | `openeuler-ops-agent remove` | `xlite-perf-optimizer-configure remove` |
+| 准备依赖 | `shennong-setup install` | `nl2sql-setup install` | `openeuler-ops-setup install`（可选） | `xlite-perf-optimizer-setup install`（no-op） |
+| 注册 | `shennong-configure install --target=opencode` | `nl2sql-configure install --target=opencode` | `openeuler-ops-configure install --target=opencode` | `xlite-perf-optimizer-configure install --target=opencode` |
+| 反注册 | `shennong-configure remove --target=opencode` | `nl2sql-configure remove` | `openeuler-ops-configure remove` | `xlite-perf-optimizer-configure remove` |
+| 状态 | `shennong-configure status` | `nl2sql-configure status` / `nl2sql-setup status` | `openeuler-ops-configure status` | `xlite-perf-optimizer-configure status` |
+| 停服务 | `shennong-setup stop` | `nl2sql-setup stop` | — | — |
 | 卸包 | `npm uninstall -g witty-agent-shennong-online` | `npm uninstall -g witty-agent-nl2sql-online` | `npm uninstall -g witty-agent-openeuler-ops-online` | `npm uninstall -g witty-agent-xlite-perf-optimizer-online` |
 | 清缓存 | `rm -rf ~/.cache/witty-agents/witty-agent-shennong-online` | `rm -rf ~/.cache/witty-agents/witty-agent-nl2sql-online` | — | — |
 | skill 数 | 随包内置 | 1（软链） | 11（软链） | 8（软链） |
