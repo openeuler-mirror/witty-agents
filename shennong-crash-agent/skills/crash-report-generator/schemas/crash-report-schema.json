@@ -902,7 +902,12 @@
                   "url": { "type": "string", "description": "在线对照链接（如 elixir.bootlin.com 对应版本锚点）；纯本地源码可留空。" },
                   "note": { "type": "string", "description": "该片段与本次崩溃/补丁的关系说明。" },
                   "origin": { "type": "string", "enum": ["本地源码", "上游基线"], "description": "摘录来源：本地源码树原文，或上游对应版本基线（本地树未归档时如实标注）。" },
-                  "path": { "type": "string", "description": "本地源码树内的绝对/相对路径（origin=本地源码 且可考据时填写，禁止编造）。" }
+                  "path": { "type": "string", "description": "本地源码树内的绝对/相对路径（origin=本地源码 且可考据时填写，禁止编造）。" },
+                  "hl": {
+                    "type": "array",
+                    "items": { "type": "integer", "minimum": 1 },
+                    "description": "关键行高亮（excerpt 内 1-based 行号）：标注崩溃行、关键调用行、补丁落点行等（如 for_each_sg 循环条件行、dma_unmap_sg(...) 调用行）；行号必须在 excerpt 行数范围内。"
+                  }
                 }
               }
             }

@@ -1288,7 +1288,11 @@
           "excerpt": "\n\tdo {\n\t\tse = pick_next_entity(cfs_rq, NULL);\n\t\tset_next_entity(cfs_rq, se);\n\t\tcfs_rq = group_cfs_rq(se);\n\t} while (cfs_rq);",
           "url": "https://elixir.bootlin.com/linux/v4.19/source/kernel/sched/fair.c#L6690",
           "origin": "上游基线",
-          "note": "循环内 pick_next_entity 返回后未判空直接 set_next_entity——Kylin QoS 双循环的第二循环与此同构，本次崩溃即发生在该路径。"
+          "note": "循环内 pick_next_entity 返回后未判空直接 set_next_entity——Kylin QoS 双循环的第二循环与此同构，本次崩溃即发生在该路径。",
+          "hl": [
+            3,
+            4
+          ]
         },
         {
           "id": "src-sched-fair-first",
@@ -1298,7 +1302,11 @@
           "excerpt": "struct sched_entity *__pick_first_entity(struct cfs_rq *cfs_rq)\n{\n\tstruct rb_node *left = rb_first_cached(&cfs_rq->tasks_timeline);\n\n\tif (!left)\n\t\treturn NULL;\n\n\treturn rb_entry(left, struct sched_entity, run_node);",
           "url": "https://elixir.bootlin.com/linux/v4.19/source/kernel/sched/fair.c#L566",
           "origin": "上游基线",
-          "note": "rb_leftmost 为空（空树）时合法返回 NULL——返回空是设计行为，问题在调用方未设防。"
+          "note": "rb_leftmost 为空（空树）时合法返回 NULL——返回空是设计行为，问题在调用方未设防。",
+          "hl": [
+            5,
+            6
+          ]
         },
         {
           "id": "src-sched-fair-setnext",
@@ -1308,7 +1316,10 @@
           "excerpt": "set_next_entity(struct cfs_rq *cfs_rq, struct sched_entity *se)\n{\n\t/* 'current' is not kept within the tree. */\n\tif (se->on_rq) {",
           "url": "https://elixir.bootlin.com/linux/v4.19/source/kernel/sched/fair.c#L4049",
           "origin": "上游基线",
-          "note": "函数入口即 if (se->on_rq) 读字段（偏移 0x40）——se=NULL 时即本次崩溃指令 ldr w0,[x20,#64] 的源码位置。"
+          "note": "函数入口即 if (se->on_rq) 读字段（偏移 0x40）——se=NULL 时即本次崩溃指令 ldr w0,[x20,#64] 的源码位置。",
+          "hl": [
+            4
+          ]
         }
       ]
     }
