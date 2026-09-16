@@ -995,7 +995,11 @@
           "excerpt": "static void nvme_unmap_data(struct nvme_dev *dev, struct request *req)\n{\n\tstruct nvme_iod *iod = blk_mq_rq_to_pdu(req);\n\tconst int last_prp = NVME_CTRL_PAGE_SIZE / sizeof(__le64) - 1;\n\tdma_addr_t dma_addr = iod->first_dma, next_dma_addr;\n\tint i;\n\n\tif (iod->dma_len) {\n\t\tdma_unmap_page(dev->dev, dma_addr, iod->dma_len,\n\t\t\t       rq_dma_dir(req));\n\t\treturn;\n\t}\n\n\tWARN_ON_ONCE(!iod->nents);\n\n\tif (is_pci_p2pdma_page(sg_page(iod->sg)))\n\t\tpci_p2pdma_unmap_sg(dev->dev, iod->sg, iod->nents,\n\t\t\t\t    rq_dma_dir(req));\n\telse\n\t\tdma_unmap_sg(dev->dev, iod->sg, iod->nents, rq_dma_dir(req));\n\n\n\tif (iod->npages == 0)",
           "url": "https://elixir.bootlin.com/linux/v5.10/source/drivers/nvme/host/pci.c#L545",
           "note": "NVMe 请求完成后的 DMA 释放入口，直接以 iod->nents 调用 dma_unmap_sg；厂商 5.10.0-218 树中拆分为 nvme_unmap_sg（报告取证 pci.c:577-586）。本报告自研补丁（第 1 章修复细节）在此处插入链长钳制与告警。",
-          "origin": "上游基线"
+          "origin": "上游基线",
+          "hl": [
+            17,
+            20
+          ]
         },
         {
           "id": "src-dma-direct-unmap",
@@ -1005,7 +1009,11 @@
           "excerpt": "void dma_direct_unmap_sg(struct device *dev, struct scatterlist *sgl,\n\t\tint nents, enum dma_data_direction dir, unsigned long attrs)\n{\n\tstruct scatterlist *sg;\n\tint i;\n\n\tfor_each_sg(sgl, sg, nents, i)\n\t\tdma_direct_unmap_page(dev, sg->dma_address, sg_dma_len(sg), dir,\n\t\t\t     attrs);",
           "url": "https://elixir.bootlin.com/linux/v5.10/source/kernel/dma/direct.c#L384",
           "note": "崩溃点所在：for_each_sg 按 nents 遍历，循环体直接读 sg->dma_address 与 sg_dma_len(sg)（即 dma_length，偏移 0x18），无任何空指针防护。",
-          "origin": "上游基线"
+          "origin": "上游基线",
+          "hl": [
+            7,
+            8
+          ]
         },
         {
           "id": "src-sgl-macro",
@@ -1015,7 +1023,10 @@
           "excerpt": " * See sg_next().\n *\n */\n\n#define SG_CHAIN\t0x01UL\n#define SG_END\t\t0x02UL\n\n/*\n * We overload the LSB of the page pointer to indicate whether it's\n * a valid sg entry, or whether it points to the start of a new scatterlist.\n * Those low bits are there for everyone! (thanks mason :-)\n */\n#define sg_is_chain(sg)\t\t((sg)->page_link & SG_CHAIN)\n#define sg_is_last(sg)\t\t((sg)->page_link & SG_END)\n#define sg_chain_ptr(sg)\t\\\n\t((struct scatterlist *) ((sg)->page_link & ~(SG_CHAIN | SG_END)))\n\n\n……\n\n\tsg_set_page(sg, virt_to_page(buf), buflen, offset_in_page(buf));\n}\n\n/*\n * Loop over each sg element, following the pointer to a new list if necessary\n */\n#define for_each_sg(sglist, sg, nr, __i)\t\\\n\tfor (__i = 0, sg = (sglist); __i < (nr); __i++, sg = sg_next(sg))\n",
           "url": "https://elixir.bootlin.com/linux/v5.10/source/include/linux/scatterlist.h#L60",
           "note": "链结束标记 SG_END=0x02UL；for_each_sg 循环条件只有「计数 < nr」，不检查 sg 是否为空——这是失配场景下空指针直达解引用的结构性原因。",
-          "origin": "上游基线"
+          "origin": "上游基线",
+          "hl": [
+            28
+          ]
         },
         {
           "id": "src-sg-next",
@@ -1025,7 +1036,10 @@
           "excerpt": " * sg_next - return the next scatterlist entry in a list\n * @sg:\t\tThe current sg entry\n *\n * Description:\n *   Usually the next entry will be @sg@ + 1, but if this sg element is part\n *   of a chained scatterlist, it could jump to the start of a new\n *   scatterlist array.\n *\n **/\nstruct scatterlist *sg_next(struct scatterlist *sg)\n{\n\tif (sg_is_last(sg))\n\t\treturn NULL;\n\n\tsg++;\n\tif (unlikely(sg_is_chain(sg)))\n\t\tsg = sg_chain_ptr(sg);\n\n\treturn sg;\n}\nEXPORT_SYMBOL(sg_next);",
           "url": "https://elixir.bootlin.com/linux/v5.10/source/lib/scatterlist.c#L14",
           "note": "遇到 SG_END 标记时合法返回 NULL——返回空本身是设计行为，问题在调用方未设防。",
-          "origin": "上游基线"
+          "origin": "上游基线",
+          "hl": [
+            13
+          ]
         },
         {
           "id": "src-blk-merge",
@@ -1035,7 +1049,10 @@
           "excerpt": "static unsigned blk_bvec_map_sg(struct request_queue *q,\n\t\tstruct bio_vec *bvec, struct scatterlist *sglist,\n\t\tstruct scatterlist **sg)\n{\n\tunsigned nbytes = bvec->bv_len;\n\tunsigned nsegs = 0, total = 0;\n\n\twhile (nbytes > 0) {\n\t\tunsigned offset = bvec->bv_offset + total;\n\t\tunsigned len = min(get_max_segment_size(q, bvec->bv_page,\n\t\t\t\t\toffset), nbytes);\n\t\tstruct page *page = bvec->bv_page;\n\n\t\t/*\n\t\t * Unfortunately a fair number of drivers barf on scatterlists\n\t\t * that have an offset larger than PAGE_SIZE, despite other\n\t\t * subsystems dealing with that invariant just fine.  For now\n\t\t * stick to the legacy format where we never present those from\n\t\t * the block layer, but the code below should be removed once\n\t\t * these offenders (mostly MMC/SD drivers) are fixed.\n\t\t */\n\t\tpage += (offset >> PAGE_SHIFT);\n\t\toffset &= ~PAGE_MASK;\n\n\t\t*sg = blk_next_sg(sg, sglist);\n\t\tsg_set_page(*sg, page, len, offset);\n\n\t\ttotal += len;\n\t\tnbytes -= len;\n\t\tnsegs++;\n\t}\n\n\treturn nsegs;\n}\n",
           "url": "https://elixir.bootlin.com/linux/v5.10/source/block/blk-merge.c#L407",
           "note": "崩溃中断打断的另一 CPU 上下文正处于该函数（构建新请求的 scatterlist），是「并发窗口」假说的旁证（未实证）。",
-          "origin": "上游基线"
+          "origin": "上游基线",
+          "hl": [
+            25
+          ]
         }
       ]
     }

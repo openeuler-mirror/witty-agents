@@ -185,6 +185,13 @@ summary,a{transition:color var(--trans)}
 .reg-hl{color:#7a5416;background:#f7efd8;padding:0 2px;border-radius:3px;font-family:var(--font-mono);font-weight:600}
 /* 故障总览：与后续章节一致，走标准卡片框 */
 .section.overview .hero{margin-top:16px}
+/* 内核源码摘录卡：head 右侧固定组（不参与挤压）+ 逐行渲染 + 关键行高亮 */
+.src-head-right{display:flex;align-items:center;gap:8px;flex-shrink:0;margin-left:12px;flex-wrap:wrap;justify-content:flex-end}
+.src-excerpt{counter-reset:srcn;display:block}
+.src-line{display:block;white-space:pre-wrap;padding:0 8px;border-left:2px solid transparent}
+.src-line::before{counter-increment:srcn;content:counter(srcn);display:inline-block;width:2.4em;margin-right:10px;text-align:right;color:var(--subtle);font-size:10px}
+.src-hl{background:var(--accent-soft);border-left-color:var(--accent-strong)}
+.src-hl::before{color:var(--accent-strong);font-weight:600}
 </style></head>
 <body>
 <a class="skip-link" href="#overview">跳到报告正文</a>
@@ -1180,14 +1187,17 @@ function renderAppendix(){
       h += `<div class="appendix-card"><details><summary><span class="appendix-summary-label">内核源码摘录 <span class="appendix-count">${srcRefs.length}</span></span><span class="chevron" aria-hidden="true"></span></summary><div class="detail-body"><p class="muted">${esc(ls.base || '本地内核源码对照摘录')}；正文与补丁卡中的源码引用可跳转到对应片段。</p><div class="log-evidence-list">`;
       srcRefs.forEach(r=>{
         const loc = `${r.file||''}${has(r.lines)?(' : '+r.lines):''}`;
-        /* 来源自适应：本地源码（可能无在线对照，展示本地路径）与上游基线（可外链对照）分开呈现 */
+        /* head 只放 标题 + 固定右侧组（徽标/链接）；长路径独立成行，避免挤压标题 */
         let headRight = '';
-        if(String(r.origin||'') === '本地源码'){
-          headRight += `<span class="case-pill">本地源码</span>`;
-          if(has(r.path)) headRight += `<span class="source-label">${esc(r.path)}</span>`;
-        }
+        if(String(r.origin||'') === '本地源码') headRight += `<span class="case-pill">本地源码</span>`;
         if(has(r.url)) headRight += `<a href="${esc(r.url)}" target="_blank" rel="noopener noreferrer" class="case-link">上游对照 ↗</a>`;
-        h += `<article class="log-evidence" id="${esc(r.id||'')}"><div class="log-evidence-head"><b>${esc(r.func||loc)}</b>${headRight}</div><span class="source-label">${esc(loc)}</span>${has(r.excerpt)?`<code>${esc(r.excerpt)}</code>`:''}${has(r.note)?`<p>${esc(r.note)}</p>`:''}</article>`;
+        const pathLine = (String(r.origin||'') === '本地源码' && has(r.path)) ? `<span class="source-label">📁 本地路径：${esc(r.path)}</span>` : '';
+        const hlLines = toArr(r.hl).map(n=>parseInt(n,10)).filter(n=>Number.isInteger(n)&&n>0);
+        const excerptHtml = has(r.excerpt) ? `<code class="src-excerpt">${String(r.excerpt).split('\n').map((ln,i)=>{
+          const on = hlLines.includes(i+1);
+          return `<span class="src-line${on?' src-hl':''}">${esc(ln)||'&nbsp;'}</span>`;
+        }).join('')}</code>` : '';
+        h += `<article class="log-evidence" id="${esc(r.id||'')}"><div class="log-evidence-head"><b>${esc(r.func||loc)}</b>${headRight?`<span class="src-head-right">${headRight}</span>`:''}</div><span class="source-label">${esc(loc)}</span>${pathLine}${excerptHtml}${has(r.note)?`<p>${esc(r.note)}</p>`:''}</article>`;
       });
       h += `</div></div></details></div>`;
     }

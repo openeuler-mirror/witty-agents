@@ -190,6 +190,13 @@ def validate_quality(report: Any) -> list[str]:
         seen_ids.add(rid)
         if not str(ref.get("excerpt") or "").strip():
             warns.append(f"local_source.refs[{k}].excerpt 为空（源码摘录必须逐字真实非空）")
+        excerpt_lines = len(str(ref.get("excerpt") or "").split("\n"))
+        for n in ref.get("hl") or []:
+            if not isinstance(n, int) or n < 1 or n > excerpt_lines:
+                warns.append(
+                    f"local_source.refs[{k}].hl 行号 {n} 越界（excerpt 共 {excerpt_lines} 行）；"
+                    f"hl 必须是 excerpt 内 1-based 行号"
+                )
 
     # 5) 三库无 confirmed 而 fixed_brief 宣称已有补丁
     diag = report.get("diagnosis_repair_result") or {}
