@@ -236,7 +236,8 @@
           "desc": "用于硬件/软件定界：无任何硬件错误事件与内核告警前兆。"
         }
       ]
-    }
+    },
+    "stack_impression": "业务线程调用 nanosleep 睡眠让出 CPU，内核在 CFS 调度器挑选下一任务、设置调度实体时发生空指针解引用：运行队列计数下溢使调度器误以为队列非空，在空红黑树上取到空实体后未检查即读其字段。调用栈定位了崩溃路径；计数为何下溢（深层竞态源头）尚需厂商定位。"
   },
   "root_cause_analysis": {
     "conclusion": "这台服务器在连续运行约 290 天后，内核调度器中某个处理器运行队列的任务计数在一次极罕见的并发窗口中被多减了一次而变为负值，调度器因此误以为空队列上仍有任务可选，绕过正常的空闲保护去空队列取任务并得到空结果，又因该内核版本缺少对空结果的最后一道防御检查而访问无效地址，整机随即宕机并自动转储重启。该问题与硬件故障无关，属内核调度器已知缺陷家族（上游社区已在后续大版本确认并加入防御检查，社区补丁已确认）；同一局点此外两次宕机与本问题属同一调度器问题簇，需统一修复与监控。",
@@ -1253,7 +1254,7 @@
           ]
         },
         {
-          "title": "社区与上游交叉验证：确认是已知缺陷",
+          "title": "上游有没有现成修复：为什么需要自研判空补丁",
           "summary": "bugzilla #211435 是同类崩溃；4.19 内核无现成修复，需自研判空补丁。",
           "connect": "源码对照证明缺一道判空，接下来用社区案例确认这是已知缺陷。",
           "reasoning": [
@@ -1275,7 +1276,42 @@
       "flow": "业务线程在 CPU92 上通过 nanosleep 睡眠、让出 CPU → 内核调度器摘出当前任务、挑选下一任务 → 运行队列计数在极罕见并发窗口中被多减一次变为负值，绕过「队列空则转空闲」的检查 → 在空队列上取任务取到空值 → 又因缺少空值检查而直接使用该空值 → 访问无效地址，内核崩溃并经 kdump 转储后重启。"
     },
     "overview_brief": "内核调度器在一次让出 CPU、挑选下一任务时，误以为空队列里还有任务，去取却取到空结果，又因该内核版本缺少一道空值检查，直接访问了无效地址，导致整机宕机并重启。这是内核调度器的已知缺陷，与业务程序和硬件无关。",
-    "trigger_scenario": "在类高频迁移业务的线程频繁睡眠/唤醒（如 nanosleep 让出 CPU）的场景下，内核调度器挑选下一任务时即可能触发。"
+    "trigger_scenario": "在类高频迁移业务的线程频繁睡眠/唤醒（如 nanosleep 让出 CPU）的场景下，内核调度器挑选下一任务时即可能触发。",
+    "local_source": {
+      "base": "上游 v4.19 基线摘录（诊断时经本地 vanilla 4.19 源码树核对，行号锚点一致）",
+      "refs": [
+        {
+          "id": "src-sched-fair-pick",
+          "file": "kernel/sched/fair.c",
+          "lines": "6690-6695",
+          "func": "pick_next_task_fair 选任务循环（崩溃调用点）",
+          "excerpt": "\n\tdo {\n\t\tse = pick_next_entity(cfs_rq, NULL);\n\t\tset_next_entity(cfs_rq, se);\n\t\tcfs_rq = group_cfs_rq(se);\n\t} while (cfs_rq);",
+          "url": "https://elixir.bootlin.com/linux/v4.19/source/kernel/sched/fair.c#L6690",
+          "origin": "上游基线",
+          "note": "循环内 pick_next_entity 返回后未判空直接 set_next_entity——Kylin QoS 双循环的第二循环与此同构，本次崩溃即发生在该路径。"
+        },
+        {
+          "id": "src-sched-fair-first",
+          "file": "kernel/sched/fair.c",
+          "lines": "566-573",
+          "func": "__pick_first_entity（空树返回 NULL）",
+          "excerpt": "struct sched_entity *__pick_first_entity(struct cfs_rq *cfs_rq)\n{\n\tstruct rb_node *left = rb_first_cached(&cfs_rq->tasks_timeline);\n\n\tif (!left)\n\t\treturn NULL;\n\n\treturn rb_entry(left, struct sched_entity, run_node);",
+          "url": "https://elixir.bootlin.com/linux/v4.19/source/kernel/sched/fair.c#L566",
+          "origin": "上游基线",
+          "note": "rb_leftmost 为空（空树）时合法返回 NULL——返回空是设计行为，问题在调用方未设防。"
+        },
+        {
+          "id": "src-sched-fair-setnext",
+          "file": "kernel/sched/fair.c",
+          "lines": "4049-4052",
+          "func": "set_next_entity（崩溃函数，读 se->on_rq）",
+          "excerpt": "set_next_entity(struct cfs_rq *cfs_rq, struct sched_entity *se)\n{\n\t/* 'current' is not kept within the tree. */\n\tif (se->on_rq) {",
+          "url": "https://elixir.bootlin.com/linux/v4.19/source/kernel/sched/fair.c#L4049",
+          "origin": "上游基线",
+          "note": "函数入口即 if (se->on_rq) 读字段（偏移 0x40）——se=NULL 时即本次崩溃指令 ldr w0,[x20,#64] 的源码位置。"
+        }
+      ]
+    }
   },
   "diagnosis_repair_result": {
     "internal_kernel_result": [

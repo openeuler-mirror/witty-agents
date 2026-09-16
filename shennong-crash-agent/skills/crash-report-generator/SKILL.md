@@ -41,6 +41,8 @@ allowed-tools: Bash(python3:*) Bash(pip:*) Bash(cat:*) Bash(ls:*) Bash(rg:*) Bas
 7. **判断依据为并列角度而非顺序**：第 4 章「为什么得出这个结论」的每条依据以「角度 N」胶囊徽标呈现，引言注明「并列的分析角度（无先后顺序）」，避免被误读为推理步骤顺序。
 8. **案例卡片字段零丢失**：卡片按分支渲染 `how`/`fix_scope`/`files`/`diff`/`excerpt`/`corroboration` 等字段（commit 类案例的 meta 附短 sha，非 confirmed commit 同样渲染涉及文件、diff 摘录与原文摘录折叠区）；「查看其余字段（未在上方展示）」采用**动态追踪**——只收纳实际未渲染的字段（已渲染的不重复出现），任何字段都不会既不在卡片正文、也不在其余字段中静默丢失。
 9. **证据链要求「数值/偏移必有来由」**：第 4 章 `deep.evidence[].reasoning[]` 的 `detail`（通俗因果层）必须讲清其中偏移/地址/寄存器值「为什么是这个值」（如 `#64` 是 `on_rq` 字段在结构体里的字节偏移），`evidence`（专业出处层）给出实证来源（如 crash `struct -o`、反汇编对照）；模板原样渲染这两层，报告生成时不得只报数值而不说明来源（规范见 `prompts/generate-report.md` 写作铁律第 11 条）。
+10. **现场初印象数据驱动**：宕机现场章的「现场初印象」优先渲染 `crash_feature_info.stack_impression`（按本次宕机栈生成的一句话）；缺失时模板按 `call_trace_signature` + `rip_function` + `bug_type` 动态生成通用文案。任何情况下不得出现与本次宕机栈无关的固定话术。
+11. **内核源码摘录卡与源码互链**：`root_cause_analysis.local_source.refs` 渲染为技术附件「内核源码摘录」卡（默认收起），每条含文件:行号、函数、源码摘录与 `origin` 标注（`本地源码` 徽标 + 本地路径 / `上游基线` 可外链「上游对照 ↗」，无 url 不渲染链接）；补丁卡「涉及文件」与传播链 `file`/`source_url` 命中 refs 时渲染为卡片锚点（复用 commit 关联的展开高亮机制），未命中的 `source_url` 渲染为可点击外链。
 4. **论证展示规则**：
    - `confirmed` 的 commit：合并为单一区域「为什么这个 commit 能修复当前问题」，包含 `how` / `fix_scope` / 涉及文件 / `diff` 摘录。
    - `same_area` 的 commit / 社区案例：展示「匹配论证」+「适用性 / 参考性说明」，明确为什么只能参考、不能直接采用。
@@ -69,7 +71,7 @@ allowed-tools: Bash(python3:*) Bash(pip:*) Bash(cat:*) Bash(ls:*) Bash(rg:*) Bas
 
 1. **创建临时目录**（如 `/tmp/shennong_report_YYYYMMDD_HHMMSS`）。
 2. **主机基线** — 用 `bash`/`crash` 工具或直接取 `analyze_crash` 的 `host_features` 生成 `host_base_info.json`：主机名、内核版本、CPU 型号、机型、CPU 核数（未知填 `0`）、内存大小（把 MB 换算成人类可读字符串，如 `"64GB"` 或 `"{MB}MB"`）、已加载模块。该节应由**脚本/工具生成**，不得由 LLM 改写。
-3. **崩溃特征提取** — 用 `crash-feature-matcher` MCP 工具（`analyze_crash`、`query_knowledge`、`query_cases`）生成 `crash_feature_info.json`。若 `crash_time` 不是合法 ISO 8601 时间戳，则从日志推导或填 `"unknown"`，不得留空。该节应由**脚本/工具生成**，不得由 LLM 改写。
+3. **崩溃特征提取** — 用 `crash-feature-matcher` MCP 工具（`analyze_crash`、`query_knowledge`、`query_cases`）生成 `crash_feature_info.json`。若 `crash_time` 不是合法 ISO 8601 时间戳，则从日志推导或填 `"unknown"`，不得留空。另补 `stack_impression`（按本次宕机栈一句话的现场初印象，规范见 generate-report.md）。该节应由**脚本/工具生成**，不得由 LLM 改写。
 4. **日志异常检测** — 用 `witty-log-detection` MCP 工具（`create_log_parse_task`、`get_task_result`）补充证据。
 5. **社区案例检索** — 用 `crash-feature-matcher:query_community_cases` 生成 `diagnosis_repair_result.json`。内部案例核心字段须与原 JSON 逐值一致、再补齐分析字段（见 generate-report.md「内部案例条目细化」）；社区案例须与原 JSON 逐字节一致。**仅** `match_score` 例外：转换成匹配等级 高/中/低（`match_score`(0-1)：高≥0.7 / 中0.4-0.69 / 低<0.4）。该节应由**脚本/工具生成**，不得由 LLM 改写。
 6. **根因验证** — 在核验调用栈完整性、模块一致性、源码映射后生成 `root_cause_analysis.json`；若不完整则再跑一轮。该节应由 **LLM 综合所有证据总结**，产出与 report.html 第 1/3/4 章一致的字段：
@@ -78,7 +80,8 @@ allowed-tools: Bash(python3:*) Bash(pip:*) Bash(cat:*) Bash(ls:*) Bash(rg:*) Bas
    - **`temporary_workaround`**（结构化对象）：`type`（config=命令行/配置规避、none=无方案）/ `title` / `case_refs` / `summary` / `steps` / `risk` / `detail`。**从 `trigger_scenario` 出发写针对性手段**（如针对高频迁移/睡眠唤醒的绑核、降频），**禁止周期性重启/kdump 兜底等任何宕机都能套的通用手段**；无针对性方案时 `type=none`、`summary=暂无`、`steps=[]`（HTML 仍渲染该卡并显示「暂无临时规避手段」）。有方案时 `steps` 优先给 shell 命令、改内核/服务配置、降低迁移/并发等可落地手段。
    - **`event_scene`**（事件时序图，采用固定骨架+有限推断）：泳道固定为 process/kernel/hardware，CFS、hrtimer、CPU 均归入 kernel；主链路按“触发动作→进入内核→关键处理→异常状态→崩溃指令”组织，建议 4–8 步。每条事件填写 `evidence_level`（L1=直接证据、L2=强推断、L3=机制补全）与 `evidence`，主图只允许 L1/L2，L3 只能进入 `full` 并标注推断；只有两个并发路径、共享状态和明确交错关系同时成立时才使用 race。`participants`（`id`、`name`、`type` 三选一 process/kernel/hardware、`init`、`tip`）/ `gvars`+`ginit` / `anchor` / `events`（`m`、`from`/`to`、`kind`、`dt_ms`、`t`、`val`/`full`、`g[]`）。机制概述、当前判断必须引用同一条主链路，不得各自补造另一套过程。
    - **`propagation_chain`**（崩溃链路**必须拆成一步步**，每步一个栈帧↔源码对应）：每跳给 栈帧↔源码（`src_dir`/`file`/`line`/`fn_ctx`/`stack`，`from`/`to` 用**函数名**，`stack` 形如 `set_next_entity+0x20/0x6f8 (L2660)`）、关键参数 `params`（**寄存器值 ↔ 实际变量/形参**：`io`/`reg`/`n`/`formal`/`v`/`bad`，异常参数标红，**每个有实参的跳都要给 params**）、`detail`/`evidence`；**每一跳都应给出 `source_url`**（在线源码/commit/patch 链接）便于跳转对照；最后一跳写明二进制↔源码行对照。
-   - **`deep.evidence[]`**（逐条核心依据）：每条使用对象 `{title, summary, reasoning[]}`；`reasoning[]` 是该依据自己的证据推理链，每步填写 `step`/`detail`/`evidence`，最后一步可填 `conclusion`。HTML 会为每条依据单独提供展开面板。
+   - **`deep.evidence[]`**（逐条核心依据）：每条使用对象 `{title, summary, reasoning[]}`（`title` 必填设问式、`connect` 串联，规则见 generate-report.md）；`reasoning[]` 是该依据自己的证据推理链，每步填写 `step`/`detail`/`evidence`（`evidence` 用类别前缀结构化清单，禁堆工具原始输出），最后一步可填 `conclusion`。HTML 会为每条依据单独提供展开面板。
+   - **`local_source`**（内核源码摘录，本地源码分析时填）：诊断对照过的源码片段（id/file/lines/func/excerpt/origin/url/note/path），渲染为附件「内核源码摘录」卡并与补丁/传播链互链；上游无 confirmed 补丁且有本地源码时，自研补丁 diff 落点文件必须列入 refs（规范见 generate-report.md）。
    - **`reasoning_flow`**（结构化后端追踪，schema 必填）：保留三部分根因阶段，供机器校验和原始数据追溯；HTML 不再将其作为独立的“总体诊断推理链”展示，避免与 `deep.evidence[].reasoning[]` 重复。
    - **`deep`**（根因结论详细）：`lead` / `mechanism_summary` / `judgment` / `mechanism` / `evidence` / `confidence` / `scope`。其中 `mechanism_summary` 是给读者看的 1–3 句人话概述，只解释发生了什么、为什么崩溃、影响是什么；`judgment` 是当前根因判断和处置方向；`mechanism` 保留技术触发链，供泳道图下方的详细链条使用，三者不可互相替代。
     完整规则与示例见 `prompts/generate-report.md`。
@@ -137,7 +140,13 @@ bash skills/crash-report-generator/run_python.sh skills/crash-report-generator/s
    - `parse_log_range` 非空；
    - `diagnosis_repair_result` 两个数组字段存在；
    - `crash_feature_info` 核心字段非空。
-3. 校验失败时打印详细错误并返回非零退出码；成功时输出 `OK`。
+3. 进行**质量软检查（WARN 级，不影响退出码）**——以下形态会在 stderr 打印 `[WARN]`，交付前应逐条修正到零 WARN：
+   - `deep.evidence[].title` 缺失或非设问式（缺失同时会被 schema 硬拒；非设问式改写为含「为什么/怎么/在哪/从哪/有没有」的标题）；
+   - `reasoning[].evidence` / `detail` 含检索工具原始输出（`query_*`、`match_score`、`commits=[]`、`patch_mails=[]`、`issue-…-NNN`）——改写为人话（如「内部库命中 1 条同位置旧案例（匹配度中等）· 未给出根因与修复」），原始标识只留在 `workflow_trace`；
+   - `standard_solution.type=patch` 而 `patch_list` 为空或某条 `diff` 为空——自研补丁也必须给出可合入 diff；
+   - `local_source.refs` 的 `id` 缺失/重复或 `excerpt` 为空——源码摘录必须逐字真实非空、锚点唯一；
+   - 三路检索均无 `confirmed` 而 `fixed_brief` 宣称「已有补丁」——直写「上游无对应补丁，需自研适配或提供更多信息诊断」。
+4. 校验失败时打印详细错误并返回非零退出码；成功时输出 `OK`（含未清零的 WARN 清单）。
 
 如果尚未创建 crash-report-generator 的 venv，请先显式运行 Python 依赖安装命令：
 

@@ -112,6 +112,101 @@ def validate_semantics(report: Any) -> list[str]:
     return errors
 
 
+TITLE_QUESTION_WORDS = ("为什么", "怎么", "在哪", "从哪", "有没有", "如何")
+RAW_TOOL_OUTPUT_RE = re.compile(
+    r"query_knowledge|query_community_cases|query_upstream_online|match_score"
+    r"|commits=\[\]|patch_mails=\[\]|issue-[a-z0-9-]+-\d{2,}"
+)
+
+
+def validate_quality(report: Any) -> list[str]:
+    """报告质量软检查（WARN 级，不影响退出码）：
+    - deep.evidence[].title 必填且设问式（缺失会被 HTML 渲染成「依据 N」）
+    - evidence/detail 禁止堆检索工具原始输出（应翻译成人话）
+    - type=patch 必须有非空 patch_list[].diff
+    - local_source.refs 的 id 唯一、excerpt 非空
+    - 三库无 confirmed 而 fixed_brief 宣称「已有补丁」
+    """
+    warns: list[str] = []
+    if not isinstance(report, dict):
+        return warns
+
+    rca = report.get("root_cause_analysis") or {}
+    deep = rca.get("deep") or {}
+
+    # 1) evidence title 必填且设问式
+    for i, ev in enumerate(deep.get("evidence") or []):
+        if not isinstance(ev, dict):
+            continue
+        title = str(ev.get("title") or "").strip()
+        if not title:
+            warns.append(
+                f"deep.evidence[{i}].title 缺失（HTML 将渲染为「依据 {i + 1}」）；"
+                f"应写设问式标题，如「{str(ev.get('summary') or '')[:12]}…从哪来/为什么」"
+            )
+        elif not any(w in title for w in TITLE_QUESTION_WORDS):
+            warns.append(
+                f"deep.evidence[{i}].title 「{title[:24]}」非设问式（应含 为什么/怎么/在哪/从哪/有没有 等疑问词）"
+            )
+
+    # 2) evidence/detail 禁止工具原始输出
+    for i, ev in enumerate(deep.get("evidence") or []):
+        if not isinstance(ev, dict):
+            continue
+        for j, r in enumerate(ev.get("reasoning") or []):
+            if not isinstance(r, dict):
+                continue
+            for field in ("evidence", "detail"):
+                text = r.get(field)
+                if isinstance(text, str):
+                    m = RAW_TOOL_OUTPUT_RE.search(text)
+                    if m:
+                        warns.append(
+                            f"deep.evidence[{i}].reasoning[{j}].{field} 含工具原始输出「{m.group(0)}」；"
+                            f"应翻译成人话（如「内部库命中 1 条同位置旧案例（匹配度中等）」）"
+                        )
+
+    # 3) type=patch 必须有非空 diff
+    ss = rca.get("standard_solution") or {}
+    if ss.get("type") == "patch":
+        patches = ss.get("patch_list") or []
+        if not patches:
+            warns.append("standard_solution.type=patch 但 patch_list 为空")
+        for k, p in enumerate(patches):
+            if not isinstance(p, dict) or not str(p.get("diff") or "").strip():
+                warns.append(f"standard_solution.patch_list[{k}].diff 为空（自研补丁也必须给可合入 diff）")
+
+    # 4) local_source.refs id 唯一、excerpt 非空
+    ls = rca.get("local_source") or {}
+    seen_ids: set[str] = set()
+    for k, ref in enumerate(ls.get("refs") or []):
+        if not isinstance(ref, dict):
+            continue
+        rid = str(ref.get("id") or "")
+        if not rid:
+            warns.append(f"local_source.refs[{k}].id 缺失（正文/补丁锚点依赖它）")
+        elif rid in seen_ids:
+            warns.append(f"local_source.refs[{k}].id 「{rid}」重复")
+        seen_ids.add(rid)
+        if not str(ref.get("excerpt") or "").strip():
+            warns.append(f"local_source.refs[{k}].excerpt 为空（源码摘录必须逐字真实非空）")
+
+    # 5) 三库无 confirmed 而 fixed_brief 宣称已有补丁
+    diag = report.get("diagnosis_repair_result") or {}
+    entries = []
+    for key in ("online_result", "community_kernel_result", "internal_kernel_result"):
+        entries.extend(x for x in (diag.get(key) or []) if isinstance(x, dict))
+    has_confirmed = any(str(x.get("verdict") or "").lower() == "confirmed" for x in entries)
+    fixed_brief = str(ss.get("fixed_brief") or "")
+    if not has_confirmed and ("已有对应补丁" in fixed_brief or "已修复" in fixed_brief):
+        warns.append(
+            "三路检索均无 confirmed 补丁，但 fixed_brief 宣称「已有补丁」；"
+            "应直写「上游无对应补丁，需自研适配或提供更多信息诊断」"
+        )
+
+    return warns
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Validate a crash report JSON.")
     parser.add_argument(
@@ -171,10 +266,17 @@ def main() -> int:
 
     schema_errors = validate_schema(report, schema)
     semantic_errors: list[str] = []
+    quality_warnings: list[str] = []
     if not args.no_semantics:
         semantic_errors = validate_semantics(report)
+        quality_warnings = validate_quality(report)
 
     all_errors = schema_errors + semantic_errors
+
+    if quality_warnings:
+        print(f"{len(quality_warnings)} quality warning(s):", file=sys.stderr)
+        for w in quality_warnings:
+            print(f"  [WARN] {w}", file=sys.stderr)
 
     if all_errors:
         print("VALIDATION FAILED", file=sys.stderr)

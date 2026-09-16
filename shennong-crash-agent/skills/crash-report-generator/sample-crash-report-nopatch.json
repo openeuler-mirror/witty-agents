@@ -1,0 +1,1346 @@
+{
+  "report_id": "hldy_mstore_noahhlsecllm01_chunkserver03.mt-20260907-20260907",
+  "parse_log_range": [
+    "/opt/zhaoxuedong/crash/hldy-mstore-noahhlsecllm01-chunkserver03/vmcore-dmesg.txt"
+  ],
+  "host_base_info": {
+    "host_name": "hldy-mstore-noahhlsecllm01-chunkserver03.mt",
+    "kernel_version": "5.10.0-218.0.0.mt20241202.564.mt2203sp4.x86_64",
+    "cpu_model": "Intel Xeon (x86_64, 2300 MHz, 64 核)",
+    "machine_model": "H3C R4900 G7/RS37M2C17S, BIOS 7.00.24",
+    "cpu_num": 64,
+    "memory_size": "381.7GB",
+    "modules": [
+      "tcp_diag",
+      "inet_diag",
+      "bridge",
+      "stp",
+      "bonding",
+      "rdma_ucm",
+      "rdma_cm",
+      "iw_cm",
+      "ib_ipoib",
+      "ib_cm",
+      "ib_umad",
+      "i10nm_edac",
+      "nfit",
+      "libnvdimm",
+      "x86_pkg_temp_thermal",
+      "coretemp",
+      "kvm_intel",
+      "kvm",
+      "irqbypass",
+      "crct10dif_pclmul",
+      "crc32_pclmul",
+      "ast",
+      "isst_tpmi",
+      "ghash_clmulni_intel",
+      "intel_rapl_tpmi",
+      "intel_uncore_frequency_tpmi",
+      "drm_vram_helper",
+      "intel_rapl_common",
+      "isst_tpmi_core",
+      "intel_uncore_frequency_common",
+      "drm_ttm_helper",
+      "intel_cstate",
+      "intel_pmt_telemetry",
+      "iTCO_wdt",
+      "i2c_algo_bit",
+      "iTCO_vendor_support",
+      "intel_vsec_tpmi",
+      "intel_pmt_class",
+      "ttm",
+      "ipmi_si",
+      "drm_kms_helper",
+      "ipmi_devintf",
+      "syscopyarea",
+      "intel_uncore",
+      "sysfillrect",
+      "ipmi_msghandler",
+      "pcspkr",
+      "sysimgblt",
+      "fb_sys_fops",
+      "sg",
+      "cec",
+      "mlx5_ib",
+      "isst_if_mmio",
+      "isst_if_common",
+      "idxd",
+      "i2c_i801",
+      "intel_vsec",
+      "idxd_bus",
+      "i2c_smbus",
+      "xsc_ib",
+      "ib_uverbs",
+      "ib_core",
+      "xsc_eth",
+      "xsc_pci",
+      "drm",
+      "fuse",
+      "ext4",
+      "mbcache",
+      "jbd2",
+      "sd_mod",
+      "mlx5_core",
+      "mlxfw",
+      "tls",
+      "ahci",
+      "nvme",
+      "libahci",
+      "psample",
+      "crc32c_intel",
+      "mlxdevm",
+      "nvme_core",
+      "libata",
+      "t10_pi",
+      "mlx_compat",
+      "pci_hyperv_intf",
+      "wmi",
+      "llc",
+      "hisdk3",
+      "hinic3",
+      "hiudk3"
+    ]
+  },
+  "crash_feature_info": {
+    "crash_time": "2026-09-07T01:32:18+08:00",
+    "signature": "null_pointer::nvme::dma_direct_unmap_sg::0x44",
+    "bug_type": "null_pointer",
+    "bug_key": "BUG: kernel NULL pointer dereference",
+    "bug_summary": "BUG: kernel NULL pointer dereference, address: 0000000000000018",
+    "rip": "dma_direct_unmap_sg+0x44",
+    "rip_function": "dma_direct_unmap_sg",
+    "rip_offset": "0x44",
+    "related_modules": [
+      "nvme"
+    ],
+    "call_trace_signature": [
+      "__die_body",
+      "no_context",
+      "__bad_area_nosemaphore",
+      "exc_page_fault",
+      "asm_exc_page_fault",
+      "dma_direct_unmap_sg",
+      "nvme_unmap_data",
+      "nvme_pci_complete_rq",
+      "nvme_irq",
+      "__handle_irq_event_percpu",
+      "handle_irq_event",
+      "handle_edge_irq",
+      "asm_call_irq_on_stack"
+    ],
+    "call_trace_text": "__die_body no_context __bad_area_nosemaphore exc_page_fault asm_exc_page_fault dma_direct_unmap_sg nvme_unmap_data nvme_pci_complete_rq nvme_irq __handle_irq_event_percpu handle_irq_event handle_edge_irq asm_call_irq_on_stack",
+    "raw_crash_log": "[3898677.870981] BUG: kernel NULL pointer dereference, address: 0000000000000018\n[3898677.871492] #PF: supervisor read access in kernel mode\n[3898677.871965] #PF: error_code(0x0000) - not-present page\n[3898677.872386] PGD 6180feaa067 P4D 618096ab067 PUD 61807626067 PMD 0 \n[3898677.872828] Oops: 0000 [#1] SMP NOPTI\n[3898677.873252] CPU: 6 PID: 281800 Comm: chunkserver Kdump: loaded Tainted: G S         OE     5.10.0-218.0.0.mt20241202.564.mt2203sp4.x86_64 #1\n[3898677.874075] Hardware name: H3C R4900 G7/RS37M2C17S, BIOS 7.00.24 01/30/2026\n[3898677.874495] RIP: 0010:dma_direct_unmap_sg+0x44/0x1a0\n[3898677.874923] Code: 89 4c 24 04 4c 89 44 24 08 85 d2 0f 8e c0 00 00 00 48 89 fb 49 89 f6 89 d5 45 31 ed 4c 8b 0d 13 b9 8b 01 48 8b bb d8 02 00 00 <45> 8b 7e 18 49 8b 76 10 4c 8b 1d e5 c0 71 02 49 f7 d1 48 85 ff 0f\n[3898677.875769] RSP: 0018:ff2de6de80f54eb0 EFLAGS: 00010012\n[3898677.876177] RAX: 0000000000000000 RBX: ff182c20a13a30b8 RCX: 0000000000000001\n[3898677.876572] RDX: 0000000000000000 RSI: 0000000000000000 RDI: 0000000000000000\n[3898677.876963] RBP: 0000000000000020 R08: 0000000000000000 R09: 0000000000000000\n[3898677.877371] R10: 0000000000000000 R11: 0000000073800000 R12: 0000000000000000\n[3898677.877751] R13: 000000000000000d R14: 0000000000000000 R15: 0000000000000000\n[3898677.878145] FS:  00007f3736dfc640(0000) GS:ff182c4ec0300000(0000) knlGS:0000000000000000\n[3898677.878512] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033\n[3898677.878899] CR2: 0000000000000018 CR3: 000006180741e005 CR4: 0000000000771ee0\n[3898677.879257] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000\n[3898677.879631] DR3: 0000000000000000 DR6: 00000000fffe07f0 DR7: 0000000000000400\n[3898677.879987] PKRU: 55555554\n[3898677.880329] Call Trace:\n[3898677.880685]  <IRQ>\n[3898677.881023]  ? __die_body.cold+0x8/0xd\n[3898677.881344]  ? no_context+0x170/0x250\n[3898677.881683]  ? __bad_area_nosemaphore+0x52/0x1a0\n[3898677.882016]  ? exc_page_fault+0x2dc/0x550\n[3898677.882321]  ? asm_exc_page_fault+0x1e/0x30\n[3898677.882622]  ? dma_direct_unmap_sg+0x44/0x1a0\n[3898677.882920]  nvme_unmap_data.part.0+0x3e/0xc0 [nvme]\n[3898677.883204]  nvme_pci_complete_rq+0x88/0xd0 [nvme]\n[3898677.883479]  nvme_irq+0x152/0x220 [nvme]\n[3898677.883749]  __handle_irq_event_percpu+0x3d/0x160\n[3898677.884024]  handle_irq_event+0x5a/0xc0\n[3898677.884277]  handle_edge_irq+0x90/0x240\n[3898677.884547]  asm_call_irq_on_stack+0xf/0x20\n[3898677.884792]  </IRQ>\n[3898677.885041]  common_interrupt+0xb0/0x130\n[3898677.885271]  asm_common_interrupt+0x1e/0x40\n[3898677.885532] RIP: 0010:blk_bvec_map_sg+0x8a/0x110\n[3898677.885752] Code: 05 cb 2e f0 00 44 01 fa 48 c1 f8 06 89 d6 48 c1 e0 0c 48 01 f0 48 89 fe 48 f7 d0 49 23 85 80 04 00 00 48 83 c0 01 74 11 89 c6 <48> 85 ff 74 0a 48 39 f8 48 0f 46 f8 48 89 fe 39 f5 89 d0 49 8b 3c\n[3898677.886193] RSP: 0018:ff2de6dea8a179e0 EFLAGS: 00000216\n[3898677.886406] RAX: 000000002fb2c000 RBX: 0000000000000000 RCX: ffcc355b1b413500\n[3898677.886624] RDX: 0000000000000000 RSI: 000000002fb2c000 RDI: 00000000ffffffff\n[3898677.886828] RBP: 0000000000002000 R08: 0000000000019000 R09: 0000000000002000\n[3898677.887029] R10: 0000000000020000 R11: 0000000000000000 R12: ff2de6dea8a17af8\n[3898677.887251] R13: ff182c20a4a524e0 R14: ff2de6dea8a17a68 R15: 0000000000000000\n[3898677.887459]  __blk_bios_map_sg+0x274/0x3b0\n[3898677.887667]  ? __rq_qos_issue+0x21/0x40\n[3898677.887883]  __blk_rq_map_sg+0xb5/0x160\n[3898677.888094]  nvme_map_data+0xa4/0x360 [nvme]\n[3898677.888280]  nvme_queue_rq+0x8b/0x140 [nvme]\n[3898677.888471]  __blk_mq_issue_directly+0x70/0x120\n[3898677.888652]  blk_mq_try_issue_list_directly+0xc9/0x220\n[3898677.888829]  ? blk_mq_submit_bio+0x257/0x540\n[3898677.888998]  blk_mq_sched_insert_requests+0x9a/0xe0\n[3898677.889169]  blk_mq_flush_plug_list+0x100/0x1a0\n[3898677.889335]  blk_finish_plug+0x3a/0x60\n[3898677.889515]  ext4_writepages+0x6ae/0x880 [ext4]\n[3898677.889713]  ? do_iter_readv_writev+0x1aa/0x1d0\n[3898677.889886]  do_writepages+0x31/0xc0\n[3898677.890057]  ? do_iter_read+0xc3/0x150\n[3898677.890228]  ? wbc_attach_and_unlock_inode+0xbd/0x160\n[3898677.890400]  __filemap_fdatawrite_range+0xcd/0x110\n[3898677.890562]  file_write_and_wait_range+0x40/0x90\n[3898677.890735]  ext4_sync_file+0xe2/0x300 [ext4]\n[3898677.890899]  __x64_sys_fdatasync+0x44/0x90\n[3898677.891058]  do_syscall_64+0x3d/0x80\n[3898677.891243]  entry_SYSCALL_64_after_hwframe+0x62/0xc7\n[3898677.891405] RIP: 0033:0x7f379aac27cb\n[3898677.891566] Code: 4b 00 00 00 0f 05 48 3d 00 f0 ff ff 77 41 c3 48 83 ec 18 89 7c 24 0c e8 33 42 f8 ff 8b 7c 24 0c 41 89 c0 b8 4b 00 00 00 0f 05 <48> 3d 00 f0 ff ff 77 35 44 89 c7 89 44 24 0c e8 91 42 f8 ff 8b 44\n[3898677.891922] RSP: 002b:00007f3715903390 EFLAGS: 00000293 ORIG_RAX: 000000000000004b\n[3898677.892103] RAX: ffffffffffffffda RBX: 00007f3787866010 RCX: 00007f379aac27cb\n[3898677.892313] RDX: 0000000000000002 RSI: 0000000000000002 RDI: 00000000000074d5\n[3898677.892502] RBP: 00007f37159033f0 R08: 0000000000000000 R09: 00007f3787829878\n[3898677.892698] R10: 00007ffeeb5cb080 R11: 0000000000000293 R12: 00000000003b7d52\n[3898677.892886] R13: 0000000013161500 R14: 00007f37071ebaa8 R15: 00007f37159033b0\n[3898677.893077] Modules linked in: tcp_diag inet_diag bridge stp bonding rdma_ucm(OE) rdma_cm(OE) iw_cm(OE) ib_ipoib(OE) ib_cm(OE) ib_umad(OE) i10nm_edac nfit libnvdimm x86_pkg_temp_thermal coretemp kvm_intel kvm irqbypass crct10dif_pclmul crc32_pclmul ast isst_tpmi ghash_clmulni_intel intel_rapl_tpmi intel_uncore_frequency_tpmi drm_vram_helper intel_rapl_common isst_tpmi_core intel_uncore_frequency_common drm_ttm_helper intel_cstate intel_pmt_telemetry iTCO_wdt i2c_algo_bit iTCO_vendor_support intel_vsec_tpmi intel_pmt_class ttm ipmi_si drm_kms_helper ipmi_devintf syscopyarea intel_uncore sysfillrect ipmi_msghandler pcspkr sysimgblt fb_sys_fops sg cec mlx5_ib(OE) isst_if_mmio isst_if_common idxd i2c_i801 intel_vsec idxd_bus i2c_smbus xsc_ib(OE) ib_uverbs(OE) ib_core(OE) xsc_eth(OE) xsc_pci(OE) drm fuse ext4 mbcache jbd2 sd_mod mlx5_core(OE) mlxfw(OE) tls ahci nvme libahci psample crc32c_intel mlxdevm(OE) nvme_core libata t10_pi mlx_compat(OE) pci_hyperv_intf wmi llc hisdk3(OE)\n[3898677.893122]  hinic3(OE) hiudk3(OE)\n[3898677.895110] CR2: 0000000000000018\n[3898677.895337] ---[ end trace 49e9d21ede0ff5a9 ]---\n[3898677.959476] RIP: 0010:dma_direct_unmap_sg+0x44/0x1a0\n[3898677.959722] Code: 89 4c 24 04 4c 89 44 24 08 85 d2 0f 8e c0 00 00 00 48 89 fb 49 89 f6 89 d5 45 31 ed 4c 8b 0d 13 b9 8b 01 48 8b bb d8 02 00 00 <45> 8b 7e 18 49 8b 76 10 4c 8b 1d e5 c0 71 02 49 f7 d1 48 85 ff 0f\n[3898677.960184] RSP: 0018:ff2de6de80f54eb0 EFLAGS: 00010012\n[3898677.960420] RAX: 0000000000000000 RBX: ff182c20a13a30b8 RCX: 0000000000000001\n[3898677.960658] RDX: 0000000000000000 RSI: 0000000000000000 RDI: 0000000000000000\n[3898677.960898] RBP: 0000000000000020 R08: 0000000000000000 R09: 0000000000000000\n[3898677.961135] R10: 0000000000000000 R11: 0000000073800000 R12: 0000000000000000\n[3898677.961372] R13: 000000000000000d R14: 0000000000000000 R15: 0000000000000000\n[3898677.961607] FS:  00007f3736dfc640(0000) GS:ff182c4ec0300000(0000) knlGS:0000000000000000\n[3898677.961846] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033\n[3898677.962086] CR2: 0000000000000018 CR3: 000006180741e005 CR4: 0000000000771ee0\n[3898677.962328] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000\n[3898677.962571] DR3: 0000000000000000 DR6: 00000000fffe07f0 DR7: 0000000000000400\n[3898677.962811] PKRU: 55555554\n[3898677.963051] Kernel panic - not syncing: Fatal exception in interrupt\n[3898678.007991] Kernel Offset: 0x22a00000 from 0xffffffff81000000 (relocation range: 0xffffffff80000000-0xffffffffbfffffff)\n[3898678.075179] kexec: Bye!",
+    "log_features": {
+      "related_ref": {
+        "file": "/opt/zhaoxuedong/crash/hldy-mstore-noahhlsecllm01-chunkserver03/vmcore-dmesg.txt",
+        "lines": "3226-3323"
+      },
+      "related_errors": [
+        {
+          "file": "/opt/zhaoxuedong/crash/hldy-mstore-noahhlsecllm01-chunkserver03/vmcore-dmesg.txt",
+          "lines": "3226",
+          "line": "[3898677.870981] BUG: kernel NULL pointer dereference, address: 0000000000000018",
+          "relevance": "强相关",
+          "desc": "崩溃首行：内核在解引用空指针时访问了地址 0x18（空指针 + 偏移 0x18），这是崩溃的直接类型声明。"
+        },
+        {
+          "file": "/opt/zhaoxuedong/crash/hldy-mstore-noahhlsecllm01-chunkserver03/vmcore-dmesg.txt",
+          "lines": "3233",
+          "line": "[3898677.874495] RIP: 0010:dma_direct_unmap_sg+0x44/0x1a0",
+          "relevance": "强相关",
+          "desc": "崩溃指令位置：RIP 落在 DMA 直接映射释放函数 dma_direct_unmap_sg 内偏移 0x44 处，是崩溃发生的函数与偏移。"
+        },
+        {
+          "file": "/opt/zhaoxuedong/crash/hldy-mstore-noahhlsecllm01-chunkserver03/vmcore-dmesg.txt",
+          "lines": "3321",
+          "line": "[3898677.963051] Kernel panic - not syncing: Fatal exception in interrupt",
+          "relevance": "强相关",
+          "desc": "最终 panic 声明：因中断上下文中的致命异常（空指针解引用）触发内核 panic，导致整机宕机。"
+        }
+      ],
+      "repeated": [
+        {
+          "title": "EDAC DEBUG: edac_mc_alloc/edac_create_* 内存控制器初始化日志",
+          "count": "约 200+ 行",
+          "window": "启动阶段 [12.87s] 附近",
+          "ref": {
+            "file": "/opt/zhaoxuedong/crash/hldy-mstore-noahhlsecllm01-chunkserver03/vmcore-dmesg.txt",
+            "lines": "2760-2920"
+          },
+          "note": "i10nm_edac 内存控制器探测的 DEBUG 日志，与本次 NVMe DMA 崩溃无因果关系，属启动阶段背景噪声。",
+          "examples": [
+            "[   12.870200] EDAC DEBUG: i10nm_init:",
+            "[   12.871519] EDAC DEBUG: edac_mc_alloc: allocating 2136 bytes for mci data"
+          ],
+          "relevance": "弱相关",
+          "desc": "Intel 10nm 服务器内存 EDAC 驱动的初始化调试日志，仅表明系统启用了内存 ECC 监测，与 NVMe 存储路径崩溃无关。"
+        },
+        {
+          "title": "systemd-sysv-generator: SysV service lacks native systemd unit file",
+          "count": "多组（每组 5 条）",
+          "window": "整个运行周期（约 36 万秒起反复出现）",
+          "ref": {
+            "file": "/opt/zhaoxuedong/crash/hldy-mstore-noahhlsecllm01-chunkserver03/vmcore-dmesg.txt",
+            "lines": "3210-3225"
+          },
+          "note": "系统服务单元文件兼容性提示，纯用户态 systemd 提示，与崩溃无关。",
+          "examples": [
+            "[3897709.286934] systemd-sysv-generator[435312]: SysV service '/etc/rc.d/init.d/nss-cache' lacks a native systemd unit file."
+          ],
+          "relevance": "弱相关",
+          "desc": "systemd 对传统 SysV 服务的兼容性提示，与内核崩溃无关，属背景日志。"
+        }
+      ],
+      "other": [
+        {
+          "name": "崩溃前无任何 NVMe/SCSI/块层错误告警",
+          "count": 0,
+          "span": "崩溃前日志",
+          "ref": {
+            "file": "/opt/zhaoxuedong/crash/hldy-mstore-noahhlsecllm01-chunkserver03/vmcore-dmesg.txt",
+            "lines": "全文"
+          },
+          "note": "全文检索 nvme/scsi/block/I/O error/timeout/reset 等关键词，除崩溃现场外无任何存储链路告警，说明是瞬时软件缺陷而非渐进式硬件退化。",
+          "lines": [],
+          "relevance": "一般相关",
+          "desc": "崩溃前存储链路无任何渐进式错误，支持「单次软件缺陷触发」而非「硬件持续劣化」的判断。"
+        }
+      ]
+    },
+    "stack_impression": "chunkserver 进程在 NVMe 盘完成写入、内核释放磁盘传输映射的链表遍历中崩溃：链表提前遇到「结束」标记而记录段数仍是 32，遍历拿到空分段后继续读其长度字段，触发空指针解引用。调用栈定位了崩溃路径；链表为何提前结束（深层成因）尚需结合源码与厂商定位。"
+  },
+  "root_cause_analysis": {
+    "conclusion": "本次宕机是磁盘传输释放路径的空指针崩溃：请求记录要走 32 段、分段链却提前到头，代码缺少防护，拿空分段读字段导致整机宕机。缺陷位于内核磁盘传输映射的释放逻辑，链表为何被破坏尚未定位；与业务程序无关，也未见硬件故障证据（推测；上游无已确认补丁，已基于本地源码给出自研防御补丁）。",
+    "overview_brief": "磁盘完成写入后内核释放传输映射时，记录的段数与链表实际长度失去同步：链表提前到头、记录仍是 32 段，释放代码没有防护，拿着空分段读字段引发宕机。属内核已知代码路径缺少防御，与业务和硬件无关；上游无已确认补丁，修复建议为基于本地源码的自研防御补丁。",
+    "trigger_scenario": "在存储业务通过 fdatasync 等刷写接口频繁写 NVMe 盘、请求完成与提交并发进行的场景下，NVMe 完成中断释放 DMA 映射时就可能触发。",
+    "event_scene": {
+      "participants": [
+        {
+          "id": "proc_cs",
+          "name": "chunkserver (PID 281800)",
+          "type": "process",
+          "init": "运行中，执行 fdatasync 刷写数据",
+          "tip": "用户态存储业务进程"
+        },
+        {
+          "id": "cpu6",
+          "name": "CPU 6 · Intel Xeon",
+          "type": "cpu",
+          "init": "正在执行进程写回路径",
+          "tip": "崩溃发生的 CPU 核"
+        },
+        {
+          "id": "nvme0",
+          "name": "NVMe SSD",
+          "type": "hardware",
+          "init": "空闲，待完成请求",
+          "tip": "NVMe 存储盘"
+        }
+      ],
+      "gvars": [
+        {
+          "k": "sgl",
+          "n": "sgl 指针（当前 scatterlist）"
+        },
+        {
+          "k": "nents",
+          "n": "nents（声明的段数）"
+        },
+        {
+          "k": "i",
+          "n": "遍历计数 i"
+        }
+      ],
+      "ginit": [
+        {
+          "k": "sgl",
+          "v": "ff182c3bff3d9000"
+        },
+        {
+          "k": "nents",
+          "v": "32"
+        },
+        {
+          "k": "i",
+          "v": "0"
+        }
+      ],
+      "anchor": "2026-09-07T01:32:18.000+08:00",
+      "events": [
+        {
+          "m": "user",
+          "from": "proc_cs",
+          "to": "cpu6",
+          "kind": "call",
+          "t": "chunkserver 调用 fdatasync 刷写文件数据，陷入内核",
+          "val": "syscall=0x4b (fdatasync)",
+          "dt_ms": -5000,
+          "evidence_level": "L1",
+          "evidence": "vmcore-dmesg：__x64_sys_fdatasync+0x44/0x90；RIP 0033 用户态 ORIG_RAX=0x4b",
+          "g": []
+        },
+        {
+          "m": "kern",
+          "from": "cpu6",
+          "to": "cpu6",
+          "kind": "call",
+          "t": "ext4_writepages 写回数据，blk-mq 提交 NVMe 写请求，nvme_map_data 构建新 scatterlist",
+          "val": "blk_bvec_map_sg 构建 sg",
+          "dt_ms": -1000,
+          "evidence_level": "L1",
+          "evidence": "vmcore-dmesg 被中断进程 RIP: blk_bvec_map_sg+0x8a/0x110",
+          "g": []
+        },
+        {
+          "m": "hw",
+          "from": "nvme0",
+          "to": "cpu6",
+          "kind": "irq",
+          "t": "NVMe 盘完成一个请求，触发完成中断 nvme_irq",
+          "val": "nvme_irq",
+          "dt_ms": -20,
+          "evidence_level": "L1",
+          "evidence": "vmcore-dmesg 调用栈 <IRQ>：nvme_irq+0x152/0x220",
+          "g": []
+        },
+        {
+          "m": "kern",
+          "from": "cpu6",
+          "to": "cpu6",
+          "kind": "call",
+          "t": "中断处理进入 nvme_unmap_data，准备释放请求的 DMA 映射",
+          "val": "iod->sg=ff182c3bff3d9000, nents=32",
+          "dt_ms": -10,
+          "evidence_level": "L1",
+          "evidence": "crash 读 iod 内存：iod+0x74=nents=0x20，iod+0x90=sg=ff182c3bff3d9000",
+          "g": [
+            {
+              "v": "sgl",
+              "n": "sgl 指针（当前 scatterlist）",
+              "t": "ff182c3bff3d9000",
+              "dir": "up",
+              "f": "?"
+            },
+            {
+              "v": "nents",
+              "n": "nents（声明的段数）",
+              "t": "32",
+              "dir": "up",
+              "f": "?"
+            },
+            {
+              "v": "i",
+              "n": "遍历计数 i",
+              "t": "0",
+              "dir": "down",
+              "f": "?"
+            }
+          ]
+        },
+        {
+          "m": "kern",
+          "from": "cpu6",
+          "to": "cpu6",
+          "kind": "call",
+          "t": "dma_direct_unmap_sg 遍历 scatterlist，第 13 个元素 sg_next 返回 NULL（链提前 SG_END）",
+          "val": "sg[12].page_link=0x2 (SG_END)，sg_next→NULL",
+          "dt_ms": -1,
+          "evidence_level": "L1",
+          "evidence": "sg[12] 内存 page_link=0x2=SG_END；崩溃寄存器 R13=0xd=13（循环计数）",
+          "g": [
+            {
+              "v": "sgl",
+              "n": "sgl 指针（当前 scatterlist）",
+              "t": "0x0 (NULL)",
+              "dir": "down",
+              "f": "sg[12]"
+            },
+            {
+              "v": "i",
+              "n": "遍历计数 i",
+              "t": "13",
+              "dir": "up",
+              "f": "12"
+            }
+          ]
+        },
+        {
+          "m": "kern",
+          "from": "cpu6",
+          "to": "cpu6",
+          "kind": "crash",
+          "t": "执行 mov 0x18(%r14),%r15d 读 sgl->dma_length：sgl=NULL → 访问地址 0x18 → 空指针崩溃",
+          "val": "CR2=0x18，R14=0",
+          "dt_ms": 0,
+          "evidence_level": "L1",
+          "evidence": "崩溃指令 45 8b 7e 18（mov 0x18(%r14),%r15d）；CR2=0x18；R14=0",
+          "g": []
+        }
+      ]
+    },
+    "propagation_chain": [
+      {
+        "from": "ext4_sync_file",
+        "to": "ext4_writepages",
+        "type": "call",
+        "src_dir": "fs/ext4",
+        "file": "fsync.c",
+        "line": "≈170",
+        "stack": "ext4_sync_file+0xe2/0x300",
+        "fn_ctx": "ext4_sync_file(file, start, end, datasync) 同步文件数据到盘",
+        "crash": false,
+        "source_url": "https://elixir.bootlin.com/linux/v5.10/source/fs/ext4/fsync.c",
+        "detail": "chunkserver 进程调用 fdatasync 系统调用，进入 ext4_sync_file 刷写文件数据。",
+        "evidence": "vmcore-dmesg 调用栈（被中断进程上下文）：ext4_sync_file+0xe2/0x300 ← __x64_sys_fdatasync+0x44/0x90",
+        "params": []
+      },
+      {
+        "from": "ext4_writepages",
+        "to": "nvme_queue_rq",
+        "type": "call",
+        "src_dir": "drivers/nvme/host",
+        "file": "pci.c",
+        "line": "≈911",
+        "stack": "nvme_queue_rq+0x8b/0x140",
+        "fn_ctx": "nvme_queue_rq(hctx, bd) 提交块设备请求到 NVMe 硬件队列",
+        "crash": false,
+        "source_url": "https://elixir.bootlin.com/linux/v5.10/source/drivers/nvme/host/pci.c",
+        "detail": "写回数据经 blk-mq 提交到 NVMe 驱动，nvme_queue_rq 处理该写请求。",
+        "evidence": "vmcore-dmesg 调用栈：ext4_writepages+0x6ae → blk_finish_plug → blk_mq_flush_plug_list → ... → nvme_queue_rq+0x8b",
+        "params": []
+      },
+      {
+        "from": "nvme_queue_rq",
+        "to": "blk_bvec_map_sg",
+        "type": "call",
+        "src_dir": "block",
+        "file": "blk-merge.c",
+        "line": "≈222",
+        "stack": "blk_bvec_map_sg+0x8a/0x110",
+        "fn_ctx": "blk_bvec_map_sg(q, bvec, sglist, sg) 把 bio 的物理段映射进 scatterlist",
+        "crash": false,
+        "source_url": "https://elixir.bootlin.com/linux/v5.10/source/block/blk-merge.c",
+        "detail": "进程上下文正在为新的写请求构建 scatterlist（map 路径）。此时被 NVMe 完成中断打断。",
+        "evidence": "vmcore-dmesg 被中断进程 RIP: blk_bvec_map_sg+0x8a/0x110（asm_common_interrupt 帧），R13=ff182c20a4a524e0（sglist）",
+        "params": []
+      },
+      {
+        "from": "nvme_irq",
+        "to": "nvme_pci_complete_rq",
+        "type": "irq",
+        "src_dir": "drivers/nvme/host",
+        "file": "pci.c",
+        "line": "≈959",
+        "stack": "nvme_pci_complete_rq+0x88/0xd0",
+        "fn_ctx": "nvme_pci_complete_rq(req) 处理已完成的 NVMe 请求",
+        "crash": false,
+        "source_url": "https://elixir.bootlin.com/linux/v5.10/source/drivers/nvme/host/pci.c",
+        "detail": "NVMe 盘完成一个请求，触发硬中断 nvme_irq，进入完成处理路径。",
+        "evidence": "vmcore-dmesg 调用栈：nvme_irq+0x152/0x220 → nvme_pci_complete_rq+0x88/0xd0（<IRQ> 段）",
+        "params": []
+      },
+      {
+        "from": "nvme_pci_complete_rq",
+        "to": "nvme_unmap_data",
+        "type": "call",
+        "src_dir": "drivers/nvme/host",
+        "file": "pci.c",
+        "line": "≈588",
+        "stack": "nvme_unmap_data.part.0+0x3e/0xc0",
+        "fn_ctx": "nvme_unmap_data(dev, req) 释放请求的 DMA 映射",
+        "crash": false,
+        "source_url": "https://elixir.bootlin.com/linux/v5.10/source/drivers/nvme/host/pci.c",
+        "detail": "完成路径判断 blk_rq_nr_phys_segments(req) 非 0，进入 nvme_unmap_data 释放 DMA 映射。",
+        "evidence": "crash dis nvme_pci_complete_rq：cmpw $0x0,0xc4(%rbp)；je ...；call nvme_unmap_data",
+        "params": [
+          {
+            "io": "in",
+            "reg": "rdi",
+            "n": "dev",
+            "formal": "struct nvme_dev *dev",
+            "v": "ff182c21007ac000",
+            "bad": false,
+            "note": "NVMe 设备对象指针"
+          },
+          {
+            "io": "in",
+            "reg": "rsi",
+            "n": "req",
+            "formal": "struct request *req",
+            "v": "ff182c209518a440",
+            "bad": false,
+            "note": "崩溃请求对象指针"
+          }
+        ]
+      },
+      {
+        "from": "nvme_unmap_data",
+        "to": "dma_direct_unmap_sg",
+        "type": "call",
+        "src_dir": "kernel/dma",
+        "file": "direct.c",
+        "line": "≈418",
+        "stack": "dma_direct_unmap_sg+0x44/0x1a0",
+        "fn_ctx": "dma_direct_unmap_sg(dev, sgl, nents, dir, attrs) 遍历 scatterlist 逐段释放 DMA 映射",
+        "crash": false,
+        "source_url": "https://elixir.bootlin.com/linux/v5.10/source/kernel/dma/direct.c",
+        "detail": "nvme_unmap_sg 内联展开调用 dma_unmap_sg(dev->dev, iod->sg, iod->nents=32, dir)。iod->sg=ff182c3bff3d9000（非 NULL），nents=32。",
+        "evidence": "crash dis nvme_unmap_data：mov 0x1a0(%rbx),%rsi（iod->sg）→ call dma_unmap_sg_attrs；iod+0x74=nents=0x20=32，iod+0x90=sg=ff182c3bff3d9000",
+        "params": [
+          {
+            "io": "in",
+            "reg": "rdi",
+            "n": "dev->dev",
+            "formal": "struct device *",
+            "v": "ff182c20a13a30b8",
+            "bad": false,
+            "note": "设备指针"
+          },
+          {
+            "io": "in",
+            "reg": "rsi",
+            "n": "iod->sg",
+            "formal": "struct scatterlist *sgl",
+            "v": "ff182c3bff3d9000",
+            "bad": false,
+            "note": "scatterlist 链起始指针（非 NULL）"
+          },
+          {
+            "io": "in",
+            "reg": "rdx",
+            "n": "iod->nents",
+            "formal": "int nents",
+            "v": "32 (0x20)",
+            "bad": true,
+            "note": "声明的段数=32，但实际链在第 13 个元素就 SG_END 提前结束，二者不一致"
+          }
+        ]
+      },
+      {
+        "from": "dma_direct_unmap_sg",
+        "to": "空指针解引用",
+        "type": "crash",
+        "src_dir": "kernel/dma",
+        "file": "direct.c",
+        "line": "423",
+        "stack": "dma_direct_unmap_sg+0x44/0x1a0 · 指令 45 8b 7e 18 (mov 0x18(%r14),%r15d)",
+        "fn_ctx": "mov 0x18(%r14),%r15d → 读 sgl->dma_length（scatterlist.dma_length 偏移 0x18），r14=sgl=NULL",
+        "crash": true,
+        "source_url": "https://elixir.bootlin.com/linux/v5.10/source/kernel/dma/direct.c",
+        "detail": "for_each_sg 循环遍历到第 13 个元素（sg[12]）时其 page_link=0x2（SG_END 标志），sg_next 返回 NULL；但循环计数 i=13 尚未达到 nents=32，下一次迭代用 NULL 作为 sgl，执行 mov 0x18(%r14),%r15d 读取 NULL+0x18=0x18，触发空指针解引用。",
+        "evidence": "crash dis dma_direct_unmap_sg：+68 mov 0x18(%r14),%r15d（崩溃指令）；崩溃寄存器 R14=0（sgl），R13=0xd=13（循环计数），RBP=0x20=32（nents），CR2=0x18；sg[12] 内存 page_link=0x2=SG_END（include/linux/scatterlist.h: SG_CHAIN=0x01, SG_END=0x02）",
+        "params": [
+          {
+            "io": "in",
+            "reg": "r14",
+            "n": "sgl",
+            "formal": "struct scatterlist *",
+            "v": "0x0 (NULL)",
+            "bad": true,
+            "note": "sg_next 因链提前 SG_END 返回 NULL，循环未判空继续解引用"
+          }
+        ]
+      }
+    ],
+    "deep": {
+      "lead": "NVMe 完成中断路径中，请求的 scatterlist 链长度与实际声明的段数 nents 不一致（链在中间提前 SG_END），dma_direct_unmap_sg 遍历时 sg_next 返回 NULL 未判空，解引用 NULL->dma_length（偏移 0x18）触发空指针崩溃。",
+      "mechanism_summary": "NVMe 盘完成写请求后进入完成中断，内核释放该请求的 DMA 映射。释放时遍历 scatterlist 链表，但链表在第 13 个元素处就出现「链结束」标记，而请求记录的段数却是 32，导致内核在链表已经结束时继续拿空指针取下一段，读空指针偏移 0x18 处的字段，触发空指针崩溃。",
+      "judgment": "根因指向 NVMe 驱动 DMA 释放路径的 scatterlist 链状态与 nents 失配（链提前结束或损坏）；深层成因（UAF/踩踏/并发复用）单次转储无法唯一确定，且无 confirmed 上游补丁，判定为推测。处置两层：短期合入自研防御补丁（nvme 释放入口链长钳制 + WARN 留证，见第 1 章）；长期向 MT 维护方反馈并升级至正式修复版本。",
+      "mechanism": "fdatasync 写回 → nvme_queue_rq 提交写请求 → nvme_map_data 构建 scatterlist（进程上下文）→ NVMe 完成中断 nvme_irq → nvme_pci_complete_rq → nvme_unmap_data → dma_unmap_sg(iod->sg=ff182c3bff3d9000, nents=32) → dma_direct_unmap_sg for_each_sg 遍历 → sg[12].page_link=SG_END(0x2) 使 sg_next 返回 NULL → 循环计数 i=13 < nents=32 继续 → mov 0x18(%r14) 读 NULL->dma_length → 空指针解引用地址 0x18 → panic。",
+      "confidence": "崩溃点、调用链、寄存器、scatterlist 链损坏证据均为 crash/vmcore-dmesg 一手实证（高置信）；但「scatterlist 链为何提前 SG_END / 为何与 nents 不一致」的深层成因（如 UAF、内存踩踏、并发复用）无法从单次转储唯一确定，属推断（中低置信）。",
+      "scope": "影响使用该 MT 定制内核（5.10.0-218.0.0.mt20241202.564）且驱动 NVMe 盘、走写回/同步刷盘路径的主机；触发条件为 NVMe 请求完成与提交并发。",
+      "flow": "存储进程 fdatasync 刷写数据 → ext4_writepages 写回 → blk-mq 提交 NVMe 写请求并构建 scatterlist → NVMe 盘完成请求触发中断 → 完成路径释放 DMA 映射 → 遍历 scatterlist 时链表提前结束（SG_END）而 nents 仍为 32 → sg_next 返回空指针 → 循环继续用空指针读 dma_length → 空指针崩溃 → panic 宕机。",
+      "evidence": [
+        {
+          "title": "宕机栈分析：崩在哪里、为什么崩",
+          "summary": "崩在内核释放磁盘传输映射的函数里：它按记录的段数去遍历分段链，链已经到头了还继续走，拿着空分段去读它的长度字段，一读就崩。",
+          "reasoning": [
+            {
+              "step": "崩溃类型是什么",
+              "detail": "日志首行写明是「空指针解引用」：程序去读了一个从零开始加上字段位置得出的地址——典型的「空指针 + 字段偏移」式访问。",
+              "evidence": "日志 ｜ vmcore-dmesg:3226 BUG: kernel NULL pointer dereference, address: 0000000000000018"
+            },
+            {
+              "step": "崩在哪一步",
+              "detail": "崩溃发生在遍历分段链的途中：走到第 14 段时取到的已是空分段，仍去读这个分段里「传输长度」字段——空指针加上该字段在结构里的位置，正好等于被访问的无效地址。",
+              "evidence": "汇编 ｜ mov 0x18(%r14),%r15d（读 r14+0x18 处 4 字节；机器码 <45> 8b 7e 18）\n寄存器｜ R14=0（当前分段指针，已为空） · R13=13（已遍历段数） · RBP=0x20（记录段数 32）\n结构体｜ scatterlist.dma_length（传输长度）字段偏移 0x18（crash struct -o 实证）\n日志 ｜ CR2=0x18，与 0+0x18 完全吻合"
+            },
+            {
+              "step": "崩在哪个函数",
+              "detail": "按调用栈，崩溃点位于内核释放磁盘传输映射的底层函数内、靠近函数开头处；上层依次是 NVMe 驱动的完成清理入口和完成中断处理。",
+              "evidence": "调用栈 ｜ RIP: dma_direct_unmap_sg+0x44/0x1a0（对应 kernel/dma/direct.c:423）\n调用链 ｜ nvme_irq → nvme_pci_complete_rq → nvme_unmap_data → dma_direct_unmap_sg",
+              "conclusion": "崩溃点还原：完成中断路径释放 DMA 映射时，遍历分段链读「传输长度」字段触发空指针解引用。"
+            }
+          ]
+        },
+        {
+          "title": "空分段从哪来：取下一段的动作为什么会交出一个空值",
+          "summary": "空分段不是一开始就有的：是「取下一段」的动作自己返回的——链走到第 13 个分段时遇到「链结束」标记，再取就返回空，空值又被循环拿去继续用。",
+          "reasoning": [
+            {
+              "step": "崩溃函数在做什么",
+              "detail": "它在按记录的段数逐段走链：每走一段，先取「下一段」的指针，再用这个指针读字段。",
+              "evidence": "反汇编 ｜ dma_direct_unmap_sg +211~+229 循环体：call sg_next → mov %rax,%r14\n源码  ｜ for_each_sg(sgl, sg, nents, i)（include/linux/scatterlist.h:151）"
+            },
+            {
+              "step": "取下一段为什么会取到空",
+              "detail": "链上第 13 个分段带着「链结束」标记。按设计，取下一段的函数遇到这个标记就返回空——返回空本身是合法行为，不是错误。",
+              "evidence": "内存取证 ｜ sg[12].page_link=0x2（SG_END 结束标记）\n源码  ｜ sg_next()：sg_is_last(sg) 时返回 NULL（lib/scatterlist.c:23-34）\n宏定义 ｜ #define SG_END 0x02UL（include/linux/scatterlist.h:65）"
+            },
+            {
+              "step": "空指针怎么被继续使用",
+              "detail": "取到空之后循环没有停：已走的段数才到 13，而记录要走 32 段，循环判定「还没走完」，下一轮就拿空分段去读字段——崩溃就发生在这一读上。",
+              "evidence": "寄存器 ｜ R13=0xd（已遍历 13） · RBP=0x20（nents=32） · R14=0（空分段指针）\n反汇编 ｜ +226 cmp %r13d,%ebp；+229 jne（计数 < 段数则继续循环）"
+            }
+          ],
+          "connect": "崩点还原了「拿空分段读字段」，接下来追溯这个空分段是谁给的。"
+        },
+        {
+          "title": "为什么链表提前结束了、记录的段数却还是 32",
+          "summary": "记录说要走 32 段，链实际第 13 段就结束了——「链的长度」和「记录的段数」对不上，这是触发崩溃的根本矛盾；至于链为什么会变成这样，单次转储还定不了案。",
+          "reasoning": [
+            {
+              "step": "记录的段数是多少",
+              "detail": "从崩溃请求的内存里读到的段数记录是 32。",
+              "evidence": "内存取证 ｜ crash 读 iod+0x74：nvme_iod.nents=0x20（即 32）"
+            },
+            {
+              "step": "链实际长什么样",
+              "detail": "链的内容是碎片状的：前几段页面还在但传输地址为空，中间几段整块为零，第 13 段直接是结束标记，后面却又出现有效数据——像是被改写了一半的状态。",
+              "evidence": "内存取证 ｜ crash rd iod->sg：sg[0..8] 有页但 dma_address=0 · sg[9..11] 全零 · sg[12]=SG_END 结束标记 · sg[13] 起又有有效 dma_address"
+            },
+            {
+              "step": "这能说明什么",
+              "detail": "「链提前结束」与「段数仍是 32」同时成立，说明链和计数被破坏后失去了同步。至于是内存被提前释放、被别的写入踩到、还是并发复用窗口所致，单次转储无法唯一确定（推断，需厂商结合源码与复现路径定位）。",
+              "evidence": "事实  ｜ nents=32 与链第 13 段 SG_END 并存（RBP=0x20 · sg[12].page_link=0x2）\n旁证  ｜ 崩溃中断打断的另一 CPU 上下文正处于「构建新请求分段链」的函数（RIP: blk_bvec_map_sg+0x8a）——与并发窗口假说吻合（未实证）",
+              "conclusion": "触发条件实证：链长与段数失配。深层成因（链为何损坏）保持开放，标为推断。"
+            }
+          ],
+          "connect": "空分段来自链提前结束，那为什么链会提前结束、而记录的段数却还是 32？"
+        },
+        {
+          "title": "为什么没有防御拦住：代码缺了哪道检查",
+          "summary": "释放代码默认「链长一定等于记录段数」：循环只看「走满 32 段没有」，对「中途取到空」没有任何保护。",
+          "reasoning": [
+            {
+              "step": "循环的判断条件是什么",
+              "detail": "循环的退出条件只有一个：走满记录的段数。它完全信任记录值，不去确认下一段是否真的存在。",
+              "evidence": "宏定义 ｜ for_each_sg：仅以 __i < (nr) 为循环条件（include/linux/scatterlist.h:151-152）\n反汇编 ｜ +226 cmp %r13d,%ebp；+229 jne（计数未满即继续）"
+            },
+            {
+              "step": "读字段前有没有判空",
+              "detail": "没有。取到下一段后直接读它的字段，中途没有任何「是否为空」的检查；本报告的自研补丁正是补上这道防线（进入释放循环前先数清实际链长）。",
+              "evidence": "反汇编 ｜ 崩溃指令 mov 0x18(%r14),%r15d 之前无 test %r14,%r14 判空\n源码  ｜ dma_direct_unmap_sg（kernel/dma/direct.c:384-392）循环体直接读 sg->dma_address / sg_dma_len(sg)",
+              "conclusion": "防御缺失实证：两层路径（NVMe 入口与通用释放循环）均无链长/空指针校验，自研补丁在 NVMe 入口钳制链长即可阻断。"
+            }
+          ],
+          "connect": "链与段数失配是根因，那为什么代码没有拦住这个异常？"
+        },
+        {
+          "title": "上游有没有现成修复：为什么最终用自研补丁",
+          "summary": "内部库和上游都没有这个崩溃位置的现成修复，所以修复只能基于本地源码自己出（见第 1 章）。",
+          "reasoning": [
+            {
+              "step": "内部库里查到什么",
+              "detail": "查到一条旧崩溃：位置和这次一模一样，但出在 CPU 空闲场景，也没人给过修复办法——只能说明这个位置以前也崩过，帮不上修复。",
+              "evidence": "检索记录 ｜ 内部知识库命中 1 条同位置旧案例（匹配度中等）· 未给出根因与修复"
+            },
+            {
+              "step": "社区和上游查到什么",
+              "detail": "社区与上游公开渠道都没有针对这里的修复补丁——没有现成答案可抄。",
+              "evidence": "检索记录 ｜ 社区案例库 0 条 · 上游 commit / 邮件 0 条"
+            },
+            {
+              "step": "结论怎么定性",
+              "detail": "崩溃过程有实打实的证据，但修复没有上游依据：结论维持「推测」定级，修复采用基于本地源码分析的自研防御补丁（依据见第 1 章「修复细节」与技术附件「内核源码摘录」）。",
+              "evidence": "定性 ｜ 三路检索均无已确认修复 → 自研防御补丁（源码依据见附件 src-nvme-pci-unmap）",
+              "conclusion": "上游无现成修复：修复依据 = 本地源码分析自研；定性维持「推测」。"
+            }
+          ],
+          "connect": "机制与防御缺失都已闭环，最后确认：这个位置有没有别人修过、有没有现成答案？"
+        }
+      ]
+    },
+    "reasoning_flow": [
+      {
+        "stage": "stack",
+        "stage_name": "崩溃特征分析（函数栈）",
+        "color": "blue",
+        "title": "提取崩溃函数栈",
+        "short": "从调用栈确认崩溃在 NVMe 完成中断路径的 DMA 释放函数。",
+        "text": "调用栈显示：NVMe 完成中断 nvme_irq → nvme_pci_complete_rq → nvme_unmap_data → dma_unmap_sg → dma_direct_unmap_sg，崩溃在 dma_direct_unmap_sg+0x44。被中断的进程上下文在 blk_bvec_map_sg（写回路径）。",
+        "evidence": "vmcore-dmesg:3233 RIP dma_direct_unmap_sg+0x44；调用栈 3247-3262",
+        "ev_plain": true,
+        "path_mini": [],
+        "refs": []
+      },
+      {
+        "stage": "hypothesis",
+        "stage_name": "崩溃特征分析（寄存器还原）",
+        "color": "blue",
+        "title": "寄存器还原崩溃机制",
+        "short": "R14=0（空指针）、R13=13（循环计数）、RBP=32（段数）三者揭示「链表提前结束但段数未遍历完」的失配。",
+        "text": "崩溃指令 mov 0x18(%r14),%r15d 读 sgl->dma_length，r14=0 即空指针，地址 0x18。R13=13 说明已遍历 13 段，RBP=32 说明声明 32 段，链在 sg[12] 处 SG_END 提前结束。",
+        "evidence": "vmcore-dmesg:3240 R13=000000000000000d，RBP=0000000000000020，R14=0；CR2=0x18",
+        "ev_plain": true,
+        "path_mini": [],
+        "refs": []
+      },
+      {
+        "stage": "path_analysis",
+        "stage_name": "崩溃链路分析",
+        "color": "green",
+        "title": "逐跳还原崩溃传播链",
+        "short": "从写回提交到完成中断释放 DMA，逐跳对应栈帧与源码。",
+        "text": "完整链路见 propagation_chain，逐跳覆盖 ext4_sync_file → nvme_queue_rq → blk_bvec_map_sg（提交侧）与 nvme_irq → nvme_pci_complete_rq → nvme_unmap_data → dma_direct_unmap_sg（完成侧崩溃）。",
+        "evidence": "crash dis 各函数；vmcore-dmesg 双调用栈",
+        "ev_plain": true,
+        "path_mini": [
+          {
+            "from": "ext4_sync_file",
+            "to": "ext4_writepages",
+            "type": "call",
+            "src_dir": "fs/ext4",
+            "file": "fsync.c",
+            "line": "≈170",
+            "stack": "ext4_sync_file+0xe2/0x300",
+            "fn_ctx": "ext4_sync_file(file, start, end, datasync) 同步文件数据到盘",
+            "crash": false,
+            "source_url": "https://elixir.bootlin.com/linux/v5.10/source/fs/ext4/fsync.c",
+            "detail": "chunkserver 进程调用 fdatasync 系统调用，进入 ext4_sync_file 刷写文件数据。",
+            "evidence": "vmcore-dmesg 调用栈（被中断进程上下文）：ext4_sync_file+0xe2/0x300 ← __x64_sys_fdatasync+0x44/0x90",
+            "params": []
+          },
+          {
+            "from": "ext4_writepages",
+            "to": "nvme_queue_rq",
+            "type": "call",
+            "src_dir": "drivers/nvme/host",
+            "file": "pci.c",
+            "line": "≈911",
+            "stack": "nvme_queue_rq+0x8b/0x140",
+            "fn_ctx": "nvme_queue_rq(hctx, bd) 提交块设备请求到 NVMe 硬件队列",
+            "crash": false,
+            "source_url": "https://elixir.bootlin.com/linux/v5.10/source/drivers/nvme/host/pci.c",
+            "detail": "写回数据经 blk-mq 提交到 NVMe 驱动，nvme_queue_rq 处理该写请求。",
+            "evidence": "vmcore-dmesg 调用栈：ext4_writepages+0x6ae → blk_finish_plug → blk_mq_flush_plug_list → ... → nvme_queue_rq+0x8b",
+            "params": []
+          },
+          {
+            "from": "nvme_queue_rq",
+            "to": "blk_bvec_map_sg",
+            "type": "call",
+            "src_dir": "block",
+            "file": "blk-merge.c",
+            "line": "≈222",
+            "stack": "blk_bvec_map_sg+0x8a/0x110",
+            "fn_ctx": "blk_bvec_map_sg(q, bvec, sglist, sg) 把 bio 的物理段映射进 scatterlist",
+            "crash": false,
+            "source_url": "https://elixir.bootlin.com/linux/v5.10/source/block/blk-merge.c",
+            "detail": "进程上下文正在为新的写请求构建 scatterlist（map 路径）。此时被 NVMe 完成中断打断。",
+            "evidence": "vmcore-dmesg 被中断进程 RIP: blk_bvec_map_sg+0x8a/0x110（asm_common_interrupt 帧），R13=ff182c20a4a524e0（sglist）",
+            "params": []
+          },
+          {
+            "from": "nvme_irq",
+            "to": "nvme_pci_complete_rq",
+            "type": "irq",
+            "src_dir": "drivers/nvme/host",
+            "file": "pci.c",
+            "line": "≈959",
+            "stack": "nvme_pci_complete_rq+0x88/0xd0",
+            "fn_ctx": "nvme_pci_complete_rq(req) 处理已完成的 NVMe 请求",
+            "crash": false,
+            "source_url": "https://elixir.bootlin.com/linux/v5.10/source/drivers/nvme/host/pci.c",
+            "detail": "NVMe 盘完成一个请求，触发硬中断 nvme_irq，进入完成处理路径。",
+            "evidence": "vmcore-dmesg 调用栈：nvme_irq+0x152/0x220 → nvme_pci_complete_rq+0x88/0xd0（<IRQ> 段）",
+            "params": []
+          },
+          {
+            "from": "nvme_pci_complete_rq",
+            "to": "nvme_unmap_data",
+            "type": "call",
+            "src_dir": "drivers/nvme/host",
+            "file": "pci.c",
+            "line": "≈588",
+            "stack": "nvme_unmap_data.part.0+0x3e/0xc0",
+            "fn_ctx": "nvme_unmap_data(dev, req) 释放请求的 DMA 映射",
+            "crash": false,
+            "source_url": "https://elixir.bootlin.com/linux/v5.10/source/drivers/nvme/host/pci.c",
+            "detail": "完成路径判断 blk_rq_nr_phys_segments(req) 非 0，进入 nvme_unmap_data 释放 DMA 映射。",
+            "evidence": "crash dis nvme_pci_complete_rq：cmpw $0x0,0xc4(%rbp)；je ...；call nvme_unmap_data",
+            "params": [
+              {
+                "io": "in",
+                "reg": "rdi",
+                "n": "dev",
+                "formal": "struct nvme_dev *dev",
+                "v": "ff182c21007ac000",
+                "bad": false,
+                "note": "NVMe 设备对象指针"
+              },
+              {
+                "io": "in",
+                "reg": "rsi",
+                "n": "req",
+                "formal": "struct request *req",
+                "v": "ff182c209518a440",
+                "bad": false,
+                "note": "崩溃请求对象指针"
+              }
+            ]
+          },
+          {
+            "from": "nvme_unmap_data",
+            "to": "dma_direct_unmap_sg",
+            "type": "call",
+            "src_dir": "kernel/dma",
+            "file": "direct.c",
+            "line": "≈418",
+            "stack": "dma_direct_unmap_sg+0x44/0x1a0",
+            "fn_ctx": "dma_direct_unmap_sg(dev, sgl, nents, dir, attrs) 遍历 scatterlist 逐段释放 DMA 映射",
+            "crash": false,
+            "source_url": "https://elixir.bootlin.com/linux/v5.10/source/kernel/dma/direct.c",
+            "detail": "nvme_unmap_sg 内联展开调用 dma_unmap_sg(dev->dev, iod->sg, iod->nents=32, dir)。iod->sg=ff182c3bff3d9000（非 NULL），nents=32。",
+            "evidence": "crash dis nvme_unmap_data：mov 0x1a0(%rbx),%rsi（iod->sg）→ call dma_unmap_sg_attrs；iod+0x74=nents=0x20=32，iod+0x90=sg=ff182c3bff3d9000",
+            "params": [
+              {
+                "io": "in",
+                "reg": "rdi",
+                "n": "dev->dev",
+                "formal": "struct device *",
+                "v": "ff182c20a13a30b8",
+                "bad": false,
+                "note": "设备指针"
+              },
+              {
+                "io": "in",
+                "reg": "rsi",
+                "n": "iod->sg",
+                "formal": "struct scatterlist *sgl",
+                "v": "ff182c3bff3d9000",
+                "bad": false,
+                "note": "scatterlist 链起始指针（非 NULL）"
+              },
+              {
+                "io": "in",
+                "reg": "rdx",
+                "n": "iod->nents",
+                "formal": "int nents",
+                "v": "32 (0x20)",
+                "bad": true,
+                "note": "声明的段数=32，但实际链在第 13 个元素就 SG_END 提前结束，二者不一致"
+              }
+            ]
+          },
+          {
+            "from": "dma_direct_unmap_sg",
+            "to": "空指针解引用",
+            "type": "crash",
+            "src_dir": "kernel/dma",
+            "file": "direct.c",
+            "line": "423",
+            "stack": "dma_direct_unmap_sg+0x44/0x1a0 · 指令 45 8b 7e 18 (mov 0x18(%r14),%r15d)",
+            "fn_ctx": "mov 0x18(%r14),%r15d → 读 sgl->dma_length（scatterlist.dma_length 偏移 0x18），r14=sgl=NULL",
+            "crash": true,
+            "source_url": "https://elixir.bootlin.com/linux/v5.10/source/kernel/dma/direct.c",
+            "detail": "for_each_sg 循环遍历到第 13 个元素（sg[12]）时其 page_link=0x2（SG_END 标志），sg_next 返回 NULL；但循环计数 i=13 尚未达到 nents=32，下一次迭代用 NULL 作为 sgl，执行 mov 0x18(%r14),%r15d 读取 NULL+0x18=0x18，触发空指针解引用。",
+            "evidence": "crash dis dma_direct_unmap_sg：+68 mov 0x18(%r14),%r15d（崩溃指令）；崩溃寄存器 R14=0（sgl），R13=0xd=13（循环计数），RBP=0x20=32（nents），CR2=0x18；sg[12] 内存 page_link=0x2=SG_END（include/linux/scatterlist.h: SG_CHAIN=0x01, SG_END=0x02）",
+            "params": [
+              {
+                "io": "in",
+                "reg": "r14",
+                "n": "sgl",
+                "formal": "struct scatterlist *",
+                "v": "0x0 (NULL)",
+                "bad": true,
+                "note": "sg_next 因链提前 SG_END 返回 NULL，循环未判空继续解引用"
+              }
+            ]
+          }
+        ],
+        "refs": []
+      },
+      {
+        "stage": "internal",
+        "stage_name": "相关案例分析（内部）",
+        "color": "orange",
+        "title": "内部知识库匹配",
+        "short": "命中一条同函数同偏移的 L3 空指针案例，但触发路径不同、无修复方案。",
+        "text": "内部知识库命中 issue-null-pointer-dma_direct_unmap_sg-139（dma_direct_unmap_sg+0x44 空指针，acpi_idle 路径），match_score=0.5938（中）/L3，属同簇旁证，不能直接采用。",
+        "evidence": "query_knowledge 返回 match_level=L3，root_cause/solution 为空",
+        "ev_plain": false,
+        "path_mini": [],
+        "refs": [
+          {
+            "kind": "internal",
+            "label": "dma_direct_unmap_sg 空指针历史案例",
+            "anchor": "kb-internal",
+            "url": "https://km.sankuai.com/collabpage/2614153711"
+          }
+        ]
+      },
+      {
+        "stage": "community",
+        "stage_name": "相关案例分析（社区）",
+        "color": "orange",
+        "title": "社区案例检索",
+        "short": "未检索到社区邮件/会议纪要/Bugzilla 的匹配案例。",
+        "text": "query_community_cases 未返回匹配的社区案例，本地社区源文件 grep 亦无高置信命中。",
+        "evidence": "query_community_cases 返回 cases=[]",
+        "ev_plain": true,
+        "path_mini": [],
+        "refs": []
+      },
+      {
+        "stage": "commit",
+        "stage_name": "相关案例分析（上游 commit）",
+        "color": "orange",
+        "title": "上游 commit 检索",
+        "short": "在线检索未命中可确认的上游修复 commit。",
+        "text": "query_upstream_online 在线检索 upstream 修复，commits 与 patch_mails 均为空，未找到直接修复 dma_direct_unmap_sg 空指针的 confirmed 补丁。",
+        "evidence": "query_upstream_online 返回 commits=[]，patch_mails=[]",
+        "ev_plain": true,
+        "path_mini": [],
+        "refs": []
+      },
+      {
+        "stage": "source_compare",
+        "stage_name": "相关案例分析（源码对照）",
+        "color": "orange",
+        "title": "当前内核源码逐行对照",
+        "short": "nvme_unmap_sg 直接以 iod->sg、iod->nents 调 dma_unmap_sg，无长度一致性校验。",
+        "text": "对照本地 5.10.0-218 源码 drivers/nvme/host/pci.c：nvme_unmap_sg 无条件 dma_unmap_sg(dev->dev, iod->sg, iod->nents, dir)，dma_direct_unmap_sg 用 for_each_sg 按 nents 遍历，均无对 sg_next 返回 NULL 或链长度与 nents 失配的防御。",
+        "evidence": "本地源码 pci.c:577-586 nvme_unmap_sg；direct.c:418-425 dma_direct_unmap_sg",
+        "ev_plain": true,
+        "path_mini": [],
+        "refs": []
+      },
+      {
+        "stage": "conclusion",
+        "stage_name": "相关案例分析（结论）",
+        "color": "red",
+        "title": "根因结论",
+        "short": "NVMe 完成路径 scatterlist 链与 nents 失配导致空指针崩溃，无 confirmed 补丁，定性为推测。",
+        "text": "综合一手证据与知识库交叉验证，崩溃机制确定，深层成因（链损坏来源）推断，修复方案无 confirmed 补丁。",
+        "evidence": "全部前述证据链",
+        "ev_plain": true,
+        "path_mini": [],
+        "refs": []
+      }
+    ],
+    "standard_solution": {
+      "type": "patch",
+      "claim_tag": "自研最小防御补丁（上游无 confirmed 补丁，补丁来源=本地源码分析）",
+      "short": "要做什么：在 NVMe 驱动释放磁盘传输映射前，先按实际链长钳制段数，链提前结束时告警留证、不再带着失配的段数进入释放循环。为什么：记录段数与链表实际长度失配时，现行代码会拿空分段继续读字段而整机宕机；上游无已确认补丁，只能基于本地源码自研防御。怎么做：按第 1 章「修复细节」中的 diff 修改 drivers/nvme/host/pci.c 释放路径，编译验证后灰度上线，同时向内核维护方反馈现场与告警转储、推动正式修复，长期升级至厂商确认版本。",
+      "brief": "已给出自研最小防御补丁：在 NVMe 驱动释放磁盘传输映射前，先按实际链长钳制段数；链提前结束时告警留证、不再带着失配段数进入释放循环，从源头消除空指针崩溃。",
+      "fixed_brief": "上游无已确认补丁（内部库/社区/在线三路检索均未命中）；本补丁为基于本地 5.10 源码分析的自研防御修复（依据见技术附件「内核源码摘录」），建议同步向厂商反馈并升级。",
+      "basis": [
+        {
+          "kind": "evidence",
+          "title": "本案 vmcore 一手取证（链长与段数失配实证）",
+          "url": "",
+          "text": "nents=32 与链第 13 段 SG_END 并存（RBP=0x20、R13=13、sg[12].page_link=0x2），释放循环取到空分段后读 sgl->dma_length（偏移 0x18）崩溃——钳制链长即可阻断该路径。"
+        },
+        {
+          "kind": "source",
+          "title": "本地 5.10 源码分析（kernel/dma/direct.c + drivers/nvme/host/pci.c）",
+          "url": "https://elixir.bootlin.com/linux/v5.10/source/kernel/dma/direct.c#L384",
+          "text": "for_each_sg 仅以计数为循环条件、循环体直接解引用（direct.c:384-392）；NVMe 释放入口无条件信任 iod->nents（pci.c:545-567，厂商树 nvme_unmap_sg）——两层均无失配防御，自研补丁选择在 NVMe 入口钳制（改动面最小，不动通用 DMA 层）。"
+        }
+      ],
+      "fixed_in": "上游无 confirmed 补丁（v5.10 基线即存在该缺口；内部/社区/在线检索均未命中修复 commit）。当前修复 = 自研防御补丁（见 patch_list）；长期以厂商确认版本为准。",
+      "patch_list": [
+        {
+          "sha": "自研（基于上游 v5.10 源码基线撰写，落点=厂商树 nvme_unmap_sg/pci.c:577-586 附近）",
+          "mode": "pick",
+          "subject": "nvme: clamp unmap nents to the actual sg chain length（释放前链长钳制 + WARN 留证）",
+          "why": "iod->nents 与实际 sg 链长失配（本案：链第 13 段 SG_END、nents=32）时，释放循环会取到 NULL 分段并读 sgl->dma_length（偏移 0x18）触发空指针崩溃。进入释放循环前按链长钳制 nents 并 WARN_ON_ONCE 留证：异常状态下走安全路径并吐出诊断信息，而不是整机宕机；改动仅新增一个统计循环，不改数据结构、不改锁语义，可热补丁化。链表为何失配（深层成因）仍需结合 WARN 转储由厂商定位，本补丁为阻断崩溃的防御层。",
+          "files": [
+            "drivers/nvme/host/pci.c"
+          ],
+          "diff": "--- a/drivers/nvme/host/pci.c\n+++ b/drivers/nvme/host/pci.c\n@@ -548,6 +548,8 @@ static void nvme_unmap_data(struct nvme_dev *dev, struct request *req)\n \tconst int last_prp = NVME_CTRL_PAGE_SIZE / sizeof(__le64) - 1;\n \tdma_addr_t dma_addr = iod->first_dma, next_dma_addr;\n \tint i;\n+\tstruct scatterlist *sg;\n+\tint nents;\n \n \tif (iod->dma_len) {\n \t\tdma_unmap_page(dev->dev, dma_addr, iod->dma_len,\n@@ -557,11 +559,26 @@ static void nvme_unmap_data(struct nvme_dev *dev, struct request *req)\n \n \tWARN_ON_ONCE(!iod->nents);\n \n+\t/*\n+\t * Defensive fix (self-developed; no upstream confirmed patch):\n+\t * clamp nents to the actual sg chain length before unmapping.\n+\t * If the chain terminates early (SG_END before iod->nents),\n+\t * dma_direct_unmap_sg() would keep iterating and dereference a\n+\t * NULL sg entry (kernel NULL pointer read at sgl->dma_length).\n+\t * Walk the chain safely and WARN so the corruption gets reported\n+\t * instead of taking the machine down.\n+\t */\n+\tnents = 0;\n+\tfor (sg = iod->sg; sg && nents < iod->nents; sg = sg_next(sg))\n+\t\tnents++;\n+\tif (unlikely(nents < iod->nents))\n+\t\tWARN_ON_ONCE(1); /* sg chain shorter than nents */\n+\n \tif (is_pci_p2pdma_page(sg_page(iod->sg)))\n-\t\tpci_p2pdma_unmap_sg(dev->dev, iod->sg, iod->nents,\n+\t\tpci_p2pdma_unmap_sg(dev->dev, iod->sg, nents,\n \t\t\t\t    rq_dma_dir(req));\n \telse\n-\t\tdma_unmap_sg(dev->dev, iod->sg, iod->nents, rq_dma_dir(req));\n+\t\tdma_unmap_sg(dev->dev, iod->sg, nents, rq_dma_dir(req));\n \n \n \tif (iod->npages == 0)"
+        }
+      ],
+      "method_steps": [
+        "1. 在厂商 5.10.0-218 源码树 drivers/nvme/host/pci.c 定位释放调用点：上游 v5.10 基线为 nvme_unmap_data（L545-567）；厂商树拆分形式为 nvme_unmap_sg（本案取证 pci.c:577-586），以厂商树实际位置为准套用 patch_list 的 diff。",
+        "2. 插入链长统计与钳制：for 循环统计实际段数，nents < iod->nents 时 WARN_ON_ONCE 留证，并以钳制后的 nents 调用 dma_unmap_sg / pci_p2pdma_unmap_sg。",
+        "3. 编译验证：make -j 无新告警；反汇编确认 dma_unmap_sg 调用前存在统计循环与 WARN 分支。",
+        "4. 灰度上线：先在可复现压力环境（高并发小块写 + 频繁 fdatasync）验证 ≥72h 无崩溃、无新增 WARN 后再批量推广；保留 kdump 配置以便对比。",
+        "5. 同步向 MT 内核维护方反馈崩溃现场与 WARN 转储，推动深层成因（链状态为何损坏）定位与正式修复。",
+        "6. 长期：升级至厂商确认包含 scatterlist 管理修复的版本后，可评估移除本防御补丁。"
+      ],
+      "detail": "本次崩溃发生在 NVMe 完成中断路径释放 DMA 映射时：请求的 scatterlist 链第 13 个元素提前出现 SG_END 结束标志，而记录段数 nents=32，dma_direct_unmap_sg 按 nents 继续遍历、对 sg_next 返回的空指针解引用 dma_length 字段而宕机。深层成因（链为何提前结束、为何与 nents 失配——UAF、内存踩踏还是并发复用）单次转储无法唯一确定，且内部知识库、社区案例库、上游在线检索均无 confirmed 修复。因此处置分两层：短期合入上述自研防御补丁（在 NVMe 释放入口钳制链长并 WARN 留证，立即消除宕机后果，并为厂商定位保留第一现场）；长期向 MT 维护方反馈并升级至正式修复版本。内部历史案例（同函数同偏移、idle 路径、无修复方案）仅作同簇旁证，不构成修复依据。",
+      "rollback": "热补丁形态：livepatch disable / 卸载对应热补丁模块即恢复原逻辑（无数据结构与锁语义变更，回退零风险）。整内核形态：grub 选择上一版本内核启动，确认稳定后 grubby --set-default 恢复默认项。若防御 WARN 频繁触发（说明根因高频发生），回退补丁并保留 vmcore/dmesg 供厂商定位。",
+      "verification": "1) 编译零新告警；2) 反汇编核验：NVMe 释放路径在调用 dma_unmap_sg 前存在链长统计循环与 WARN 分支；3) 压力回归：高并发小块写 + 频繁 fdatasync + 异常 IO 组合场景，确认不再出现 dma_direct_unmap_sg 空指针 Oops；若出现 WARN 说明链损坏复现，保留 dmesg 供厂商分析（这正是补丁的留证设计）；4) 长期观察 dmesg 无新增同类崩溃，建簇监控本局点。"
+    },
+    "temporary_workaround": {
+      "type": "none",
+      "title": "暂无针对性临时规避手段",
+      "case_refs": [],
+      "summary": "暂无",
+      "steps": [],
+      "risk": "该崩溃源于 NVMe 驱动 DMA 释放路径的链表与段数失配，属内核缺陷，无业务侧或配置侧可针对性规避的手段（无法通过禁用写盘、降低并发等常规手段规避），故不提供临时缓解措施。",
+      "detail": "触发场景为存储业务刷写 NVMe 盘时请求完成与提交并发，这是存储主路径的必要行为，无法通过配置规避；在无 confirmed 修复前，仅能通过升级内核到修复版本根治。"
+    },
+    "local_source": {
+      "base": "本地 5.10.0-218 源码对照；以下摘录取自上游 v5.10 基线（与本地同源），诊断机本地源码树未随报告归档。",
+      "refs": [
+        {
+          "id": "src-nvme-pci-unmap",
+          "file": "drivers/nvme/host/pci.c",
+          "lines": "545-567",
+          "func": "nvme_unmap_data（释放入口）",
+          "excerpt": "static void nvme_unmap_data(struct nvme_dev *dev, struct request *req)\n{\n\tstruct nvme_iod *iod = blk_mq_rq_to_pdu(req);\n\tconst int last_prp = NVME_CTRL_PAGE_SIZE / sizeof(__le64) - 1;\n\tdma_addr_t dma_addr = iod->first_dma, next_dma_addr;\n\tint i;\n\n\tif (iod->dma_len) {\n\t\tdma_unmap_page(dev->dev, dma_addr, iod->dma_len,\n\t\t\t       rq_dma_dir(req));\n\t\treturn;\n\t}\n\n\tWARN_ON_ONCE(!iod->nents);\n\n\tif (is_pci_p2pdma_page(sg_page(iod->sg)))\n\t\tpci_p2pdma_unmap_sg(dev->dev, iod->sg, iod->nents,\n\t\t\t\t    rq_dma_dir(req));\n\telse\n\t\tdma_unmap_sg(dev->dev, iod->sg, iod->nents, rq_dma_dir(req));\n\n\n\tif (iod->npages == 0)",
+          "url": "https://elixir.bootlin.com/linux/v5.10/source/drivers/nvme/host/pci.c#L545",
+          "note": "NVMe 请求完成后的 DMA 释放入口，直接以 iod->nents 调用 dma_unmap_sg；厂商 5.10.0-218 树中拆分为 nvme_unmap_sg（报告取证 pci.c:577-586）。本报告自研补丁（第 1 章修复细节）在此处插入链长钳制与告警。",
+          "origin": "上游基线"
+        },
+        {
+          "id": "src-dma-direct-unmap",
+          "file": "kernel/dma/direct.c",
+          "lines": "384-392",
+          "func": "dma_direct_unmap_sg（崩溃函数）",
+          "excerpt": "void dma_direct_unmap_sg(struct device *dev, struct scatterlist *sgl,\n\t\tint nents, enum dma_data_direction dir, unsigned long attrs)\n{\n\tstruct scatterlist *sg;\n\tint i;\n\n\tfor_each_sg(sgl, sg, nents, i)\n\t\tdma_direct_unmap_page(dev, sg->dma_address, sg_dma_len(sg), dir,\n\t\t\t     attrs);",
+          "url": "https://elixir.bootlin.com/linux/v5.10/source/kernel/dma/direct.c#L384",
+          "note": "崩溃点所在：for_each_sg 按 nents 遍历，循环体直接读 sg->dma_address 与 sg_dma_len(sg)（即 dma_length，偏移 0x18），无任何空指针防护。",
+          "origin": "上游基线"
+        },
+        {
+          "id": "src-sgl-macro",
+          "file": "include/linux/scatterlist.h",
+          "lines": "60-76 · 145-153",
+          "func": "SG_END / sg_is_last / for_each_sg",
+          "excerpt": " * See sg_next().\n *\n */\n\n#define SG_CHAIN\t0x01UL\n#define SG_END\t\t0x02UL\n\n/*\n * We overload the LSB of the page pointer to indicate whether it's\n * a valid sg entry, or whether it points to the start of a new scatterlist.\n * Those low bits are there for everyone! (thanks mason :-)\n */\n#define sg_is_chain(sg)\t\t((sg)->page_link & SG_CHAIN)\n#define sg_is_last(sg)\t\t((sg)->page_link & SG_END)\n#define sg_chain_ptr(sg)\t\\\n\t((struct scatterlist *) ((sg)->page_link & ~(SG_CHAIN | SG_END)))\n\n\n……\n\n\tsg_set_page(sg, virt_to_page(buf), buflen, offset_in_page(buf));\n}\n\n/*\n * Loop over each sg element, following the pointer to a new list if necessary\n */\n#define for_each_sg(sglist, sg, nr, __i)\t\\\n\tfor (__i = 0, sg = (sglist); __i < (nr); __i++, sg = sg_next(sg))\n",
+          "url": "https://elixir.bootlin.com/linux/v5.10/source/include/linux/scatterlist.h#L60",
+          "note": "链结束标记 SG_END=0x02UL；for_each_sg 循环条件只有「计数 < nr」，不检查 sg 是否为空——这是失配场景下空指针直达解引用的结构性原因。",
+          "origin": "上游基线"
+        },
+        {
+          "id": "src-sg-next",
+          "file": "lib/scatterlist.c",
+          "lines": "14-34",
+          "func": "sg_next（取下一段）",
+          "excerpt": " * sg_next - return the next scatterlist entry in a list\n * @sg:\t\tThe current sg entry\n *\n * Description:\n *   Usually the next entry will be @sg@ + 1, but if this sg element is part\n *   of a chained scatterlist, it could jump to the start of a new\n *   scatterlist array.\n *\n **/\nstruct scatterlist *sg_next(struct scatterlist *sg)\n{\n\tif (sg_is_last(sg))\n\t\treturn NULL;\n\n\tsg++;\n\tif (unlikely(sg_is_chain(sg)))\n\t\tsg = sg_chain_ptr(sg);\n\n\treturn sg;\n}\nEXPORT_SYMBOL(sg_next);",
+          "url": "https://elixir.bootlin.com/linux/v5.10/source/lib/scatterlist.c#L14",
+          "note": "遇到 SG_END 标记时合法返回 NULL——返回空本身是设计行为，问题在调用方未设防。",
+          "origin": "上游基线"
+        },
+        {
+          "id": "src-blk-merge",
+          "file": "block/blk-merge.c",
+          "lines": "407-441",
+          "func": "blk_bvec_map_sg（构建新请求分段链）",
+          "excerpt": "static unsigned blk_bvec_map_sg(struct request_queue *q,\n\t\tstruct bio_vec *bvec, struct scatterlist *sglist,\n\t\tstruct scatterlist **sg)\n{\n\tunsigned nbytes = bvec->bv_len;\n\tunsigned nsegs = 0, total = 0;\n\n\twhile (nbytes > 0) {\n\t\tunsigned offset = bvec->bv_offset + total;\n\t\tunsigned len = min(get_max_segment_size(q, bvec->bv_page,\n\t\t\t\t\toffset), nbytes);\n\t\tstruct page *page = bvec->bv_page;\n\n\t\t/*\n\t\t * Unfortunately a fair number of drivers barf on scatterlists\n\t\t * that have an offset larger than PAGE_SIZE, despite other\n\t\t * subsystems dealing with that invariant just fine.  For now\n\t\t * stick to the legacy format where we never present those from\n\t\t * the block layer, but the code below should be removed once\n\t\t * these offenders (mostly MMC/SD drivers) are fixed.\n\t\t */\n\t\tpage += (offset >> PAGE_SHIFT);\n\t\toffset &= ~PAGE_MASK;\n\n\t\t*sg = blk_next_sg(sg, sglist);\n\t\tsg_set_page(*sg, page, len, offset);\n\n\t\ttotal += len;\n\t\tnbytes -= len;\n\t\tnsegs++;\n\t}\n\n\treturn nsegs;\n}\n",
+          "url": "https://elixir.bootlin.com/linux/v5.10/source/block/blk-merge.c#L407",
+          "note": "崩溃中断打断的另一 CPU 上下文正处于该函数（构建新请求的 scatterlist），是「并发窗口」假说的旁证（未实证）。",
+          "origin": "上游基线"
+        }
+      ]
+    }
+  },
+  "diagnosis_repair_result": {
+    "internal_kernel_result": [
+      {
+        "knowledge_id": "issue-null-pointer-dma_direct_unmap_sg-139",
+        "source": "issue",
+        "bug_type": "null_pointer",
+        "bug_key": "BUG: kernel NULL pointer dereference",
+        "bug_summary": "BUG: kernel NULL pointer dereference, address: 0000000000000018",
+        "rip": "dma_direct_unmap_sg+0x44",
+        "rip_function": "dma_direct_unmap_sg",
+        "rip_offset": "0x44",
+        "related_modules": [],
+        "kernel_versions": [],
+        "root_cause": "",
+        "solution": "",
+        "hotpatch": "",
+        "history_wiki": "https://km.sankuai.com/collabpage/2614153711",
+        "case_count": 1,
+        "first_seen": "2024-12-09T15:12:43+08:00",
+        "last_seen": "2024-12-09T15:12:43+08:00",
+        "call_trace_signature": [
+          "secondary_startup_64_no_verifycpu_startup_entrydo_idlecpuidle_idle_callcpuidle_entercpuidle_enter_stateacpi_idle_enterdma_direct_unmap_sg"
+        ],
+        "call_trace_text": "secondary_startup_64_no_verifycpu_startup_entrydo_idlecpuidle_idle_callcpuidle_entercpuidle_enter_stateacpi_idle_enterdma_direct_unmap_sg+0x44",
+        "match_score": "中",
+        "match_level": "L3",
+        "id": "issue-null-pointer-dma_direct_unmap_sg-139",
+        "anchor": "kb-internal",
+        "title": "dma_direct_unmap_sg 空指针解引用历史案例（idle 路径）",
+        "verdict": "same_area",
+        "fingerprints": [
+          "DMA 直接映射释放子系统（kernel/dma/direct.c）",
+          "崩溃函数 dma_direct_unmap_sg、偏移 +0x44（读取 sg->dma_length，偏移 0x18）",
+          "bug_type: null_pointer（空指针解引用）",
+          "崩溃地址 0x18（空指针 + scatterlist dma_length 字段偏移）",
+          "内核 5.10.x 系列",
+          "历史案例触发路径为 CPU idle/ACPI 路径，本次为 NVMe 完成中断路径"
+        ],
+        "affected_component": "kernel/dma/direct.c（dma_direct_unmap_sg）",
+        "history": {
+          "first_seen": "2024-12-09T15:12:43+08:00",
+          "last_seen": "2024-12-09T15:12:43+08:00",
+          "cases": [
+            "dma_direct_unmap_sg+0x44 空指针（acpi_idle_enter 路径）"
+          ]
+        },
+        "corroboration": [
+          {
+            "dimension": "feature_data",
+            "verdict": "support",
+            "current": "RIP=dma_direct_unmap_sg+0x44，bug_type=null_pointer，地址 0x18",
+            "reference": "RIP=dma_direct_unmap_sg+0x44，bug_type=null_pointer，地址 0x18"
+          },
+          {
+            "dimension": "kernel_version",
+            "verdict": "partial",
+            "current": "5.10.0-218.0.0.mt20241202.564（MT 定制）",
+            "reference": "案例未记录受影响内核版本区间"
+          },
+          {
+            "dimension": "execution_context",
+            "verdict": "mismatch",
+            "current": "NVMe 完成硬中断（nvme_irq），进程 chunkserver 在 fdatasync/ext4_writepages 写路径被中断",
+            "reference": "CPU idle 上下文（acpi_idle_enter）"
+          },
+          {
+            "dimension": "timeline",
+            "verdict": "mismatch",
+            "current": "写盘 fdatasync 提交 NVMe 请求时，完成中断触发 unmap 崩溃",
+            "reference": "CPU 进入 idle 时触发"
+          },
+          {
+            "dimension": "mechanism",
+            "verdict": "support",
+            "current": "dma_direct_unmap_sg 遍历 scatterlist 时 sg_next 返回 NULL 后继续解引用 dma_length",
+            "reference": "同一函数同一指令位置的空指针解引用（偏移 0x18）"
+          },
+          {
+            "dimension": "fix_scope",
+            "verdict": "partial",
+            "current": "无 confirmed 补丁，需自研/检索上游",
+            "reference": "案例未提供 root_cause/solution/hotpatch"
+          }
+        ],
+        "applicability": "同簇旁证(L3)：崩溃函数与偏移完全一致（dma_direct_unmap_sg+0x44 读取 sg->dma_length），证实这是 DMA 直接映射释放路径的空指针缺陷，但该历史案例触发路径为 CPU idle 且未提供修复，不能直接采用其结论，仅用于横向佐证本次根因方向。"
+      }
+    ],
+    "community_kernel_result": [],
+    "community_meetings": [],
+    "online_result": []
+  },
+  "workflow_trace": {
+    "source": "manual",
+    "session_id": "shennong-crash-564-20260915",
+    "total_duration_ms": 1200000,
+    "step_count": 7,
+    "steps": [
+      {
+        "step": 1,
+        "stage": "init",
+        "decision": "确认现场资源（vmcore/vmlinux/vmcore-dmesg/内核源码）齐全，加载 vmcore-analysis 与 crash-feature-matcher 技能，明确诊断目标为 NVMe 空指针崩溃。",
+        "observations": "vmcore 7.9GB、vmlinux_x86、vmcore-dmesg.txt(3323行)、内核源码树均存在；crash 8.0.4 可用；机器为 H3C R4900 G7，内核 5.10.0-218.0.0.mt20241202.564。",
+        "judgment": "具备完整双轨分析条件（vmcore + 源码），进入基线采集。",
+        "status": "success",
+        "start_time": "2026-09-15T12:05:00+08:00",
+        "end_time": "2026-09-15T12:06:00+08:00",
+        "tools": [
+          {
+            "tool_name": "bash",
+            "title": "检查宕机现场资源目录",
+            "status": "success",
+            "duration_ms": 3000,
+            "start_time": "2026-09-15T12:05:00+08:00",
+            "end_time": "2026-09-15T12:05:03+08:00"
+          },
+          {
+            "tool_name": "skill",
+            "title": "加载 vmcore-analysis 技能",
+            "status": "success",
+            "duration_ms": 2000,
+            "start_time": "2026-09-15T12:05:05+08:00",
+            "end_time": "2026-09-15T12:05:07+08:00"
+          },
+          {
+            "tool_name": "skill",
+            "title": "加载 crash-feature-matcher 技能",
+            "status": "success",
+            "duration_ms": 2000,
+            "start_time": "2026-09-15T12:05:08+08:00",
+            "end_time": "2026-09-15T12:05:10+08:00"
+          }
+        ]
+      },
+      {
+        "step": 2,
+        "stage": "baseline_collection",
+        "decision": "执行 01_baseline_info.sh 采集基线，并用 crash 直接读取调用栈、寄存器、系统信息。",
+        "observations": "崩溃点 dma_direct_unmap_sg+0x44，中断上下文（nvme_irq），被中断进程 chunkserver 在 blk_bvec_map_sg（写回路径）；64核、381.7GB 内存。基线脚本推荐分支 A（空指针）。",
+        "judgment": "确认是 NVMe 完成中断路径的空指针崩溃，进入崩溃特征提取与反汇编。",
+        "status": "success",
+        "start_time": "2026-09-15T12:06:00+08:00",
+        "end_time": "2026-09-15T12:09:00+08:00",
+        "tools": [
+          {
+            "tool_name": "bash",
+            "title": "执行基线信息采集脚本",
+            "status": "success",
+            "duration_ms": 180000,
+            "start_time": "2026-09-15T12:06:00+08:00",
+            "end_time": "2026-09-15T12:09:00+08:00"
+          }
+        ]
+      },
+      {
+        "step": 3,
+        "stage": "crash_feature_extraction",
+        "decision": "用 crash-feature-matcher 的 analyze_crash 提取崩溃特征，同时用 crash 反汇编崩溃函数链。",
+        "observations": "signature=null_pointer::nvme::dma_direct_unmap_sg::0x44；bug_type=null_pointer；RIP=dma_direct_unmap_sg+0x44；崩溃指令 mov 0x18(%r14),%r15d 读 sgl->dma_length；R14=0(空)、R13=13(循环计数)、RBP=32(nents)。",
+        "judgment": "特征指向「scatterlist 链提前 SG_END 而 nents=32 未遍历完」的空指针失配，需反汇编 nvme_unmap_data/nvme_unmap_sg/dma_direct_unmap_sg 验证。",
+        "status": "success",
+        "start_time": "2026-09-15T12:09:00+08:00",
+        "end_time": "2026-09-15T12:12:00+08:00",
+        "tools": [
+          {
+            "tool_name": "crash-feature-matcher_analyze_crash",
+            "title": "提取崩溃特征",
+            "status": "success",
+            "duration_ms": 8000,
+            "start_time": "2026-09-15T12:09:00+08:00",
+            "end_time": "2026-09-15T12:09:08+08:00"
+          }
+        ]
+      },
+      {
+        "step": 4,
+        "stage": "deep_analysis",
+        "decision": "反汇编 dma_direct_unmap_sg、nvme_unmap_data、nvme_pci_complete_rq、nvme_queue_rq、dma_unmap_sg_attrs，并读 iod/scatterlist 内存验证链断裂。",
+        "observations": "确认崩溃指令 mov 0x18(%r14),%r15d 读 sgl->dma_length(偏移0x18)；sg[12] 的 page_link=0x2=SG_END 导致 sg_next 返回 NULL；iod->nents=32、iod->sg=ff182c3bff3d9000；前 9 个 sg 的 dma_address=0 呈碎片化。",
+        "judgment": "根因机制闭环：scatterlist 链提前结束与 nents 失配→sg_next 返回 NULL→循环继续解引用 NULL->dma_length→空指针崩溃。深层成因（UAF/踩踏/并发复用）标推断。",
+        "status": "success",
+        "start_time": "2026-09-15T12:12:00+08:00",
+        "end_time": "2026-09-15T12:25:00+08:00",
+        "tools": [
+          {
+            "tool_name": "bash",
+            "title": "反汇编 dma_direct_unmap_sg",
+            "status": "success",
+            "duration_ms": 30000,
+            "start_time": "2026-09-15T12:12:00+08:00",
+            "end_time": "2026-09-15T12:12:30+08:00"
+          },
+          {
+            "tool_name": "bash",
+            "title": "反汇编 nvme_unmap_data",
+            "status": "success",
+            "duration_ms": 30000,
+            "start_time": "2026-09-15T12:12:30+08:00",
+            "end_time": "2026-09-15T12:13:00+08:00"
+          },
+          {
+            "tool_name": "bash",
+            "title": "读取 scatterlist 链内容",
+            "status": "success",
+            "duration_ms": 20000,
+            "start_time": "2026-09-15T12:13:00+08:00",
+            "end_time": "2026-09-15T12:13:20+08:00"
+          }
+        ]
+      },
+      {
+        "step": 5,
+        "stage": "knowledge_retrieval",
+        "decision": "多轮构造 query_knowledge（rip_function/bug_type/keyword 组合）与 query_community_cases、query_upstream_online 检索内部/社区/上游案例。",
+        "observations": "内部命中 L3 案例 issue-null-pointer-dma_direct_unmap_sg-139（同函数同偏移，acpi_idle 路径，score=0.5938，无修复）；社区与上游在线检索均无命中。",
+        "judgment": "无 confirmed 补丁，根因定性为推测；内部案例仅作同簇旁证（same_area）。",
+        "status": "success",
+        "start_time": "2026-09-15T12:25:00+08:00",
+        "end_time": "2026-09-15T12:30:00+08:00",
+        "tools": [
+          {
+            "tool_name": "crash-feature-matcher_query_knowledge",
+            "title": "内部知识库检索(rip_function)",
+            "status": "success",
+            "duration_ms": 5000,
+            "start_time": "2026-09-15T12:25:00+08:00",
+            "end_time": "2026-09-15T12:25:05+08:00"
+          },
+          {
+            "tool_name": "crash-feature-matcher_query_knowledge",
+            "title": "内部知识库检索(keyword)",
+            "status": "success",
+            "duration_ms": 5000,
+            "start_time": "2026-09-15T12:25:05+08:00",
+            "end_time": "2026-09-15T12:25:10+08:00"
+          },
+          {
+            "tool_name": "crash-feature-matcher_query_community_cases",
+            "title": "社区案例检索",
+            "status": "success",
+            "duration_ms": 6000,
+            "start_time": "2026-09-15T12:25:10+08:00",
+            "end_time": "2026-09-15T12:25:16+08:00"
+          },
+          {
+            "tool_name": "crash-feature-matcher_query_upstream_online",
+            "title": "上游在线检索",
+            "status": "success",
+            "duration_ms": 6000,
+            "start_time": "2026-09-15T12:25:16+08:00",
+            "end_time": "2026-09-15T12:25:22+08:00"
+          }
+        ]
+      },
+      {
+        "step": 6,
+        "stage": "root_cause_validation",
+        "decision": "对照本地内核源码 nvme_unmap_sg/dma_direct_unmap_sg 逐行验证「无长度一致性校验」的缺陷，并查 git log 确认无已合入的针对性修复。",
+        "observations": "pci.c:577-586 nvme_unmap_sg 无条件 dma_unmap_sg(iod->sg, iod->nents)；direct.c for_each_sg 按 nents 遍历无判空；git log 无直接修复该崩溃的 commit。",
+        "judgment": "源码对照确认缺陷存在且无防御；交叉验证通过，根因成立（机制确定、深层成因推断）。",
+        "status": "success",
+        "start_time": "2026-09-15T12:30:00+08:00",
+        "end_time": "2026-09-15T12:34:00+08:00",
+        "tools": [
+          {
+            "tool_name": "bash",
+            "title": "查看 nvme 源码与 scatterlist 宏",
+            "status": "success",
+            "duration_ms": 4000,
+            "start_time": "2026-09-15T12:30:00+08:00",
+            "end_time": "2026-09-15T12:30:04+08:00"
+          },
+          {
+            "tool_name": "bash",
+            "title": "查看 nvme git log",
+            "status": "success",
+            "duration_ms": 4000,
+            "start_time": "2026-09-15T12:30:05+08:00",
+            "end_time": "2026-09-15T12:30:09+08:00"
+          }
+        ]
+      },
+      {
+        "step": 7,
+        "stage": "report_generation",
+        "decision": "生成分片 JSON（host_base_info/crash_feature_info/diagnosis_repair_result/root_cause_analysis/workflow_trace），合并并做 schema 强校验，生成自包含 HTML。",
+        "observations": "各分片已生成，待合并校验。",
+        "judgment": "进入合并与校验。",
+        "status": "success",
+        "start_time": "2026-09-15T12:34:00+08:00",
+        "end_time": "2026-09-15T12:40:00+08:00",
+        "tools": [
+          {
+            "tool_name": "bash",
+            "title": "生成报告分片",
+            "status": "success",
+            "duration_ms": 300000,
+            "start_time": "2026-09-15T12:34:00+08:00",
+            "end_time": "2026-09-15T12:39:00+08:00"
+          }
+        ]
+      }
+    ]
+  }
+}

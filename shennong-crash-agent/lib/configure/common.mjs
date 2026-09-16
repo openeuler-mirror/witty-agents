@@ -1,11 +1,12 @@
 export const FRAMEWORK_TARGETS = Object.freeze(["opencode", "dsh"])
-export const CONFIGURE_ACTIONS = Object.freeze(["install", "remove", "status"])
+export const CONFIGURE_ACTIONS = Object.freeze(["install", "remove", "status", "sync-skills"])
 
 export function configureUsage() {
   return `Usage:
   shennong-configure [install] [--target opencode]
   shennong-configure remove    [--target opencode]
   shennong-configure status    [--target opencode|dsh|all]
+  shennong-configure sync-skills [--target opencode]
 
 Options:
   --target <name>   Framework adapter: opencode, dsh, or all (default: opencode)
@@ -13,6 +14,9 @@ Options:
 
 Notes:
   OpenCode install/remove is fully supported.
+  install 同步会把安装包内核心 skill 强制同步到 ~/.config/opencode/skills/
+  （内容有差异才覆盖，覆盖前自动做 <skill>.bak-<时间戳> 备份；幂等）。
+  sync-skills 仅执行该同步，不改动插件/MCP 注册。
   DSH has a versioned adapter boundary and templates, but install/remove remains
   gated until witty-log-detection exposes Streamable HTTP at /mcp.`
 }

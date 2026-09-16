@@ -4,6 +4,7 @@ import { existsSync, readFileSync } from "node:fs"
 import { dirname, join, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 import { validatePlugin } from "../lib/validate-plugin.mjs"
+import { validateFallbackAgainstSchema } from "./validate-fallback-schema.mjs"
 
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url))
 const PROJECT_ROOT = resolve(SCRIPT_DIR, "..")
@@ -20,4 +21,5 @@ if (packageJson.main !== "dist/index.js" || packageJson.exports?.["."] !== "./di
 }
 
 validatePlugin(DIST_ENTRY, PROJECT_ROOT)
-console.log("prebuilt dist validation: PASS")
+validateFallbackAgainstSchema()
+console.log("prebuilt dist validation: PASS (plugin + fallback↔schema consistency)")
