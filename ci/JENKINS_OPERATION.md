@@ -16,7 +16,7 @@ Jenkins Job → Initialize Parameters → Resolve Build Plan → Prepare Agents
 - 统一入口：仓库根目录 [Jenkinsfile](../../Jenkinsfile)。
 - Agent 配置：每个 Agent 一个 `ci/agent.json`（`id/directory/driver/variants/packageStyles/...`）。
 - 驱动脚本：每个 Agent 一个 `ci/driver.mjs`，实现 8 个 phase。
-- 当前已启用 4 个 Agent：`shennong-crash`、`nl2sql`、`openeuler-ops`、`xlite-perf-optimizer`。
+- 当前已启用 5 个 Agent：`shennong-crash`、`nl2sql`、`openeuler-ops`、`xlite-perf-optimizer`、`kernel-dataset`。
 
 ---
 

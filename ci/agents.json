@@ -32,6 +32,14 @@
       "changedPathPrefixes": [
         "xlite-perf-optimizer-agent/"
       ]
+    },
+    {
+      "id": "kernel-dataset",
+      "enabled": true,
+      "configPath": "kernel-dataset-agent/ci/agent.json",
+      "changedPathPrefixes": [
+        "kernel-dataset-agent/"
+      ]
     }
   ]
 }

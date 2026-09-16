@@ -1,0 +1,17 @@
+# 打包时必须包含的文件（相对 package 根目录）
+agent/agent.md
+bin/kernel-dataset-setup.mjs
+bin/kernel-dataset-configure.mjs
+lib/configure.mjs
+lib/service.mjs
+lib/validate-plugin.mjs
+dist/index.js
+src/main.mjs
+src/daemon.mjs
+src/cycle.mjs
+src/config.mjs
+src/store.mjs
+src/collectors/index.mjs
+config/datasets.json
+skills/kernel-dataset/SKILL.md
+README.md

@@ -28,3 +28,9 @@ xlite-perf-optimizer-agent/artifacts/
 xlite-perf-optimizer-agent/ci-reports/
 xlite-perf-optimizer-agent/node_modules/
 xlite-perf-optimizer-agent/.ci-npm-cache/
+kernel-dataset-agent/.runtime/
+kernel-dataset-agent/.package-stage/
+kernel-dataset-agent/artifacts/
+kernel-dataset-agent/ci-reports/
+kernel-dataset-agent/node_modules/
+kernel-dataset-agent/.ci-npm-cache/

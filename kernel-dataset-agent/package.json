@@ -1,0 +1,56 @@
+{
+  "name": "@openeuler/agent-kernel-dataset",
+  "version": "0.1.0",
+  "description": "内核数据集增量更新 Agent — 定时从 bugzilla / GitHub / GitCode / LKML 拉取增量，按数据根目录（dataRoot，默认 /home/data，可配置）既有格式落盘",
+  "type": "module",
+  "main": "dist/index.js",
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "bin": {
+    "kernel-dataset-setup": "./bin/kernel-dataset-setup.mjs",
+    "kernel-dataset-configure": "./bin/kernel-dataset-configure.mjs"
+  },
+  "scripts": {
+    "validate": "node scripts/validate.mjs",
+    "validate:dist": "node scripts/validate-dist.mjs",
+    "pack:variant": "node scripts/build-package.mjs",
+    "ci:verify-artifacts": "node scripts/verify-ci-artifacts.mjs",
+    "test:install-contract": "node tests/test-install-contract.mjs",
+    "test": "node tests/test-install-contract.mjs"
+  },
+  "files": [
+    "agent/",
+    "config/",
+    "dist/",
+    "skills/",
+    "bin/",
+    "lib/",
+    "src/",
+    "scripts/",
+    "README.md"
+  ],
+  "wittyAgentDistribution": {
+    "packageNames": {
+      "organization": "@openeuler/agent-kernel-dataset",
+      "plain": "witty-agent-kernel-dataset"
+    }
+  },
+  "dependencies": {
+    "jsonc-parser": "^3.3.1"
+  },
+  "keywords": [
+    "kernel",
+    "dataset",
+    "openeuler",
+    "linux",
+    "opencode",
+    "agent",
+    "incremental-sync"
+  ],
+  "author": "",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
