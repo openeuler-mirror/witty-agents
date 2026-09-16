@@ -66,7 +66,7 @@ function installVariant(variant, configPath, environment) {
 
 function exerciseConfigure(project, configPath, environment) {
   const backupsBefore = listBackups(configPath).length
-  execFileSync("npm", ["exec", "--offline", "--", "xlite-perf-optimizer-configure", "configure"], {
+  execFileSync("npm", ["exec", "--offline", "--", "xlite-perf-optimizer-configure", "install"], {
                     cwd: project, stdio: "inherit", env: environment,
                   })
   const after = readFileSync(configPath, "utf8")
@@ -87,7 +87,7 @@ function exerciseConfigure(project, configPath, environment) {
   assert(existsSync(skillLink) && lstatSync(skillLink).isSymbolicLink(), "configure: xlite skill link is missing")
   assert(existsSync(join(readlinkSync(skillLink), "SKILL.md")), "configure: xlite skill link target has no SKILL.md")
 
-  execFileSync("npm", ["exec", "--offline", "--", "xlite-perf-optimizer-configure", "configure"], {
+  execFileSync("npm", ["exec", "--offline", "--", "xlite-perf-optimizer-configure", "install"], {
                     cwd: project, stdio: "inherit", env: environment,
                   })
   assert(readFileSync(configPath, "utf8") === after, "configure: repeated run changed config bytes")
@@ -122,6 +122,18 @@ function exerciseRemove(project, configPath, environment) {
   assert(listBackups(configPath).length === backupsBefore + 1, "configure remove: repeated no-op run created a backup")
 }
 
+function exerciseSetup(project, environment) {
+  // No-backend agent: setup is a safe no-op and must never touch OpenCode config.
+  for (const command of ["install", "check"]) {
+    const output = execFileSync(
+      "npm", ["exec", "--offline", "--", "xlite-perf-optimizer-setup", command],
+      { cwd: project, env: environment, encoding: "utf8" },
+    )
+    assert(output.includes('"status": "ready"'), `setup ${command}: readiness JSON not reported`)
+    assert(output.includes('"backend": "none"'), `setup ${command}: backend must report "none"`)
+  }
+}
+
 try {
   const home = join(sandbox, "home")
   const configPath = join(home, ".config", "opencode", "opencode.jsonc")
@@ -147,6 +159,7 @@ try {
   const configured = []
   for (const variant of TEST_VARIANTS) {
     const installation = installVariant(variant, configPath, environment)
+    exerciseSetup(installation.project, environment)
     exerciseConfigure(installation.project, configPath, environment)
     exerciseRemove(installation.project, configPath, environment)
     configured.push(installation)

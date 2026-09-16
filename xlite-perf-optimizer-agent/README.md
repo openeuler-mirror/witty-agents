@@ -31,30 +31,24 @@ npm install openeuler-agent-xlite-perf-optimizer-<version>.tgz   # 拷贝到离�
 
 > 安装过程（`postinstall`）只打印下一步提示，不创建 venv、不改写任何配置、不联网下载。
 
-## 注册
+## 注册（统一双命令）
 
-在需要使用本 Agent 的 xlite 项目根目录下执行初始化命令，将 Agent 注册到 opencode：
-
-```bash
-npx xlite-opt-init
-```
-
-如果 `opencode.jsonc` 中已存在 `xlite-perf-optimizer` 配置但想更新 skill 列表或 prompt 路径，使用：
+四个 Agent 统一为 `<agent>-setup` + `<agent>-configure` 两个命令。本 Agent 无 Python / 后端依赖，Skills 随包内置：
 
 ```bash
-npx xlite-opt-init --force
+xlite-perf-optimizer-setup install                        # no-op：校验包完整性
+xlite-perf-optimizer-configure install --target=opencode  # plugin 注册 + 软链 8 个 skill
 ```
 
-`xlite-opt-init` 会：
+`configure install` 会：
 
-1. 将 Agent role prompt 安装到 `~/.config/opencode/agents/xlite-perf-optimizer/`。
-2. 将 8 个内置 skill 安装到 `~/.config/opencode/skills/`。
-3. 在当前项目的 `opencode.jsonc` 中追加/覆盖 `xlite-perf-optimizer` agent 配置。
-4. 在当前项目创建 `.xlite-opt/journal/` 和 `.xlite-opt/reports/`。
+1. 在 `~/.config/opencode/opencode.jsonc` 的 `plugin` 数组注册本包 `dist/index.js`（幂等）。
+2. 将 8 个内置 skill 以**符号链接**链到 `~/.config/opencode/skills/`（不复制实体文件）。
 
-命令具备幂等语义：agent 配置已存在时默认跳过写入，重复执行不出错。
+命令幂等可重复执行；改写配置前会自动生成带时间戳的备份并保留 JSONC 注释。
+反注册使用 `xlite-perf-optimizer-configure remove`，状态查看 `xlite-perf-optimizer-configure status`。
 
-> 注意：写入 `opencode.jsonc` 前会自动生成带时间戳的 `.bak-XXX` 备份，但回写为纯 JSON 会丢失原有注释（输出中会给出提示）。如需保留注释，请手动合并。
+> 旧版 `xlite-opt-init`（复制实体文件 + 写项目 `opencode.jsonc` 的引导方式）已移除，请改用上面的 plugin 注册流程；旧残留的清理方式见 witty-agents 仓库 `docs/agents-install-uninstall-guide.md` 卸载章节。
 
 ## 验证
 
