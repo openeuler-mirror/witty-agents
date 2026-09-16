@@ -100,7 +100,15 @@ function main() {
     const packageRoot = join(projectDir, "node_modules", ...packageName.split("/"))
     assert(existsSync(packageRoot), `installed package is missing: ${packageRoot}`)
 
-    const configure = ["exec", "--offline", "--", "openeuler-ops-agent", "configure"]
+    // Unified shennong-style bins must both be registered. check is read-only.
+    assert(existsSync(join(projectDir, "node_modules", ".bin", "openeuler-ops-setup")), "openeuler-ops-setup bin is not registered")
+    assert(existsSync(join(projectDir, "node_modules", ".bin", "openeuler-ops-configure")), "openeuler-ops-configure bin is not registered")
+    const checkOutput = run("npm", ["exec", "--offline", "--", "openeuler-ops-setup", "check"], {
+      cwd: projectDir, env: environment, encoding: "utf8",
+    })
+    assert(checkOutput.includes("验证完成"), "openeuler-ops-setup check did not complete")
+
+    const configure = ["exec", "--offline", "--", "openeuler-ops-configure", "install"]
     run("npm", configure, { cwd: projectDir, env: environment })
     const configAfterFirst = readFileSync(configPath, "utf8")
     assert(listBackups(configPath).length === 1, "configure did not create exactly one backup")
@@ -136,7 +144,7 @@ function main() {
     assert(readFileSync(configPath, "utf8") === configAfterFirst, "repeated configure changed configuration")
     assert(listBackups(configPath).length === 1, "repeated configure created another backup")
 
-    const remove = ["exec", "--offline", "--", "openeuler-ops-agent", "remove"]
+    const remove = ["exec", "--offline", "--", "openeuler-ops-configure", "remove"]
     run("npm", remove, { cwd: projectDir, env: environment })
     const configAfterRemove = readFileSync(configPath, "utf8")
     assert(listBackups(configPath).length === 2, "remove did not create exactly one additional backup")

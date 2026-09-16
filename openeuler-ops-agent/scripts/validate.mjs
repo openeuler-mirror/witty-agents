@@ -23,7 +23,7 @@ for (const path of manifest) {
   assert(existsSync(join(PROJECT_ROOT, path)), `required package file is missing: ${path}`)
 }
 
-for (const checkable of ["bin/cli.js", "lib/configure.mjs", "lib/validate-plugin.mjs", "scripts/validate-dist.mjs"]) {
+for (const checkable of ["bin/openeuler-ops-setup.mjs", "bin/openeuler-ops-configure.mjs", "lib/configure.mjs", "lib/validate-plugin.mjs", "scripts/validate-dist.mjs"]) {
   execFileSync(process.execPath, ["--check", join(PROJECT_ROOT, checkable)], { stdio: "inherit" })
 }
 

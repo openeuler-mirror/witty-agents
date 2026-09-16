@@ -105,53 +105,14 @@ for skill in "${!SKILLS[@]}"; do
 done
 else
   log_warn "skillhub CLI 不可用，跳过 Skill 安装"
-  log_warn "请手动安装 skillhub 后重新运行: openeuler-ops-agent install"
+  log_warn "请手动安装 skillhub 后重新运行: openeuler-ops-setup install"
 fi
 
-# --- Agent 配置 ---
-log_info "Step 4: 注册 Agent..."
-
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-AGENT_MD="$SCRIPT_DIR/agent.md"
-
-for cfg in "$HOME/.config/opencode/opencode.jsonc" "$HOME/.opencode.jsonc" "$HOME/opencode.jsonc"; do
-  [ -f "$cfg" ] && OPENCODE_CONFIG="$cfg" && break
-done
-
-if [ -z "${OPENCODE_CONFIG:-}" ]; then
-  log_warn "未找到 opencode 配置文件，请在 MCP 配置后手动重启 opencode"
-else
-  node -e "
-    const fs = require('fs');
-    let raw = fs.readFileSync('$OPENCODE_CONFIG','utf8');
-
-    // JSONC parser (handles // and /* */ comments correctly, preserves URLs)
-    let result='', inString=false, inComment=false;
-    for(let i=0;i<raw.length;i++){
-      const ch=raw[i], next=raw[i+1];
-      if(inComment){ if(ch==='\n'){inComment=false;result+=ch;} continue; }
-      if(inString){ result+=ch;       if(ch==='\\\\'){i++;result+=next;continue;} if(ch==='\"')inString=false; continue; }
-      if(ch==='\"'){inString=true;result+=ch;continue;}
-      if(ch==='/'&&next==='/'){inComment=true;i++;continue;}
-      if(ch==='/'&&next==='*'){const end=raw.indexOf('*/',i+2);if(end!==-1){i=end+1;}continue;}
-      result+=ch;
-    }
-    result=result.replace(/,(\s*[}\]])/g,'\$1');
-    const cfg=JSON.parse(result);
-
-    cfg.agent = cfg.agent || {};
-    cfg.agent['openeuler-ops'] = {
-      description: 'openEuler 运维助手 — 故障排查/巡检/CVE/加固/调优等16个场景',
-      prompt: '{file:$AGENT_MD}',
-      skills: ['agent-tools','ssh-remote-skill','ops-maintenance','log-analyzer','kubernetes','docker-diag','self-improvement','skill-vetter','summarize','buddy-log-analyzer'],
-    };
-    fs.writeFileSync('$OPENCODE_CONFIG', JSON.stringify(cfg, null, 2));
-    console.log('  Agent 已注册到 $OPENCODE_CONFIG ✓');
-  " 2>&1 | sed 's/^/  /'
-fi
-
+# setup 只负责在线 Skills 准备；Agent 注册统一走 configure（plugin + 软链机制），
+# 不再直接写 ~/.config/opencode/opencode.jsonc 的 config.agent 段。
 log_info "====================================="
-log_info "  安装完成！重启 opencode 即可使用。"
-log_info "  对话中直接输入运维问题，Agent 自动匹配场景。"
+log_info "  Skills 准备完成。注册 Agent 请执行："
+log_info "    openeuler-ops-configure install --target=opencode"
+log_info "  注册后重启 opencode，对话中直接输入运维问题即可自动匹配场景。"
 log_info "====================================="
 echo ""
