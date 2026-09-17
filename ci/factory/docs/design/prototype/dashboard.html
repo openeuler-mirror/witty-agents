@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>工作台 · witty-agent-factor</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body data-shell="plain" data-page="dashboard">
+<div class="content">
+  <div class="page-header"><h1>工作台</h1><span class="sub">早上好，张伟 · 今天有 1 次构建失败需要关注</span><span class="spacer"></span>
+    <div class="actions"><button class="btn hide-viewer" id="goTrigger" onclick="openTriggerDrawer()">＋ 触发构建</button></div>
+  </div>
+
+  <div class="stat-grid">
+    <div class="stat-card"><div class="lab">Agent 数（启用 / 注册）</div><div class="val" id="stAgents">—</div><div class="foot"><span>xlite-perf-optimizer 已禁用构建</span></div></div>
+    <div class="stat-card"><div class="lab">构建记录总数</div><div class="val" id="stBuilds">—</div><div class="foot"><span class="up">含 pollSCM 自动构建</span></div></div>
+    <div class="stat-card"><div class="lab">构建成功率</div><div class="val" id="stRate">—</div><div class="foot"><span class="down">主要失败：Artifact Gates</span></div></div>
+    <div class="stat-card"><div class="lab">最近发布</div><div class="val" style="font-size:16px;padding:8px 0 2px;word-break:break-all">0.10.5-ci.aarch64.0</div><div class="foot">witty-agent-shennong · arm-test · 昨天 19:12</div></div>
+  </div>
+
+  <div class="ai-panel hidden" id="aiTrend">
+    <div class="ai-head"><span class="ai-badge">AI</span><span class="ai-title">近 7 日趋势解读</span><span class="ai-fold" id="aiTrendClose">收起</span></div>
+    <div id="aiTrendBody"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-h"><b>Agent 构建 / 下载统计</b><span class="dim">构建 = 全部构建记录 · 下载 = 累计产物下载</span><span class="spacer"></span>
+      <div class="cf-wrap">
+        <button class="btn sm" id="cfBtn">筛选 Agent ▾</button>
+        <div class="dropdown cf-dd" id="cfDd">
+          <div class="cf-head"><span class="link" id="cfAll">全选</span><span class="link" id="cfNone">清空</span><span class="dim" style="margin-left:auto">多选，图表实时联动</span></div>
+          <input class="inp cf-search" id="cfSearch" placeholder="搜索 Agent 名称 / id 过滤">
+          <div class="cf-list" id="cfList"></div>
+          <div class="cf-empty dim" id="cfEmpty" style="display:none">无匹配的 Agent</div>
+        </div>
+      </div>
+      <select class="inp cf-top" id="cfTop" title="超过 N 个时聚合为「其他」"><option value="5">Top 5</option><option value="8">Top 8</option><option value="all">全部</option></select>
+    </div>
+    <div class="card-b stat-charts">
+      <div class="chart-col">
+        <div class="chart-title">构建次数占比（按 Agent）</div>
+        <div class="donut-wrap">
+          <div class="donut" id="donut"></div>
+          <div class="legend" id="pieLegend"></div>
+        </div>
+      </div>
+      <div class="chart-col">
+        <div class="chart-title">构建 / 下载次数对比</div>
+        <div class="bars" id="agentBars"></div>
+        <div class="chart-note"><i style="background:var(--primary)"></i>构建次数 <i style="background:var(--success)"></i>下载次数 <i style="background:#cdd6e0"></i>其他（未进 Top-N 的 Agent 聚合）· 两指标各自按最大值归一化，数值标注于柱顶 · Agent 较多时支持横向滚动</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="duo">
+    <div class="card">
+      <div class="card-h"><b>最近构建</b><span class="spacer"></span><a href="builds.html" class="link">查看全部 →</a></div>
+      <div class="card-b tight">
+        <table class="tbl">
+          <thead><tr><th>编号</th><th>Agent</th><th>触发</th><th>状态</th><th>耗时</th><th>时间</th></tr></thead>
+          <tbody id="recentBuilds"></tbody>
+        </table>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <div class="card">
+        <div class="card-h"><b>待办发布</b></div>
+        <div class="card-b">
+          <div style="display:flex;gap:10px;align-items:center;margin-bottom:12px"><span class="tag f">待人工核查</span><span style="font-size:13px">发布 #31 SHA-256 比对不一致</span></div>
+          <div class="dim" style="margin-bottom:12px">witty-agent-shennong@0.10.5-ci.aarch64.0 · registry 回下载包与候选包不一致</div>
+          <div class="actions"><button class="btn sm primary" data-go="release-detail.html">去处理</button><button class="btn sm ai" data-toast="AI 建议（mock）：比对失败通常由镜像同步延迟引起，建议 5 分钟后重试下载核验">AI 解释</button></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h"><b>项目动态</b></div>
+        <div class="card-b">
+          <div class="tl">
+            <div class="tl-item bad"><div class="t">构建 #127 失败 · Artifact Gates</div><div class="s">张伟 · 12 分钟前</div></div>
+            <div class="tl-item ok"><div class="t">自动构建 #126 完成（commit a1b2c3d）</div><div class="s">pollSCM · 今天 09:47</div></div>
+            <div class="tl-item warn"><div class="t">MR !58 合并：新增 nl2sql 前缀 docs/</div><div class="s">李娜 · 昨天 16:20</div></div>
+            <div class="tl-item"><div class="t">发布 0.10.5-ci.aarch64.0 → arm-test</div><div class="s">张伟 · 昨天 19:12</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-h"><b>近 7 日构建趋势</b><span class="spacer"></span><button class="btn sm ai" id="aiTrendBtn">AI 解读</button></div>
+    <div class="card-b">
+      <div style="display:flex;align-items:flex-end;gap:10px;height:120px">
+        <div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;height:100%"><div style="height:60%;background:#c6e2ff;border-radius:4px 4px 0 0"></div><div class="dim" style="text-align:center;font-size:11px">周一</div></div>
+        <div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;height:100%"><div style="height:80%;background:#c6e2ff;border-radius:4px 4px 0 0"></div><div class="dim" style="text-align:center;font-size:11px">周二</div></div>
+        <div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;height:100%"><div style="height:45%;background:#67c23a;border-radius:4px 4px 0 0"></div><div class="dim" style="text-align:center;font-size:11px">周三</div></div>
+        <div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;height:100%"><div style="height:90%;background:#c6e2ff;border-radius:4px 4px 0 0"></div><div class="dim" style="text-align:center;font-size:11px">周四</div></div>
+        <div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;height:100%"><div style="height:70%;background:#c6e2ff;border-radius:4px 4px 0 0"></div><div class="dim" style="text-align:center;font-size:11px">周五</div></div>
+        <div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;height:100%"><div style="height:35%;background:#67c23a;border-radius:4px 4px 0 0"></div><div class="dim" style="text-align:center;font-size:11px">周六</div></div>
+        <div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;height:100%"><div style="height:55%;background:#f56c6c;border-radius:4px 4px 0 0"></div><div class="dim" style="text-align:center;font-size:11px">今天</div></div>
+      </div>
+      <div class="dim" style="margin-top:8px">绿色=全通过 · 蓝色=部分变体通过 · 红色=存在失败</div>
+    </div>
+  </div>
+</div>
+<script src="assets/proto.js"></script>
+</body>
+</html>

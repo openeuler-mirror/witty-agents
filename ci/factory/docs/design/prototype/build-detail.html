@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>构建 #127 · witty-agents · witty-agent-factor</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body data-shell="project" data-page="build-detail">
+<div class="content">
+  <div class="page-header">
+    <h1>构建 #127</h1><span class="tag f">失败</span>
+    <span class="spacer"></span>
+    <div class="actions">
+      <button class="btn" id="dlLog">下载全量日志</button>
+      <button class="btn hide-viewer" id="cancelBtn">取消</button>
+      <button class="btn hide-viewer" id="replayBtn">Replay 失败阶段</button>
+      <button class="btn primary hide-viewer" id="retrigger">重跑</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-b">
+      <div class="summary-strip">
+        <span>Agent <b class="mono">shennong-crash</b></span><span class="sep">|</span>
+        <span class="chips"><span class="chip">VARIANT=<b>all</b></span><span class="chip">STYLE=<b>organization</b></span><span class="chip">ARCH=<b>aarch64</b></span><span class="chip more" data-toast="PYTHON_BIN=python3.11 · PYPI=huaweicloud 镜像 · OCR_CACHE=/home/witty-agents-jenkins/ocr-model-cache · RUN_REAL_INSTALL=true · STRICT_OFFLINE=true · PUBLISH=false">+5</span></span>
+        <span class="sep">|</span><span>触发人 <b>张伟</b></span><span class="sep">|</span><span class="mono">commit <span class="c-cmt">a1b2c3d</span></span><span class="sep">|</span><span>耗时 <b class="mono">14m32s</b>（上限 240min）</span><span class="sep">|</span><span class="dim">今天 10:21 触发 · 10:36 结束</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-h"><b>Stage 视图</b><span class="dim">点击阶段可定位到日志锚点 · 条件阶段（未执行）灰显</span></div>
+    <div class="steps" id="stepFlow"></div>
+  </div>
+
+  <div class="ai-panel hidden" id="aiDiag">
+    <div class="ai-head">
+      <span class="ai-badge">AI</span><span class="ai-title">构建日志诊断</span>
+      <span class="tag f">失败</span><span class="tag w">阶段性结论</span>
+      <span class="ai-fold" id="aiClose">收起</span>
+    </div>
+    <div id="aiDiagBody"></div>
+  </div>
+
+  <div class="build-layout">
+    <div class="card" style="margin:0">
+      <div class="card-h"><b>阶段</b></div>
+      <div class="card-b tight"><div class="stage-list" id="stageList"></div></div>
+    </div>
+    <div class="log-wrap">
+      <div class="log-bar">
+        <div class="grp">构建日志</div>
+        <div class="grp"><button class="btn sm" id="errUp">上一错误</button><button class="btn sm" id="errDown">下一错误</button><span>错误 <b id="errCount">0</b></span></div>
+        <div class="grp"><input id="logSearch" placeholder="搜索日志，回车高亮"></div>
+        <label class="sw"><input type="checkbox" id="followChk" checked>自动跟随</label>
+        <button class="btn sm" id="simBtn">模拟追加</button>
+        <button class="btn sm ai" id="aiToggle" style="margin-left:auto">AI 分析</button>
+        <button class="btn sm" id="logBottom">回到底部<</button>
+      </div>
+      <div class="log-view" id="logView"></div>
+    </div>
+  </div>
+
+  <div class="fold">
+    <div class="f-h" id="artFold"><span class="arr">▶</span>Artifacts（3）<span class="dim">归档规则：ci-artifacts/** · **/artifacts/** · **/ci-reports/*.json · fingerprint</span></div>
+    <div class="f-b">
+      <div class="artifact-list">
+        <div class="artifact-item">ci-artifacts/build-plan.json<span class="sz">1.2KB</span><button class="btn sm" data-art="build-plan.json">预览</button><button class="btn sm" data-dl-art="build-plan.json">下载</button></div>
+        <div class="artifact-item">shennong-crash-agent/artifacts/online-package-report.json<span class="sz">2.8KB</span><button class="btn sm" data-art="online-package-report.json">预览</button><button class="btn sm" data-dl-art="online-package-report.json">下载</button></div>
+        <div class="artifact-item">shennong-crash-offline-0.10.5-ci.aarch64.0.tgz<span class="sz">386MB · 门禁未通过，仅供分析</span><button class="btn sm" data-art="offline.tgz">预览</button><button class="btn sm" data-dl-art="offline tgz">下载</button></div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="assets/proto.js"></script>
+</body>
+</html>

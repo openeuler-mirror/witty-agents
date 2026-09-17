@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>原型导览 · witty-agent-factor</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body data-shell="none">
+<div class="hero">
+  <div class="hero-top"><div class="mark">W</div><span class="pill">HTML 静态原型 · v0.3 · 对齐用例/前端设计文档</span></div>
+  <h1>witty-agent-factor 前端原型</h1>
+  <p class="lead">面向 witty-agents 生态（可安装到 opencode/witty 的 Agent 包）的管理前端。所有数据为 mock，但严格对齐上游仓库事实：4 个真实 Agent、根 Jenkinsfile 的 11 个构建阶段与 14 个参数、prerelease + 架构 dist-tag 发布门禁。所有页面可跳转、所有按钮均有响应。</p>
+
+  <div class="page-grid">
+    <a class="page-card" href="login.html"><span class="pc-tag">LG</span><b>登录页</b><span>独立布局；登录成功跳转工作台</span></a>
+    <a class="page-card" href="dashboard.html"><span class="pc-tag">DB</span><b>工作台</b><span>统计卡片 + 双栏 + AI 趋势解读（嵌入式能力点）</span></a>
+    <a class="page-card" href="project-overview.html"><span class="pc-tag">OV</span><b>项目概览</b><span>Agent 健康度 + 动态 + 设置区（AI 建议 diff 确认卡）</span></a>
+    <a class="page-card" href="agents.html"><span class="pc-tag">AG</span><b>Agent 管理</b><span>4 个真实 Agent 卡片；启停/删除受角色控制</span></a>
+    <a class="page-card" href="builds.html"><span class="pc-tag">BL</span><b>构建列表</b><span>筛选 + 真分页 + AI 汇总条 + 触发构建抽屉（14 参数）</span></a>
+    <a class="page-card" href="build-detail.html"><span class="pc-tag">BD</span><b>构建详情</b><span>11 阶段 Stage 视图 + 日志高亮/错误导航 + AI 诊断条</span></a>
+    <a class="page-card" href="release-detail.html"><span class="pc-tag">RL</span><b>发布详情</b><span>门禁清单 + 失败项 AI 解释 + 回滚（仅管理员）</span></a>
+    <a class="page-card" href="users.html"><span class="pc-tag">US</span><b>用户管理</b><span>系统管理员页面；启停需二次确认</span></a>
+    <a class="page-card" href="audit.html"><span class="pc-tag">AU</span><b>审计日志</b><span>支持「用户 × Agent」标记筛选，行点击看详情</span></a>
+  </div>
+
+  <div class="feat-grid">
+    <div class="feat-card"><div class="fc-t">角色差异化视图</div><div class="fc-d">顶栏右侧「视角」切换 项目管理员 / 开发成员 / 只读访客。切到<strong>开发成员</strong>：触发构建抽屉中的「发布选项」区块消失；切到<strong>只读访客</strong>：触发/重跑/删除等操作按钮全部隐藏——对应设计文档第 8 章四层差异矩阵。</div></div>
+    <div class="feat-card"><div class="fc-t">日志可读性</div><div class="fc-d">构建详情页：ERROR/WARN/PASS 分级着色；版本号（<span class="mono">0.10.5-ci.aarch64.0</span>）、SHA-256、dist-tag、npm 包名、Agent id、commit、URL 识别高亮；上一/下一错误导航；搜索回车高亮命中；行号点击复制；「模拟追加」体验自动跟随。</div></div>
+    <div class="feat-card"><div class="fc-t">嵌入式 Agent 能力点</div><div class="fc-d">AI 能力不占独立框架，附着于功能区就地展开：日志区「AI 分析」诊断条、构建表单「AI 推荐」、构建列表「AI 汇总」、门禁失败项「AI 解释」、设置区「AI 建议」（高危 diff 确认卡，人审后才应用）。护栏：低危自动 / 高危人审 / 发布仅建议。</div></div>
+    <div class="feat-card"><div class="fc-t">长内容自适应</div><div class="fc-d">列表分页（构建/审计/用户）、日志虚拟化滚动、14 参数分三段折叠（基本/高级/发布）、项目内功能侧边栏拆分、阶段列表与日志双栏滚动隔离。</div></div>
+  </div>
+
+  <div class="fact">
+    <b>mock 数据对齐上游仓库事实</b><br>
+    Agent 注册表 ci/agents.json → <span class="hl">shennong-crash / nl2sql / openeuler-ops / xlite-perf-optimizer</span>（schemaVersion=1，changedPathPrefixes 增量构建）<br>
+    Jenkins Job → witty-agent-package-ci · pollSCM H/5 · disableConcurrentBuilds · 保留 20 构建 / 10 产物 · 240min 超时<br>
+    11 阶段 → Init → Plan → Prepare Agents → Assets → Deps → Validate → Build → Gates → Contract → Real Install → Publish<br>
+    发布护栏 → prerelease 版本（0.10.5-ci.aarch64.0）· dist-tag 仅 x86-test / arm-test，<span class="c-latest">latest</span> 禁改 · SHA-256 回下载核验
+  </div>
+</div>
+</body>
+</html>
