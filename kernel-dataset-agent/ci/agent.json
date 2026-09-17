@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "kernel-dataset",
+  "displayName": "Kernel Dataset Agent",
+  "directory": "kernel-dataset-agent",
+  "driver": "ci/driver.mjs",
+  "changedPathPrefixes": [
+    "kernel-dataset-agent/"
+  ],
+  "variants": [
+    "online",
+    "offline"
+  ],
+  "defaultVariant": "online",
+  "packageStyles": [
+    "organization",
+    "plain"
+  ],
+  "supportedArchitectures": [
+    "x86_64",
+    "aarch64"
+  ],
+  "registryPackages": {
+    "online": "witty-agent-kernel-dataset-online"
+  },
+  "publishRequiresAllVariants": true
+}

@@ -17,10 +17,10 @@ SCM/人工触发
 → 可选 npm 发布
 ```
 
-当前 `ci/agents.json` 中只有 `shennong-crash` 已启用。NL2SQL、openEuler Ops 和 XLite
-均已按仓库目录登记但明确禁用；它们还没有完成统一 CI 契约。手工选择或自动检测到这些
-目录发生变更时，Pipeline 会在 Resolve Build Plan 阶段给出明确错误，不会用无关 Agent
-的绿色结果掩盖未验证改动。
+当前 `ci/agents.json` 已启用 5 个 Agent：`shennong-crash`、`nl2sql`、`openeuler-ops`、
+`xlite-perf-optimizer`、`kernel-dataset`。新增 Agent 必须先在注册表登记并启用，
+否则手工选择该 id 或自动检测到其目录变更时，Pipeline 会在 Resolve Build Plan 阶段给出明确
+错误，不会用无关 Agent 的绿色结果掩盖未验证改动。
 
 ## 2. Jenkins 如何读取代码仓
 

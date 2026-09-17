@@ -1,0 +1,8 @@
+{
+  "dataRoot": "/home/data",
+  "intervalMs": 3600000,
+  "tokens": {
+    "github": "",
+    "gitcode": ""
+  }
+}
