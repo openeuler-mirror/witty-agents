@@ -3,7 +3,7 @@
 > 流水线运维平台 · 面向 witty-agents 生态的 Agent 构建 / 发布 / 审计中台
 
 | 项 | 值 |
-|---|---|
+| --- | --- |
 | 文档版本 | v1.0 |
 | 基线日期 | 2026-09-17 |
 | 代码落位 | `witty-agents/ci/factory/`（本仓库，约定） |
@@ -19,7 +19,7 @@
 在动手前必须先接受这三条，否则平台会退化成"第二个 Jenkins"：
 
 1. **Jenkins 仍是唯一流水线引擎**。`Jenkinsfile` 定义阶段、门禁与发布顺序；平台不解析也不执行 Jenkinsfile，只读取它的执行结果（阶段、日志、报告、产物）。任何"平台自己拼构建步骤"的设计都是错的。
-2. **仓库是唯一事实源**。Agent 注册（`ci/agents.json`）、Agent 能力（`<agent>/ci/agent.json`）、包版本（`<agent>/package.json`）、构建计划（`ci-artifacts/build-plan.json`）全部以仓库为准。平台只做只读同步 + 受控写回（走 MR）。
+2. **仓库是唯一事实源**。Agent 注册（`ci/agents.json`）、Agent 能力（`<agent>/ci/agent.json`）、包版本（`<agent>/package.json`）、构建计划（`ci-artifacts/build-plan.json`）全部以仓库为准。平台只做只读同步，不回写仓库（Agent 启停在仓库改 `ci/agents.json`）。
 3. **平台不持有 npm Token**。npm 发布仍由 Jenkins 凭据 `npm-token` 完成。平台发起发布 = 触发一次 `PUBLISH=true` 的构建并跟踪结果，而不是自己去 `npm publish`。dist-tag 回滚同理走受控 Job 或人工执行。
 
 ---
@@ -27,7 +27,7 @@
 ## 2. 文档导航
 
 | 文档 | 内容 | 主要读者 |
-|---|---|---|
+| --- | --- | --- |
 | [01-产品与用例.md](01-product-and-use-cases.md) | 平台定位、角色与权限矩阵、用例清单、页面映射、非功能需求 | 产品 / 全员 |
 | [02-总体架构.md](02-architecture.md) | 架构图、分层、技术选型、上游系统交互、部署拓扑、安全边界 | 架构 / 后端 / 运维 |
 | [03-后端设计.md](03-backend-design.md) | 模块划分、Jenkins 适配层、采集器、发布服务、RBAC、审计、AI 能力点 | 后端 |
@@ -47,14 +47,14 @@
 
 把当前只能通过 Jenkins 控制台 + 服务器磁盘 + npm 网页三处拼凑的流水线事实，收敛成一个有权限、有审计、有解释能力的运维平台：
 
-```
+```text
 Jenkins Job ／ 仓库 ／ npm registry
         │（只读采集 + 受控写入）
         ▼
 witty-agent-factory
   ├─ 看：Agent 健康、构建历史、11 阶段、日志、报告、产物、发布链路
   ├─ 做：触发构建（14 参数）、重跑、取消、发布确认、dist-tag 回滚
-  ├─ 管：4 级 RBAC、成员与用户、项目配置（走 MR 写回）
+  ├─ 管：4 级 RBAC、成员与用户、项目配置（平台侧配置，不回写仓库）
   └─ 审：全量操作审计，AI 操作标记「用户 × Agent」
 ```
 
@@ -70,7 +70,7 @@ witty-agent-factory
 ## 5. 术语表
 
 | 术语 | 含义 |
-|---|---|
+| --- | --- |
 | Agent | 仓库内一个可打包的独立能力单元（如 `shennong-crash`），对应 `<dir>/ci/agent.json` |
 | 变体 Variant | 包内容变体：`online`（不含 Python wheels）/ `offline`（含 wheels，绑定架构） |
 | 构建 Build | 一次 Jenkins Pipeline 执行，对应 `Jenkinsfile` 的 11 个阶段 |

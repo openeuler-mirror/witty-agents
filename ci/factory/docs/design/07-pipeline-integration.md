@@ -5,7 +5,7 @@
 ## 1. 上游事实清单
 
 | 文件 | 作用 | 平台用途 |
-|---|---|---|
+| --- | --- | --- |
 | `Jenkinsfile` | 仓库级流水线定义：11 阶段、14 参数、options、triggers、归档规则 | 阶段模板、参数定义、触发接口的依据 |
 | `ci/agents.json` | Agent 注册表（白名单 + 启用状态 + 增量前缀） | Agent 列表与启用状态 |
 | `<agent>/ci/agent.json` | 单个 Agent 的能力与打包元数据 | 变体、包风格、架构、registry 包名 |
@@ -23,7 +23,7 @@
 来自 `Jenkinsfile` 的真实定义（顺序即执行顺序）：
 
 | # | 阶段 | 执行体 | 条件 | 失败影响 | 平台展示要点 |
-|---|---|---|---|---|---|
+| --- | --- | --- | --- | --- | --- |
 | 1 | Initialize Parameters | 内联 shell | 总是 | 构建失败 | 展示归一整定的 14 个参数与 Node 版本校验 |
 | 2 | Resolve Build Plan | `ci/scripts/resolve-plan.mjs` | 总是 | 构建失败 | 展示 `build-plan.json`：命中/跳过的 Agent 与原因 |
 | 3 | Prepare Agents | `--phase=prepare` | 总是 | 构建失败 | 展示注册的 Agent |
@@ -50,7 +50,7 @@ triggers { pollSCM('H/5 * * * *') }           // 平台需区分"自动触发"�
 
 运行环境（平台"系统状态"卡片需展示）：
 
-```
+```text
 agent: docker { image 'witty-agents-ci-runtime:oe2403sp4-node20-py311', label 'built-in' }
 args : --user 0:0 --cap-add SYS_ADMIN --cap-add NET_ADMIN --security-opt seccomp=unconfined
        -v /home/witty-agents-jenkins/cache/npm:/root/.npm
@@ -65,7 +65,7 @@ post  : chown -R 1000:1000 $WORKSPACE
 平台表单、校验与快照均以此为准（类型与取值域由 Jenkinsfile 决定，平台不得放宽）：
 
 | # | 参数 | 类型 | 默认值 | 平台分组 | 备注 |
-|---|---|---|---|---|---|
+| --- | --- | --- | --- | --- | --- |
 | 1 | `AGENT` | string | `auto` | 1 构建范围 | `auto` / `all` / `<agent id>`；平台用"模式"卡片映射 |
 | 2 | `VARIANT` | choice | `default` | 2 变体与架构 | `default` / `online` / `offline` / `all` |
 | 3 | `PACKAGE_STYLE` | choice | `organization` | 2 变体与架构 | `organization` → `@openeuler/*`；`plain` → 非 scoped |
@@ -96,7 +96,7 @@ post  : chown -R 1000:1000 $WORKSPACE
 }
 ```
 
-- `enabled=false` 的 Agent 不参与增量构建；平台启停开关改的就是这个字段（走 MR）。
+- `enabled=false` 的 Agent 不参与增量构建；该字段只在仓库修改，平台只读同步、不提供启停入口。
 - 仓库唯一事实源；平台只做投影，不做本地覆盖。
 
 ### 4.2 `<agent>/ci/agent.json`
@@ -188,7 +188,7 @@ git merge-base --is-ancestor HEAD refs/remotes/origin/master || {
 
 ### 5.5 平台预检 vs Jenkins 执行
 
-```
+```text
 平台预检（只读，可反复执行）   → 不产生副作用，用于"能不能发布"的判断
 Jenkins Publish 阶段（执行）  → 真正的写操作，仍以 Jenkins 内部判断为准
 ```
@@ -200,7 +200,7 @@ Jenkins Publish 阶段（执行）  → 真正的写操作，仍以 Jenkins 内�
 ### 6.1 dist-tag 约定
 
 | dist-tag | 用途 | 由谁设置 | 平台行为 |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `x86-test` | x86_64 冒烟发布 | smoke 流水线按架构自动设置 | 展示、记录历史 |
 | `arm-test` | aarch64 冒烟发布 | 同上 | 展示、记录历史 |
 | `latest` | 正式默认版本 | **任何自动流程都不得修改** | 监控漂移，改动即高危告警 |
@@ -240,7 +240,7 @@ Jenkins Publish 阶段（执行）  → 真正的写操作，仍以 Jenkins 内�
 主 Job 的 Publish 阶段在遇到"版本已存在且内容不同"时会自动 bump patch 版本、重建并重发（`publish-packages.mjs`）。是否把 bump 提交推回远端取决于 `GIT_CREDENTIAL_ID`：
 
 | `GIT_CREDENTIAL_ID` | 行为 | 平台展示 |
-|---|---|---|
+| --- | --- | --- |
 | 留空 | bump 只发生在 workspace，远端仓库版本不变 | 黄色提示"版本 bump 未推回仓库，下次构建会再次冲突" |
 | 已配置 | bump 提交推回源分支 | 展示 bump 前后版本与推送结果 |
 
@@ -251,7 +251,7 @@ Jenkins Publish 阶段（执行）  → 真正的写操作，仍以 Jenkins 内�
 平台 `ReportDigester` 需要处理的文件与关键字段：
 
 | 文件 | `kind` | 关键字段 | 用途 |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `ci-artifacts/build-plan.json` | `build_plan` | `status`, `sourceCommit`, `agents[]`, `publish` | 构建计划卡片 |
 | `<agent>/artifacts/ci-summary.json` | `ci_summary` | `status`, `variant` | 变体总体结论、门禁 3 |
 | `<agent>/artifacts/*-package-report.json` | `package_report` | `packageName`, `version`, `sizeBytes`, `sha256`, `gates` | 产物卡、体积门禁 |
@@ -265,7 +265,7 @@ Jenkins Publish 阶段（执行）  → 真正的写操作，仍以 Jenkins 内�
 ## 9. 采集映射与刷新频率
 
 | 平台数据 | 上游 | 触发方式 | 频率 |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | Agent 注册与元数据 | `ci/agents.json` + `agent.json` + `package.json`（master） | 定时 + 手动 | 10 min |
 | 构建列表与状态 | Jenkins Job API | 定时 | 30 s（有运行中构建 5 s） |
 | 阶段列表 | Jenkins `wfapi/describe` | 构建结束时 | 一次性 |
@@ -279,9 +279,9 @@ Jenkins Publish 阶段（执行）  → 真正的写操作，仍以 Jenkins 内�
 
 > 以下为 2026-09-17 在 ARM64 节点实测所得，建议直接做契约测试的期望值。
 
-**主 Job `witty-agents-builder`**
+### 主 Job `witty-agents-builder`
 
-```
+```text
 仓库   : https://atomgit.com/cui-gaoleng/witty-agents.git
 分支   : */ci/witty-agents-package-pipeline-v1
 Script : Jenkinsfile
@@ -292,17 +292,17 @@ Script : Jenkinsfile
 触发   : #16–#21 全部为 "Started by an SCM change"
 ```
 
-**Smoke Job `witty-agents-online-publish-smoke-arm`**
+### Smoke Job `witty-agents-online-publish-smoke-arm`
 
-```
+```text
 #13 SUCCESS（2026-09-14 16:31）→ 发布 witty-agent-shennong@0.10.6-ci.aarch64.0 / arm-test
 latest 发布前后均为 0.10.5-ci.x86-64.0（action=preserved）
 源包 SHA-256 = 回下载 SHA-256（c79423c47393d930e03fd8f70f6dfe231112d6bd630004afd60ede0bcde17b59）
 ```
 
-**npm registry 现状（发布监控的初始状态）**
+### npm registry 现状（发布监控的初始状态）
 
-```
+```text
 versions : 0.10.5-ci.x86-64.0, 0.10.5-ci.aarch64.0, 0.10.6-ci.aarch64.0
 dist-tags: latest  → 0.10.5-ci.x86-64.0   ← 历史遗留，仍指向测试版本
            x86-test→ 0.10.5-ci.x86-64.0
@@ -314,7 +314,7 @@ dist-tags: latest  → 0.10.5-ci.x86-64.0   ← 历史遗留，仍指向测试�
 ## 11. 已知偏差与注意事项
 
 | 偏差 | 说明 | 平台应对 |
-|---|---|---|
+| --- | --- | --- |
 | Job 命名不统一 | 运维手册建议的主 Job 名为 `witty-agent-package-ci`，实际为 `witty-agents-builder` | 平台按"绑定配置"读 Job 名，不做硬编码；设置页提示与手册不一致 |
 | 仍指向 fork 分支 | 两个 Job 都指向 `cui-gaoleng` 的 fork | 预检项 1 会 fail；工作台提供"仓库绑定待切换"待办 |
 | 文档与代码不一致 | `ci/JENKINS_OPERATION.md` 写的运行镜像是 `shennong-oe2403sp4-acceptance:runtime-v2`，实际为 `witty-agents-ci-runtime:oe2403sp4-node20-py311` | 平台展示"实际值来自 Jenkinsfile"，并在设置页标注文档待更新 |
@@ -322,3 +322,48 @@ dist-tags: latest  → 0.10.5-ci.x86-64.0   ← 历史遗留，仍指向测试�
 | 构建日志含 ANSI | 真实日志被 `timestamps()` 与高亮包裹 | 服务端剥离后再入库（见 03 §3.2） |
 | `latest` 历史遗留 | 首次公开发布时由 npm 自动创建 | 平台监控但不自动改；作为长期待办展示 |
 | Jenkins 首页存在无关红 Job | `witty-ub-build` 等每日失败 | 平台只纳管绑定 Job，不展示无关 Job 的红色状态 |
+| 测试环境未安装 `pipeline-stage-view` | wfapi 当前返回 404 | 按 §12.1 补齐插件；未补齐前平台走日志解析降级 |
+| 测试环境授权为 `FullControlOnceLoggedIn` | 服务账号实为完全控制（含 Administer） | 按 §12.2 切换 Matrix 授权；属 Jenkins 侧整改 |
+| 测试环境 Jenkins 暴露 `0.0.0.0:8080` | 与 §12.3 基线不符 | 全新部署按基线执行；测试环境列入运维整改 |
+
+## 12. Jenkins 基线前提（全新部署必须满足）
+
+平台假设上游 Jenkins 满足以下基线。本节面向"独立全新部署"的目标状态编写，不以任何既有测试环境的现状为依据；全新部署（`ci/jenkins/bootstrap.sh`）应把本节固化为自动化配置，部署后由 `scripts/smoke-jenkins.ts` 逐项校验并输出报告。
+
+### 12.1 插件
+
+| 插件 | 用途 | 缺失影响 |
+| --- | --- | --- |
+| `pipeline-stage-view` | 提供 `wfapi/describe` REST 端点（阶段视图主路径，见 [03](03-backend-design.md) §3.2/§3.3） | wfapi 返回 404，阶段视图降级为 consoleText 解析，UI 明示"降级" |
+| `workflow-aggregator`、`docker-workflow`、`credentials-binding`、`timestamper` 等 | Pipeline 本身运行所需 | 无流水线可跑（Jenkins 自身前提） |
+
+注意：`workflow-api` 插件 ≠ wfapi REST 端点，后者由 `pipeline-stage-view` 提供。`ci/jenkins/plugins.txt` 已声明 `pipeline-stage-view`，部署时必须确认实际安装成功（存在插件目录且无 `.jpi.tmp` 残留）。
+
+### 12.2 授权策略（Matrix 最小权限）
+
+Jenkins 授权策略使用 **Matrix-based security**（或以 Role-Based Strategy 插件等价实现），平台服务账号授予且仅授予：
+
+| 权限 | 授予 | 用途 |
+| --- | --- | --- |
+| Overall/Read | ✔ | API 基础访问 |
+| Job/Read | ✔ | 构建、阶段、日志、产物清单读取 |
+| Job/Build | ✔ | `buildWithParameters` 触发 |
+| Job/Cancel | ✔ | 停止构建 |
+| Job/Workspace | ✔ | 产物下载 |
+| Run/Replay | 可选（P2） | Replay 失败阶段；未授予时平台隐藏 Replay 入口 |
+| Overall/Administer、Job/Configure、Job/Delete、Credentials/* | ✘ | 平台不需要，禁止授予 |
+
+约束与容错：
+
+- 服务账号使用 **API Token**（不使用登录密码）做 HTTP Basic；平台侧加密存储。
+- `/queue/api/json` 在 Overall/Read 下可用；`/computer/api/json`（系统状态卡）在最小矩阵下可能不可用，平台必须降级为隐藏该卡片而不是报错。
+- 禁止采用 `FullControlOnceLoggedIn`（登录即完全控制）作为正式授权策略——它只允许作为联调期临时手段，重新部署时必须纠正。
+- 平台自身的写操作集合恒等于 {触发、取消、Replay}；即使账号被错误授予了更高权限，平台也不得调用任何配置类端点。
+
+### 12.3 网络暴露
+
+Jenkins 仅监听 `127.0.0.1` 或内网地址，外部访问经 SSH 隧道或前置反向代理 + 认证；不直接暴露到公网。factory-web 沿用同一风格（[08](08-deployment-and-repo-layout.md) §3）。
+
+### 12.4 校验
+
+`scripts/smoke-jenkins.ts` 输出：Job 可达 / 参数定义一致 / wfapi 可用（明示主路径或降级）/ 服务账号权限符合矩阵（无 Administer）/ 最近构建与归档可读 / 监听地址符合 §12.3。任一项不满足则打印指向本节的修复指引。

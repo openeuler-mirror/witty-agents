@@ -3,7 +3,7 @@
 ## 1. 技术栈与工程结构
 
 | 项 | 选择 |
-|---|---|
+| --- | --- |
 | 框架 | Vue 3（`<script setup>` + TypeScript） |
 | 构建 | Vite 6 |
 | 路由 | Vue Router 4（路由级权限元信息） |
@@ -13,7 +13,7 @@
 | 样式 | 原生 CSS + CSS 变量（迁移自原型的 `:root` 令牌），不引 UI 框架 |
 | 测试 | Vitest（单元）+ Playwright（E2E，覆盖 3 条主旅程） |
 
-```
+```text
 ci/factory/packages/web/
 ├── index.html
 ├── vite.config.ts
@@ -89,7 +89,7 @@ ci/factory/packages/web/
 语义映射约定（新增，避免各处硬编码）：
 
 | 语义 | 令牌 |
-|---|---|
+| --- | --- |
 | 构建成功 / 通过 | `--success` + `--success-bg` |
 | 构建失败 / 拒绝 | `--danger` + `--danger-bg` |
 | 运行中 / 排队 | `--primary` + `--primary-bg`（脉动圆点 `pulse` 动画） |
@@ -102,7 +102,7 @@ ci/factory/packages/web/
 ## 3. 路由与权限
 
 | 路由 | 页面 | `meta.permission` | 说明 |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `/login` | LoginPage | — | 独立布局 |
 | `/` | 重定向到 `/dashboard` | — | — |
 | `/dashboard` | DashboardPage | 登录 | 工作台 |
@@ -140,7 +140,7 @@ export const vPermission: Directive<HTMLElement, string> = {
 ### 4.1 工作台 `/dashboard`
 
 | 区块 | 数据来源 | 交互 |
-|---|---|---|
+| --- | --- | --- |
 | 4 张统计卡（Agent 数、构建总数、成功率、最近发布） | `GET /projects/:id` 聚合 | 点击"最近发布"跳发布详情 |
 | AI 趋势解读面板（COP-06） | `POST /ai/...`（按需） | 折叠/展开，👍/👎 |
 | Agent 构建/下载统计（环形图 + 对比柱状图） | 聚合接口（含 Agent 维度） | Agent 多选筛选（本地状态）、Top-N 聚合为"其他" |
@@ -162,7 +162,7 @@ export const vPermission: Directive<HTMLElement, string> = {
 与原型保持三段折叠结构，并按 Jenkinsfile 的 14 个参数分组：
 
 | 分组 | 参数 | 控件 |
-|---|---|---|
+| --- | --- | --- |
 | 1 构建范围 | 模式（增量 / 全量 / 指定 Agent） | 三选一卡片；映射到 `AGENT=auto / all / <id>` |
 | 2 变体与架构 | `VARIANT`、`PACKAGE_STYLE`、`TARGET_ARCH` | 下拉；选 `offline` 时展开架构提示（必须与节点架构一致） |
 | 3 验证 | `RUN_REAL_INSTALL_VALIDATION`、`STRICT_OFFLINE_NETWORK_CHECK` | 开关 |
@@ -170,6 +170,7 @@ export const vPermission: Directive<HTMLElement, string> = {
 | 发布（折叠，仅 `release:publish` 可见） | `PUBLISH`、`NPM_CREDENTIAL_ID`、`NPM_REGISTRY`、`NPM_DIST_TAG`、`GIT_CREDENTIAL_ID` | 开关 + 输入；`NPM_DIST_TAG` 禁止填 `latest`（前端拦截 + 后端兜底） |
 
 抽屉行为：
+
 - 打开时按 `mode` 计算初始值，切换模式时保留已填的其他参数；
 - 底部固定"取消 / 触发构建"；点击触发前做本地校验，再调接口；
 - 触发成功后 Toast 提示"已触发构建 #N（或已入队）"，并立即在列表顶部插入占位行（`queued`）以便用户看到反馈；
@@ -178,7 +179,7 @@ export const vPermission: Directive<HTMLElement, string> = {
 ### 4.4 构建详情 `/projects/:id/builds/:no`
 
 | 区块 | 说明 |
-|---|---|
+| --- | --- |
 | 摘要条 | Agent、参数 chips（超出折叠为 `+5`）、触发人、commit（可复制）、耗时（含 240min 上限提示）、起止时间 |
 | 操作区 | 下载全量日志、取消、Replay（P2）、重跑 |
 | Stage 视图 | 11 个阶段的横向流程图，点击定位日志锚点；未执行阶段灰显并提示"条件阶段未执行" |
@@ -192,7 +193,7 @@ export const vPermission: Directive<HTMLElement, string> = {
 需求（全部来自原型）：分级着色、关键字高亮、上一/下一错误、搜索回车定位、行号点击复制、自动跟随、"回到底部"、虚拟滚动。
 
 | 能力 | 实现要点 |
-|---|---|
+| --- | --- |
 | 分级着色 | 服务端返回 `level` 字段；`stage` 行用分隔样式，`error` 红、`warn` 黄、`pass` 绿 |
 | 语义高亮 | 服务端已标注的 span（sha256、版本号、dist-tag、commit、包名、Agent id、URL）用 `<mark>` 类渲染；高亮规则集中在一处，避免与后端脱敏规则冲突 |
 | 错误导航 | 维护 `errorLineIndex[]`，点击在上/下一个错误行间跳转并居中 + 闪烁动画 |
@@ -211,7 +212,7 @@ export const vPermission: Directive<HTMLElement, string> = {
 
 ### 4.7 其他页面
 
-- **Agent 管理**：卡片墙（名称、id、状态标签、描述、版本、Skills 数、下载数、操作按钮）+ 详情抽屉（能力说明、Skills 清单、在线/离线安装命令可复制、增量前缀、AI 前缀检测）。启停开关创建 MR 后，卡片上显示"MR 待合入"标记。
+- **Agent 管理**：卡片墙（名称、id、状态标签、描述、版本、Skills 数、下载数、操作按钮）+ 详情抽屉（能力说明、Skills 清单、在线/离线安装命令可复制、增量前缀、AI 前缀检测）。平台不提供启停开关；卡片仅展示 `agents.json` 的 `enabled` 状态（参与构建 / 已禁用），启停在仓库完成。
 - **用户管理**：表格 + 启停开关（二次确认，提示"禁用后会话立即失效"）+ 角色矩阵只读表。
 - **审计日志**：时间/操作者/事件/资源/快照列；筛选支持事件类型、"仅 AI 代执行"、关键字；行点击看详情；导出 CSV。
 - **项目设置**：Git 绑定、Jenkins 绑定（支持多 Job）、参数默认值（按组分卡片，保存时校验 `version_baseline`）、危险操作区（同步 agents.json、重新拉取报告）。
@@ -219,7 +220,7 @@ export const vPermission: Directive<HTMLElement, string> = {
 ## 5. 组件清单（关键组件契约）
 
 | 组件 | 关键 props | 事件 |
-|---|---|---|
+| --- | --- | --- |
 | `DataTable` | `columns`, `rows`, `loading`, `rowKey`, `pageMode: 'cursor'\|'offset'` | `row-click`, `load-more` |
 | `FilterBar` | `filters: FilterDef[]`, `modelValue` | `update:modelValue`（同步到 URL） |
 | `StatusTag` | `status`, `kind: 'build'\|'release'\|'stage'` | — |
@@ -237,7 +238,7 @@ export const vPermission: Directive<HTMLElement, string> = {
 ## 6. 状态管理
 
 | Store | 持有 | 说明 |
-|---|---|---|
+| --- | --- | --- |
 | `session` | 当前用户、权限点集合、`has(permission)` | 登录后一次性拉取 `/auth/me` |
 | `project` | 当前项目、设置、同步水位、绑定 Job | 路由切换时按 `projectId` 加载 |
 | `builds` | 列表筛选条件、游标、缓存页 | 筛选条件与 URL query 双向绑定 |
@@ -248,7 +249,7 @@ export const vPermission: Directive<HTMLElement, string> = {
 
 ## 7. 与后端的契约同步
 
-```
+```text
 后端 zod schema
    ↓ zod-to-openapi
 OpenAPI 3.1 (docs/openapi.json，随代码提交)
@@ -270,10 +271,11 @@ OpenAPI 3.1 (docs/openapi.json，随代码提交)
 ## 9. 与原型的有意差异
 
 | 原型 | 实现 | 原因 |
-|---|---|---|
+| --- | --- | --- |
 | 顶栏"视角"切换（演示用） | 去掉，改为真实角色驱动 | 生产环境不允许用户自选权限 |
 | mock 数据（假构建、假用户、假 Agent） | 全部替换为真实采集数据 | — |
 | 原型写 `xlite-perf-optimizer` 已禁用 | 以 `ci/agents.json` 为准（当前 `enabled: true`） | 原型 mock 落后于仓库 |
 | 单 Job（`witty-agent-package-ci`） | 支持绑定多个 Job（主 + smoke），并在 UI 标明来源 Job | 真实环境存在 `witty-agents-builder` 与 `...-smoke-arm` 两个 Job |
 | 日志里手写的 `──── stage X ────` 分隔 | 优先用 `wfapi` 阶段数据，日志分隔仅作降级 | 真实 Jenkins 日志无该格式 |
 | 无分页的短列表 | 全部服务端游标分页 | 真实构建记录会持续增长 |
+| Agent 卡片启停开关（直接翻转 enabled）、权限矩阵"MR 需审批"字样 | 去掉启停开关，只读展示 `enabled` 状态 | 平台不回写仓库（ADR-03）；开关与 MR 字样为旧版遗留，原型后续清理 |

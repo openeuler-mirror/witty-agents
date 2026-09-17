@@ -2,7 +2,7 @@
 
 ## 1. `ci/factory` 目录树
 
-```
+```text
 ci/factory/
 ├── README.md                       # 项目说明、快速开始
 ├── docs/                           # 本套设计文档（随代码演进，保持同步）
@@ -42,7 +42,7 @@ ci/factory/
 ## 2. 组件与镜像
 
 | 组件 | 镜像 | 说明 |
-|---|---|---|
+| --- | --- | --- |
 | `factory-api` | 基于 `node:20-alpine` 构建（多阶段：builder + runner） | 非 root 运行（uid 1000），只读根文件系统 + 可写 `/app/data` |
 | `factory-web` | 基于 `nginx:1.27-alpine` | 静态资源 + `/api` 反代；SSE 路径关闭 `proxy_buffering` |
 | 数据卷 | `factory-data` | SQLite 文件 + 日志分片目录（若用 PostgreSQL 则另有 `factory-pg-data`） |
@@ -65,7 +65,7 @@ services:
 
   web:
     build: { context: ., dockerfile: packages/web/Dockerfile }
-    ports: [ "127.0.0.1:18080:80" ]        # 仅本机监听，经 SSH 隧道访问（与 Jenkins 18081 风格一致）
+    ports: [ "127.0.0.1:18080:80" ]        # 仅本机监听，经 SSH 隧道/前置代理访问（与 Jenkins 基线一致，见 07 §12.3）
     depends_on: [ api ]
     restart: unless-stopped
     networks: [ factory ]
@@ -74,7 +74,7 @@ networks: { factory: {} }
 volumes: { factory-data: {} }
 ```
 
-关于为什么只监听 `127.0.0.1`：与现有 Jenkins（`127.0.0.1:18081`）一致，避免把运维入口直接暴露到公网；需要外部访问时通过 SSH 隧道或前置反向代理 + 认证。
+关于为什么只监听 `127.0.0.1`：与 Jenkins 基线要求一致（[07](07-pipeline-integration.md) §12.3），避免把运维入口直接暴露到公网；需要外部访问时通过 SSH 隧道或前置反向代理 + 认证。
 
 ## 4. 环境变量
 
@@ -98,7 +98,7 @@ FACTORY_JENKINS_USER=witty-agent
 FACTORY_JENKINS_TOKEN=replace-with-api-token
 FACTORY_JENKINS_JOBS=witty-agents-builder,witty-agents-online-publish-smoke-arm
 
-# Git
+# Git（公开仓库 Token 可留空；私有仓库填只读 scope Token，平台不回写）
 FACTORY_GIT_PROVIDER=atomgit
 FACTORY_GIT_REPO=openeuler/witty-agents
 FACTORY_GIT_TOKEN=
@@ -128,9 +128,11 @@ docker compose -f ci/factory/docker-compose.yml up -d --build
 # 4. 创建初始管理员（一次性）
 docker compose exec api node scripts/seed-admin.js --user admin --password '<强密码>'
 
-# 5. 校验上游连通性
+# 5. 校验上游连通性与 Jenkins 基线
 docker compose exec api node scripts/smoke-jenkins.js
-#    输出：Job 可达 / 参数定义一致 / 最近构建可读 / 归档可列
+#    输出：Job 可达 / 参数定义一致 / wfapi 可用（明示主路径或降级）/
+#          服务账号权限符合最小矩阵（无 Administer）/ 最近构建可读 / 归档可列
+#    （校验项见 07 §12.4）
 
 # 6. 建立 SSH 隧道后访问
 ssh -N -L 18080:127.0.0.1:18080 -p 33410 root@123.60.114.33
@@ -148,8 +150,8 @@ ssh -N -L 18080:127.0.0.1:18080 -p 33410 root@123.60.114.33
 ## 6. 与 `ci/jenkins` 共存
 
 | 资源 | `ci/jenkins` | `ci/factory` | 冲突风险 |
-|---|---|---|---|
-| 端口 | Jenkins `127.0.0.1:18081`（容器映射） | factory-web `127.0.0.1:18080` | 无 |
+| --- | --- | --- | --- |
+| 端口 | Jenkins `127.0.0.1:8080`（基线，见 07 §12.3） | factory-web `127.0.0.1:18080` | 无 |
 | 数据目录 | `/home/witty-agents-jenkins/` | Docker volume `factory-data` | 无 |
 | Docker 网络 | `shennong-jenkins-deploy`（默认） | `factory` | 无 |
 | Jenkins API | — | 只读 + 触发/取消 | 需要服务账号，不影响 Jenkins 配置 |
@@ -159,7 +161,7 @@ ssh -N -L 18080:127.0.0.1:18080 -p 33410 root@123.60.114.33
 ## 7. 备份与恢复
 
 | 数据 | 备份方式 | 频率 | 恢复 |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `factory-data` 卷（SQLite + 日志分片） | `docker run --rm -v factory-data:/data -v $PWD:/backup alpine tar czf /backup/factory-$(date +%F).tgz -C /data .` | 每日（脚本 + cron） | 停服 → 还原卷 → 起服 |
 | `.env`（含密钥） | 密码管理器 / 受控目录，**不入 Git** | 变更时 | 手动恢复 |
 | 审计日志 | 随卷备份 + 可选导出 CSV 到受控存储 | 每日 | 从备份恢复 |
@@ -181,6 +183,7 @@ docker compose -f ci/factory/docker-compose.yml up -d --build
 ```
 
 约定：
+
 - 破坏性迁移必须拆成两步（见 04 §6），保证旧版本代码能在新库结构上运行一个版本；
 - 每次升级前先备份 `factory-data`；
 - 镜像打 tag（`factory-api:$(git rev-parse --short HEAD)`）便于回滚到具体构建。
@@ -206,7 +209,7 @@ docker compose -f ci/factory/docker-compose.yml up -d --build
 ### 9.2 关键指标（Prometheus 文本格式 `/metrics`，可选）
 
 | 指标 | 类型 | 用途 |
-|---|---|---|
+| --- | --- | --- |
 | `factory_builds_total{agent,status}` | counter | 构建规模与成功率 |
 | `factory_build_duration_seconds` | histogram | 构建耗时分布 |
 | `factory_jenkins_request_duration_seconds` | histogram | 上游延迟 |
@@ -223,7 +226,7 @@ docker compose -f ci/factory/docker-compose.yml up -d --build
 ### 9.4 告警建议（可由外部监控拉取）
 
 | 条件 | 级别 |
-|---|---|
+| --- | --- |
 | `factory_sync_lag_seconds{buildPoller} > 300` | warning（采集停了） |
 | `jenkins.degraded = true` 持续 5 分钟 | warning |
 | 构建失败（`builds.status=failure` 新增） | warning |
@@ -234,8 +237,8 @@ docker compose -f ci/factory/docker-compose.yml up -d --build
 ## 10. 安全加固清单（上线前逐项确认）
 
 - [ ] `.env` 不入 Git；`FACTORY_SECRET_KEY` 为随机生成且长度合规；
-- [ ] Jenkins 使用独立服务账号 + API Token（不复用个人账号），权限最小化；
-- [ ] Git Token 仅授予目标仓库写权限，且只用于创建 MR 分支；
+- [ ] Jenkins 已按 [07](07-pipeline-integration.md) §12 基线配置：Matrix 最小权限矩阵、服务账号 + API Token（不复用个人账号或登录密码）、`pipeline-stage-view` 已安装（或确认接受降级）、仅监听 127.0.0.1/内网；
+- [ ] 如配置 Git Token，仅授予只读 scope；平台不具备任何仓库写能力；
 - [ ] factory-web 仅监听 `127.0.0.1`；如需外部访问必须前置 TLS 与认证；
 - [ ] 首次登录强制修改初始管理员密码；
 - [ ] 审计哈希链校验接口可用且返回一致；

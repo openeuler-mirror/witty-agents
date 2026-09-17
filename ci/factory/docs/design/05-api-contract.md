@@ -3,7 +3,7 @@
 ## 1. 通用约定
 
 | 项 | 约定 |
-|---|---|
+| --- | --- |
 | Base URL | `/api/v1`（前端经 Nginx 反代，同源，无跨域） |
 | 内容类型 | 请求/响应 `application/json; charset=utf-8`；日志流 `text/event-stream`；导出 `text/csv` |
 | 鉴权 | 会话 Cookie（`factory_session`）；写操作额外带 `X-XSRF-TOKEN` |
@@ -34,7 +34,7 @@
 
 ### 2.3 SSE
 
-```
+```text
 event: log
 data: {"lines":[{"no":812,"text":"[Pipeline] stage","level":"info"}],"lastOffset":41233}
 
@@ -48,7 +48,7 @@ data: {"status":"success","finishedAt":"2026-09-15T12:49:29Z"}
 ### 2.4 HTTP 状态码
 
 | 码 | 语义 |
-|---|---|
+| --- | --- |
 | 200 | 成功 |
 | 201 | 创建（如触发构建返回占位记录） |
 | 202 | 已接受（异步动作：触发、取消、发布） |
@@ -79,7 +79,7 @@ data: {"status":"success","finishedAt":"2026-09-15T12:49:29Z"}
 图例：`R` = `audit:read` 等只读权限；权限点见 [01](01-product-and-use-cases.md) §3。
 
 | 方法 | 路径 | 说明 | 权限 |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | POST | `/auth/login` | 登录 | 公开 |
 | POST | `/auth/logout` | 退出 | 登录 |
 | GET | `/auth/me` | 当前用户 + 权限点集合 | 登录 |
@@ -98,7 +98,6 @@ data: {"status":"success","finishedAt":"2026-09-15T12:49:29Z"}
 | POST | `/projects/:id/agents/sync` | 手动同步 `agents.json` | `project:config` |
 | GET | `/projects/:id/agents` | Agent 列表（含版本、Skills、健康度） | 项目成员 |
 | GET | `/projects/:id/agents/:agentId` | Agent 详情 | 项目成员 |
-| POST | `/projects/:id/agents/:agentId/toggle` | 启停（创建 MR） | `agent:edit` |
 | GET | `/projects/:id/builds` | 构建列表（筛选 + 游标分页） | 项目成员 |
 | POST | `/projects/:id/builds` | 触发构建 | `build:trigger`（含 `PUBLISH=true` 时额外需 `release:publish`） |
 | GET | `/projects/:id/builds/:no` | 构建详情（含阶段、报告摘要） | 项目成员 |
@@ -238,7 +237,7 @@ data: {"status":"success","finishedAt":"2026-09-15T12:49:29Z"}
 
 `GET .../log/stream`（SSE）
 
-```
+```text
 event: log
 data: {"lines":[{"no":1181,"text":"PASS checksum step 3/7","level":"pass"}],"lastOffset":54211,"totalLines":1181}
 
@@ -355,7 +354,7 @@ data: {"status":"success"}
 ## 5. 错误码表
 
 | 码 | HTTP | 含义 | 处理建议 |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `E_VALIDATION` | 400 | 参数校验失败 | 返回字段级错误 |
 | `E_UNAUTHENTICATED` | 401 | 未登录/会话过期 | 前端跳登录 |
 | `E_FORBIDDEN` | 403 | 权限不足 | 前端展示"无权限"并隐藏入口 |
@@ -373,7 +372,7 @@ data: {"status":"success"}
 平台维护一份参数定义（类型、取值域、默认值、展示分组），启动与每次触发前与 Jenkins 的 `parameterDefinitions` 比对：
 
 | 差异类型 | 行为 |
-|---|---|
+| --- | --- |
 | Jenkins 新增参数 | 记 `W_PARAM_NEW`，触发时使用 Jenkins 默认值，并在 UI 标注"平台未覆盖" |
 | Jenkins 删除参数 | 记 `W_PARAM_REMOVED`，从表单移除，禁止提交 |
 | 类型不一致（bool ↔ string） | 记 `E_PARAM_DRIFT`，触发被拒绝 |

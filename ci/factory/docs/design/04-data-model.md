@@ -2,15 +2,14 @@
 
 ## 1. 关系概览
 
-```
+```text
 users ──┬── sessions
         ├── project_members ── projects ── project_settings
         ├── audit_logs
         └── notifications
 
 projects ──┬── project_settings        （仓库绑定、Jenkins Job 绑定、参数默认值）
-           ├── agents                 （来自 ci/agents.json 的投影）
-           │     └── agent_mrs        （启停 MR）
+           ├── agents                 （来自 ci/agents.json 的投影，只读）
            ├── builds ──┬── build_stages
            │            ├── build_logs        （分片）
            │            ├── build_reports     （结构化报告）
@@ -23,6 +22,7 @@ sync_states（每个采集器的水位）    ai_feedback    audit_logs
 ```
 
 设计原则：
+
 - **上游事实与平台事实分离**：`agents` / `builds` / `releases` 是上游投影，可被采集器覆盖；`users` / `audit_logs` / `project_settings` 是平台独有，绝不被采集覆盖。
 - **保留原始证据**：报告 JSON 原文、日志原文、参数快照都入库（或落文件 + 指针），保证可追溯。
 - **可重放**：任何派生字段（成功率、健康度）都能从原始记录重算，不依赖缓存表。
@@ -154,22 +154,6 @@ CREATE TABLE agents (
   synced_at     TEXT NOT NULL,
   PRIMARY KEY (project_id, id)
 );
-
-CREATE TABLE agent_mrs (
-  id          TEXT PRIMARY KEY,
-  project_id  TEXT NOT NULL,
-  agent_id    TEXT NOT NULL,
-  mr_url      TEXT NOT NULL,
-  mr_number   INTEGER,
-  branch      TEXT NOT NULL,
-  change_kind TEXT NOT NULL,                   -- toggle_enabled | config_update
-  diff        TEXT NOT NULL,                   -- JSON：字段/旧值/新值
-  status      TEXT NOT NULL,                   -- open | merged | closed
-  created_by  TEXT NOT NULL,
-  created_at  TEXT NOT NULL,
-  resolved_at TEXT
-);
-```
 
 ### 2.4 构建域
 
@@ -380,7 +364,7 @@ CREATE TABLE sync_states (
 ## 3. 枚举与状态机
 
 | 域 | 字段 | 取值 | 说明 |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | 用户 | `system_role` | `sysadmin` / `pm` / `dev` / `viewer` | 系统级角色 |
 | 项目成员 | `role` | `pm` / `dev` / `viewer` | 项目级角色（sysadmin 天然全项目） |
 | 构建 | `status` | `queued` / `running` / `success` / `failure` / `aborted` / `stale` | `stale` 由平台超时保护产生 |
@@ -391,7 +375,7 @@ CREATE TABLE sync_states (
 
 构建状态迁移约束（服务层强制）：
 
-```
+```text
 queued → running → success|failure|aborted|stale
 queued → aborted            （排队中被取消）
 终态不可再变更（除非采集到上游修正，写审计说明）
@@ -400,7 +384,7 @@ queued → aborted            （排队中被取消）
 ## 4. 索引与典型查询
 
 | 查询场景 | SQL 要点 |
-|---|---|
+| --- | --- |
 | 构建列表（筛选 + 分页） | `WHERE project_id=? AND (? IS NULL OR status=?) AND (? IS NULL OR agent=?) AND number<=? ORDER BY number DESC LIMIT ?`；依赖 `idx_builds_list` |
 | 构建详情阶段 | `SELECT * FROM build_stages WHERE build_id=? ORDER BY seq` |
 | 日志分片按需加载 | `WHERE build_id=? AND line_start<=? AND line_end>=?` |
@@ -412,7 +396,7 @@ queued → aborted            （排队中被取消）
 ## 5. 数据保留与清理
 
 | 数据 | 平台保留策略 | 与 Jenkins 对照 |
-|---|---|---|
+| --- | --- | --- |
 | 构建记录 | 200 次/项目（可配置） | Jenkins `logRotator` 仅保留 20 次构建、10 份产物 |
 | 构建日志 | 90 天 或 最近 50 次构建（先到者优先保留） | Jenkins 不保证保留 |
 | 归档产物 | **不复制 tgz 到平台**，只存清单与 sha256；下载走 Jenkins 归档链接 | 产物仍在 Jenkins |
@@ -433,7 +417,7 @@ queued → aborted            （排队中被取消）
 ## 7. 上游 JSON → 平台字段映射
 
 | 上游来源 | 字段 | 平台落点 |
-|---|---|---|
+| --- | --- | --- |
 | `ci/agents.json` | `agents[].id/enabled/configPath/changedPathPrefixes` | `agents.*` |
 | `<agent>/ci/agent.json` | `displayName/directory/variants/packageStyles/supportedArchitectures/registryPackages/publishRequiresAllVariants` | `agents.*` |
 | `<agent>/package.json` | `version/name/description/keywords` | `agents.version`、`agents.registry_name`、`agents.description` |
