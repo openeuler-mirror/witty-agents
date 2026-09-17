@@ -42,7 +42,9 @@ allowed-tools: Bash(python3:*) Bash(pip:*) Bash(cat:*) Bash(ls:*) Bash(rg:*) Bas
 8. **案例卡片字段零丢失**：卡片按分支渲染 `how`/`fix_scope`/`files`/`diff`/`excerpt`/`corroboration` 等字段（commit 类案例的 meta 附短 sha，非 confirmed commit 同样渲染涉及文件、diff 摘录与原文摘录折叠区）；「查看其余字段（未在上方展示）」采用**动态追踪**——只收纳实际未渲染的字段（已渲染的不重复出现），任何字段都不会既不在卡片正文、也不在其余字段中静默丢失。
 9. **证据链要求「数值/偏移必有来由」**：第 4 章 `deep.evidence[].reasoning[]` 的 `detail`（通俗因果层）必须讲清其中偏移/地址/寄存器值「为什么是这个值」（如 `#64` 是 `on_rq` 字段在结构体里的字节偏移），`evidence`（专业出处层）给出实证来源（如 crash `struct -o`、反汇编对照）；模板原样渲染这两层，报告生成时不得只报数值而不说明来源（规范见 `prompts/generate-report.md` 写作铁律第 11 条）。
 10. **现场初印象数据驱动**：宕机现场章的「现场初印象」优先渲染 `crash_feature_info.stack_impression`（按本次宕机栈生成的一句话）；缺失时模板按 `call_trace_signature` + `rip_function` + `bug_type` 动态生成通用文案。任何情况下不得出现与本次宕机栈无关的固定话术。
-11. **内核源码摘录卡与源码互链**：`root_cause_analysis.local_source.refs` 渲染为技术附件「内核源码摘录」卡（默认收起），每条含文件:行号、函数、源码摘录与 `origin` 标注（`本地源码` 徽标 + 独立成行的本地路径 / `上游基线` 可外链「上游对照 ↗」，无 url 不渲染链接；标题与右侧标签分组固定，长路径不挤压标题）；**excerpt 逐行渲染并按 `hl` 行号高亮关键行**（崩溃行/关键调用行/补丁落点行，带行号强调）；补丁卡「涉及文件」与传播链 `file`/`source_url` 命中 refs 时渲染为卡片锚点（复用 commit 关联的展开高亮机制），未命中的 `source_url` 渲染为可点击外链。
+11. **内核源码摘录卡与源码互链**（origin 以行内彩色文字标签显示在 📍 路径:行号 旁，非 pill 徽标；附录源码卡不渲染高亮）
+12. **推理步内联原文证据块（snippets）**：`reasoning[].snippets` 渲染为折叠卡（默认收起，短日志 inline 直出），逐行+行号+琥珀高亮+行尾 ◀ 注释；`segs` 多段子框每段独立文件行号/ref；有 snippets 的步骤自动隐藏 evidence 一行式清单（无 snippets 的自动转为块状事实块）。
+13. **补丁来源四档分级横幅**：`classifyFixProvenance()` 从 verdict/mode/type 自动推断 confirmed/derived/speculative/none，补丁卡顶部显示对应颜色横幅，speculative 级 diff 区域琥珀色调 + subject 前缀 (自研)。：`root_cause_analysis.local_source.refs` 渲染为技术附件「内核源码摘录」卡（默认收起），每条含文件:行号、函数、源码摘录与 `origin` 标注（`本地源码` 徽标 + 独立成行的本地路径 / `上游基线` 可外链「上游对照 ↗」，无 url 不渲染链接；标题与右侧标签分组固定，长路径不挤压标题）；**excerpt 逐行渲染并按 `hl` 行号高亮关键行**（崩溃行/关键调用行/补丁落点行，带行号强调）；补丁卡「涉及文件」与传播链 `file`/`source_url` 命中 refs 时渲染为卡片锚点（复用 commit 关联的展开高亮机制），未命中的 `source_url` 渲染为可点击外链。
 4. **论证展示规则**：
    - `confirmed` 的 commit：合并为单一区域「为什么这个 commit 能修复当前问题」，包含 `how` / `fix_scope` / 涉及文件 / `diff` 摘录。
    - `same_area` 的 commit / 社区案例：展示「匹配论证」+「适用性 / 参考性说明」，明确为什么只能参考、不能直接采用。

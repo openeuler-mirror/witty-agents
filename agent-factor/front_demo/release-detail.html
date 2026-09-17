@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>发布 #31 · witty-agents · witty-agent-factor</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body data-shell="project" data-page="release">
+<div class="content">
+  <div class="page-header">
+    <h1>发布 #31</h1><span class="tag f">失败 · 待人工核查</span>
+    <span class="spacer"></span>
+    <div class="actions">
+      <button class="btn" data-toast="已复制回滚命令草案：npm dist-tag set witty-agent-shennong@0.10.4-ci.aarch64.3 arm-test（mock）">复制回滚命令</button>
+      <button class="btn danger admin-only" id="rbBtn">回滚 dist-tag</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-b">
+      <div class="summary-strip">
+        <span>包 <b class="mono">witty-agent-shennong</b></span><span class="sep">|</span>
+        <span>版本 <b class="mono">0.10.5-ci.aarch64.0</b>（prerelease）</span><span class="sep">|</span>
+        <span>dist-tag <span class="tag s">arm-test</span> <span class="dim">latest 保持 0.10.3 不变</span></span><span class="sep">|</span>
+        <span>来源构建 <a class="link mono" href="build-detail.html">#123</a></span><span class="sep">|</span>
+        <span>操作人 <b>张伟</b>（CONFIRM_PUBLIC_PUBLISH 已确认）</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="duo">
+    <div class="card" style="position:relative">
+      <div class="card-h"><b>发布门禁（REL-01）</b><span class="dim">5 项全部通过才允许触发</span></div>
+      <div class="card-b tight">
+        <div class="gate pass"><span class="gi">✔</span><div class="grow"><div class="gt">官方仓库地址</div><div class="gs mono">https://gitcode.com/openeuler/witty-agents.git ✓ 白名单匹配</div></div></div>
+        <div class="gate pass"><span class="gi">✔</span><div class="grow"><div class="gt">commit 包含于 origin/master</div><div class="gs mono">a1b2c3d 是 origin/master 祖先提交 ✓</div></div></div>
+        <div class="gate pass"><span class="gi">✔</span><div class="grow"><div class="gt">全部本地产物变体通过</div><div class="gs">构建 #123：online ✓ · offline ✓（Gates + Contract Checks）</div></div></div>
+        <div class="gate pass"><span class="gi">✔</span><div class="grow"><div class="gt">prerelease 版本未占用</div><div class="gs mono">0.10.5-ci.aarch64.0 registry 无此版本 ✓</div></div></div>
+        <div class="gate fail"><span class="gi">✘</span><div class="grow"><div class="gt">SHA-256 回下载核验</div><div class="gs mono">candidate 3f9c1a2b… ≠ redownload 9b7e2d4f…</div></div></div>
+        <span class="ai-icon" id="gateExplain" style="margin:10px 16px">AI 解释与修复建议</span>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <div class="card">
+        <div class="card-h"><b>发布链路进度</b></div>
+        <div class="card-b">
+          <div class="tl">
+            <div class="tl-item ok"><div class="t">门禁检查通过（触发前 5 项）</div><div class="s">昨天 19:05</div></div>
+            <div class="tl-item ok"><div class="t">registry 候选包生成</div><div class="s mono">sha256 3f9c1a2b…</div></div>
+            <div class="tl-item ok"><div class="t">npm publish → arm-test</div><div class="s">19:12 · latest 快照 0.10.3（发布前后一致 ✓）</div></div>
+            <div class="tl-item ok"><div class="t">registry 可见性等待</div><div class="s">3s 后可见</div></div>
+            <div class="tl-item ok"><div class="t">真实回下载</div><div class="s mono">npm-download/witty-agent-shennong-0.10.5-ci.aarch64.0.tgz · 4.2MB</div></div>
+            <div class="tl-item bad"><div class="t">SHA-256 比对</div><div class="s mono">9b7e2d4f… ≠ 3f9c1a2b… → 标记失败，等待人工核查</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h"><b>dist-tag 历史</b></div>
+        <div class="card-b tight">
+          <table class="tbl">
+            <thead><tr><th>Tag</th><th>当前指向</th><th>上一指向</th><th></th></tr></thead>
+            <tbody>
+              <tr><td class="mono">arm-test</td><td class="mono">0.10.5-ci.aarch64.0 ⚠️待核查</td><td class="mono dim">0.10.4-ci.aarch64.3</td><td><button class="btn sm admin-only" data-toast="回滚预览（mock）：arm-test → 0.10.4-ci.aarch64.3，请使用顶部「回滚 dist-tag」二次确认">预览回滚</button></td></tr>
+              <tr><td class="mono">x86-test</td><td class="mono">0.10.5-ci.x86-64.1</td><td class="mono dim">0.10.4-ci.x86-64.0</td><td><span class="dim">—</span></td></tr>
+              <tr><td class="mono"><span class="c-latest">latest</span></td><td class="mono">0.10.3（不受影响）</td><td class="mono dim">—</td><td><span class="dim">发布前后一致 ✓</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ai-panel hidden" id="aiRisk">
+    <div class="ai-head"><span class="ai-badge">AI</span><span class="ai-title">发布风险摘要</span><span class="ai-fold" id="aiRiskClose">收起</span></div>
+    <div id="aiRiskBody"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-h"><b>关联产物与报告</b><span class="spacer"></span><button class="btn sm ai" id="aiRiskBtn">AI 风险摘要</button></div>
+    <div class="card-b">
+      <div class="artifact-list">
+        <div class="artifact-item">ci-artifacts/npm-publish-smoke-summary.json<span class="sz">2.1KB</span><button class="btn sm" data-art="npm-publish-smoke-summary.json">预览</button><button class="btn sm" data-toast="开始下载 npm-publish-smoke-summary.json（mock）">下载</button></div>
+        <div class="artifact-item">ci-artifacts/npm-download/manifest.json<span class="sz">0.9KB</span><button class="btn sm" data-art="manifest.json">预览</button><button class="btn sm" data-toast="开始下载 manifest.json（mock）">下载</button></div>
+        <div class="artifact-item">shennong-crash-agent/artifacts/online-package-report.json<span class="sz">2.8KB</span><button class="btn sm" data-art="online-package-report.json">预览</button><button class="btn sm" data-toast="开始下载 online-package-report.json（mock）">下载</button></div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="assets/proto.js"></script>
+</body>
+</html>

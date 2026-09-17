@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>构建流水线 · witty-agents · witty-agent-factor</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body data-shell="project" data-page="builds">
+<div class="content">
+  <div class="page-header"><h1>构建流水线</h1><span class="sub">Job: witty-agent-package-ci · disableConcurrentBuilds · 保留 20 次</span><span class="spacer"></span>
+    <div class="actions">
+      <button class="btn ai" id="aiSumBtn">AI 汇总</button>
+      <button class="btn primary hide-viewer" id="bTrigger">＋ 触发构建</button>
+    </div>
+  </div>
+  <div class="ai-panel hidden" id="aiSummary">
+    <div class="ai-head"><span class="ai-badge">AI</span><span class="ai-title">近 20 次构建汇总</span><span class="ai-fold" id="aiSumClose">收起</span></div>
+    <div id="aiSumBody"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-b" style="padding:12px 16px;border-bottom:1px solid var(--border)">
+      <div class="f-row">
+        <div class="f-item"><label>状态</label><select class="inp" id="bFilterStatus"><option value="all">全部</option><option value="s">成功</option><option value="f">失败</option><option value="r">运行中</option><option value="c">已取消</option></select></div>
+        <div class="f-item"><label>Agent</label><select class="inp" id="bFilterAgent"><option value="all">全部</option></select></div>
+        <div class="f-item"><label>触发人</label><select class="inp" id="bFilterBy"><option value="all">全部</option><option>张伟</option><option>李娜</option><option>王强</option><option>pollSCM</option></select></div>
+        <div class="f-item"><label>开始日期</label><input class="inp" type="date" id="bDateFrom" value="2026-09-07"></div>
+        <div class="f-item"><label>结束日期</label><input class="inp" type="date" id="bDateTo" value="2026-09-16"></div>
+        <div class="f-item" style="justify-content:flex-end;margin-left:auto"><label>记录导出</label><button class="btn" id="bExport">导出区间记录 CSV</button></div>
+      </div>
+    </div>
+    <div class="card-b tight">
+      <table class="tbl">
+        <thead><tr><th>编号</th><th>Agent</th><th>参数</th><th>触发人</th><th>状态</th><th>耗时</th><th>时间</th><th>操作</th></tr></thead>
+        <tbody id="buildsTbody"></tbody>
+      </table>
+    </div>
+    <div class="pager" id="bPage" data-cur="1"></div>
+  </div>
+</div>
+<script src="assets/proto.js"></script>
+</body>
+</html>

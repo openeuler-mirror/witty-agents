@@ -1188,7 +1188,18 @@
             {
               "step": "崩在哪一行",
               "detail": "崩溃指令是 set_next_entity 里读任务 on_rq 标志的那条 ldr 指令：它要先判断「这个调度实体是否还在运行队列上」。on_rq 字段位于 struct sched_entity 的第 64 字节（偏移 64=0x40，由结构体固定内存布局决定），编译器据此把源码里的 se->on_rq 编译成 ldr w0,[x20,#64]，#64 正是 on_rq 的字节偏移。而 x20 此刻存的是 se 指针、值为 0（空指针，来自上层挑任务返回的空值），于是实际访问地址 = 0 + 64 = 0x40，一个未映射的无效地址，一读即触发崩溃。",
-              "evidence": "pc=set_next_entity+0x20；机器码 b9404280=ldr w0,[x20,#64]（#64=on_rq 字段偏移，crash> struct sched_entity -o 实证 64=0x40）；x20=0；故障地址 0x40"
+              "evidence": "pc=set_next_entity+0x20；机器码 b9404280=ldr w0,[x20,#64]（#64=on_rq 字段偏移，crash> struct sched_entity -o 实证 64=0x40）；x20=0；故障地址 0x40",
+              "snippets": [
+                {
+                  "kind": "现场日志",
+                  "title": "崩溃首行 + Code 窗口",
+                  "loc": "vmcore-dmesg.txt:2642",
+                  "content": "Unable to handle kernel NULL pointer dereference at virtual address 0000000000000040\npc : set_next_entity+0x20/0x6f8\nCode: aa0103f4 aa0003f3 aa1e03e0 d503201f (b9404280)",
+                  "hl": [
+                    3
+                  ]
+                }
+              ]
             }
           ]
         },
@@ -1239,7 +1250,29 @@
             {
               "step": "本机反编译：两处循环一有一无",
               "detail": "反编译能看到两处「挑任务→用任务」的循环。第一处用任务前有空值检查，第二处（厂商改造拆出的）用任务前没有任何检查，崩溃就发生在第二处。",
-              "evidence": "反汇编：第一循环 +268 有 cbz x20；第二循环 +728~+740 无任何判空分支"
+              "evidence": "反汇编：第一循环 +268 有 cbz x20；第二循环 +728~+740 无任何判空分支",
+              "snippets": [
+                {
+                  "kind": "源码",
+                  "title": "vanilla 4.19 pick 循环——无判空",
+                  "segs": [
+                    {
+                      "loc": "kernel/sched/fair.c:6691-6695",
+                      "first_line": 6691,
+                      "content": "do {\n\tse = pick_next_entity(cfs_rq, NULL);\n\tset_next_entity(cfs_rq, se);\n\tcfs_rq = group_cfs_rq(se);\n} while (cfs_rq);",
+                      "hl": [
+                        2,
+                        3
+                      ],
+                      "ann": {
+                        "2": "pick_next_entity 可合法返回 NULL",
+                        "3": "未判空直接传入 set_next_entity——本崩溃路径"
+                      },
+                      "ref": "src-sched-fair-pick"
+                    }
+                  ]
+                }
+              ]
             },
             {
               "step": "崩溃点落在无判空的那一处",
@@ -1292,7 +1325,11 @@
           "hl": [
             3,
             4
-          ]
+          ],
+          "ann": {
+            "2": "pick_next_entity 可返回 NULL",
+            "3": "set_next_entity 无判空调用——崩溃点"
+          }
         },
         {
           "id": "src-sched-fair-first",
