@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Agent 管理 · witty-agents · witty-agent-factor</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body data-shell="project" data-page="agents">
+<div class="content">
+  <div class="page-header"><h1>Agent 管理</h1><span class="sub">数据源：ci/agents.json（schemaVersion=1）· 注册以仓库为唯一事实源，平台只读同步</span></div>
+
+  <div class="card">
+    <div class="card-b" style="padding:12px 16px">
+      <div class="f-row">
+        <div class="f-item"><label>搜索</label><input class="inp" id="aSearch" placeholder="id / 名称 / 目录" style="width:220px"></div>
+        <div class="f-item"><label>状态</label><select class="inp" id="aFilterStatus"><option value="all">全部</option><option value="on">参与构建</option><option value="off">已禁用</option></select></div>
+        <div class="f-item" style="justify-content:flex-end"><label>注册项同步</label><span class="dim">上游 master · 2 分钟前 · 一致</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="agent-grid" id="agentGrid"></div>
+</div>
+<script src="assets/proto.js"></script>
+</body>
+</html>

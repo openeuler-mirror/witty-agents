@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>项目概览 · witty-agents · witty-agent-factor</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body data-shell="project" data-page="overview">
+<div class="content">
+  <div class="page-header"><h1>项目概览</h1><span class="tag s"><span class="pulse" style="width:6px;height:6px;border-radius:50%;background:var(--success);display:inline-block"></span>运行中</span><span class="spacer"></span>
+    <div class="actions"><a class="btn" href="#members">成员管理 ↓</a><a class="btn" href="#settings">设置 ↓</a><button class="btn admin-only" id="syncBtn" data-toast="已同步 ci/agents.json（mock）：4 个注册项，与远端一致">⟳ 同步 agents.json</button></div>
+  </div>
+
+  <div class="stat-grid">
+    <div class="stat-card"><div class="lab">Agent 注册数</div><div class="val" id="ovAgents">—</div><div class="foot" id="ovAgentsFoot">—</div></div>
+    <div class="stat-card"><div class="lab">构建记录总数</div><div class="val" id="ovBuilds">—</div><div class="foot"><span class="up">自动构建占多数</span></div></div>
+    <div class="stat-card"><div class="lab">构建成功率</div><div class="val" id="ovRate">—</div><div class="foot"><span class="down">Artifact Gates 为主因</span></div></div>
+    <div class="stat-card"><div class="lab">项目成员</div><div class="val">5</div><div class="foot">1 admin · 2 dev · 2 viewer</div></div>
+  </div>
+
+  <div class="duo">
+    <div class="card">
+      <div class="card-h"><b>Agent 健康度</b><span class="spacer"></span><a href="agents.html" class="link">管理 Agent →</a></div>
+      <div class="card-b" style="padding:12px 18px;border-bottom:1px solid var(--border)">
+        <div class="f-row">
+          <div class="f-item"><label>搜索</label><input class="inp" id="agfQ" placeholder="Agent id / 名称" style="width:200px"></div>
+          <div class="f-item"><label>状态</label><select class="inp" id="agfEn"><option value="all">全部</option><option value="on">参与构建</option><option value="off">已停用</option></select></div>
+          <div class="f-item"><label>最近构建</label><select class="inp" id="agfLast"><option value="all">全部</option><option value="s">成功</option><option value="f">失败</option><option value="c">已取消</option></select></div>
+          <div class="f-item" style="justify-content:flex-end;margin-left:auto"><label>结果</label><span class="dim" id="agfCount">4 / 4</span></div>
+        </div>
+      </div>
+      <div class="card-b tight">
+        <table class="tbl">
+          <thead><tr><th>Agent</th><th>状态</th><th>最近构建</th><th>最近版本</th><th></th></tr></thead>
+          <tbody id="agfBody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-h"><b>项目动态</b></div>
+      <div class="card-b">
+        <div class="tl" style="max-height:320px;overflow-y:auto">
+          <div class="tl-item bad"><div class="t">构建 #127 失败 · Artifact Gates</div><div class="s">张伟 · 今天 10:35</div></div>
+          <div class="tl-item ok"><div class="t">pollSCM 自动构建 #126</div><div class="s">commit a1b2c3d · 今天 09:47</div></div>
+          <div class="tl-item warn"><div class="t">MR !58 合并（nl2sql docs 前缀）</div><div class="s">李娜 · 昨天 16:20</div></div>
+          <div class="tl-item"><div class="t">张伟 × Agent 应用配置建议</div><div class="s">PYPI_INDEX_URL 默认值 · 昨天 22:40</div></div>
+          <div class="tl-item ok"><div class="t">发布 0.10.5-ci.aarch64.0</div><div class="s">arm-test · 昨天 19:12</div></div>
+          <div class="tl-item"><div class="t">王强 加入项目（developer）</div><div class="s">3 天前</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" id="members">
+    <div class="card-h"><b>成员管理</b><span class="dim">RBAC-04 · 项目角色</span><span class="spacer"></span><button class="btn sm admin-only" data-toast="添加成员（原型演示）：输入用户名并授予项目角色 admin/developer/viewer">＋ 添加成员</button></div>
+    <div class="card-b" style="padding:12px 18px;border-bottom:1px solid var(--border)">
+      <div class="f-row">
+        <div class="f-item"><label>搜索</label><input class="inp" id="mbfQ" placeholder="姓名 / 用户名" style="width:200px"></div>
+        <div class="f-item"><label>项目角色</label><select class="inp" id="mbfRole"><option value="all">全部</option><option value="项目管理员">项目管理员</option><option value="开发成员">开发成员</option><option value="只读访客">只读访客</option><option value="系统管理员">系统管理员</option></select></div>
+        <div class="f-item" style="justify-content:flex-end;margin-left:auto"><label>结果</label><span class="dim" id="mbfCount">5 / 5</span></div>
+      </div>
+    </div>
+    <div class="card-b tight">
+      <table class="tbl">
+        <thead><tr><th>成员</th><th>项目角色</th><th>加入时间</th><th>最近活跃</th><th></th></tr></thead>
+        <tbody id="mbfBody">
+          <tr data-mb-row data-name="李娜 lina" data-role="项目管理员"><td><b>李娜</b> <span class="dim mono">lina</span></td><td><span class="tag r">项目管理员</span></td><td class="dim">2025-11-02</td><td class="dim">今天 08:05</td><td><button class="btn sm admin-only" data-toast="变更角色（mock）：lina → 开发成员，即时生效并写入审计">变更角色</button></td></tr>
+          <tr data-mb-row data-name="王强 wangqiang" data-role="开发成员"><td><b>王强</b> <span class="dim mono">wangqiang</span></td><td><span class="tag s">开发成员</span></td><td class="dim">2026-01-18</td><td class="dim">昨天 21:30</td><td><button class="btn sm admin-only" data-toast="变更角色（mock）：需二次确认">变更角色</button></td></tr>
+          <tr data-mb-row data-name="赵静 zhaojing" data-role="开发成员"><td><b>赵静</b> <span class="dim mono">zhaojing</span></td><td><span class="tag s">开发成员</span></td><td class="dim">2026-03-07</td><td class="dim">7 天前</td><td><button class="btn sm admin-only" data-toast="账号已停用，不可变更角色（mock）" data-type="w">变更角色</button></td></tr>
+          <tr data-mb-row data-name="孙刘 sunliu" data-role="只读访客"><td><b>孙刘</b> <span class="dim mono">sunliu</span></td><td><span class="tag c">只读访客</span></td><td class="dim">2026-05-20</td><td class="dim">昨天 14:20</td><td><button class="btn sm admin-only" data-toast="变更角色（mock）：需二次确认">变更角色</button></td></tr>
+          <tr data-mb-row data-name="张伟 zhangwei" data-role="系统管理员"><td><b>张伟</b> <span class="dim mono">zhangwei</span></td><td><span class="tag p">系统管理员</span></td><td class="dim">2025-09-12</td><td class="dim">今天 10:18</td><td><span class="dim">—</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card" id="settings">
+    <div class="card-h"><b>项目设置</b><span class="dim">仓库与 Jenkins 关联 · 高危变更需人审</span></div>
+    <div class="card-b">
+      <div class="duo">
+        <div class="card" style="margin:0">
+          <div class="card-h"><b>Git 仓库关联</b></div>
+          <div class="card-b">
+            <div class="fi" style="margin-bottom:10px"><label>Repository URL</label><input class="inp" style="width:100%" value="https://gitcode.com/openeuler/witty-agents.git"></div>
+            <div class="fi" style="margin-bottom:12px"><label>Branch Specifier</label><input class="inp" style="width:100%" value="*/master"></div>
+            <div class="actions admin-only"><button class="btn sm" data-conn>测试连通</button><span class="light ok"><i></i>已连接 · 2 分钟前</span></div>
+          </div>
+        </div>
+        <div class="card" style="margin:0">
+          <div class="card-h"><b>Jenkins Job 关联</b><span class="ai-icon admin-only" id="aiCfgBtn">AI 建议</span></div>
+          <div class="card-b">
+            <div class="fi" style="margin-bottom:10px"><label>Job 名称</label><input class="inp" style="width:100%" value="witty-agent-package-ci"></div>
+            <div class="fi" style="margin-bottom:12px"><label>Script Path</label><input class="inp" style="width:100%" value="Jenkinsfile"></div>
+            <div class="actions admin-only"><button class="btn sm" data-conn>测试连通</button><span class="light ok"><i></i>已连接 · pollSCM H/5</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ai-panel admin-only hidden" id="aiCfgCard" style="margin-top:16px">
+        <div class="ai-head"><span class="ai-badge">AI</span><span class="ai-title">构建配置优化建议</span><span class="tag w">高危 · 需人审</span></div>
+        <div class="ai-body">分析近 20 次构建：deps 阶段平均耗时 3m05s，其中 pypi 镜像命中率仅 62%（miss 时回源导致 wheel 重打包，是 offline SHA-256 问题的疑似诱因之一）。建议将默认索引切换为内网镜像，并预期 deps 阶段提速约 40%。</div>
+        <div class="diff-card">
+          <div class="d-h">变更预览 · PYPI_INDEX_URL（影响后续所有构建的默认值）<span class="spacer"></span><button class="btn sm" id="aiCfgRefresh">刷新建议</button></div>
+          <div class="d-row del"><span class="sign">−</span><span class="txt">https://mirrors.huaweicloud.com/repository/pypi/simple</span></div>
+          <div class="d-row add"><span class="sign">+</span><span class="txt">https://pypi-mirror.internal.example.com/simple</span></div>
+        </div>
+        <div class="diff-actions">
+          <button class="btn primary sm" id="aiCfgApply">应用变更（写入审计：张伟 × Agent）</button>
+          <button class="btn sm" id="aiCfgDrop">放弃</button>
+          <span class="diff-note">⚠ 应用前会再次校验配置基线版本，他人已修改时将提示过期</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="assets/proto.js"></script>
+</body>
+</html>

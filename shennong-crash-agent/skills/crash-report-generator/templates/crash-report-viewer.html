@@ -185,13 +185,64 @@ summary,a{transition:color var(--trans)}
 .reg-hl{color:#7a5416;background:#f7efd8;padding:0 2px;border-radius:3px;font-family:var(--font-mono);font-weight:600}
 /* 故障总览：与后续章节一致，走标准卡片框 */
 .section.overview .hero{margin-top:16px}
+/* 补丁来源四档横幅 */
+.fix-banner{border-radius:7px;padding:10px 14px;margin:10px 0;font-size:13px;font-weight:550;line-height:1.7}
+.fix-banner.fix-confirmed{background:#e8f5e9;border:1px solid #a5d6a7;color:#1b5e20}
+.fix-banner.fix-derived{background:#e0f2f1;border:1px solid #80cbc4;color:#00695c}
+.fix-banner.fix-speculative{background:#fff3e0;border:1px solid #ffcc80;color:#e65100}
+.fix-banner.fix-none{background:#f5f5f5;border:1px solid #e0e0e0;color:#616161}
+.fix-banner b{font-weight:700}
+.fix-banner .fix-sub{display:block;font-size:12px;font-weight:400;margin-top:2px;opacity:.85}
+/* ③ 可能性方案的 diff 区域琥珀色调 */
+.patch-speculative-bg{background:#fffaf0 !important;border-color:#ffcc80 !important}
+
+
 /* 内核源码摘录卡：head 右侧固定组（不参与挤压）+ 逐行渲染 + 关键行高亮 */
 .src-head-right{display:flex;align-items:center;gap:8px;flex-shrink:0;margin-left:12px;flex-wrap:wrap;justify-content:flex-end}
 .src-excerpt{counter-reset:srcn;display:block}
 .src-line{display:block;white-space:pre-wrap;padding:0 8px;border-left:2px solid transparent}
 .src-line::before{counter-increment:srcn;content:counter(srcn);display:inline-block;width:2.4em;margin-right:10px;text-align:right;color:var(--subtle);font-size:10px}
-.src-hl{background:var(--accent-soft);border-left-color:var(--accent-strong)}
-.src-hl::before{color:var(--accent-strong);font-weight:600}
+.src-hl{background:#fff3b0;border-left-color:#e8a200}
+.src-hl::before{color:#a06a00;font-weight:700}
+/* 推理步内联证据块（details 可折叠）：kind 徽标自由字符串，常见类配色、未知类中性灰兜底 */
+.snippet{border:1px solid var(--line);border-radius:7px;background:#fff;margin:9px 0;overflow:hidden}
+.snippet>summary{display:flex;align-items:center;gap:8px;padding:7px 11px;font-size:12px;font-weight:550;cursor:pointer;list-style:none}
+.snippet>summary::-webkit-details-marker{display:none}
+.snippet>summary:hover{color:var(--accent)}
+.snippet-kind{font-size:10px;font-weight:600;padding:1px 7px;border-radius:4px;flex-shrink:0;border:1px solid var(--line);background:var(--surface-3);color:var(--muted)}
+.snippet-kind.k-log{border-color:#e5c5bf;color:#ac4a3f;background:#fcf3f1}
+.snippet-kind.k-stack{border-color:#b9d3c3;color:#2e7d5b;background:#f0f7f3}
+.snippet-kind.k-asm{border-color:#dbcdab;color:#926321;background:#fdf8eb}
+.snippet-kind.k-code{border-color:#cbb8df;color:#8a5fb0;background:#f5f1f9}
+.snippet-kind.k-mem{border-color:#c5cfdc;color:#5b7fa6;background:#f1f5f9}
+.snippet-kind.k-reg{border-color:#b9c9dd;color:#3d5a80;background:#eef3fa}
+/* 源码来源徽标：本地（绿）与上游基线（紫）统一风格 */
+.origin-tag{font-size:11px;font-weight:600;margin-left:6px}
+.origin-tag.tag-local{color:#2e7d5b}
+.origin-tag.tag-upstream{color:#8a5fb0}
+.snippet-title{color:var(--muted);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+.snippet-body{padding:4px 2px 8px}
+/* 块内正文加粗加深；行号保持细淡 */
+.snippet .src-line{color:#1c262b;font-weight:600}
+.snippet .src-no{font-weight:400}
+.snippet-seg{border:1px dashed var(--line-strong);border-radius:6px;margin:8px 0;background:var(--surface-2)}
+.snippet-seg .source-label{display:block;margin:6px 10px 2px}
+.snippet-seg .src-excerpt{background:transparent}
+/* 证据块代码段过长时出现纵向滚动条（约 16 行可见高度） */
+.snippet .src-excerpt{max-height:360px;overflow-y:auto}
+.snippet-body .src-line{padding-right:10px}
+.snippet .attachment-link{margin:4px 10px;display:inline-block}
+/* snippet 行号一律 JS 显式渲染（支持绝对文件行号）；关闭 CSS counter 防双编号 */
+.snippet .src-line::before{display:none}
+.src-no{display:inline-block;width:2.4em;margin-right:10px;text-align:right;color:var(--subtle);font-size:10px}
+.src-hl .src-no{color:#a06a00;font-weight:700}
+/* 源码行尾注释 */
+.src-ann{color:#2e7d5b;font-style:italic;margin-left:14px;white-space:pre-wrap;opacity:.92}
+/* 内联直出块（短日志，永远可见、不可折叠） */
+.snippet-inline{border:1px solid var(--line);border-left:3px solid #b04a4a;border-radius:7px;background:#fff;margin:9px 0;padding:6px 4px}
+.snippet-inline-head{display:flex;align-items:center;gap:8px;padding:2px 8px}
+.snippet-inline .source-label{margin:2px 10px}
+.snippet-body .source-label{display:block;margin:6px 10px 2px}
 </style></head>
 <body>
 <a class="skip-link" href="#overview">跳到报告正文</a>
@@ -508,7 +559,10 @@ function renderOverview(){
   h += `<article class="plan-card"><div class="small-label">根治措施 · 内核维护人员</div>`;
   const ssTitleMap = {patch:'合入修复补丁', config:'调整配置或运行参数', upgrade:'升级内核至修复版本', none:'暂无根治方案，需更多信息诊断'};
   const ssTitle = ss ? (ssTitleMap[ss.type] || '相应修复') : '原报告未给出根治方案';
+  const fixLevel = classifyFixProvenance(ss, diag);
+  const fixPrefix = fixLevel === 'speculative' ? '(自研) ' : fixLevel === 'derived' ? '(推导) ' : '';
   h += `<h3>${esc(ssTitle)}</h3>`;
+  h += fixProvenanceBanner(fixLevel);
   if(ss && has(ss.claim_tag)) h += `<p class="caption">${linkifyBody(ss.claim_tag)}</p>`;
   if(ss && has(ss.brief)) h += `<p>${linkifyBody(ss.brief)}</p>`;
   else if(ss && has(ss.short)) h += `<p>${linkifyBody(ss.short)}</p>`;
@@ -518,14 +572,14 @@ function renderOverview(){
     if(toArr(ss.patch_list).length){
       det += `<h4>建议合入补丁</h4>`;
       toArr(ss.patch_list).forEach(p=>{
-        det += `<p><b>${linkifyBody(p.subject||p.sha||'')}</b></p>`;
+        det += `<p><b>${fixPrefix}${linkifyBody(p.subject||p.sha||'')}</b></p>`;
         if(has(p.sha)) det += `<p class="caption">${linkifyBody(p.sha)}</p>`;
         if(has(p.why)) det += `<div class="patch-rationale"><b>为什么这个补丁能修复当前问题</b><p>${linkifyBody(p.why)}</p></div>`;
         if(toArr(p.files).length) det += `<p>涉及文件：${toArr(p.files).map(f=>{
           const sid = findSourceRefId(f);
           return sid ? `<a href="#${sid}" onclick="openAttachmentCase('${sid}'); return false;" class="attachment-link" title="查看本地源码摘录">${esc(f)} ↗</a>` : esc(f);
         }).join(' · ')}</p>`;
-        if(has(p.diff)) det += `<pre><code>${esc(p.diff)}</code></pre>`;
+        if(has(p.diff)) det += `<pre class="${fixLevel==='speculative'?'patch-speculative-bg':''}"><code>${esc(p.diff)}</code></pre>`;
       });
     }
     if(has(det)) h += `<details><summary>修复细节与补丁摘录<span class="chevron" aria-hidden="true"></span></summary><div class="detail-body">${det}</div></details>`;
@@ -624,6 +678,27 @@ function annotateCrashLog(raw){
   }).join('');
 }
 
+/* 补丁来源四档分级（从 verdict/mode/type 自动推断） */
+function classifyFixProvenance(ss, diag){
+  if(!ss || ss.type === 'none' || !toArr(ss.patch_list).length) return 'none';
+  const allCases = [...toArr(diag.online_result), ...toArr(diag.community_kernel_result), ...toArr(diag.internal_kernel_result)];
+  const hasConfirmed = allCases.some(c=>String(c && c.verdict || '').toLowerCase()==='confirmed');
+  if(hasConfirmed && ss.patch_list.some(p=>p.mode==='full'||p.mode==='part')) return 'confirmed';
+  const hasSimilar = allCases.some(c=>['same_area','confirmed'].includes(String(c && c.verdict || '').toLowerCase()));
+  if(hasSimilar && ss.patch_list.some(p=>p.mode==='pick')) return 'derived';
+  return 'speculative';
+}
+function fixProvenanceBanner(level){
+  const map = {
+    confirmed:   {cls:'fix-confirmed',   icon:'✓', title:'上游已有明确修复', sub:'可直接合入验证'},
+    derived:     {cls:'fix-derived',     icon:'◈', title:'推导修复', sub:'基于类似案例/commit 推导，需适配验证'},
+    speculative: {cls:'fix-speculative', icon:'⚠', title:'自研建议补丁', sub:'基于源码分析生成，未经上游验证，需厂商确认后合入'},
+    none:        {cls:'fix-none',        icon:'ℹ', title:'暂无修复方案', sub:'需联系厂商或提供更多信息诊断'},
+  };
+  const m = map[level] || map.none;
+  return `<div class="fix-banner ${m.cls}">${m.icon} <b>${m.title}</b><span class="fix-sub">${m.sub}</span></div>`;
+}
+
 /* 现场初印象：优先取报告按宕机栈生成的一句话印象；缺失时由栈动态生成通用文案（禁止静态硬编码） */
 function stackImpression(){
   if(has(cf.stack_impression)) return String(cf.stack_impression);
@@ -718,6 +793,87 @@ function renderFeatures(){
 }
 
 /* ===== ③ 判断依据 ===== */
+/* 推理步内联证据块：kind 自由字符串（按案自选）；缺省时按内容自动推断（仅影响徽标配色/标签） */
+const SNIPPET_KIND_CLS = {'现场日志':'k-log','调用栈':'k-stack','反汇编':'k-asm','源码':'k-code','内存取证':'k-mem','内存转储':'k-mem','寄存器现场':'k-reg','寄存器':'k-reg','汇编':'k-asm','结构体':'k-code','宏定义':'k-code','日志':'k-log'};
+function inferSnippetKind(content){
+  const s = String(content||'');
+  if(/Call [Tt]race/.test(s)) return '调用栈';
+  if(/Code:|BUG:|Oops|RIP:|(^|\n)\s*\[\d{10,}\.\d+\]/.test(s)) return '现场日志';
+  if(/[0-9a-f]{8,16}:\s+(?:[0-9a-f]{2} ){4,}/m.test(s)) return '反汇编';
+  return '源码';
+}
+/* 块默认全部收起；短日志块（sn.inline=true）内联直出、无需点击 */
+function parseHl(hl){
+  return toArr(hl).map(n=>parseInt(n,10)).filter(n=>Number.isInteger(n)&&n>0);
+}
+function parseAnn(annObj){
+  const annMap = {};
+  Object.keys(annObj || {}).forEach(k=>{
+    const n = parseInt(k,10);
+    if(Number.isInteger(n) && n > 0 && has(annObj[k])) annMap[n] = String(annObj[k]);
+  });
+  return annMap;
+}
+function snippetLinesHTML(content, hlLines, annMap, firstLine){
+  const hasAbs = Number.isInteger(firstLine) && firstLine > 0;
+  return String(content).split('\n').map((ln,i)=>{
+    const on = hlLines.includes(i+1);
+    const no = hasAbs ? (firstLine + i) : (i + 1);
+    const ann = annMap[i+1] ? ` <span class="src-ann">◀ ${esc(annMap[i+1])}</span>` : '';
+    return `<span class="src-line${on?' src-hl':''}"><span class="src-no">${no}</span>${esc(ln)||'&nbsp;'}${ann}</span>`;
+  }).join('');
+}
+function snippetRefLink(sn){
+  if(!sn || !has(sn.ref)) return '';
+  return `<a href="#${esc(sn.ref)}" onclick="openAttachmentCase('${esc(sn.ref)}'); return false;" class="attachment-link" title="查看完整摘录">完整摘录 ↗</a>`;
+}
+function renderSnippet(sn){
+  if(!sn) return '';
+  const segs = toArr(sn.segs).filter(sg2=>sg2 && has(sg2.content));
+  if(!has(sn.content) && !segs.length) return '';
+  const kind = has(sn.kind) ? String(sn.kind) : inferSnippetKind(sn.content || '');
+  const cls = SNIPPET_KIND_CLS[kind] || '';
+  const refLink = snippetRefLink(sn);
+  /* 多段源码：一个框内多个子框，每段独立文件行号/高亮/注释（行号与文件行号一致） */
+  if(segs.length){
+    const segsHtml = segs.map(sg2=>{
+      const firstLine = parseInt(sg2.first_line,10);
+      const hasAbs = Number.isInteger(firstLine) && firstLine > 0;
+      const code = snippetLinesHTML(sg2.content, parseHl(sg2.hl), parseAnn(sg2.ann), firstLine);
+      const loc = has(sg2.loc) ? `<span class="source-label">📍 ${esc(sg2.loc)}</span>` : '';
+      const segRef = has(sg2.ref) ? snippetRefLink(sg2) : '';
+      return `<div class="snippet-seg">${loc}<code class="src-excerpt${hasAbs?' absno':''}">${code}</code>${segRef?`<div style="padding:2px 10px 6px">${segRef}</div>`:''}</div>`;
+    }).join('');
+    return `<details class="snippet"><summary><span class="snippet-kind ${cls}">${esc(kind)}</span><span class="snippet-title">${esc(sn.title||'')}</span><span class="chevron" aria-hidden="true"></span></summary><div class="snippet-body">${segsHtml}</div></details>`;
+  }
+  const firstLine = parseInt(sn.first_line,10);
+  const hasAbs = Number.isInteger(firstLine) && firstLine > 0;
+  const lines = snippetLinesHTML(sn.content, parseHl(sn.hl), parseAnn(sn.ann), firstLine);
+  const locLine = has(sn.loc) ? `<span class="source-label">📍 ${esc(sn.loc)}</span>` : '';
+  if(sn.inline === true){
+    return `<div class="snippet snippet-inline"><div class="snippet-inline-head"><span class="snippet-kind ${cls}">${esc(kind)}</span><span class="snippet-title">${esc(sn.title||'')}</span></div>${locLine}<code class="src-excerpt">${lines}</code>${refLink?`<div>${refLink}</div>`:''}</div>`;
+  }
+  return `<details class="snippet"><summary><span class="snippet-kind ${cls}">${esc(kind)}</span><span class="snippet-title">${esc(sn.title||'')}</span><span class="chevron" aria-hidden="true"></span></summary><div class="snippet-body">${locLine}<code class="src-excerpt${hasAbs?' absno':''}">${lines}</code>${refLink}</div></details>`;
+}
+
+/* evidence 事实清单 → 块状原文段落（默认收起）：按 ；/换行 拆行，首行「类别 ｜」前缀决定徽标，含 ≠/对不上 的关键行高亮 */
+function evidenceKindOf(line){
+  const m = String(line).match(/^\s*([^｜|]{2,6})\s*[｜|]\s*/);
+  return m ? m[1].trim() : '';
+}
+function renderEvidenceBlock(text){
+  const rawLines = String(text).split('\n').flatMap(l=>l.split('；')).map(s=>s.trim()).filter(has);
+  if(!rawLines.length) return '';
+  const kind = evidenceKindOf(rawLines[0]) || inferSnippetKind(text);
+  const cls = SNIPPET_KIND_CLS[kind] || '';
+  const hlRe = /≠|对不上/;
+  const lines = rawLines.map((ln,i)=>{
+    const on = hlRe.test(ln);
+    return `<span class="src-line${on?' src-hl':''}"><span class="src-no">${i+1}</span>${esc(ln)||'&nbsp;'}</span>`;
+  }).join('');
+  return `<details class="snippet"><summary><span class="snippet-kind ${cls}">${esc(kind||'事实记录')}</span><span class="snippet-title">${rawLines.length} 条事实 · 点击展开</span><span class="chevron" aria-hidden="true"></span></summary><div class="snippet-body"><code class="src-excerpt">${lines}</code></div></details>`;
+}
+
 function renderEvidence(){
   let h = `<section class="section" id="evidence" aria-labelledby="evidence-title">`;
   h += `<div class="section-heading"><span class="section-no">04</span><h2 id="evidence-title">为什么得出这个结论</h2></div>`;
@@ -739,7 +895,10 @@ function renderEvidence(){
         reasoning.forEach(st=>{
           h += `<li><h4>${esc(st.step||'')}</h4>`;
           if(has(st.detail)) h += `<p>${linkifyBody(st.detail)}</p>`;
-          if(has(st.evidence)) h += `<pre><code>${esc(st.evidence)}</code></pre>`;
+          /* 原文块/事实块均默认收起：有 snippet 走原文，无 snippet 走 evidence 事实块 */
+          const hasSnippets = toArr(st.snippets).some(sn=>sn && (has(sn.content) || toArr(sn.segs).some(g=>g && has(g.content))));
+          if(hasSnippets) toArr(st.snippets).forEach(sn=>{ h += renderSnippet(sn); });
+          else if(has(st.evidence)) h += renderEvidenceBlock(st.evidence);
           if(has(st.conclusion)) h += `<p class="reason-result">${linkifyBody(st.conclusion)}</p>`;
           h += `</li>`;
         });
@@ -1189,15 +1348,17 @@ function renderAppendix(){
         const loc = `${r.file||''}${has(r.lines)?(' : '+r.lines):''}`;
         /* head 只放 标题 + 固定右侧组（徽标/链接）；长路径独立成行，避免挤压标题 */
         let headRight = '';
-        if(String(r.origin||'') === '本地源码') headRight += `<span class="case-pill">本地源码</span>`;
+/* origin 不再用 pill 徽标，改为 loc 行内彩色后缀（见下方 originTag） */
         if(has(r.url)) headRight += `<a href="${esc(r.url)}" target="_blank" rel="noopener noreferrer" class="case-link">上游对照 ↗</a>`;
         const pathLine = (String(r.origin||'') === '本地源码' && has(r.path)) ? `<span class="source-label">📁 本地路径：${esc(r.path)}</span>` : '';
         const hlLines = toArr(r.hl).map(n=>parseInt(n,10)).filter(n=>Number.isInteger(n)&&n>0);
         const excerptHtml = has(r.excerpt) ? `<code class="src-excerpt">${String(r.excerpt).split('\n').map((ln,i)=>{
           const on = hlLines.includes(i+1);
-          return `<span class="src-line${on?' src-hl':''}">${esc(ln)||'&nbsp;'}</span>`;
+          return `<span class="src-line">${esc(ln)||'&nbsp;'}</span>`;
         }).join('')}</code>` : '';
-        h += `<article class="log-evidence" id="${esc(r.id||'')}"><div class="log-evidence-head"><b>${esc(r.func||loc)}</b>${headRight?`<span class="src-head-right">${headRight}</span>`:''}</div><span class="source-label">${esc(loc)}</span>${pathLine}${excerptHtml}${has(r.note)?`<p>${esc(r.note)}</p>`:''}</article>`;
+        const originTag = String(r.origin||'') === '本地源码' ? `<span class="origin-tag tag-local">本地源码</span>`
+          : String(r.origin||'') === '上游基线' ? `<span class="origin-tag tag-upstream">上游基线 · Linux v5.10</span>` : '';
+        h += `<article class="log-evidence" id="${esc(r.id||'')}"><div class="log-evidence-head"><b>${esc(r.func||loc)}</b>${headRight?`<span class="src-head-right">${headRight}</span>`:''}</div><span class="source-label">📍 ${esc(loc)} ${originTag}</span>${pathLine}${excerptHtml}${has(r.note)?`<p>${esc(r.note)}</p>`:''}</article>`;
       });
       h += `</div></div></details></div>`;
     }

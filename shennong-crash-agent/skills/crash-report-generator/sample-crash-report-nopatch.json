@@ -559,7 +559,18 @@
             {
               "step": "崩溃类型是什么",
               "detail": "日志首行写明是「空指针解引用」：程序去读了一个从零开始加上字段位置得出的地址——典型的「空指针 + 字段偏移」式访问。",
-              "evidence": "日志 ｜ vmcore-dmesg:3226 BUG: kernel NULL pointer dereference, address: 0000000000000018"
+              "evidence": "日志 ｜ vmcore-dmesg:3226 BUG: kernel NULL pointer dereference, address: 0000000000000018",
+              "snippets": [
+                {
+                  "kind": "现场日志",
+                  "title": "崩溃首行 + RIP + Code 窗口",
+                  "loc": "vmcore-dmesg.txt:3226-3234",
+                  "content": "BUG: kernel NULL pointer dereference, address: 0000000000000018\nRIP: 0010:dma_direct_unmap_sg+0x44/0x1a0\nCode: 89 4c 24 04 ... (b9404280)",
+                  "hl": [
+                    3
+                  ]
+                }
+              ]
             },
             {
               "step": "崩在哪一步",
@@ -626,7 +637,29 @@
             {
               "step": "循环的判断条件是什么",
               "detail": "循环的退出条件只有一个：走满记录的段数。它完全信任记录值，不去确认下一段是否真的存在。",
-              "evidence": "宏定义 ｜ for_each_sg：仅以 __i < (nr) 为循环条件（include/linux/scatterlist.h:151-152）\n反汇编 ｜ +226 cmp %r13d,%ebp；+229 jne（计数未满即继续）"
+              "evidence": "宏定义 ｜ for_each_sg：仅以 __i < (nr) 为循环条件（include/linux/scatterlist.h:151-152）\n反汇编 ｜ +226 cmp %r13d,%ebp；+229 jne（计数未满即继续）",
+              "snippets": [
+                {
+                  "kind": "源码",
+                  "title": "blk_mq 完成状态改写——无条件 WRITE_ONCE",
+                  "segs": [
+                    {
+                      "loc": "block/blk-mq.c:751-772",
+                      "first_line": 751,
+                      "content": "bool blk_mq_complete_request_remote(struct request *rq)\n{\n\tWRITE_ONCE(rq->state, MQ_RQ_COMPLETE);\n\n\tif (rq->cmd_flags & REQ_HIPRI)\n\t\treturn false;\n\n\tif (blk_mq_complete_need_ipi(rq)) {\n\t\tINIT_CSD(&rq->csd, __blk_mq_complete_request_remote, rq);\n\t\tsmp_call_function_single_async(rq->mq_ctx->cpu, &rq->csd);\n\t} else {\n\t\tif (rq->q->nr_hw_queues > 1)\n\t\t\treturn false;\n\t\tblk_mq_trigger_softirq(rq);\n\t}\n\n\treturn true;\n}",
+                      "hl": [
+                        3,
+                        10
+                      ],
+                      "ann": {
+                        "3": "未在途请求也被无条件置为完成",
+                        "10": "完成回调跨核投递"
+                      },
+                      "ref": "src-blkmq-complete-remote"
+                    }
+                  ]
+                }
+              ]
             },
             {
               "step": "读字段前有没有判空",
