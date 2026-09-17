@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>审计日志 · witty-agent-factor</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body data-shell="plain" data-page="audit">
+<div class="content">
+  <div class="page-header"><h1>审计日志</h1><span class="sub">AI 代执行操作统一标记「用户 × Agent」（COP-08）</span><span class="spacer"></span>
+    <div class="actions"><button class="btn" id="auExport">导出 CSV</button></div>
+  </div>
+
+  <div class="card">
+    <div class="card-b" style="padding:12px 16px;border-bottom:1px solid var(--border)">
+      <div class="f-row">
+        <div class="f-item"><label>事件类型</label>
+          <select class="inp" id="auFilterEv">
+            <option value="all">全部</option>
+            <option value="构建">构建相关</option>
+            <option value="发布">发布相关</option>
+            <option value="AI">AI 能力点</option>
+            <option value="角色">权限变更</option>
+            <option value="登录">登录</option>
+          </select>
+        </div>
+        <div class="f-item"><label>搜索</label><input class="inp" id="auSearch" placeholder="操作者 / 资源" style="width:220px"></div>
+        <div class="f-item" style="justify-content:flex-end;margin-left:auto"><label>筛选</label>
+          <label style="display:flex;gap:6px;align-items:center;font-size:13px;color:var(--text2)"><input type="checkbox" id="auOnlyAi"> 仅看「用户 × Agent」操作</label>
+        </div>
+      </div>
+    </div>
+    <div class="card-b tight">
+      <table class="tbl">
+        <thead><tr><th>时间</th><th>操作者</th><th>事件</th><th>资源</th><th>快照</th></tr></thead>
+        <tbody id="auditTbody"></tbody>
+      </table>
+    </div>
+    <div class="pager">共 <span id="auCount">12</span> 条 · 行点击查看详情</div>
+  </div>
+</div>
+<script src="assets/proto.js"></script>
+</body>
+</html>
