@@ -555,6 +555,7 @@
         {
           "title": "宕机栈分析：崩在哪里、为什么崩",
           "summary": "崩在内核释放磁盘传输映射的函数里：它按记录的段数去遍历分段链，链已经到头了还继续走，拿着空分段去读它的长度字段，一读就崩。",
+          "level": "现场实测",
           "reasoning": [
             {
               "step": "崩溃类型是什么",
@@ -563,11 +564,16 @@
                 {
                   "kind": "现场日志",
                   "title": "崩溃首行 + RIP + Code 窗口",
-                  "loc": "vmcore-dmesg.txt:3226-3234",
-                  "content": "BUG: kernel NULL pointer dereference, address: 0000000000000018\nRIP: 0010:dma_direct_unmap_sg+0x44/0x1a0\nCode: 89 4c 24 04 ... (b9404280)",
+                  "loc": "vmcore-dmesg.txt:3226 · 3233 · 3234（崩溃首行 · RIP · Code）",
+                  "content": "[3898677.870981] BUG: kernel NULL pointer dereference, address: 0000000000000018\n[3898677.874495] RIP: 0010:dma_direct_unmap_sg+0x44/0x1a0\n[3898677.874923] Code: 89 4c 24 04 4c 89 44 24 08 85 d2 0f 8e c0 00 00 00 48 89 fb 49 89 f6 89 d5 45 31 ed 4c 8b 0d 13 b9 8b 01 48 8b bb d8 02 00 00 <45> 8b 7e 18 49 8b 76 10 4c 8b 1d e5 c0 71 02 49 f7 d1 48 85 ff 0f",
                   "hl": [
+                    1,
                     3
-                  ]
+                  ],
+                  "ann": {
+                    "1": "0x18 不是随机值 —— 是 scatterlist.dma_length 的字段偏移",
+                    "3": "<45> 8b 7e 18 即崩溃指令 mov 0x18(%r14),%r15d"
+                  }
                 }
               ]
             },
@@ -582,14 +588,16 @@
                   "content": "汇编 ｜ mov 0x18(%r14),%r15d（读 r14+0x18 处 4 字节；机器码 <45> 8b 7e 18）\n寄存器｜ R14=0（当前分段指针，已为空） · R13=13（已遍历段数） · RBP=0x20（记录段数 32）\n结构体｜ scatterlist.dma_length（传输长度）字段偏移 0x18（crash struct -o 实证）\n日志 ｜ CR2=0x18，与 0+0x18 完全吻合",
                   "hl": [
                     1
-                  ]
+                  ],
+                  "ann": {
+                    "1": "R14=0 代入 0+0x18=0x18，与 CR2 完全吻合"
+                  }
                 }
               ]
             },
             {
               "step": "崩在哪个函数",
               "detail": "按调用栈，崩溃点位于内核释放磁盘传输映射的底层函数内、靠近函数开头处；上层依次是 NVMe 驱动的完成清理入口和完成中断处理。",
-              "conclusion": "崩溃点还原：完成中断路径释放 DMA 映射时，遍历分段链读「传输长度」字段触发空指针解引用。",
               "snippets": [
                 {
                   "kind": "调用栈",
@@ -599,15 +607,25 @@
                   "hl": [
                     1
                   ],
-                  "ref": "src-dma-direct-unmap"
+                  "ref": "src-dma-direct-unmap",
+                  "ann": {
+                    "1": "崩溃帧 dma_direct_unmap_sg+0x44（对应 kernel/dma/direct.c:423）"
+                  }
                 }
               ]
+            },
+            {
+              "step": "推导与结论",
+              "detail": "把 R14=0 代入崩溃指令 mov 0x18(%r14) → 0+0x18=0x18，与 CR2 一致；再对照调用栈，该参数由完成路径 nvme_unmap_data 传入。",
+              "conclusion": "崩溃点还原：完成中断路径释放 DMA 映射时，遍历分段链读「传输长度」字段触发空指针解引用。"
             }
           ]
         },
         {
           "title": "空分段从哪来：取下一段的动作为什么会交出一个空值",
           "summary": "空分段不是一开始就有的：是「取下一段」的动作自己返回的——链走到第 13 个分段时遇到「链结束」标记，再取就返回空，空值又被循环拿去继续用。",
+          "level": "现场实测",
+          "connect": "崩点还原了「拿空分段读字段」，接下来追溯这个空分段是谁给的。",
           "reasoning": [
             {
               "step": "崩溃函数在做什么",
@@ -621,7 +639,10 @@
                   "hl": [
                     1
                   ],
-                  "ref": "src-sgl-macro"
+                  "ref": "src-sgl-macro",
+                  "ann": {
+                    "1": "循环体逐段推进：call sg_next → 返回值写回 R14"
+                  }
                 }
               ]
             },
@@ -637,7 +658,10 @@
                   "hl": [
                     1
                   ],
-                  "ref": "src-sgl-macro"
+                  "ref": "src-sgl-macro",
+                  "ann": {
+                    "1": "第 13 项带结束标记 —— 表实际到此为止"
+                  }
                 }
               ]
             },
@@ -652,16 +676,26 @@
                   "content": "寄存器 ｜ R13=0xd（已遍历 13） · RBP=0x20（nents=32） · R14=0（空分段指针）\n反汇编 ｜ +226 cmp %r13d,%ebp；+229 jne（计数 < 段数则继续循环）",
                   "hl": [
                     1
-                  ]
+                  ],
+                  "ann": {
+                    "1": "i=13 < nents=32：循环条件仍成立"
+                  }
                 }
               ]
+            },
+            {
+              "step": "推导与结论",
+              "detail": "sg_next(sg[12]) 因 SG_END 返回 NULL（合法行为）；但 i=13 < nents=32，循环条件成立，第 14 轮把空指针当 sg 读字段。",
+              "conclusion": "空分段直接原因：链在第 13 项结束而记录段数 32，空值被循环继续使用。"
             }
-          ],
-          "connect": "崩点还原了「拿空分段读字段」，接下来追溯这个空分段是谁给的。"
+          ]
         },
         {
           "title": "为什么链表提前结束了、记录的段数却还是 32",
           "summary": "记录说要走 32 段，链实际第 13 段就结束了——「链的长度」和「记录的段数」对不上，这是触发崩溃的根本矛盾；至于链为什么会变成这样，单次转储还定不了案。",
+          "level": "实测+推断",
+          "caveat": "链为何被损坏（提前释放 / 越界写 / 并发复用）无法从单次转储唯一确定；需复现或结合厂商源码定位。",
+          "connect": "空分段来自链提前结束，那为什么链会提前结束、而记录的段数却还是 32？",
           "reasoning": [
             {
               "step": "记录的段数是多少",
@@ -674,7 +708,10 @@
                   "content": "内存取证 ｜ crash 读 iod+0x74：nvme_iod.nents=0x20（即 32）",
                   "hl": [
                     1
-                  ]
+                  ],
+                  "ann": {
+                    "1": "记录段数 32 与后文链实际 13 段冲突"
+                  }
                 }
               ]
             },
@@ -689,14 +726,16 @@
                   "content": "内存取证 ｜ crash rd iod->sg：sg[0..8] 有页但 dma_address=0 · sg[9..11] 全零 · sg[12]=SG_END 结束标记 · sg[13] 起又有有效 dma_address",
                   "hl": [
                     1
-                  ]
+                  ],
+                  "ann": {
+                    "1": "前 9 段有页但 DMA 地址未填、中间全零、第 13 项结束标记 —— 半改写状态"
+                  }
                 }
               ]
             },
             {
               "step": "这能说明什么",
               "detail": "「链提前结束」与「段数仍是 32」同时成立，说明链和计数被破坏后失去了同步。至于是内存被提前释放、被别的写入踩到、还是并发复用窗口所致，单次转储无法唯一确定（推断，需厂商结合源码与复现路径定位）。",
-              "conclusion": "触发条件实证：链长与段数失配。深层成因（链为何损坏）保持开放，标为推断。",
               "snippets": [
                 {
                   "kind": "定性",
@@ -708,13 +747,19 @@
                   ]
                 }
               ]
+            },
+            {
+              "step": "推导与结论",
+              "detail": "nents=32 与 sg[12].page_link=0x2 并存 → 链实际 13 段、记录 32 段，长度与计数失配；被打断上下文正在 blk_bvec_map_sg 构建新分段链（RIP 实证），构成并发窗口旁证（未实证）。",
+              "conclusion": "触发条件实证：链长与段数失配。深层成因（链为何损坏）保持开放，标为推断。"
             }
-          ],
-          "connect": "空分段来自链提前结束，那为什么链会提前结束、而记录的段数却还是 32？"
+          ]
         },
         {
           "title": "为什么没有防御拦住：代码缺了哪道检查",
           "summary": "释放代码默认「链长一定等于记录段数」：循环只看「走满 32 段没有」，对「中途取到空」没有任何保护。",
+          "level": "现场实测",
+          "connect": "链与段数失配是根因，那为什么代码没有拦住这个异常？",
           "reasoning": [
             {
               "step": "循环的判断条件是什么",
@@ -722,30 +767,22 @@
               "snippets": [
                 {
                   "kind": "源码",
-                  "title": "blk_mq 完成状态改写——无条件 WRITE_ONCE",
-                  "segs": [
-                    {
-                      "loc": "block/blk-mq.c:751-772",
-                      "first_line": 751,
-                      "content": "bool blk_mq_complete_request_remote(struct request *rq)\n{\n\tWRITE_ONCE(rq->state, MQ_RQ_COMPLETE);\n\n\tif (rq->cmd_flags & REQ_HIPRI)\n\t\treturn false;\n\n\tif (blk_mq_complete_need_ipi(rq)) {\n\t\tINIT_CSD(&rq->csd, __blk_mq_complete_request_remote, rq);\n\t\tsmp_call_function_single_async(rq->mq_ctx->cpu, &rq->csd);\n\t} else {\n\t\tif (rq->q->nr_hw_queues > 1)\n\t\t\treturn false;\n\t\tblk_mq_trigger_softirq(rq);\n\t}\n\n\treturn true;\n}",
-                      "hl": [
-                        3,
-                        10
-                      ],
-                      "ann": {
-                        "3": "未在途请求也被无条件置为完成",
-                        "10": "完成回调跨核投递"
-                      },
-                      "ref": "src-blkmq-complete-remote"
-                    }
-                  ]
+                  "loc": "include/linux/scatterlist.h:151-152",
+                  "first_line": 151,
+                  "hl": [
+                    2
+                  ],
+                  "ann": {
+                    "2": "只按 i<nr 循环，取到空指针也会继续"
+                  },
+                  "content": "#define for_each_sg(sglist, sg, nr, __i)\t\\\n\tfor (__i = 0, sg = (sglist); __i < (nr); __i++, sg = sg_next(sg))",
+                  "ref": "src-sgl-macro"
                 }
               ]
             },
             {
               "step": "读字段前有没有判空",
               "detail": "没有。取到下一段后直接读它的字段，中途没有任何「是否为空」的检查；本报告的自研补丁正是补上这道防线（进入释放循环前先数清实际链长）。",
-              "conclusion": "防御缺失实证：两层路径（NVMe 入口与通用释放循环）均无链长/空指针校验，自研补丁在 NVMe 入口钳制链长即可阻断。",
               "snippets": [
                 {
                   "kind": "反汇编",
@@ -755,16 +792,25 @@
                   "hl": [
                     1
                   ],
-                  "ref": "src-dma-direct-unmap"
+                  "ref": "src-dma-direct-unmap",
+                  "ann": {
+                    "1": "崩溃指令前没有 test %r14,%r14 判空"
+                  }
                 }
               ]
+            },
+            {
+              "step": "推导与结论",
+              "detail": "for_each_sg 只看 i<nents；崩溃指令前无判空；两层路径（NVMe 入口与通用释放循环）都没有「链长与计数一致性」校验。",
+              "conclusion": "防御缺失实证：两层路径（NVMe 入口与通用释放循环）均无链长/空指针校验，自研补丁在 NVMe 入口钳制链长即可阻断。"
             }
-          ],
-          "connect": "链与段数失配是根因，那为什么代码没有拦住这个异常？"
+          ]
         },
         {
           "title": "上游有没有现成修复：为什么最终用自研补丁",
           "summary": "内部库和上游都没有这个崩溃位置的现成修复，所以修复只能基于本地源码自己出（见第 1 章）。",
+          "level": "实测",
+          "connect": "机制与防御缺失都已闭环，最后确认：这个位置有没有别人修过、有没有现成答案？",
           "reasoning": [
             {
               "step": "内部库里查到什么",
@@ -799,7 +845,6 @@
             {
               "step": "结论怎么定性",
               "detail": "崩溃过程有实打实的证据，但修复没有上游依据：结论维持「推测」定级，修复采用基于本地源码分析的自研防御补丁（依据见第 1 章「修复细节」与技术附件「内核源码摘录」）。",
-              "conclusion": "上游无现成修复：修复依据 = 本地源码分析自研；定性维持「推测」。",
               "snippets": [
                 {
                   "kind": "定性",
@@ -811,9 +856,13 @@
                   ]
                 }
               ]
+            },
+            {
+              "step": "推导与结论",
+              "detail": "三路检索：内部库仅 1 条同位置旧案例且无修复，社区/上游 0 条 → 无现成可合入修复；修复只能基于本地源码自研防御补丁。",
+              "conclusion": "上游无现成修复：修复依据 = 本地源码分析自研；定性维持「推测」。"
             }
-          ],
-          "connect": "机制与防御缺失都已闭环，最后确认：这个位置有没有别人修过、有没有现成答案？"
+          ]
         }
       ]
     },

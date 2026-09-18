@@ -154,6 +154,11 @@
 .evidence-connect span{color:var(--accent-strong);font-size:15px;line-height:1.5;font-weight:650;flex-shrink:0}
 .evidence-connect p{margin:0;font-size:13px;color:var(--accent-strong);line-height:1.6}
 .evidence-summary-label{display:inline-block;font-size:11px;font-weight:650;color:var(--accent-strong);background:var(--accent-soft);border:1px solid var(--line-strong);border-radius:4px;padding:0 6px;margin-right:6px;vertical-align:1px}
+.evidence-level{display:inline-block;font-size:11px;font-weight:650;border:1px solid var(--line-strong);border-radius:4px;padding:0 6px;margin-right:6px;vertical-align:1px;background:var(--surface-2);color:var(--muted)}
+.evidence-level.lv-measured{color:#2e7d5b;background:#eaf4ee;border-color:#cfe3d7}
+.evidence-level.lv-inferred{color:#8a6d3b;background:#faf6ec;border-color:#e2d6bd}
+.evidence-level.lv-unresolved{color:#5f6d72;background:#f4f6f7;border-color:#d5dadd}
+.evidence-caveat{font-size:12px!important;color:var(--muted)!important;margin:6px 0 0;padding-left:11px;border-left:2px solid #d7bc8f}
 @media print{.evidence-connect{break-inside:avoid}}
 /* 完整技术传播链 */
 .propagation-list{list-style:none;padding:0;margin:0}
@@ -642,7 +647,7 @@ function classifyLogLine(line){
   if(/\]\s+\S+\+0x[0-9a-f]+\/0x[0-9a-f]+/.test(s)) return {cat:'cat-trace'};
   if(/SMP:\s*(stopping|failed)/.test(s)) return {cat:'cat-kdump'};
   if(/WARNING|cut here|stale|Starting crashdump|crashdump kernel/i.test(s)) return {cat:'cat-kdump'};
-  if(/Unable to handle|Internal error|Kernel panic|BUG:|general protection|invalid opcode|Oops|watchdog/i.test(s)) return {cat:'cat-crash'};
+  if(/Unable to handle|Internal error|Kernel panic|BUG:|KASAN|KFENCE|UBSAN|general protection|invalid opcode|Oops|soft ?lockup|hard ?lockup|rcu.*stall|hung task|watchdog|Out of memory|oom-kill|Machine Check|scheduling while atomic|sleeping function|stack overflow|list_del corruption/i.test(s)) return {cat:'cat-crash'};
   if(/ESR\s*=|Exception class|[MD]em abort|Data abort|ISV\s*=|ISS\s*=|SET\s*=|EA\s*=|CM\s*=|WnR/i.test(s)) return {cat:'cat-esr'};
   if(/pgd=|pud=|pgtable/i.test(s)) return {cat:'cat-esr'};
   if(/Modules linked in/.test(s)) return {cat:'cat-info'};
@@ -658,7 +663,7 @@ const BLOCK_TIPS = {
   'cat-esr': '异常综合征与故障地址解析：ESR 编码异常类别（DABT=数据中止/访存异常）与故障状态码，WnR 区分读写方向（0=读 1=写）；页表遍历（pgd/pud）全 0 说明故障地址完全未映射——空指针/未初始化指针访问的典型证据。',
   'cat-info': '崩溃现场环境信息：加载模块列表（判断是否涉及第三方模块）、崩溃进程名/PID、CPU 号与内核污染标志（Not tainted=无外部模块污染）、内核版本与硬件型号/BIOS——用于定位源码树与排除硬件因素。',
   'cat-loc': '崩溃指令定位：pstate（处理器状态标志）、pc（程序计数器=崩溃指令，格式 函数名+偏移/总长）、lr（返回地址=调用崩溃函数的上层函数）、sp（栈指针）——直接定位「崩在哪个函数的哪条指令」与调用关系。',
-  'cat-regs': '通用寄存器现场值（x0~x29）：还原崩溃瞬间的参数与指针。ARM64 中 x0~x7 为函数参数寄存器；某寄存器为 0 往往就是空指针；结合崩溃指令（如 ldr w0,[x20,#0x40]）可推断各寄存器对应的参数或结构体成员。',
+  'cat-regs': '通用寄存器现场值：还原崩溃瞬间的参数与指针。函数参数寄存器——ARM64 为 x0~x7、x86_64 为 rdi/rsi/rdx/rcx/r8/r9；某寄存器为 0 往往就是空指针；结合崩溃指令（如 ARM64 的 ldr w0,[x20,#0x40]、x86_64 的 mov 0x18(%r14),%r15d）可推断各寄存器对应的参数或结构体成员。',
   'cat-trace': '调用栈：自崩溃函数向上直到系统调用入口，栈帧格式 函数名+偏移/总长。自上而下阅读 = 崩溃点 ← 调用者 ← … ← 入口，还原触发崩溃的完整执行路径。',
   'cat-code': '崩溃指令机器码：括号内的那一条就是触发异常的实际指令机器码，结合 pc 反汇编即可看到具体访问操作（如读/写某结构体成员的偏移）。',
   'cat-kdump': 'kdump 现场捕获阶段：崩溃后停其它 CPU 核（SMP stopping/failed）、启动捕获内核写出 vmcore。此处告警（如 CPU 核未停住、部分转储）只影响转储完整性，不影响崩溃原因本身。'
@@ -878,6 +883,13 @@ function renderEvidenceBlock(text){
   return `<details class="snippet"><summary><span class="snippet-kind ${cls}">${esc(kind||'事实记录')}</span><span class="snippet-title">${rawLines.length} 条事实 · 点击展开</span><span class="chevron" aria-hidden="true"></span></summary><div class="snippet-body"><code class="src-excerpt">${lines}</code></div></details>`;
 }
 
+/* 证据级别徽标配色：未定/待核验=灰，含推断=琥珀，其余（实测）=绿 */
+function evidenceLevelCls(level){
+  const s = String(level || '');
+  if(s.includes('未定') || s.includes('待核验') || s.includes('未知')) return 'lv-unresolved';
+  if(s.includes('推断') || s.includes('推测')) return 'lv-inferred';
+  return 'lv-measured';
+}
 function renderEvidence(){
   let h = `<section class="section" id="evidence" aria-labelledby="evidence-title">`;
   h += `<div class="section-heading"><span class="section-no">04</span><h2 id="evidence-title">为什么得出这个结论</h2></div>`;
@@ -893,7 +905,8 @@ function renderEvidence(){
       if(has(connect)) h += `<div class="evidence-connect"><span aria-hidden="true">↓</span><p>${esc(connect)}</p></div>`;
       h += `<article class="evidence"><div class="evidence-number">${i+1}</div><div>`;
       h += `<h3>${esc(title)}</h3>`;
-      if(has(summary)) h += `<p class="evidence-summary"><span class="evidence-summary-label">结论</span>${linkifyBody(summary)}</p>`;
+      if(has(summary)) h += `<p class="evidence-summary">${isObj && has(e.level)?`<span class="evidence-level ${evidenceLevelCls(e.level)}">证据级别：${esc(e.level)}</span>`:''}<span class="evidence-summary-label">结论</span>${linkifyBody(summary)}</p>`;
+      if(isObj && has(e.caveat)) h += `<p class="evidence-caveat">边界：${linkifyBody(e.caveat)}</p>`;
       if(reasoning.length){
         h += `<details><summary>查看推理细节与证据<span class="chevron" aria-hidden="true"></span></summary><div class="detail-body"><ol class="reasoning">`;
         reasoning.forEach(st=>{
@@ -1360,8 +1373,10 @@ function renderAppendix(){
           const on = hlLines.includes(i+1);
           return `<span class="src-line">${esc(ln)||'&nbsp;'}</span>`;
         }).join('')}</code>` : '';
+        /* 上游基线版本从 ref.url（elixir /linux/<ver>/）或 local_source.base 推导，禁止硬编码 */
+        const upstreamVer = (String(r.url||'').match(/\/linux\/(v[\d.]+)/) || String(ls.base||'').match(/\bv(\d+(?:\.\d+){1,2})\b/) || [])[1] || '';
         const originTag = String(r.origin||'') === '本地源码' ? `<span class="origin-tag tag-local">本地源码</span>`
-          : String(r.origin||'') === '上游基线' ? `<span class="origin-tag tag-upstream">上游基线 · Linux v5.10</span>` : '';
+          : String(r.origin||'') === '上游基线' ? `<span class="origin-tag tag-upstream">上游基线${upstreamVer?(' · Linux '+upstreamVer):''}</span>` : '';
         h += `<article class="log-evidence" id="${esc(r.id||'')}"><div class="log-evidence-head"><b>${esc(r.func||loc)}</b>${headRight?`<span class="src-head-right">${headRight}</span>`:''}</div><span class="source-label">📍 ${esc(loc)} ${originTag}</span>${pathLine}${excerptHtml}${has(r.note)?`<p>${esc(r.note)}</p>`:''}</article>`;
       });
       h += `</div></div></details></div>`;

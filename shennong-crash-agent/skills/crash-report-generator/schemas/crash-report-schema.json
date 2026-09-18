@@ -806,6 +806,14 @@
                   "summary": {
                     "type": "string"
                   },
+                  "level": {
+                    "type": "string",
+                    "description": "证据级别短标签（HTML 渲染为结论行前的胶囊徽标）：建议取「现场实测」/「实测+推断」/「推断」/「未定」，按该条依据的实际证据强度标注，不得拔高。"
+                  },
+                  "caveat": {
+                    "type": "string",
+                    "description": "未决边界（可选）：该条依据中仍是推断、尚未取证确认的部分，以及还需要什么证据才能补齐。"
+                  },
                   "reasoning": {
                     "type": "array",
                     "minItems": 1,
