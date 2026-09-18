@@ -154,6 +154,11 @@
 .evidence-connect span{color:var(--accent-strong);font-size:15px;line-height:1.5;font-weight:650;flex-shrink:0}
 .evidence-connect p{margin:0;font-size:13px;color:var(--accent-strong);line-height:1.6}
 .evidence-summary-label{display:inline-block;font-size:11px;font-weight:650;color:var(--accent-strong);background:var(--accent-soft);border:1px solid var(--line-strong);border-radius:4px;padding:0 6px;margin-right:6px;vertical-align:1px}
+.evidence-level{display:inline-block;font-size:11px;font-weight:650;border:1px solid var(--line-strong);border-radius:4px;padding:0 6px;margin-right:6px;vertical-align:1px;background:var(--surface-2);color:var(--muted)}
+.evidence-level.lv-measured{color:#2e7d5b;background:#eaf4ee;border-color:#cfe3d7}
+.evidence-level.lv-inferred{color:#8a6d3b;background:#faf6ec;border-color:#e2d6bd}
+.evidence-level.lv-unresolved{color:#5f6d72;background:#f4f6f7;border-color:#d5dadd}
+.evidence-caveat{font-size:12px!important;color:var(--muted)!important;margin:6px 0 0;padding-left:11px;border-left:2px solid #d7bc8f}
 @media print{.evidence-connect{break-inside:avoid}}
 /* 完整技术传播链 */
 .propagation-list{list-style:none;padding:0;margin:0}
@@ -878,6 +883,13 @@ function renderEvidenceBlock(text){
   return `<details class="snippet"><summary><span class="snippet-kind ${cls}">${esc(kind||'事实记录')}</span><span class="snippet-title">${rawLines.length} 条事实 · 点击展开</span><span class="chevron" aria-hidden="true"></span></summary><div class="snippet-body"><code class="src-excerpt">${lines}</code></div></details>`;
 }
 
+/* 证据级别徽标配色：未定/待核验=灰，含推断=琥珀，其余（实测）=绿 */
+function evidenceLevelCls(level){
+  const s = String(level || '');
+  if(s.includes('未定') || s.includes('待核验') || s.includes('未知')) return 'lv-unresolved';
+  if(s.includes('推断') || s.includes('推测')) return 'lv-inferred';
+  return 'lv-measured';
+}
 function renderEvidence(){
   let h = `<section class="section" id="evidence" aria-labelledby="evidence-title">`;
   h += `<div class="section-heading"><span class="section-no">04</span><h2 id="evidence-title">为什么得出这个结论</h2></div>`;
@@ -893,7 +905,8 @@ function renderEvidence(){
       if(has(connect)) h += `<div class="evidence-connect"><span aria-hidden="true">↓</span><p>${esc(connect)}</p></div>`;
       h += `<article class="evidence"><div class="evidence-number">${i+1}</div><div>`;
       h += `<h3>${esc(title)}</h3>`;
-      if(has(summary)) h += `<p class="evidence-summary"><span class="evidence-summary-label">结论</span>${linkifyBody(summary)}</p>`;
+      if(has(summary)) h += `<p class="evidence-summary">${isObj && has(e.level)?`<span class="evidence-level ${evidenceLevelCls(e.level)}">证据级别：${esc(e.level)}</span>`:''}<span class="evidence-summary-label">结论</span>${linkifyBody(summary)}</p>`;
+      if(isObj && has(e.caveat)) h += `<p class="evidence-caveat">边界：${linkifyBody(e.caveat)}</p>`;
       if(reasoning.length){
         h += `<details><summary>查看推理细节与证据<span class="chevron" aria-hidden="true"></span></summary><div class="detail-body"><ol class="reasoning">`;
         reasoning.forEach(st=>{

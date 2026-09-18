@@ -122,6 +122,9 @@ RAW_TOOL_OUTPUT_RE = re.compile(
 def validate_quality(report: Any) -> list[str]:
     """报告质量软检查（WARN 级，不影响退出码）：
     - deep.evidence[].title 必填且设问式（缺失会被 HTML 渲染成「依据 N」）
+    - deep.evidence[].level 证据级别（HTML 渲染为结论行徽标）
+    - deep.evidence 建议以「推导与结论」步收尾（可复核推导 → conclusion）
+    - 现场日志/反汇编/调用栈的 snippet 有 hl 应配 ann（行尾 ◀ 注释）
     - evidence/detail 禁止堆检索工具原始输出（应翻译成人话）
     - type=patch 必须有非空 patch_list[].diff
     - local_source.refs 的 id 唯一、excerpt 非空
@@ -148,6 +151,52 @@ def validate_quality(report: Any) -> list[str]:
             warns.append(
                 f"deep.evidence[{i}].title 「{title[:24]}」非设问式（应含 为什么/怎么/在哪/从哪/有没有 等疑问词）"
             )
+
+    # 1b) evidence 证据级别（level 徽标）
+    LEVEL_WORDS = ("实测", "推断", "未定")
+    evs = [e for e in (deep.get("evidence") or []) if isinstance(e, dict)]
+    for i, ev in enumerate(evs):
+        level = str(ev.get("level") or "").strip()
+        if not level:
+            warns.append(
+                f"deep.evidence[{i}].level 缺失（HTML 结论行将没有证据级别徽标）；"
+                f"建议取「现场实测」「实测+推断」「推断」「未定」之一"
+            )
+        elif not any(w in level for w in LEVEL_WORDS):
+            warns.append(
+                f"deep.evidence[{i}].level 「{level[:24]}」不含 实测/推断/未定 ——按实际证据强度标注，不得拔高"
+            )
+
+    # 1c) 建议以「推导与结论」步收尾（报告级提示，避免逐条刷屏）
+    has_conclusion = any(
+        isinstance(r, dict) and str(r.get("conclusion") or "").strip()
+        for ev in evs
+        for r in (ev.get("reasoning") or [])
+    )
+    if evs and not has_conclusion:
+        warns.append(
+            "deep.evidence 中没有任何 reasoning[].conclusion ——建议每条依据以 "
+            "step=\"推导与结论\" 收尾（detail=可复核推导，conclusion=该条结论）"
+        )
+
+    # 1d) 现场日志/反汇编/调用栈的关键行注释（有 hl 应有 ann）
+    ANN_REQUIRED_KINDS = ("现场日志", "反汇编", "调用栈")
+    for i, ev in enumerate(evs):
+        for j, r in enumerate(ev.get("reasoning") or []):
+            if not isinstance(r, dict):
+                continue
+            for k, sn in enumerate(r.get("snippets") or []):
+                if not isinstance(sn, dict):
+                    continue
+                if (
+                    str(sn.get("kind") or "") in ANN_REQUIRED_KINDS
+                    and (sn.get("hl") or [])
+                    and not (sn.get("ann") or {})
+                ):
+                    warns.append(
+                        f"deep.evidence[{i}].reasoning[{j}].snippets[{k}]（{sn.get('kind')}）有 hl 但无 ann ——"
+                        f"崩溃行/故障指令行/关键调用帧应补行尾 ◀ 注释"
+                    )
 
     # 2) evidence/detail 禁止工具原始输出
     for i, ev in enumerate(deep.get("evidence") or []):
