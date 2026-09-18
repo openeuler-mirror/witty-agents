@@ -1183,12 +1183,21 @@
             {
               "step": "谁触发的",
               "detail": "业务线程调用 nanosleep 睡眠、主动让出 CPU，内核开始切换任务。",
-              "evidence": "调用栈：sys_nanosleep → do_nanosleep → schedule → __schedule → pick_next_task_fair → set_next_entity"
+              "snippets": [
+                {
+                  "kind": "调用栈",
+                  "title": "调用栈：调用栈：sys_nanosleep → do_nanosleep → sch",
+                  "loc": "vmcore-dmesg.txt（Call Trace 段）",
+                  "content": "调用栈：sys_nanosleep → do_nanosleep → schedule → __schedule → pick_next_task_fair → set_next_entity",
+                  "hl": [
+                    1
+                  ]
+                }
+              ]
             },
             {
               "step": "崩在哪一行",
               "detail": "崩溃指令是 set_next_entity 里读任务 on_rq 标志的那条 ldr 指令：它要先判断「这个调度实体是否还在运行队列上」。on_rq 字段位于 struct sched_entity 的第 64 字节（偏移 64=0x40，由结构体固定内存布局决定），编译器据此把源码里的 se->on_rq 编译成 ldr w0,[x20,#64]，#64 正是 on_rq 的字节偏移。而 x20 此刻存的是 se 指针、值为 0（空指针，来自上层挑任务返回的空值），于是实际访问地址 = 0 + 64 = 0x40，一个未映射的无效地址，一读即触发崩溃。",
-              "evidence": "pc=set_next_entity+0x20；机器码 b9404280=ldr w0,[x20,#64]（#64=on_rq 字段偏移，crash> struct sched_entity -o 实证 64=0x40）；x20=0；故障地址 0x40",
               "snippets": [
                 {
                   "kind": "现场日志",
@@ -1211,12 +1220,32 @@
             {
               "step": "崩溃函数的上层是谁",
               "detail": "set_next_entity 是被 pick_next_task_fair（公平调度器的挑任务主流程）调用的，所以崩溃发生在「挑任务」流程里。",
-              "evidence": "dmesg lr : pick_next_task_fair+0x2e8/0x548"
+              "snippets": [
+                {
+                  "kind": "现场日志",
+                  "title": "现场日志：dmesg lr : pick_next_task_fair+0x2e8/0",
+                  "loc": "vmcore-dmesg.txt（崩溃段摘录）",
+                  "content": "dmesg lr : pick_next_task_fair+0x2e8/0x548",
+                  "hl": [
+                    1
+                  ]
+                }
+              ]
             },
             {
               "step": "参数就是返回值",
               "detail": "反汇编显示：先调用 pick_next_entity 拿到结果，再把这个结果原样传给 set_next_entity，中间没检查——所以传进来的就是那个空值。",
-              "evidence": "反汇编 +724 bl pick_next_entity / +728 mov x20,x0 / +740 bl set_next_entity；x20=0"
+              "snippets": [
+                {
+                  "kind": "反汇编",
+                  "title": "反汇编：反汇编 +724 bl pick_next_entity / +728 mo",
+                  "loc": "反汇编/机器码摘录",
+                  "content": "反汇编 +724 bl pick_next_entity / +728 mov x20,x0 / +740 bl set_next_entity；x20=0",
+                  "hl": [
+                    1
+                  ]
+                }
+              ]
             }
           ]
         },
@@ -1228,17 +1257,47 @@
             {
               "step": "计数被多减了一次",
               "detail": "运行队列的「待运行任务数」计数 nr_running 变成了 -1（0xffffffff，实测值）。这个 -1 由一次极窄并发窗口中的重复减计数产生（推断为 double-decrement 计数竞态，具体竞态路径尚未完全定位，见结论），内核用「是否等于 0」判断队列空不空，-1 不等于 0，就被误判成还有任务。",
-              "evidence": "nr_running = h_nr_running = 0xffffffff（32 位无符号 -1）"
+              "snippets": [
+                {
+                  "kind": "内存取证",
+                  "title": "内存取证：nr_running = h_nr_running = 0xffffffff",
+                  "loc": "crash/vmcore 取证（实测值整理）",
+                  "content": "nr_running = h_nr_running = 0xffffffff（32 位无符号 -1）",
+                  "hl": [
+                    1
+                  ]
+                }
+              ]
             },
             {
               "step": "队列其实是空的",
               "detail": "任务队列里其实一个任务都没有（rb_leftmost=0 表示队列树是空的），候选任务字段也全为 0，所以「挑任务」必然挑到空。",
-              "evidence": "rb_leftmost=0、curr/next/last/skip 全 0"
+              "snippets": [
+                {
+                  "kind": "内存取证",
+                  "title": "内存取证：rb_leftmost=0、curr/next/last/skip 全 0",
+                  "loc": "crash/vmcore 取证（实测值整理）",
+                  "content": "rb_leftmost=0、curr/next/last/skip 全 0",
+                  "hl": [
+                    1
+                  ]
+                }
+              ]
             },
             {
               "step": "只有 CPU92 出现",
               "detail": "逐一检查全部 128 个 CPU，只有 92 号 CPU 出现这个 -1，说明不是内存大面积损坏，而是一次性的窄窗口竞态。",
-              "evidence": "128 个 cfs_rq 全量扫描，仅 CPU92 一处 0xffffffff"
+              "snippets": [
+                {
+                  "kind": "内存取证",
+                  "title": "内存取证：128 个 cfs_rq 全量扫描，仅 CPU92 一处 0xfffffff",
+                  "loc": "crash/vmcore 取证（实测值整理）",
+                  "content": "128 个 cfs_rq 全量扫描，仅 CPU92 一处 0xffffffff",
+                  "hl": [
+                    1
+                  ]
+                }
+              ]
             }
           ]
         },
@@ -1250,7 +1309,6 @@
             {
               "step": "本机反编译：两处循环一有一无",
               "detail": "反编译能看到两处「挑任务→用任务」的循环。第一处用任务前有空值检查，第二处（厂商改造拆出的）用任务前没有任何检查，崩溃就发生在第二处。",
-              "evidence": "反汇编：第一循环 +268 有 cbz x20；第二循环 +728~+740 无任何判空分支",
               "snippets": [
                 {
                   "kind": "源码",
@@ -1277,12 +1335,32 @@
             {
               "step": "崩溃点落在无判空的那一处",
               "detail": "崩溃时返回地址 LR 落在第二处循环的调用点，证明崩溃发生在漏了检查的那一处。",
-              "evidence": "dmesg lr=+744 ↔ 反汇编 +740 bl set_next_entity"
+              "snippets": [
+                {
+                  "kind": "现场日志",
+                  "title": "现场日志：dmesg lr=+744 ↔ 反汇编 +740 bl set_next_e",
+                  "loc": "vmcore-dmesg.txt（崩溃段摘录）",
+                  "content": "dmesg lr=+744 ↔ 反汇编 +740 bl set_next_entity",
+                  "hl": [
+                    1
+                  ]
+                }
+              ]
             },
             {
               "step": "上游源码对照：v6.12 才补上",
               "detail": "对照上游源码：v6.11 也没有这道检查，v6.12 起才补上。说明这是后来才补的防护，当前 4.19 普遍缺这道。",
-              "evidence": "v6.11/v6.12 fair.c 源码对照；f12e148892ed 补丁"
+              "snippets": [
+                {
+                  "kind": "上游对照",
+                  "title": "上游对照：v6.11/v6.12 fair.c 源码对照；f12e148892ed 补",
+                  "loc": "上游版本对照",
+                  "content": "v6.11/v6.12 fair.c 源码对照；f12e148892ed 补丁",
+                  "hl": [
+                    1
+                  ]
+                }
+              ]
             }
           ]
         },
@@ -1294,12 +1372,32 @@
             {
               "step": "同型案例佐证",
               "detail": "bugzilla #211435 是同类崩溃：同样在 set_next_entity 入口空指针、同样压测下极罕见命中，证明这是同一缺陷家族。",
-              "evidence": "bugzilla #211435（4.9 ARM，同函数对）"
+              "snippets": [
+                {
+                  "kind": "检索记录",
+                  "title": "检索记录：bugzilla #211435（4.9 ARM，同函数对）",
+                  "loc": "检索记录整理",
+                  "content": "bugzilla #211435（4.9 ARM，同函数对）",
+                  "hl": [
+                    1
+                  ]
+                }
+              ]
             },
             {
               "step": "修复只能自研",
               "detail": "上游补丁依赖 v6.12 的大改版，不能直接搬回 4.19；只能参考它的思路，自行写一个最小判空补丁。",
-              "evidence": "f12e148892ed 依赖 v6.12 delayed-dequeue 重构，不可整体回移植"
+              "snippets": [
+                {
+                  "kind": "上游对照",
+                  "title": "上游对照：f12e148892ed 依赖 v6.12 delayed-dequeue ",
+                  "loc": "上游版本对照",
+                  "content": "f12e148892ed 依赖 v6.12 delayed-dequeue 重构，不可整体回移植",
+                  "hl": [
+                    1
+                  ]
+                }
+              ]
             }
           ]
         }

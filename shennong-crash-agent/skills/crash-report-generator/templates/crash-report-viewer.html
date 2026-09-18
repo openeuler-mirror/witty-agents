@@ -216,6 +216,10 @@ summary,a{transition:color var(--trans)}
 .snippet-kind.k-code{border-color:#cbb8df;color:#8a5fb0;background:#f5f1f9}
 .snippet-kind.k-mem{border-color:#c5cfdc;color:#5b7fa6;background:#f1f5f9}
 .snippet-kind.k-reg{border-color:#b9c9dd;color:#3d5a80;background:#eef3fa}
+.snippet-kind.k-opinion{border-color:#d8cdb8;color:#8a6d3b;background:#faf6ec}
+.snippet-kind.k-upstream{border-color:#b8c9d8;color:#31708f;background:#eef5fa}
+.snippet-kind.k-search{border-color:#cfd3d8;color:#5f6d72;background:#f4f6f7}
+.snippet-kind.k-fact{border-color:#d5ddd9;color:#5f6d72;background:#f7f9f8}
 /* 源码来源徽标：本地（绿）与上游基线（紫）统一风格 */
 .origin-tag{font-size:11px;font-weight:600;margin-left:6px}
 .origin-tag.tag-local{color:#2e7d5b}
@@ -794,7 +798,7 @@ function renderFeatures(){
 
 /* ===== ③ 判断依据 ===== */
 /* 推理步内联证据块：kind 自由字符串（按案自选）；缺省时按内容自动推断（仅影响徽标配色/标签） */
-const SNIPPET_KIND_CLS = {'现场日志':'k-log','调用栈':'k-stack','反汇编':'k-asm','源码':'k-code','内存取证':'k-mem','内存转储':'k-mem','寄存器现场':'k-reg','寄存器':'k-reg','汇编':'k-asm','结构体':'k-code','宏定义':'k-code','日志':'k-log'};
+const SNIPPET_KIND_CLS = {'现场日志':'k-log','调用栈':'k-stack','反汇编':'k-asm','源码':'k-code','内存取证':'k-mem','内存转储':'k-mem','寄存器现场':'k-reg','寄存器':'k-reg','汇编':'k-asm','结构体':'k-code','宏定义':'k-code','日志':'k-log','定性':'k-opinion','推断':'k-opinion','上游对照':'k-upstream','版本对照':'k-upstream','检索记录':'k-search','事实记录':'k-fact'};
 function inferSnippetKind(content){
   const s = String(content||'');
   if(/Call [Tt]race/.test(s)) return '调用栈';
@@ -866,7 +870,7 @@ function renderEvidenceBlock(text){
   if(!rawLines.length) return '';
   const kind = evidenceKindOf(rawLines[0]) || inferSnippetKind(text);
   const cls = SNIPPET_KIND_CLS[kind] || '';
-  const hlRe = /≠|对不上/;
+  const hlRe = /≠|对不上|（推断）|(推断)/;
   const lines = rawLines.map((ln,i)=>{
     const on = hlRe.test(ln);
     return `<span class="src-line${on?' src-hl':''}"><span class="src-no">${i+1}</span>${esc(ln)||'&nbsp;'}</span>`;
