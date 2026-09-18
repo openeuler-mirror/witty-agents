@@ -114,7 +114,19 @@
      - **first_line 绝对行号**：源码块的行号列必须与真实文件行号一致——单段设 `first_line`（起始行号），多段在 segs 内每段设。
      - **ann 行尾注释**：关键行（崩溃行/关键调用行/补丁落点行/实测值所在行）用 `ann` 挂行尾注释（key=1-based 行号， value=注释），以「◀ 注释」形式在源码行尾解释实测值或语义。
      - **origin 标注**：refs 的 `origin` 字段标 `本地源码`（本地树原文）或 `上游基线`（本地树未归档时取上游同版本对照），`base` 字段注明基线版本与 openEuler 关系。
-   - **推理步内联原文证据块（snippets）**：`deep.evidence[].reasoning[]` 的关键步骤配 `snippets` 数组——贴日志/调用栈/反汇编/源码/内存取证的**原文**（content 逐字真实），`hl` 高亮关键行，`ann` 行尾注释解释实测值，`loc` 标注来源（文件:行号 或 vmcore-dmesg:行号），`ref` 链附件 local_source；短日志（≤4 行）设 `inline: true` 始终可见。**有 snippets 的步骤不再渲染 evidence 一行式清单**（模板自动隐藏）。
+   - **推理步内联原文证据块（snippets，每步必配）**：`deep.evidence[].reasoning[]` 的**每一个步骤都至少要配 1 个 snippet**，禁止只写 `evidence` 不配 snippet。按材料类型选择 kind 并填齐字段：
+     | 场景 | kind | content 内容 | 必填字段 |
+     |---|---|---|---|
+     | 崩溃日志/panic | 现场日志 | dmesg 原文段（逐字） | `loc`(文件:行号) + `hl` |
+     | 调用栈 | 调用栈 | Call Trace 原文段 | `loc` + `hl` |
+     | 汇编/机器码 | 反汇编 | 反汇编或 Code 窗口原文 | `loc` + `hl` |
+     | 源码对照 | 源码 | 真实源码（多文件/多区间拆 `segs`） | `loc` + `first_line` + `hl` + `ann` + `ref` |
+     | 内存取证 | 内存取证 | crash 会话版式实测值（逐字） | `loc` + `hl` + `ann` |
+     | 推断/定性 | 定性 | 推理依据逐条（每条一行） | `loc`(如「推断整理」) + `hl` |
+     | 版本对照 | 上游对照 | 版本对照事实（每条一行） | `loc` + `hl` |
+     | 检索结论 | 检索记录 | 检索事实（每条一行） | `loc` + `hl` |
+     补充：`ann` 用「行号→注释文本」解释关键行实测值；短日志（≤4 行）设 `inline: true` 始终可见；`ref` 链附件 local_source 时该段显示「完整摘录 ↗」。
+   - **snippets 与 evidence 互斥**：有 snippets 的步骤**禁止再写 `evidence` 字段**（信息已在原文块中；模板对无 snippet 的步骤才走 evidence 兜底渲染）。
    - **补丁来源四档分级**（模板自动推断，生成时按此口径写 `claim_tag`/`fixed_brief`）：① confirmed（三库有 confirmed + mode=full/part）→ "上游已有明确修复"；② derived（有 same_area + mode=pick）→ "推导修复，基于类似案例推导"；③ speculative（无 confirmed + mode=pick）→ "自研建议补丁，基于源码分析生成，未经上游验证"；④ none → "暂无修复方案"。
    - **路径脱敏**：报告数据中**禁止出现绝对路径**（/opt/、/home/、/tmp/、/root/ 等）——crash 现场路径仅保留文件名（如 vmcore-dmesg.txt），源码树用"本地源码树（版本号）"，知识库用"本地知识库"。
      - `base`：本地树路径已知时写明版本与路径（如「诊断机本地内核源码树 /opt/.../kernel」，不要留空让模板退化）。

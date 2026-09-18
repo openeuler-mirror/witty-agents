@@ -814,8 +814,7 @@
                       "additionalProperties": false,
                       "required": [
                         "step",
-                        "detail",
-                        "evidence"
+                        "detail"
                       ],
                       "properties": {
                         "step": {
@@ -825,7 +824,8 @@
                           "type": "string"
                         },
                         "evidence": {
-                          "type": "string"
+                          "type": "string",
+                          "description": "本步事实清单（可选）：与 snippets 互斥——有 snippets 的步骤不写本字段；无 snippet 的步骤必须写，且用「类别 ｜ 内容」结构化清单（多条换行），模板自动拆行+高亮。"
                         },
                         "conclusion": {
                           "type": "string"
