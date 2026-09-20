@@ -619,3 +619,16 @@ shennong-crash-agent/
 工作目录；请勿把运行生成的 `.db`、`.db-wal` 或 `.db-shm` 当作发布内容。打包脚本
 会主动拒绝这些运行期文件。后续若迁移到用户缓存目录，需要单独设计升级、并发和旧数据
 迁移策略，不能在 npm 安装阶段隐式修改。
+
+### 10. `shennong-setup install` 报 `pip's dependency resolver ...`，并列出 `asc-opc-tool`、`te` 等包
+
+这些包来自 Ascend/CANN 工具链，不是神农的依赖。若机器上的 `set_env.sh`（例如
+`/usr/local/Ascend/ascend-toolkit/set_env.sh`，常写在 `/etc/profile.d` 或 `~/.bashrc`）
+导出了 `PYTHONPATH`，venv 里的 Python/pip 会继承该变量、把工具链的 site-packages 当成
+已安装包，于是报出它们缺失的依赖（`decorator`、`psutil`、`jinja2`、`ml-dtypes` 等）；
+紧接着 `pip check` 非零退出，setup 判定环境不干净并回滚 venv。
+
+- 现行 setup 已在所有子进程里置空 `PYTHONPATH`，直接重跑 `shennong-setup install` 即可。
+- 若使用旧包，先清空变量再装：`unset PYTHONPATH && shennong-setup install`，
+  或 `env -u PYTHONPATH shennong-setup install`。
+- 需要工具链时请在运行 OpenCode 的会话里 source `set_env.sh`，不要在安装阶段引入。
