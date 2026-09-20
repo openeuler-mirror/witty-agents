@@ -4,7 +4,7 @@
 <!-- 字体使用本机优先的系统栈，保证导出的 HTML 在离线环境仍可完整渲染。 -->
 <style>
 :root{--ink:#222b30;--muted:#5f6d72;--subtle:#89959a;--line:#e4e9e7;--line-strong:#d5ddd9;--paper:#fff;--bg:#f6f8f7;--surface:#fff;--surface-2:#fafcfb;--surface-3:#f0f5f2;--accent:#27685b;--accent-strong:#1f5348;--accent-soft:#e6f0eb;--red:#b54b41;--amber:#8a5f22;--radius:12px;--radius-sm:8px;--shadow-sm:0 1px 2px rgba(23,42,36,.05);--shadow:0 2px 8px rgba(23,42,36,.06);--trans:.16s ease;--font-sans:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;--font-mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Consolas,"Noto Sans Mono CJK SC",monospace}
-*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:60px}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.8 var(--font-sans);-webkit-font-smoothing:antialiased}a{color:var(--accent);text-underline-offset:4px;overflow-wrap:anywhere}button{font:inherit;cursor:pointer}button:focus-visible,a:focus-visible,summary:focus-visible{outline:3px solid var(--accent);outline-offset:5px}p{margin:0 0 12px}h1,h2,h3,h4{line-height:1.45;margin:0;color:var(--ink)}h1{font-size:clamp(22px,2.4vw,28px);letter-spacing:-1px;font-weight:650}h2{font-size:20px;font-weight:650}h3{font-size:16px;font-weight:600}h4{font-size:14px;margin:10px 0}ul,ol{padding-left:22px;margin:12px 0}li{margin:8px 0}.shell{max-width:1280px;margin:auto;padding:0 44px}.topbar{height:80px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:16px}.brand{display:flex;align-items:center;gap:10px;font-weight:650;letter-spacing:.5px}.brand-icon{width:25px;height:25px;border:1px solid var(--line-strong);border-radius:7px;display:grid;place-items:center;color:var(--accent);font-size:17px}.top-meta{color:var(--muted);font-size:12px}.layout{display:block;padding-top:0}.topnav{position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:4px;margin:0 -44px;padding:0 44px;background:var(--bg);border-bottom:1px solid var(--line);overflow-x:hidden;overflow-y:hidden}.topnav a{padding:12px 16px;text-decoration:none;color:var(--muted);font-size:13px;border-bottom:2px solid transparent;display:flex;gap:8px;white-space:nowrap;margin-bottom:-1px}.topnav a span{opacity:.6;font-size:11px}.topnav a.active{color:var(--accent);font-weight:650;border-bottom-color:var(--accent)}.topnav a:hover{color:var(--accent)}.eyebrow{font-size:11px;letter-spacing:1.8px;color:var(--muted);font-weight:650}.main{min-width:0;padding-bottom:32px}.identity{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:14px}.status{display:inline-flex;align-items:center;gap:7px;font-size:12px;color:var(--red);white-space:nowrap}.status:before{content:"";width:6px;height:6px;background:var(--red);border-radius:50%}.subline{color:var(--muted);font-size:13px;margin:13px 0 26px;display:flex;gap:18px;flex-wrap:wrap}.hero{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:30px 32px}.hero-label{font-size:12px;color:var(--accent);font-weight:650;display:flex;align-items:center;gap:8px;margin-bottom:12px}.hero-label:before{content:"";width:3px;height:14px;background:var(--accent);border-radius:2px}.hero h2{font-size:20px;max-width:720px;letter-spacing:-.4px}.hero-copy{font-size:14px;color:var(--muted);max-width:710px;margin:15px 0 23px}.facts{display:grid;grid-template-columns:1fr 1fr 1.2fr;border-top:1px solid var(--line);padding-top:20px;gap:24px}.fact-label{font-size:12px;color:var(--muted);margin-bottom:4px}.fact-value{font-size:14px;font-weight:600}.fact-note{font-size:12px;color:var(--muted);margin-top:4px;line-height:1.7}.amber{color:var(--amber)}.actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:25px}.btn{border:1px solid var(--line);background:white;color:var(--ink);padding:9px 16px;border-radius:7px;text-decoration:none;font-size:13px;display:inline-flex;align-items:center;gap:16px}.btn.primary{background:var(--accent);border-color:var(--accent);color:white}.btn:hover{filter:brightness(.96)}.section{margin-top:48px}.section-heading{display:flex;align-items:baseline;gap:12px;margin-bottom:9px}.section-no{font:12px/1.5 var(--font-mono);color:var(--subtle)}.section-intro{font-size:14px;color:var(--muted);margin-bottom:23px}.plan{display:grid;grid-template-columns:1.15fr 1fr;gap:22px}.plan-card{border-top:2px solid var(--accent-strong);padding:22px 0 0}.plan-card.secondary{border-top-color:#c7cec9}.small-label{font-size:11px;letter-spacing:1px;color:var(--muted);margin-bottom:8px}.plan-card h3{margin-bottom:12px}.plan-card p{font-size:14px;color:var(--muted)}.owner{font-size:12px;color:var(--muted);margin:14px 0}.notice{font-size:12px!important;color:var(--amber)!important;padding-left:11px;border-left:2px solid #d7bc8f;margin-top:15px}.reading-group{margin-top:20px}details{border-top:1px solid var(--line);margin:0}details:last-child{border-bottom:1px solid var(--line)}summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 0;font-size:14px;font-weight:550}summary::-webkit-details-marker{display:none}summary:hover{color:var(--accent)}.chevron{width:7px;height:7px;border-right:1.5px solid var(--subtle);border-bottom:1.5px solid var(--subtle);transform:rotate(45deg);margin-right:5px;flex-shrink:0;transition:transform .15s}details[open]>summary .chevron{transform:rotate(225deg)}.detail-body{padding:0 0 21px;font-size:14px;color:var(--muted);overflow-wrap:anywhere}.detail-body details{margin-top:8px}.detail-body details .detail-body{padding-left:12px;border-left:2px solid var(--line)}.evidence{display:grid;grid-template-columns:auto minmax(0,1fr);gap:13px;border-top:1px solid var(--line);padding:23px 0 0}.evidence-number{height:26px;padding:0 12px;border:1px solid var(--line-strong);background:var(--accent-soft);display:flex;align-items:center;border-radius:var(--radius);font:11px var(--font-sans);font-weight:650;color:var(--accent);white-space:nowrap;width:fit-content}.evidence h3{font-size:16px;margin-bottom:8px}.evidence p{font-size:14px;color:var(--muted)}.evidence details{border:0}.evidence summary{font-size:12px;color:var(--accent);justify-content:flex-start;gap:13px;padding:8px 0 20px}.evidence summary .chevron{width:6px;height:6px}.source-label{font:11px/1.8 var(--font-mono);color:var(--muted);overflow-wrap:anywhere;margin:7px 0}.source-item{margin-top:18px}.caption{font-size:12px!important;color:var(--muted)!important}.muted{color:var(--muted)}code{font:12px/1.8 var(--font-mono);background:var(--accent-soft);padding:2px 5px;border-radius:3px;overflow-wrap:anywhere}pre{margin:12px 0 18px;padding:18px 20px;font-family:var(--font-mono);background:var(--surface-3);border:1px solid var(--line);border-radius:6px;max-height:440px;overflow:auto;white-space:pre-wrap;word-break:break-word;tab-size:4}pre code{background:none;padding:0;font-size:12px;color:var(--ink);font-family:var(--font-mono)}.reference-list{list-style:none;padding:0}.reference-list li{padding-bottom:12px}.reference-list a{font-size:13px}.mechanism{background:white;border:1px solid var(--line);border-radius:var(--radius);padding:26px 28px}.parallel{display:grid;grid-template-columns:1fr 1fr;gap:18px;position:relative}.branch{border:1px solid var(--line);border-radius:7px;padding:17px 19px;position:relative;background:var(--surface-2)}.branch-label{font-size:11px;color:var(--muted);margin-bottom:7px}.branch b{font-size:14px;font-weight:550;display:block}.branch p{font-size:12px;color:var(--muted);margin:5px 0 0}.merge{height:34px;position:relative;width:52%;margin:auto;border-left:1px solid var(--line-strong);border-right:1px solid var(--line-strong);border-bottom:1px solid var(--line-strong);border-radius:0 0 6px 6px}.merge:after{content:"";position:absolute;height:18px;top:33px;left:50%;border-left:1px solid var(--line-strong)}.flow-node{margin:17px auto 0;max-width:460px;border:1px solid var(--line);border-radius:7px;padding:14px 18px;text-align:center;font-size:14px;background:var(--surface-2)}.flow-node small{display:block;font-size:12px;color:var(--muted);margin-top:3px}.flow-node.fault{border-color:#e4c9c5;background:#fcf5f3;color:var(--red)}.flow-arrow{height:23px;margin:auto;width:1px;background:var(--line-strong);position:relative}.flow-arrow:after{content:"";position:absolute;bottom:0;left:-3px;width:6px;height:6px;border-right:1px solid var(--line-strong);border-bottom:1px solid var(--line-strong);transform:rotate(45deg)}.flow-arrow+.flow-node{margin-top:0}.diagram-caption{margin:20px 0 0;font-size:12px;color:var(--muted);text-align:center}.trace-step{display:grid;grid-template-columns:28px minmax(0,1fr);gap:14px;margin:16px 0 26px}.trace-index{font:12px var(--font-mono);color:var(--subtle);margin-top:14px}.trace-step h4{font-family:var(--font-mono);font-size:13px;overflow-wrap:anywhere}.parameter{padding:8px 0;display:flex;gap:12px;flex-wrap:wrap;font-size:12px}.env-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin:6px 0}.env-grid dt{font-size:12px;color:var(--muted)}.env-grid dd{margin:4px 0 0;font-size:13px;color:var(--ink);overflow-wrap:anywhere}.raw-row{padding:8px 0}.raw-row b{font-size:12px}.raw-row p{font-size:13px;margin:4px 0}.footer{margin-top:40px;padding:23px 0;border-top:1px solid var(--line);display:flex;justify-content:space-between;gap:20px;font-size:11px;color:var(--muted)}.footer p{margin:0}.footer-actions{display:flex;gap:14px;white-space:nowrap}.text-button{font-size:12px;border:0;padding:0;background:none;color:var(--accent)}#copy-status{font-size:12px;color:var(--accent)}.skip-link{position:absolute;top:-100px}.skip-link:focus{top:10px;left:10px;z-index:20;background:#fff;padding:10px}
+*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:60px}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.8 var(--font-sans);-webkit-font-smoothing:antialiased}a{color:var(--accent);text-underline-offset:4px;overflow-wrap:anywhere}button{font:inherit;cursor:pointer}button:focus-visible,a:focus-visible,summary:focus-visible{outline:3px solid var(--accent);outline-offset:5px}p{margin:0 0 12px}h1,h2,h3,h4{line-height:1.45;margin:0;color:var(--ink)}h1{font-size:clamp(22px,2.4vw,28px);letter-spacing:-1px;font-weight:650}h2{font-size:20px;font-weight:650}h3{font-size:16px;font-weight:600}h4{font-size:14px;margin:10px 0}ul,ol{padding-left:22px;margin:12px 0}li{margin:8px 0}.shell{max-width:1280px;margin:auto;padding:0 44px}.topbar{height:80px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:16px}.brand{display:flex;align-items:center;gap:10px;font-weight:650;letter-spacing:.5px}.brand-icon{width:25px;height:25px;border:1px solid var(--line-strong);border-radius:7px;display:grid;place-items:center;color:var(--accent);font-size:17px}.top-meta{color:var(--muted);font-size:12px}.layout{display:block;padding-top:0}.topnav{position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:4px;margin:0 -44px;padding:0 44px;background:var(--bg);border-bottom:1px solid var(--line);overflow-x:hidden;overflow-y:hidden}.topnav a{padding:12px 16px;text-decoration:none;color:var(--muted);font-size:13px;border-bottom:2px solid transparent;display:flex;gap:8px;white-space:nowrap;margin-bottom:-1px}.topnav a span{opacity:.6;font-size:11px}.topnav a.active{color:var(--accent);font-weight:650;border-bottom-color:var(--accent)}.topnav a:hover{color:var(--accent)}.eyebrow{font-size:11px;letter-spacing:1.8px;color:var(--muted);font-weight:650}.main{min-width:0;padding-bottom:32px}.identity{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:14px}.status{display:inline-flex;align-items:center;gap:7px;font-size:12px;color:var(--red);white-space:nowrap}.status:before{content:"";width:6px;height:6px;background:var(--red);border-radius:50%}.subline{color:var(--muted);font-size:13px;margin:13px 0 26px;display:flex;gap:18px;flex-wrap:wrap}.hero{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:30px 32px}.hero-label{font-size:12px;color:var(--accent);font-weight:650;display:flex;align-items:center;gap:8px;margin-bottom:12px}.hero-label:before{content:"";width:3px;height:14px;background:var(--accent);border-radius:2px}.hero h2{font-size:20px;max-width:720px;letter-spacing:-.4px}.hero-copy{font-size:14px;color:var(--muted);max-width:710px;margin:15px 0 23px}.facts{display:grid;grid-template-columns:1fr 1fr 1.2fr;border-top:1px solid var(--line);padding-top:20px;gap:24px}.fact-label{font-size:12px;color:var(--muted);margin-bottom:4px}.fact-value{font-size:14px;font-weight:600}.fact-note{font-size:12px;color:var(--muted);margin-top:4px;line-height:1.7}.amber{color:var(--amber)}.actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:25px}.btn{border:1px solid var(--line);background:white;color:var(--ink);padding:9px 16px;border-radius:7px;text-decoration:none;font-size:13px;display:inline-flex;align-items:center;gap:16px}.btn.primary{background:var(--accent);border-color:var(--accent);color:white}.btn:hover{filter:brightness(.96)}.section{margin-top:48px}.section-heading{display:flex;align-items:baseline;gap:12px;margin-bottom:9px}.section-no{font:12px/1.5 var(--font-mono);color:var(--subtle)}.section-intro{font-size:14px;color:var(--muted);margin-bottom:23px}.plan{display:grid;grid-template-columns:1.15fr 1fr;gap:22px}.plan-card{border-top:2px solid var(--accent-strong);padding:22px 0 0}.small-label{font-size:11px;letter-spacing:1px;color:var(--muted);margin-bottom:8px}.plan-card h3{margin-bottom:12px}.plan-card p{font-size:14px;color:var(--muted)}.owner{font-size:12px;color:var(--muted);margin:14px 0}.notice{font-size:12px!important;color:var(--amber)!important;padding-left:11px;border-left:2px solid #d7bc8f;margin-top:15px}.reading-group{margin-top:20px}details{border-top:1px solid var(--line);margin:0}details:last-child{border-bottom:1px solid var(--line)}summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 0;font-size:14px;font-weight:550}summary::-webkit-details-marker{display:none}summary:hover{color:var(--accent)}.chevron{width:7px;height:7px;border-right:1.5px solid var(--subtle);border-bottom:1.5px solid var(--subtle);transform:rotate(45deg);margin-right:5px;flex-shrink:0;transition:transform .15s}details[open]>summary .chevron{transform:rotate(225deg)}.detail-body{padding:0 0 21px;font-size:14px;color:var(--muted);overflow-wrap:anywhere}.detail-body details{margin-top:8px}.detail-body details .detail-body{padding-left:12px;border-left:2px solid var(--line)}.evidence{display:grid;grid-template-columns:auto minmax(0,1fr);gap:13px;border-top:1px solid var(--line);padding:23px 0 0}.evidence-number{height:26px;padding:0 12px;border:1px solid var(--line-strong);background:var(--accent-soft);display:flex;align-items:center;border-radius:var(--radius);font:11px var(--font-sans);font-weight:650;color:var(--accent);white-space:nowrap;width:fit-content}.evidence h3{font-size:16px;margin-bottom:8px}.evidence p{font-size:14px;color:var(--muted)}.evidence details{border:0}.evidence summary{font-size:12px;color:var(--accent);justify-content:flex-start;gap:13px;padding:8px 0 20px}.evidence summary .chevron{width:6px;height:6px}.source-label{font:11px/1.8 var(--font-mono);color:var(--muted);overflow-wrap:anywhere;margin:7px 0}.source-item{margin-top:18px}.caption{font-size:12px!important;color:var(--muted)!important}.muted{color:var(--muted)}code{font:12px/1.8 var(--font-mono);background:var(--accent-soft);padding:2px 5px;border-radius:3px;overflow-wrap:anywhere}pre{margin:12px 0 18px;padding:18px 20px;font-family:var(--font-mono);background:var(--surface-3);border:1px solid var(--line);border-radius:6px;max-height:440px;overflow:auto;white-space:pre-wrap;word-break:break-word;tab-size:4}pre code{background:none;padding:0;font-size:12px;color:var(--ink);font-family:var(--font-mono)}.reference-list{list-style:none;padding:0}.reference-list li{padding-bottom:12px}.reference-list a{font-size:13px}.mechanism{background:white;border:1px solid var(--line);border-radius:var(--radius);padding:26px 28px}.parallel{display:grid;grid-template-columns:1fr 1fr;gap:18px;position:relative}.branch{border:1px solid var(--line);border-radius:7px;padding:17px 19px;position:relative;background:var(--surface-2)}.branch-label{font-size:11px;color:var(--muted);margin-bottom:7px}.branch b{font-size:14px;font-weight:550;display:block}.branch p{font-size:12px;color:var(--muted);margin:5px 0 0}.merge{height:34px;position:relative;width:52%;margin:auto;border-left:1px solid var(--line-strong);border-right:1px solid var(--line-strong);border-bottom:1px solid var(--line-strong);border-radius:0 0 6px 6px}.merge:after{content:"";position:absolute;height:18px;top:33px;left:50%;border-left:1px solid var(--line-strong)}.flow-node{margin:17px auto 0;max-width:460px;border:1px solid var(--line);border-radius:7px;padding:14px 18px;text-align:center;font-size:14px;background:var(--surface-2)}.flow-node small{display:block;font-size:12px;color:var(--muted);margin-top:3px}.flow-node.fault{border-color:#e4c9c5;background:#fcf5f3;color:var(--red)}.flow-arrow{height:23px;margin:auto;width:1px;background:var(--line-strong);position:relative}.flow-arrow:after{content:"";position:absolute;bottom:0;left:-3px;width:6px;height:6px;border-right:1px solid var(--line-strong);border-bottom:1px solid var(--line-strong);transform:rotate(45deg)}.flow-arrow+.flow-node{margin-top:0}.diagram-caption{margin:20px 0 0;font-size:12px;color:var(--muted);text-align:center}.trace-step{display:grid;grid-template-columns:28px minmax(0,1fr);gap:14px;margin:16px 0 26px}.trace-index{font:12px var(--font-mono);color:var(--subtle);margin-top:14px}.trace-step h4{font-family:var(--font-mono);font-size:13px;overflow-wrap:anywhere}.parameter{padding:8px 0;display:flex;gap:12px;flex-wrap:wrap;font-size:12px}.env-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin:6px 0}.env-grid dt{font-size:12px;color:var(--muted)}.env-grid dd{margin:4px 0 0;font-size:13px;color:var(--ink);overflow-wrap:anywhere}.raw-row{padding:8px 0}.raw-row b{font-size:12px}.raw-row p{font-size:13px;margin:4px 0}.footer{margin-top:40px;padding:23px 0;border-top:1px solid var(--line);display:flex;justify-content:space-between;gap:20px;font-size:11px;color:var(--muted)}.footer p{margin:0}.footer-actions{display:flex;gap:14px;white-space:nowrap}.text-button{font-size:12px;border:0;padding:0;background:none;color:var(--accent)}#copy-status{font-size:12px;color:var(--accent)}.skip-link{position:absolute;top:-100px}.skip-link:focus{top:10px;left:10px;z-index:20;background:#fff;padding:10px}
 @media(min-width:1500px){.shell{max-width:1340px}.layout{gap:60px}}
 @media(max-width:950px){.shell{padding:0 24px}.layout{padding-top:16px}.topnav{margin:0 -24px;padding:0 24px}.topbar{height:66px}.hero{padding:26px}.main{padding-top:4px}}
 @media(max-width:600px){.shell{padding:0 18px}.top-meta{display:none}.topbar{height:60px}.topnav{margin:0 -18px;padding:0 18px;overflow-x:auto;overflow-y:hidden}.topnav a{padding:10px 12px;font-size:12px}.layout{padding-top:8px}.identity{margin-top:6px}.hero{padding:23px 20px}.hero h2{font-size:20px}.facts{grid-template-columns:1fr;gap:15px}.fact{border-bottom:1px solid var(--line);padding-bottom:12px}.fact:last-child{border:0;padding-bottom:0}.fact-note{margin-top:1px}.plan{grid-template-columns:1fr;gap:22px}.section{margin-top:35px}.parallel{gap:10px}.branch{padding:12px}.mechanism{padding:19px 14px}.env-grid{grid-template-columns:1fr}.footer{flex-direction:column}.subline{gap:5px 14px}.hero-copy{margin-bottom:18px}.evidence{grid-template-columns:27px 1fr;gap:10px}.actions .btn{padding:9px 12px}.identity .eyebrow{letter-spacing:.6px}}
@@ -24,7 +24,6 @@
 .mechanism{background:var(--surface-2);padding:22px;border-color:var(--line)}.sequence-intro{margin-bottom:22px}.sequence-intro b{display:block;font-size:14px}.sequence-intro>span{display:block;color:var(--muted);font-size:12px;margin-top:4px}
 .mechanism-summary{border:1px solid var(--line);border-left:3px solid var(--accent-strong);border-radius:8px;background:var(--surface-3);padding:14px 16px;margin:14px 0 18px}.mechanism-summary-label{font-size:11px;color:var(--accent-strong);font-weight:650;letter-spacing:.4px;margin-bottom:5px}.mechanism-summary p{font-size:13px;color:var(--muted);line-height:1.7;margin:0}
 .mechanism-judgment{border:1px solid var(--line);border-radius:8px;background:var(--accent-soft);padding:14px 16px;margin:14px 0 18px}.mechanism-conclusion{margin:14px 0 18px}.mechanism-conclusion .mechanism-summary{margin:0 0 10px}.mechanism-conclusion .mechanism-judgment{margin:0}.mechanism-judgment b{display:block;font-size:12px;color:var(--accent-strong);margin-bottom:5px}.mechanism-judgment p{font-size:13px;color:var(--muted);margin:0;line-height:1.7}.mechanism-judgment .confidence{font-size:11px;color:var(--muted);margin-top:7px}
-.crash-log{max-width:none;margin:0}.crash-log pre{margin:12px 0 18px}
 .crash-fact-list{margin:5px 0 0;padding-left:18px}.crash-fact-list li{margin:3px 0;font-size:12px;line-height:1.7;color:var(--muted)}
 .race-window{grid-column:1/-1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:28px;border:1px dashed var(--line-strong);background:var(--surface-3);border-radius:8px;padding:13px 12px;margin:4px 0 12px}.race-start{padding:4px;text-align:center}.race-start b{font-size:13px;display:block;color:var(--accent-strong)}.race-start small{display:block;font-size:11px;color:var(--muted);margin-top:4px}.race-window p{grid-column:1/-1;border-top:1px dashed var(--line);padding-top:10px;margin:10px 0 0;text-align:center;font-size:11px;color:var(--muted)}
 .appendix-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:0 0 20px}.appendix-stat{border:1px solid var(--line);border-radius:8px;background:var(--surface-2);padding:12px 14px}.appendix-stat-label{font-size:11px;color:var(--muted)}.appendix-stat-value{font-size:18px;line-height:1.45;color:var(--accent-strong);font-weight:650}.appendix-card{border:1px solid var(--line);border-radius:var(--radius);background:var(--surface-2);padding:0 15px;margin-top:14px}.appendix-card>details>summary{font-weight:600;padding:14px 0}.appendix-card .detail-body{padding-bottom:14px}.appendix-card h4{font-size:14px;color:var(--muted);margin:17px 0 8px}.appendix-card ul{margin-top:6px}.appendix-card .raw-row{border-bottom:1px solid var(--line)}.appendix-card .raw-row:last-child{border-bottom:0}
@@ -41,15 +40,14 @@
 @media print{.section{margin-top:20px;box-shadow:none}.section-heading,.section-intro{break-after:avoid}.mechanism{break-inside:avoid}.swimlane{print-color-adjust:exact}.section{border-color:var(--line-strong)}}
 
 .plan-card{min-width:0}.plan-card>.reading-group{border:1px solid var(--line);border-radius:7px;padding:0 12px;background:var(--surface-2)}.plan-card>.reading-group>details:first-child{border-top:0}.plan-card>.reading-group>details:last-child{border-bottom:0}.plan-card .detail-body{font-size:13px}.plan-card pre{padding:12px;font-size:11px;white-space:pre;overflow-x:auto}.plan-card pre code{font-size:11px}.plan{align-items:start}
-.crash-facts{display:grid;grid-template-columns:1fr 1fr;gap:0;margin:0;border:1px solid var(--line);border-radius:8px;overflow:hidden}.crash-facts>div{padding:14px 16px;border-bottom:1px solid var(--line);min-width:0}.crash-facts>div:nth-child(odd){border-right:1px solid var(--line)}.crash-facts>div:nth-last-child(-n+2){border-bottom:0}.crash-facts dt{font-size:12px;color:var(--muted);margin-bottom:5px}.crash-facts dd{margin:0;font-size:13px;color:var(--ink);overflow-wrap:anywhere}.crash-log pre{margin-top:16px;border-left:3px solid #b96d60;background:#fcf7f5}.subsection-title{font-size:16px;margin:23px 0 12px}
-.stack-legend{display:flex;justify-content:space-between;gap:12px;font-size:11px;color:var(--muted);margin:12px 0}.stack-frames{list-style:none;padding:0;margin:0 0 15px}.stack-row{display:grid;grid-template-columns:minmax(0,1.08fr) 28px minmax(0,1fr);gap:0;margin:0;align-items:stretch}.stack-frame{background:var(--surface-3);border:1px solid var(--line);border-top:0;padding:12px 13px;position:relative;min-width:0}.stack-row:first-child .stack-frame{border-top:1px solid var(--line);border-radius:7px 7px 0 0}.stack-row:last-child .stack-frame{border-radius:0 0 7px 7px}.stack-frame span{font-size:11px;display:block;color:var(--subtle);margin-bottom:3px}.stack-frame code{background:none;padding:0;font-size:11px;line-height:1.7;display:block;color:var(--ink);overflow-wrap:anywhere}.stack-row.crash .stack-frame{background:#fcf0ec;border-color:#dfb8ac}.stack-row.crash .stack-frame code,.stack-row.crash .stack-frame span{color:#aa503f}.stack-row.focus .stack-frame{background:#fdf8eb;border-color:#dbcdab}.stack-pointer{align-self:start;padding-top:24px;color:var(--accent);text-align:center}.stack-explain{padding:20px 0 14px 4px;min-width:0;border-bottom:1px solid var(--line)}.stack-explain b{font-size:12px;font-weight:600;color:var(--accent-strong)}.stack-explain p{font-size:12px;margin:7px 0 0;color:var(--muted)}.source-route{padding:12px;margin-top:12px;background:#fbf9f2;border:1px dashed #d8c79b;border-radius:5px}.source-route b{font-size:11px}.source-route code{font-size:11px}.source-route small{font-size:11px;color:var(--subtle);display:block;margin-top:8px}
+.crash-facts{display:grid;grid-template-columns:1fr 1fr;gap:0;margin:0;border:1px solid var(--line);border-radius:8px;overflow:hidden}.crash-facts>div{padding:14px 16px;border-bottom:1px solid var(--line);min-width:0}.crash-facts>div:nth-child(odd){border-right:1px solid var(--line)}.crash-facts>div:nth-last-child(-n+2){border-bottom:0}.crash-facts dt{font-size:12px;color:var(--muted);margin-bottom:5px}.crash-facts dd{margin:0;font-size:13px;color:var(--ink);overflow-wrap:anywhere}
 .reasoning{list-style:none;counter-reset:reason;padding:0;margin:8px 0}.reasoning>li{counter-increment:reason;position:relative;margin:0;padding:0 0 22px 34px;border-left:1px solid var(--line);margin-left:11px}.reasoning>li:last-child{border-left-color:transparent;padding-bottom:6px}.reasoning>li:before{content:counter(reason);position:absolute;left:-12px;top:0;width:23px;height:23px;border-radius:50%;border:1px solid var(--line-strong);background:var(--accent-soft);color:var(--accent-strong);display:grid;place-items:center;font:11px var(--font-mono)}.reasoning h4{margin:0 0 8px;font-size:14px}.reasoning p{font-size:13px}.reasoning pre{margin:10px 0 8px;padding:13px 15px}.reason-result{border-left:3px solid var(--accent);background:var(--surface-3);padding:10px 12px;margin-top:12px!important;color:var(--accent-strong)!important}.evidence .detail-body{padding-top:6px}
-@media(max-width:600px){.crash-facts{grid-template-columns:1fr}.crash-facts>div:nth-child(odd){border-right:0}.crash-facts>div:nth-last-child(2){border-bottom:1px solid var(--line)}.stack-row{grid-template-columns:minmax(0,1fr) 19px minmax(0,.85fr)}.stack-frame{padding:10px 8px}.stack-frame code{font-size:11px}.stack-explain{padding:17px 0 10px}.stack-explain b{font-size:11px}.stack-explain p{font-size:11px}.source-route{padding:8px}.stack-legend{font-size:11px}.reasoning>li{padding-left:23px}.reasoning pre{padding:10px}.reasoning pre code{font-size:11px}}
+@media(max-width:600px){.crash-facts{grid-template-columns:1fr}.crash-facts>div:nth-child(odd){border-right:0}.crash-facts>div:nth-last-child(2){border-bottom:1px solid var(--line)}reasoning>li{padding-left:23px}.reasoning pre{padding:10px}.reasoning pre code{font-size:11px}}
 @media(max-width:600px){.appendix-stats{grid-template-columns:1fr}.appendix-card{padding:0 11px}.appendix-card>details>summary{font-size:13px}}
-@media print{.stack-row{break-inside:avoid}.reasoning>li{break-inside:avoid}.crash-facts{break-inside:avoid}}
+@media print{.reasoning>li{break-inside:avoid}.crash-facts{break-inside:avoid}}
 
 /* A compact, unified first-screen overview. */
-.topbar{height:60px}.layout{padding-top:25px}.report-header{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin:0 0 4px;padding:0 0 20px;border-bottom:1px solid var(--line)}.report-header-main{min-width:0}.report-header-kicker{font-size:11px;letter-spacing:1.8px;color:var(--muted);font-weight:650;margin-bottom:7px}.report-header h1{font-size:24px;letter-spacing:-.5px;line-height:1.3}.report-header .subline{margin:9px 0 0;font-size:13px;gap:14px}.overview-tools{display:flex;align-items:flex-end;flex-direction:column;gap:7px}.hero{padding:23px 25px}.hero h2{font-size:20px;max-width:none}.hero-copy{font-size:14px;margin:9px 0 17px;max-width:none;line-height:1.7}.facts{padding-top:15px;grid-template-columns:.95fr 1.15fr 1.15fr}.fact-label{font-size:11px;margin-bottom:5px}.fact-value{font-size:13px}.fact-note{font-size:11px}.fact-note a{margin:0}.overview-treatment{margin-top:18px;border-top:1px solid var(--line);padding-top:14px}.treatment-heading{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}.treatment-heading>h3{font-size:16px}.treatment-heading>span{font-size:11px;color:var(--subtle)}.overview-treatment .plan{display:grid;grid-template-columns:1fr;gap:18px}.overview-treatment .plan-card{border:1px solid var(--line);border-radius:7px;padding:13px 14px;background:var(--surface-2)}.overview-treatment .plan-card.secondary{background:var(--surface-2)}.overview-treatment .small-label{font-size:11px;letter-spacing:0;margin-bottom:4px}.overview-treatment .plan-card h3{font-size:14px;margin-bottom:6px}.overview-treatment .plan-card p{font-size:12px;line-height:1.7;margin-bottom:7px}.overview-treatment .reading-group{margin-top:10px;padding:0;border:0;background:transparent}.overview-treatment summary{font-size:11px;padding:8px 0}.overview-treatment .reading-group>details:last-child{border-top:1px solid var(--line)}.overview-treatment .notice{margin-top:10px;font-size:11px!important}.overview-treatment .detail-body p{font-size:12px}.overview-treatment .detail-body{font-size:12px}
+.topbar{height:60px}.layout{padding-top:25px}.report-header{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin:0 0 4px;padding:0 0 20px;border-bottom:1px solid var(--line)}.report-header-main{min-width:0}.report-header-kicker{font-size:11px;letter-spacing:1.8px;color:var(--muted);font-weight:650;margin-bottom:7px}.report-header h1{font-size:24px;letter-spacing:-.5px;line-height:1.3}.report-header .subline{margin:9px 0 0;font-size:13px;gap:14px}.overview-tools{display:flex;align-items:flex-end;flex-direction:column;gap:7px}.hero{padding:23px 25px}.hero h2{font-size:20px;max-width:none}.hero-copy{font-size:14px;margin:9px 0 17px;max-width:none;line-height:1.7}.facts{padding-top:15px;grid-template-columns:.95fr 1.15fr 1.15fr}.fact-label{font-size:11px;margin-bottom:5px}.fact-value{font-size:13px}.fact-note{font-size:11px}.fact-note a{margin:0}.overview-treatment{margin-top:18px;border-top:1px solid var(--line);padding-top:14px}.treatment-heading{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}.treatment-heading>h3{font-size:16px}.treatment-heading>span{font-size:11px;color:var(--subtle)}.overview-treatment .plan{display:grid;grid-template-columns:1fr;gap:18px}.overview-treatment .plan-card{border:1px solid var(--line);border-radius:7px;padding:13px 14px;background:var(--surface-2)}.overview-treatment .small-label{font-size:11px;letter-spacing:0;margin-bottom:4px}.overview-treatment .plan-card h3{font-size:14px;margin-bottom:6px}.overview-treatment .plan-card p{font-size:12px;line-height:1.7;margin-bottom:7px}.overview-treatment .reading-group{margin-top:10px;padding:0;border:0;background:transparent}.overview-treatment summary{font-size:11px;padding:8px 0}.overview-treatment .reading-group>details:last-child{border-top:1px solid var(--line)}.overview-treatment .notice{margin-top:10px;font-size:11px!important}.overview-treatment .detail-body p{font-size:12px}.overview-treatment .detail-body{font-size:12px}
 .crash-facts>div:last-child{border-right:0;border-bottom:0}
 @media(max-width:600px){.topbar{height:52px}.layout{padding-top:8px}.report-header{align-items:flex-start;gap:8px}.report-header h1{font-size:21px;overflow-wrap:anywhere}.report-header .subline{font-size:11px;gap:2px 8px}.overview-tools .status{font-size:11px}.overview-tools .text-button{font-size:11px}.hero{padding:18px 16px}.hero h2{font-size:20px}.hero-copy{font-size:13px}.facts{grid-template-columns:1fr;gap:10px}.fact-label{margin-bottom:3px}.fact,.fact:first-child{padding:0 0 10px}.overview-treatment .plan{grid-template-columns:1fr;gap:10px}.treatment-heading{align-items:flex-start}.treatment-heading>span{max-width:115px;text-align:right}.overview-treatment .plan-card{padding:12px}}
 @media print{.overview-tools{display:none}.report-header h1{font-size:22px}.hero{padding:18px}.overview-treatment .plan{grid-template-columns:1.15fr 1fr}}
@@ -70,21 +68,6 @@
 .workflow-status.st-failed,.tool-pill.st-failed{background:#f9e5e5;color:#b04a4a}
 .workflow-status.st-skipped,.tool-pill.st-skipped{background:#eceeee;color:var(--subtle)}
 .tool-pill.st-success,.tool-pill.st-partial,.tool-pill.st-failed,.tool-pill.st-skipped{border:1px solid currentColor}
-.log-block{display:block;border-left:3px solid transparent;padding:3px 8px;margin:3px 0;border-radius:0 5px 5px 0;transition:background .12s}
-.log-block[data-tip]{cursor:help}
-.log-block.cat-crash{border-left-color:#b04a4a;background:#fbf1f1}
-.log-block.cat-esr{border-left-color:#926321;background:#fbf6ec}
-.log-block.cat-loc{border-left-color:#c25e00;background:#fbf3e9}
-.log-block.cat-regs{border-left-color:#5b7fa6;background:#f1f5f9}
-.log-block.cat-trace{border-left-color:#2e7d5b;background:#f0f7f3}
-.log-block.cat-code{border-left-color:#8a5fb0;background:#f5f1f9}
-.log-block.cat-kdump{border-left-color:#6f7d8a;background:#f2f4f6}
-.log-block.cat-info{border-left-color:var(--line-strong)}
-.log-block:hover{background:#e2ecdf;box-shadow:0 0 0 1px #b9cdb4}
-.log-legend{display:flex;flex-wrap:wrap;align-items:center;gap:7px 14px;margin:2px 0 12px;font-size:12px;color:var(--muted)}
-.log-legend-label{font-weight:600;color:var(--muted)}
-.log-legend-item{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
-.log-legend-item i{width:12px;height:12px;border-radius:3px;display:inline-block;flex-shrink:0}
 .swimlane{--gap:28px}
 .lane-conn{position:relative;--lw:calc((100% - (var(--n) - 1) * var(--gap,28px)) / var(--n));--cx1:calc(var(--x1) * (var(--lw) + var(--gap,28px)) + var(--lw) / 2);--cx2:calc(var(--x2) * (var(--lw) + var(--gap,28px)) + var(--lw) / 2);--cxa:calc(var(--xa) * (var(--lw) + var(--gap,28px)) + var(--lw) / 2);--cxb:calc(var(--xb) * (var(--lw) + var(--gap,28px)) + var(--lw) / 2)}
 .lane-conn.same{height:33px}
@@ -95,8 +78,6 @@
 .lane-conn .bar{left:var(--cxa);width:calc(var(--cxb) - var(--cxa));top:50%;height:2px;margin-top:-1px;margin-left:0}
 .lane-conn .stub-dst{left:var(--cx2);top:50%;bottom:-4px}
 .lane-conn .head{bottom:-4px;left:var(--cx2);width:0;height:0;margin-left:0;background:none;border-left:5px solid transparent;border-right:5px solid transparent;border-top:8px solid #a77836;transform:translateX(-50%)}
-#log-tip{display:none;position:fixed;z-index:99;max-width:440px;background:#26332c;color:var(--accent-soft);font-size:12px;line-height:1.7;padding:10px 13px;border-radius:8px;box-shadow:0 8px 28px rgba(20,35,26,.35);pointer-events:none}
-#log-tip.pinned{pointer-events:auto;border:1px solid var(--accent-strong)}
 .reason{font-style:italic;color:var(--muted);display:block;margin-top:2px;font-size:12px}
 .mc-kind{display:inline-block;font-size:11px;font-weight:600;padding:1px 8px;border-radius:4px;background:#eef2f7;color:#475569;border:1px solid #dbe2ea;margin-right:6px;vertical-align:middle}
 .control-button{border:1px solid var(--line-strong);background:var(--surface-2);color:var(--accent-strong);border-radius:6px;padding:6px 10px;font-size:11px}
@@ -160,44 +141,19 @@
 .evidence-level.lv-unresolved{color:#5f6d72;background:#f4f6f7;border-color:#d5dadd}
 .evidence-caveat{font-size:12px!important;color:var(--muted)!important;margin:6px 0 0;padding-left:11px;border-left:2px solid #d7bc8f}
 @media print{.evidence-connect{break-inside:avoid}}
-/* 完整技术传播链 */
-.propagation-list{list-style:none;padding:0;margin:0}
-.propagation-step{padding:10px 0;border-bottom:1px solid var(--line)}.propagation-step:last-child{border-bottom:0}
-.propagation-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.propagation-index{flex-shrink:0;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;background:var(--accent-soft);border:1px solid var(--line-strong);color:var(--accent-strong);font:11px var(--font-mono)}
-.propagation-fn{font:12px var(--font-mono);color:var(--ink)}
-.propagation-desc{font-size:12px;color:var(--muted);line-height:1.7}
-.propagation-crash-tag{display:inline-block;font-size:11px;font-weight:600;padding:0 5px;border-radius:8px;background:#fcf3f1;color:#ac4a3f;border:1px solid #e5c5bf}
-.propagation-step.crash .propagation-index{background:#f7e2de;color:#a8483c;border-color:#e5b7af}
-.propagation-step.crash .propagation-fn{color:#a8483c}
-.propagation-step.focus .propagation-index{background:#fdf3d6;color:#926321;border-color:#dbcdab}
-.propagation-more{margin-top:4px}.propagation-more summary{font-size:11px;color:var(--accent-strong);padding:4px 0}
-.propagation-loc{display:block;font-size:11px;color:var(--subtle);margin:2px 0 6px}
-.propagation-evidence{display:block;font:11px/1.8 var(--font-mono);color:var(--muted);margin:4px 0 8px}
-@media print{.propagation-step{break-inside:avoid}}
 summary,a{transition:color var(--trans)}
-/* 关键参数行 */
-.param-legend{font-size:11px;color:var(--subtle);margin:0 0 6px}
-.param-row{padding:5px 0;border-bottom:1px dashed #efe6cf}.param-row:last-child{border-bottom:0}
-.param-line{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap}
-.param-io{font-size:11px;color:#8a6d3b;background:#f4ecd6;border:1px solid #e3d5b8;border-radius:8px;padding:0 5px;white-space:nowrap}
-.param-reg{font-size:11px;font-weight:600;color:#7a5416;white-space:nowrap}
-.param-arrow{color:#b89a5c;font-size:11px}
-.param-name{font-size:11px;color:var(--ink)}
-.param-formal{font-size:11px;color:var(--subtle);margin-left:2px}
-.param-value{font-size:11px;color:#5b4630}
-.param-note{font-size:11px;color:#8a7a5a;line-height:1.7;margin-top:3px}
-.reg-hl{color:#7a5416;background:#f7efd8;padding:0 2px;border-radius:3px;font-family:var(--font-mono);font-weight:600}
 /* 故障总览：与后续章节一致，走标准卡片框 */
 .section.overview .hero{margin-top:16px}
 /* 补丁来源四档横幅 */
-.fix-banner{border-radius:7px;padding:10px 14px;margin:10px 0;font-size:13px;font-weight:550;line-height:1.7}
-.fix-banner.fix-confirmed{background:#e8f5e9;border:1px solid #a5d6a7;color:#1b5e20}
-.fix-banner.fix-derived{background:#e0f2f1;border:1px solid #80cbc4;color:#00695c}
-.fix-banner.fix-speculative{background:#fff3e0;border:1px solid #ffcc80;color:#e65100}
-.fix-banner.fix-none{background:#f5f5f5;border:1px solid #e0e0e0;color:#616161}
-.fix-banner b{font-weight:700}
-.fix-banner .fix-sub{display:block;font-size:12px;font-weight:400;margin-top:2px;opacity:.85}
+.plan-card-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.plan-card-head .small-label{margin-bottom:0}
+.fix-tag{font-size:11px;font-weight:600;border-radius:4px;padding:1px 8px;border:1px solid var(--line-strong);background:var(--surface-3);color:var(--muted);white-space:nowrap;flex-shrink:0}
+.fix-tag.fix-confirmed{background:#e8f5e9;border-color:#a5d6a7;color:#1b5e20}
+.fix-tag.fix-derived{background:#e0f2f1;border-color:#80cbc4;color:#00695c}
+.fix-tag.fix-speculative{background:#fff3e0;border-color:#ffcc80;color:#e65100}
+.fix-tag.fix-none{background:#f5f5f5;border-color:#e0e0e0;color:#616161}
+.fix-tag.tag-workaround{background:#eef3fa;border-color:#b9c9dd;color:#3d5a80}
+.rawlog-body{display:block;max-height:420px;overflow:auto}
 /* ③ 可能性方案的 diff 区域琥珀色调 */
 .patch-speculative-bg{background:#fffaf0 !important;border-color:#ffcc80 !important}
 
@@ -436,11 +392,6 @@ function linkifyBody(s){
 }
 
 /* 高亮寄存器 token，让反汇编/vmcore 文本里的寄存器与「关键参数」卡片视觉对应 */
-function hlRegs(s){
-  if(s==null) return '';
-  return String(s).replace(/\b(x\d{1,2}|w\d{1,2}|sp|lr|pc|pstate)\b/g, '<span class="reg-hl">$1</span>');
-}
-
 function linkifyJudgment(s){
   if(s==null) return '';
   return esc(s).replace(/https?:\/\/[^\s<]+/g, m=>{
@@ -544,11 +495,11 @@ function renderOverview(){
   else if(has(fixedBrief)) facts.push({label:'上游修复状态', value:'上游无对应补丁，需自研适配', note: fixedBrief});
   else facts.push({label:'上游修复状态', value:'需提供更多信息诊断', note:''});
 
-  const community = toArr(diag.community_kernel_result);
+  /* 历史案例格只取内部案例库；社区 issue/commit/bugzilla/邮件/会议不进本格（见技术附件） */
   const internalCases = toArr(diag.internal_kernel_result);
-  const anyCase = community[0] || internalCases[0];
+  const anyCase = internalCases[0];
   const caseNote = anyCase ? String(anyCase.title || anyCase.bug_summary || '').slice(0, 60) : '';
-  facts.push({label:'历史案例', value: anyCase ? (community.length ? '社区同型案例佐证' : '内部同簇案例旁证') : '未检索到历史同类案例', note: caseNote});
+  facts.push({label:'历史案例', value: anyCase ? '内部同簇案例旁证' : '未匹配到内部案例', note: caseNote});
 
   if(has(ra.trigger_scenario)) facts.push({label:'易触发场景', value: ra.trigger_scenario, note:''});
   else if(has(deep.scope)) facts.push({label:'易触发场景', value: firstSentence(deep.scope), note:''});
@@ -565,13 +516,12 @@ function renderOverview(){
   h += `<div class="overview-treatment" id="actions"><div class="treatment-heading"><h3>规避手段</h3><span>建议方案 · 实际部署状态未提供</span></div><div class="plan">`;
 
   /* 根治措施 */
-  h += `<article class="plan-card"><div class="small-label">根治措施 · 内核维护人员</div>`;
   const ssTitleMap = {patch:'合入修复补丁', config:'调整配置或运行参数', upgrade:'升级内核至修复版本', none:'暂无根治方案，需更多信息诊断'};
   const ssTitle = ss ? (ssTitleMap[ss.type] || '相应修复') : '原报告未给出根治方案';
   const fixLevel = classifyFixProvenance(ss, diag);
   const fixPrefix = fixLevel === 'speculative' ? '(自研) ' : fixLevel === 'derived' ? '(推导) ' : '';
+  h += `<article class="plan-card"><div class="plan-card-head"><div class="small-label">根治措施 · 内核维护人员</div>${fixProvenanceTag(fixLevel)}</div>`;
   h += `<h3>${esc(ssTitle)}</h3>`;
-  h += fixProvenanceBanner(fixLevel);
   if(ss && has(ss.claim_tag)) h += `<p class="caption">${linkifyBody(ss.claim_tag)}</p>`;
   if(ss && has(ss.brief)) h += `<p>${linkifyBody(ss.brief)}</p>`;
   else if(ss && has(ss.short)) h += `<p>${linkifyBody(ss.short)}</p>`;
@@ -599,7 +549,8 @@ function renderOverview(){
   /* 临时规避手段：始终渲染；无针对性方案时写「暂无临时规避手段」 */
   {
     const hasWorkaround = wa && has(wa.summary) && !/^(无|暂无)$/.test(String(wa.summary).trim());
-    h += `<article class="plan-card secondary"><div class="small-label">临时规避手段 · 运维人员</div>`;
+    const waTag = hasWorkaround ? `<span class="fix-tag tag-workaround">配置规避</span>` : `<span class="fix-tag fix-none">暂无方案</span>`;
+    h += `<article class="plan-card"><div class="plan-card-head"><div class="small-label">临时规避手段 · 运维人员</div>${waTag}</div>`;
     if(hasWorkaround){
       const waTitle = has(wa.title) ? wa.title : firstSentence(wa.summary);
       h += `<h3>${esc(waTitle)}</h3>`;
@@ -613,7 +564,7 @@ function renderOverview(){
       /* 与根治措施保持同一口径：根治途径按 ss.type 派生，不硬编码 */
       const curePath = ss ? (({patch:'合入修复补丁', config:'调整配置', upgrade:'升级内核至修复版本', none:'待补齐信息后确定'})[ss.type] || '相应修复') : '待定';
       h += `<h3>暂无临时规避手段</h3>`;
-      h += `<p>未检索到针对本缺陷的有效临时规避方案；根治途径：${esc(curePath)}（见左侧根治措施）。</p>`;
+      h += `<p>未检索到针对本缺陷的有效临时规避方案；根治途径：${esc(curePath)}（见上方根治措施）。</p>`;
     }
     h += `</article>`;
   }
@@ -657,34 +608,74 @@ function classifyLogLine(line){
   return null;
 }
 
-/* 块级悬停解读文案 */
-const BLOCK_TIPS = {
-  'cat-crash': '崩溃类型行：说明内核以什么方式挂掉与故障地址。NULL pointer dereference=空指针解引用（故障地址即被访问的字段偏移）；Oops=内核错误的正式记录（错误码/第几次/SMP 系统）；panic=整机停止。',
-  'cat-esr': '异常综合征与故障地址解析：ESR 编码异常类别（DABT=数据中止/访存异常）与故障状态码，WnR 区分读写方向（0=读 1=写）；页表遍历（pgd/pud）全 0 说明故障地址完全未映射——空指针/未初始化指针访问的典型证据。',
-  'cat-info': '崩溃现场环境信息：加载模块列表（判断是否涉及第三方模块）、崩溃进程名/PID、CPU 号与内核污染标志（Not tainted=无外部模块污染）、内核版本与硬件型号/BIOS——用于定位源码树与排除硬件因素。',
-  'cat-loc': '崩溃指令定位：pstate（处理器状态标志）、pc（程序计数器=崩溃指令，格式 函数名+偏移/总长）、lr（返回地址=调用崩溃函数的上层函数）、sp（栈指针）——直接定位「崩在哪个函数的哪条指令」与调用关系。',
-  'cat-regs': '通用寄存器现场值：还原崩溃瞬间的参数与指针。函数参数寄存器——ARM64 为 x0~x7、x86_64 为 rdi/rsi/rdx/rcx/r8/r9；某寄存器为 0 往往就是空指针；结合崩溃指令（如 ARM64 的 ldr w0,[x20,#0x40]、x86_64 的 mov 0x18(%r14),%r15d）可推断各寄存器对应的参数或结构体成员。',
-  'cat-trace': '调用栈：自崩溃函数向上直到系统调用入口，栈帧格式 函数名+偏移/总长。自上而下阅读 = 崩溃点 ← 调用者 ← … ← 入口，还原触发崩溃的完整执行路径。',
-  'cat-code': '崩溃指令机器码：括号内的那一条就是触发异常的实际指令机器码，结合 pc 反汇编即可看到具体访问操作（如读/写某结构体成员的偏移）。',
-  'cat-kdump': 'kdump 现场捕获阶段：崩溃后停其它 CPU 核（SMP stopping/failed）、启动捕获内核写出 vmcore。此处告警（如 CPU 核未停住、部分转储）只影响转储完整性，不影响崩溃原因本身。'
-};
+/* 崩溃类型细分释义（自动兜底注释用：讲「是什么/为什么关键」，不只贴标签） */
+const RAWLOG_CRASH_TIPS = [
+  [/NULL pointer dereference/i, '空指针解引用：内核从空指针上读取字段，故障地址就是该字段的偏移'],
+  [/general protection/i, '通用保护故障：访问了非法地址（越界或非规范地址）'],
+  [/KASAN/i, 'KASAN 命中：检测到越界访问或 use-after-free'],
+  [/KFENCE/i, 'KFENCE 命中：检测到内存安全违规'],
+  [/UBSAN/i, 'UBSAN 命中：检测到未定义行为'],
+  [/soft ?lockup/i, '软死锁：CPU 长时间占用、迟迟不调度'],
+  [/hard ?lockup|NMI watchdog/i, '硬死锁：看门狗发现 CPU 卡死、不再响应'],
+  [/rcu.*stall/i, 'RCU stall：RCU 宽限期长时间没有进展'],
+  [/hung task/i, '任务挂起超时：进程长时间处于 D 状态'],
+  [/Out of memory|oom-kill/i, '内存耗尽：触发 OOM'],
+  [/Machine Check/i, '机器检查异常：CPU/内存等硬件层报错'],
+  [/scheduling while atomic/i, '原子上下文里发生了调度（不允许）'],
+  [/sleeping function/i, '在原子/中断上下文里睡眠（不允许）'],
+  [/stack overflow/i, '内核栈溢出'],
+  [/BUG:/i, '内核 BUG 触发：走到了不该到的代码路径'],
+  [/Oops/i, 'Oops：内核错误记录（是否致命取决于上下文）'],
+  [/Kernel panic/i, '整机 panic：无法恢复，kdump 捕获后重启'],
+];
 
-/* 把原始日志按「连续同类行」合并为语义块，整块带类别色条与 data-tip */
-function annotateCrashLog(raw){
-  const lines = String(raw).split('\n');
-  const groups = [];
-  lines.forEach(line=>{
-    const m = classifyLogLine(line);
-    const cat = m ? m.cat : '';
-    const last = groups[groups.length-1];
-    if(last && last.cat === cat) last.lines.push(line);
-    else groups.push({cat, lines:[line]});
+/* 原始崩溃日志关键行的自动兜底注释（数据 raw_crash_log_ann 缺失时使用）：
+   只标关键行——崩溃类型、故障地址/CR2、pc/RIP/lr、Call Trace（含崩溃函数帧）、<IRQ>、Code、panic/kdump */
+function rawLogAutoAnn(line){
+  const s = String(line||'');
+  if(/^\s*<IRQ>\s*$/.test(s)) return '硬中断上下文：崩溃发生在中断处理里（不是进程上下文）';
+  if(/^\s*<\/IRQ>\s*$/.test(s)) return '硬中断到此结束：其下是被打断的进程流程（崩溃发生在中断里）';
+  const cr2 = s.match(/\bCR2\s*[:：]\s*([0-9a-fx]+)/i);
+  if(cr2) return '硬件记录的出错地址 CR2=' + cr2[1] + '（与崩溃首行的故障地址一致）';
+  if(/kexec:\s*Bye|Starting crashdump|SMP:\s*(stopping|failed)/i.test(s)) return 'kdump 捕获阶段（只影响转储完整性，不影响崩溃原因）';
+  const cat = (classifyLogLine(s)||{}).cat || '';
+  if(cat === 'cat-crash'){
+    for(const [re, tip] of RAWLOG_CRASH_TIPS) if(re.test(s)) return tip;
+    const m = s.match(/address[:：]\s*([0-9a-fx]+)/i);
+    return '崩溃类型行' + (m ? ('，故障地址 ' + m[1]) : '');
+  }
+  if(cat === 'cat-loc'){
+    const pc = s.match(/(?:pc|RIP)\s*[:：]\s*\S*?([a-zA-Z_][\w.]*\+0x[0-9a-f]+(?:\/0x[0-9a-f]+)?)/i);
+    if(pc) return '崩溃点：' + pc[1] + ' —— 触发异常的那条指令所在函数';
+    if(/\blr\s*:/i.test(s)) return '调用者返回地址：崩溃函数结束后要回到的上一帧';
+    return '';
+  }
+  if(cat === 'cat-code') return '故障机器码：括号内即为触发异常的那条指令';
+  if(cat === 'cat-trace') return /Call [Tt]race/i.test(s) ? '调用栈（栈顶在上）：从崩溃点逐帧向上回溯到入口' : '';
+  if(cat === 'cat-kdump') return '停机/捕获信息';
+  return '';
+}
+
+/* 原始崩溃日志的高亮行与注释：数据 raw_crash_log_ann（1-based 行号→注释）优先，缺失按行类型自动兜底；
+   自动模式下额外标注包含 cf.rip_function 的调用栈帧（崩溃函数所在帧） */
+function rawLogMarks(text, annData){
+  const lines = String(text||'').split('\n');
+  const hasData = annData && typeof annData === 'object' && Object.keys(annData).length > 0;
+  const ripFn = (cf && cf.rip_function) ? String(cf.rip_function) : '';
+  const hlSet = new Set(), ann = {};
+  lines.forEach((l, i)=>{
+    const n = i + 1;
+    if(hasData){
+      if(has(annData[n])){ hlSet.add(n); ann[n] = String(annData[n]); }
+      return;
+    }
+    let a = rawLogAutoAnn(l);
+    if(!a && ripFn && /\+0x[0-9a-f]+\/0x[0-9a-f]+/i.test(String(l)) && String(l).includes(ripFn)){
+      a = '崩溃函数所在帧：' + ripFn + '（RIP 指向这里，其余帧为其调用者）';
+    }
+    if(has(a)){ hlSet.add(n); ann[n] = a; }
   });
-  return groups.map(g=>{
-    const tip = (g.cat && BLOCK_TIPS[g.cat]) ? ` data-tip="${esc(BLOCK_TIPS[g.cat])}"` : '';
-    const cls = 'log-block' + (g.cat ? (' '+g.cat) : '');
-    return `<span class="${cls}"${tip}>${g.lines.map(l=>esc(l)||'\u00a0').join('\n')}</span>`;
-  }).join('');
+  return {hl: [...hlSet], ann};
 }
 
 /* 补丁来源四档分级（从 verdict/mode/type 自动推断） */
@@ -697,15 +688,16 @@ function classifyFixProvenance(ss, diag){
   if(hasSimilar && ss.patch_list.some(p=>p.mode==='pick')) return 'derived';
   return 'speculative';
 }
-function fixProvenanceBanner(level){
+/* 补丁来源右侧小标签（替代原整行横幅，副文案进悬停） */
+function fixProvenanceTag(level){
   const map = {
-    confirmed:   {cls:'fix-confirmed',   icon:'✓', title:'上游已有明确修复', sub:'可直接合入验证'},
-    derived:     {cls:'fix-derived',     icon:'◈', title:'推导修复', sub:'基于类似案例/commit 推导，需适配验证'},
-    speculative: {cls:'fix-speculative', icon:'⚠', title:'自研建议补丁', sub:'基于源码分析生成，未经上游验证，需厂商确认后合入'},
-    none:        {cls:'fix-none',        icon:'ℹ', title:'暂无修复方案', sub:'需联系厂商或提供更多信息诊断'},
+    confirmed:   {cls:'fix-confirmed',   title:'上游已有明确修复', sub:'可直接合入验证'},
+    derived:     {cls:'fix-derived',     title:'推导修复', sub:'基于类似案例/commit 推导，需适配验证'},
+    speculative: {cls:'fix-speculative', title:'自研建议补丁', sub:'基于源码分析生成，未经上游验证，需厂商确认后合入'},
+    none:        {cls:'fix-none',        title:'暂无修复方案', sub:'需联系厂商或提供更多信息诊断'},
   };
   const m = map[level] || map.none;
-  return `<div class="fix-banner ${m.cls}">${m.icon} <b>${m.title}</b><span class="fix-sub">${m.sub}</span></div>`;
+  return `<span class="fix-tag ${m.cls}" title="${esc(m.sub)}">${m.title}</span>`;
 }
 
 /* 现场初印象：优先取报告按宕机栈生成的一句话印象；缺失时由栈动态生成通用文案（禁止静态硬编码） */
@@ -724,7 +716,7 @@ function stackImpression(){
 function renderFeatures(){
   let h = `<section class="section" id="features" aria-labelledby="features-title">`;
   h += `<div class="section-heading"><span class="section-no">02</span><h2 id="features-title">宕机现场有哪些特征</h2></div>`;
-  h += `<p class="section-intro">先看现场发生了什么：异常、崩溃位置、现场上下文与调用栈直接展示。</p>`;
+  h += `<p class="section-intro">先看现场发生了什么：异常、崩溃位置与原始崩溃日志的关键行（已高亮并附 ◀ 注释）；宕机栈见技术附件。</p>`;
 
   const rows = [];
   const bt = cf.bug_type || '';
@@ -740,17 +732,33 @@ function renderFeatures(){
   rows.forEach(r=>{ h += `<div><dt>${esc(r[0])}</dt><dd>${r[1]}</dd></div>`; });
   h += `</dl>`;
 
-  /* 宕机栈：从原始日志 Call trace 段提取栈帧，缺失时回退 call_trace_signature */
-  const log = String(cf.call_trace_text || '');
-  const trace = log.split(/Call trace:/i)[1] || '';
-  const loggedFrames = trace.split('\n').map(line=>line.replace(/^\[[^\]]+\]\s*/, '').trim()).filter(line=>/^[a-zA-Z_][\w.]*\+0x[0-9a-f]+\/0x[0-9a-f]+$/i.test(line));
-  const frames = loggedFrames.length ? loggedFrames : toArr(cf.call_trace_signature);
-  if(frames.length){
-    h += `<h3 class="subsection-title">宕机栈</h3>`;
-    h += `<p class="caption">栈顶在上，按日志顺序列出调用帧。</p>`;
-    h += `<pre class="crash-stack"><code>${esc(frames.join('\n'))}</code></pre>`;
-    const impression = stackImpression();
-    if(has(impression)) h += `<p class="stack-impression"><b>现场初印象：</b>${esc(impression)}</p>`;
+  /* 现场初印象（宕机栈已移入技术附件） */
+  const impression = stackImpression();
+  if(has(impression)) h += `<p class="stack-impression"><b>现场初印象：</b>${esc(impression)}</p>`;
+
+  /* 原始崩溃日志（正文主卡，默认收起、展开后限高滚动）：关键行琥珀高亮 + 行尾 ◀ 注释，
+     注释优先取 crash_feature_info.raw_crash_log_ann（1-based 行号→文本），缺失按行类型自动兜底 */
+  {
+    const lfr0 = cf.log_features || {};
+    const rawLines = toArr(lfr0.related_errors).filter(e=>e && has(e.line))
+      .slice()
+      .sort((a,b)=>(parseInt(String(a.lines||''),10)||0)-(parseInt(String(b.lines||''),10)||0))
+      .map(e=>String(e.line));
+    const rawSrc = (lfr0.related_ref && has(lfr0.related_ref.file)) ? (lfr0.related_ref.file + (has(lfr0.related_ref.lines)?(' L'+lfr0.related_ref.lines):'')) : '';
+    const rawFull = has(cf.raw_crash_log) ? String(cf.raw_crash_log) : '';
+    const logText = rawFull || (rawLines.length ? rawLines.join('\n') : '');
+    if(logText){
+      const logTitle = rawFull ? '原始崩溃日志' : '原始崩溃日志（关键行摘录）';
+      const logNote = rawSrc ? (rawFull ? `逐字摘自 ${rawSrc}（完整连续崩溃段）。` : `按行号排序摘自 ${rawSrc}（关键行摘录，非连续全文）。`) : '';
+      const marks = rawLogMarks(logText, cf.raw_crash_log_ann);
+      const logBody = `${has(logNote)?`<p class="caption">${esc(logNote)}</p>`:''}<code class="src-excerpt rawlog-body">${snippetLinesHTML(logText, marks.hl, parseAnn(marks.ann), 0)}</code>`;
+      h += `<details class="reading-group"><summary><span class="appendix-summary-label">${esc(logTitle)} <span class="appendix-count">${logText.split('\n').length} 行</span></span><span class="chevron" aria-hidden="true"></span></summary><div class="detail-body">${logBody}</div></details>`;
+    } else if(has(cf.call_trace_text)){
+      const traceText = String(cf.call_trace_text);
+      const marks = rawLogMarks(traceText, null);
+      const logBody = `<code class="src-excerpt rawlog-body">${snippetLinesHTML(traceText, marks.hl, parseAnn(marks.ann), 0)}</code>`;
+      h += `<details class="reading-group"><summary><span class="appendix-summary-label">崩溃调用栈 <span class="appendix-count">${traceText.split('\n').length} 行</span></span><span class="chevron" aria-hidden="true"></span></summary><div class="detail-body">${logBody}</div></details>`;
+    }
   }
 
   /* 其他异常信息：结构化展示，日志原文与描述分开；按相关度从强到弱排序，默认收起 */
@@ -781,22 +789,6 @@ function renderFeatures(){
     h += `</div></div></details>`;
   }
 
-  /* 原始崩溃日志：优先 raw_crash_log（完整连续原文），无则退化 related_errors 拼装摘录；分色块 + 悬停解读保留不变 */
-  const lfr0 = cf.log_features || {};
-  const rawLines = toArr(lfr0.related_errors).filter(e=>e && has(e.line))
-    .slice()
-    .sort((a,b)=>(parseInt(String(a.lines||''),10)||0)-(parseInt(String(b.lines||''),10)||0))
-    .map(e=>String(e.line));
-  const rawSrc = (lfr0.related_ref && has(lfr0.related_ref.file)) ? (lfr0.related_ref.file + (has(lfr0.related_ref.lines)?(' L'+lfr0.related_ref.lines):'')) : '';
-  const rawFull = has(cf.raw_crash_log) ? String(cf.raw_crash_log) : '';
-  const hoverHint = `<div class="log-legend"><span class="log-legend-label">图例 · 悬停/点击任意色块查看整块解读</span>${[['#b04a4a','崩溃类型'],['#926321','异常综合征/故障地址'],['#c25e00','崩溃指令定位'],['#5b7fa6','寄存器'],['#2e7d5b','调用栈'],['#8a5fb0','崩溃机器码'],['#6f7d8a','kdump 捕获'],['#b7c4bc','现场环境']].map(([c,n])=>`<span class="log-legend-item"><i style="background:${c}"></i>${n}</span>`).join('')}</div>`;
-  if(rawFull){
-    h += `<details class="reading-group"><summary>原始崩溃日志<span class="chevron" aria-hidden="true"></span></summary><div class="detail-body">${rawSrc?`<p class="muted">逐字摘自 ${esc(rawSrc)}（完整连续崩溃段）。</p>`:''}${hoverHint}<div class="crash-log"><pre><code>${annotateCrashLog(rawFull)}</code></pre></div></div></details>`;
-  } else if(rawLines.length){
-    h += `<details class="reading-group"><summary>原始崩溃日志<span class="chevron" aria-hidden="true"></span></summary><div class="detail-body">${rawSrc?`<p class="muted">按行号排序摘自 ${esc(rawSrc)}（关键行摘录，非连续全文）。</p>`:''}${hoverHint}<div class="crash-log"><pre><code>${annotateCrashLog(rawLines.join('\n'))}</code></pre></div></div></details>`;
-  } else if(has(cf.call_trace_text)){
-    h += `<details class="reading-group"><summary>崩溃调用栈<span class="chevron" aria-hidden="true"></span></summary><div class="detail-body">${hoverHint}<div class="crash-log"><pre><code>${annotateCrashLog(cf.call_trace_text)}</code></pre></div></div></details>`;
-  }
   h += `</section>`;
   return h;
 }
@@ -1045,60 +1037,6 @@ function renderMechanism(){
     h += `</div>`;
   }
 
-  /* 完整技术传播链（propagation_chain）：从进入函数到崩溃，编号 + 函数名 + 一句话描述 + 可展开详情 */
-  const chain = ra.propagation_chain;
-  if(Array.isArray(chain) && chain.length){
-    h += `<div class="reading-group"><details><summary>查看完整技术传播链 · 从进入函数到崩溃 · ${chain.length} 跳<span class="chevron" aria-hidden="true"></span></summary><div class="detail-body"><ol class="propagation-list">`;
-    chain.forEach((c,i)=>{
-      const cls = c.crash ? 'propagation-step crash' : (i === chain.length - 2 ? 'propagation-step focus' : 'propagation-step');
-      const code = c.stack || ((c.from||'')+(c.to?(' → '+c.to):''));
-      const desc = c.detail || '';
-      const loc = [c.src_dir, c.file].filter(has).join('/')+(has(c.line)?(':'+c.line):'');
-      const CIRC = ['①','②','③','④','⑤','⑥','⑦','⑧','⑨','⑩','⑪','⑫','⑬','⑭','⑮'];
-      h += `<li class="${cls}"><div class="propagation-head"><span class="propagation-index">${CIRC[i]||(i+1)}</span>`;
-      h += `<code class="propagation-fn">${esc(code)}</code>`;
-      if(c.crash) h += `<span class="propagation-crash-tag">崩溃</span>`;
-      if(has(desc)) h += `<span class="propagation-desc">${esc(firstSentence(desc))}</span>`;
-      h += `</div>`;
-      const params = toArr(c.params);
-      const hasDetails = has(desc) || params.length || has(c.evidence) || has(loc) || has(c.source_url);
-      if(hasDetails){
-        h += `<details class="propagation-more"><summary>详情<span class="chevron" aria-hidden="true"></span></summary><div class="detail-body">`;
-        if(has(loc)) h += `<span class="propagation-loc">📍 ${esc(loc)}</span>`;
-        if(has(desc)) h += `<p>${hlRegs(linkifyBody(desc))}</p>`;
-        if(has(c.evidence)) h += `<span class="propagation-evidence">${hlRegs(esc(c.evidence))}</span>`;
-        if(params.length){
-          h += `<div class="source-route"><b>关键参数（由上方寄存器/vmcore 证据提炼）</b>`;
-          h += `<div class="param-legend">入参 / 返回 / 读取 表示值来源 · ⚠ = 异常值</div>`;
-          params.forEach(p=>{
-            const ioLabel = {in:'入参', out:'返回', read:'读取'}[p.io] || '';
-            h += `<div class="param-row"><div class="param-line">`;
-            if(ioLabel) h += `<span class="param-io">${esc(ioLabel)}</span>`;
-            if(has(p.reg)) h += `<code class="param-reg">${esc(p.reg)}</code>`;
-            h += `<span class="param-arrow">→</span>`;
-            h += `<code class="param-name">${esc(p.n||'')}</code>`;
-            if(has(p.formal)) h += `<span class="param-formal">${esc(p.formal)}</span>`;
-            if(has(p.v)) h += `<code class="param-value">${esc(p.v)}</code>`;
-            if(p.bad) h += `<span class="tag tag-yellow">异常</span>`;
-            h += `</div>`;
-            if(has(p.note)) h += `<div class="param-note">${esc(p.note)}</div>`;
-            h += `</div>`;
-          });
-          h += `</div>`;
-        }
-        const localSrcId = findSourceRefId(c.file || '');
-        if(localSrcId) h += `<p><a href="#${localSrcId}" onclick="openAttachmentCase('${localSrcId}'); return false;" class="attachment-link" title="查看本地源码摘录">查看本地源码摘录 ↗</a></p>`;
-        if(has(c.source_url)){
-          const srcId = findAttachmentId(c.source_url);
-          if(srcId) h += `<p><a href="#${srcId}" onclick="openAttachmentCase('${srcId}'); return false;" class="attachment-link" title="跳转到技术附件">关联技术附件 ↗</a></p>`;
-          else h += `<p>📖 在线源码对照：<a href="${esc(c.source_url)}" target="_blank" rel="noopener noreferrer">${esc(c.source_url)}</a></p>`;
-        }
-        h += `</div></details>`;
-      }
-      h += `</li>`;
-    });
-    h += `</ol></div></details></div>`;
-  }
   h += `</section>`;
   return h;
 }
@@ -1355,6 +1293,17 @@ function renderAppendix(){
     }
   }
 
+  /* 宕机栈（自「宕机现场」章移入，默认收起） */
+  {
+    const log = String(cf.call_trace_text || '');
+    const trace = log.split(/Call trace:/i)[1] || '';
+    const loggedFrames = trace.split('\n').map(line=>line.replace(/^\[[^\]]+\]\s*/, '').trim()).filter(line=>/^[a-zA-Z_][\w.]*\+0x[0-9a-f]+\/0x[0-9a-f]+$/i.test(line));
+    const frames = loggedFrames.length ? loggedFrames : toArr(cf.call_trace_signature);
+    if(frames.length){
+      h += `<div class="appendix-card"><details><summary><span class="appendix-summary-label">宕机栈 <span class="appendix-count">${frames.length}</span></span><span class="chevron" aria-hidden="true"></span></summary><div class="detail-body"><p class="muted">栈顶在上，按日志顺序列出调用帧。</p><pre class="crash-stack"><code>${esc(frames.join('\n'))}</code></pre></div></details></div>`;
+    }
+  }
+
   /* 内核源码摘录（本地源码对照；与「规避手段·修复细节」「故障机制」的源码引用互链） */
   {
     const ls = ra.local_source || {};
@@ -1596,46 +1545,6 @@ function initNav(){
 
 if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', render); else render();
 
-/* 崩溃日志逐行悬停解读：hover 显示、点击钉住（兼容触屏），点空白处取消 */
-(function(){
-  let tipEl=null, pinnedLine=null;
-  function ensureTip(){
-    if(!tipEl){ tipEl=document.createElement('div'); tipEl.id='log-tip'; document.body.appendChild(tipEl); }
-    return tipEl;
-  }
-  function showTip(line){
-    const tip=line.getAttribute('data-tip'); if(!tip) return;
-    const el=ensureTip();
-    el.textContent=tip; el.style.display='block';
-    el.classList.toggle('pinned', !!pinnedLine);
-    const r=line.getBoundingClientRect(), tr=el.getBoundingClientRect();
-    let top=r.bottom+8;
-    if(top+tr.height>window.innerHeight-8) top=Math.max(8, r.top-tr.height-8);
-    let left=Math.min(Math.max(8,r.left), window.innerWidth-tr.width-8);
-    el.style.top=top+'px'; el.style.left=left+'px';
-  }
-  function hideTip(){ if(tipEl){ tipEl.style.display='none'; tipEl.classList.remove('pinned'); } }
-  document.addEventListener('mouseover', e=>{
-    if(pinnedLine) return;
-    const line=e.target.closest && e.target.closest('.log-block');
-    if(line && line.hasAttribute('data-tip')) showTip(line);
-  });
-  document.addEventListener('mouseout', e=>{
-    if(pinnedLine) return;
-    const line=e.target.closest && e.target.closest('.log-block');
-    if(line) hideTip();
-  });
-  document.addEventListener('click', e=>{
-    const line=e.target.closest && e.target.closest('.log-block');
-    if(line && line.hasAttribute('data-tip')){
-      if(pinnedLine===line){ pinnedLine=null; hideTip(); }
-      else { pinnedLine=line; showTip(line); }
-    } else if(pinnedLine && !(tipEl && tipEl.contains(e.target))){
-      pinnedLine=null; hideTip();
-    }
-  });
-  window.addEventListener('scroll', ()=>{ if(pinnedLine) showTip(pinnedLine); else if(tipEl && tipEl.style.display==='block'){ hideTip(); } }, true);
-})();
 </script>
 </body>
 </html>

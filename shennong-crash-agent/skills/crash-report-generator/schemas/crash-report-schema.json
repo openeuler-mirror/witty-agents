@@ -283,7 +283,11 @@
         },
         "raw_crash_log": {
           "type": "string",
-          "description": "完整原始崩溃日志段（逐字复制自 dmesg/vmcore-dmesg）：从崩溃首行（如 Unable to handle/BUG/panic）起，到 Code: 机器码行（无 Code 行则到 Call trace 结束）止的连续原文，含 ESR/寄存器/Call trace 全部行。HTML「原始崩溃日志」区优先渲染本字段，保证与「如何阅读这段日志」指南逐项对应。"
+          "description": "完整原始崩溃日志段（逐字复制自 dmesg/vmcore-dmesg）：从崩溃首行（如 Unable to handle/BUG/panic）起，到 Code: 机器码行（无 Code 行则到 Call trace 结束）止的连续原文，含 ESR/寄存器/Call trace 全部行。HTML「原始崩溃日志」区优先渲染本字段，只做关键行高亮 + 行尾注释（不再整块着色）。"
+        },
+        "raw_crash_log_ann": {
+          "type": "object",
+          "description": "原始崩溃日志关键行注释（可选，强烈建议）：key=raw_crash_log 内 1-based 行号，value=行尾 ◀ 注释。只标关键行（崩溃类型/BUG 行、故障地址、RIP/pc/lr、Call Trace 首帧、Code、panic/kdump），3~6 条即可；HTML 渲染为琥珀高亮 + 行尾注释，缺失时模板按行类型自动兜底。"
         },
         "stack_impression": {
           "type": "string",
