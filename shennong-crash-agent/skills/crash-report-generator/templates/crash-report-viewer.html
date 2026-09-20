@@ -197,8 +197,8 @@ summary,a{transition:color var(--trans)}
 .snippet .src-excerpt{max-height:360px;overflow-y:auto}
 .snippet-body .src-line{padding-right:10px}
 .snippet .attachment-link{margin:4px 10px;display:inline-block}
-/* snippet 行号一律 JS 显式渲染（支持绝对文件行号）；关闭 CSS counter 防双编号 */
-.snippet .src-line::before{display:none}
+/* snippet / 原始崩溃日志行号一律 JS 显式渲染（支持绝对文件行号）；关闭 CSS counter 防双编号 */
+.snippet .src-line::before,.rawlog-body .src-line::before{display:none}
 .src-no{display:inline-block;width:2.4em;margin-right:10px;text-align:right;color:var(--subtle);font-size:10px}
 .src-hl .src-no{color:#a06a00;font-weight:700}
 /* 源码行尾注释 */
@@ -746,12 +746,15 @@ function renderFeatures(){
       .map(e=>String(e.line));
     const rawSrc = (lfr0.related_ref && has(lfr0.related_ref.file)) ? (lfr0.related_ref.file + (has(lfr0.related_ref.lines)?(' L'+lfr0.related_ref.lines):'')) : '';
     const rawFull = has(cf.raw_crash_log) ? String(cf.raw_crash_log) : '';
+    /* 完整原文时按 related_ref 起始行号渲染绝对文件行号；摘录/调用栈回退保持相对行号 */
+    const rawStart = (rawFull && lfr0.related_ref && has(lfr0.related_ref.lines))
+      ? (parseInt(String(lfr0.related_ref.lines).replace(/^[^\d]+/, ''), 10) || 0) : 0;
     const logText = rawFull || (rawLines.length ? rawLines.join('\n') : '');
     if(logText){
       const logTitle = rawFull ? '原始崩溃日志' : '原始崩溃日志（关键行摘录）';
-      const logNote = rawSrc ? (rawFull ? `逐字摘自 ${rawSrc}（完整连续崩溃段）。` : `按行号排序摘自 ${rawSrc}（关键行摘录，非连续全文）。`) : '';
+      const logNote = rawSrc ? (rawFull ? `逐字摘自 ${rawSrc}（完整连续崩溃段，行号为文件真实行号）。` : `按行号排序摘自 ${rawSrc}（关键行摘录，非连续全文）。`) : '';
       const marks = rawLogMarks(logText, cf.raw_crash_log_ann);
-      const logBody = `${has(logNote)?`<p class="caption">${esc(logNote)}</p>`:''}<code class="src-excerpt rawlog-body">${snippetLinesHTML(logText, marks.hl, parseAnn(marks.ann), 0)}</code>`;
+      const logBody = `${has(logNote)?`<p class="caption">${esc(logNote)}</p>`:''}<code class="src-excerpt${rawStart?' absno':''} rawlog-body">${snippetLinesHTML(logText, marks.hl, parseAnn(marks.ann), rawStart)}</code>`;
       h += `<details class="reading-group"><summary><span class="appendix-summary-label">${esc(logTitle)} <span class="appendix-count">${logText.split('\n').length} 行</span></span><span class="chevron" aria-hidden="true"></span></summary><div class="detail-body">${logBody}</div></details>`;
     } else if(has(cf.call_trace_text)){
       const traceText = String(cf.call_trace_text);
