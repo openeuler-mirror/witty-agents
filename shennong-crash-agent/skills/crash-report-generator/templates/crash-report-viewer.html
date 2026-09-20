@@ -40,15 +40,15 @@
 @media print{.section{margin-top:20px;box-shadow:none}.section-heading,.section-intro{break-after:avoid}.mechanism{break-inside:avoid}.swimlane{print-color-adjust:exact}.section{border-color:var(--line-strong)}}
 
 .plan-card{min-width:0}.plan-card>.reading-group{border:1px solid var(--line);border-radius:7px;padding:0 12px;background:var(--surface-2)}.plan-card>.reading-group>details:first-child{border-top:0}.plan-card>.reading-group>details:last-child{border-bottom:0}.plan-card .detail-body{font-size:13px}.plan-card pre{padding:12px;font-size:11px;white-space:pre;overflow-x:auto}.plan-card pre code{font-size:11px}.plan{align-items:start}
-.crash-facts{display:grid;grid-template-columns:1fr 1fr;gap:0;margin:0;border:1px solid var(--line);border-radius:8px;overflow:hidden}.crash-facts>div{padding:14px 16px;border-bottom:1px solid var(--line);min-width:0}.crash-facts>div:nth-child(odd){border-right:1px solid var(--line)}.crash-facts>div:nth-last-child(-n+2){border-bottom:0}.crash-facts dt{font-size:12px;color:var(--muted);margin-bottom:5px}.crash-facts dd{margin:0;font-size:13px;color:var(--ink);overflow-wrap:anywhere}
+
 .reasoning{list-style:none;counter-reset:reason;padding:0;margin:8px 0}.reasoning>li{counter-increment:reason;position:relative;margin:0;padding:0 0 22px 34px;border-left:1px solid var(--line);margin-left:11px}.reasoning>li:last-child{border-left-color:transparent;padding-bottom:6px}.reasoning>li:before{content:counter(reason);position:absolute;left:-12px;top:0;width:23px;height:23px;border-radius:50%;border:1px solid var(--line-strong);background:var(--accent-soft);color:var(--accent-strong);display:grid;place-items:center;font:11px var(--font-mono)}.reasoning h4{margin:0 0 8px;font-size:14px}.reasoning p{font-size:13px}.reasoning pre{margin:10px 0 8px;padding:13px 15px}.reason-result{border-left:3px solid var(--accent);background:var(--surface-3);padding:10px 12px;margin-top:12px!important;color:var(--accent-strong)!important}.evidence .detail-body{padding-top:6px}
-@media(max-width:600px){.crash-facts{grid-template-columns:1fr}.crash-facts>div:nth-child(odd){border-right:0}.crash-facts>div:nth-last-child(2){border-bottom:1px solid var(--line)}reasoning>li{padding-left:23px}.reasoning pre{padding:10px}.reasoning pre code{font-size:11px}}
+@media(max-width:600px){reasoning>li{padding-left:23px}.reasoning pre{padding:10px}.reasoning pre code{font-size:11px}}
 @media(max-width:600px){.appendix-stats{grid-template-columns:1fr}.appendix-card{padding:0 11px}.appendix-card>details>summary{font-size:13px}}
-@media print{.reasoning>li{break-inside:avoid}.crash-facts{break-inside:avoid}}
+@media print{.reasoning>li{break-inside:avoid}}
 
 /* A compact, unified first-screen overview. */
 .topbar{height:60px}.layout{padding-top:25px}.report-header{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin:0 0 4px;padding:0 0 20px;border-bottom:1px solid var(--line)}.report-header-main{min-width:0}.report-header-kicker{font-size:11px;letter-spacing:1.8px;color:var(--muted);font-weight:650;margin-bottom:7px}.report-header h1{font-size:24px;letter-spacing:-.5px;line-height:1.3}.report-header .subline{margin:9px 0 0;font-size:13px;gap:14px}.overview-tools{display:flex;align-items:flex-end;flex-direction:column;gap:7px}.hero{padding:23px 25px}.hero h2{font-size:20px;max-width:none}.hero-copy{font-size:14px;margin:9px 0 17px;max-width:none;line-height:1.7}.facts{padding-top:15px;grid-template-columns:.95fr 1.15fr 1.15fr}.fact-label{font-size:11px;margin-bottom:5px}.fact-value{font-size:13px}.fact-note{font-size:11px}.fact-note a{margin:0}.overview-treatment{margin-top:18px;border-top:1px solid var(--line);padding-top:14px}.treatment-heading{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}.treatment-heading>h3{font-size:16px}.treatment-heading>span{font-size:11px;color:var(--subtle)}.overview-treatment .plan{display:grid;grid-template-columns:1fr;gap:18px}.overview-treatment .plan-card{border:1px solid var(--line);border-radius:7px;padding:13px 14px;background:var(--surface-2)}.overview-treatment .small-label{font-size:11px;letter-spacing:0;margin-bottom:4px}.overview-treatment .plan-card h3{font-size:14px;margin-bottom:6px}.overview-treatment .plan-card p{font-size:12px;line-height:1.7;margin-bottom:7px}.overview-treatment .reading-group{margin-top:10px;padding:0;border:0;background:transparent}.overview-treatment summary{font-size:11px;padding:8px 0}.overview-treatment .reading-group>details:last-child{border-top:1px solid var(--line)}.overview-treatment .notice{margin-top:10px;font-size:11px!important}.overview-treatment .detail-body p{font-size:12px}.overview-treatment .detail-body{font-size:12px}
-.crash-facts>div:last-child{border-right:0;border-bottom:0}
+
 @media(max-width:600px){.topbar{height:52px}.layout{padding-top:8px}.report-header{align-items:flex-start;gap:8px}.report-header h1{font-size:21px;overflow-wrap:anywhere}.report-header .subline{font-size:11px;gap:2px 8px}.overview-tools .status{font-size:11px}.overview-tools .text-button{font-size:11px}.hero{padding:18px 16px}.hero h2{font-size:20px}.hero-copy{font-size:13px}.facts{grid-template-columns:1fr;gap:10px}.fact-label{margin-bottom:3px}.fact,.fact:first-child{padding:0 0 10px}.overview-treatment .plan{grid-template-columns:1fr;gap:10px}.treatment-heading{align-items:flex-start}.treatment-heading>span{max-width:115px;text-align:right}.overview-treatment .plan-card{padding:12px}}
 @media print{.overview-tools{display:none}.report-header h1{font-size:22px}.hero{padding:18px}.overview-treatment .plan{grid-template-columns:1.15fr 1fr}}
 
@@ -163,8 +163,25 @@ summary,a{transition:color var(--trans)}
 .src-excerpt{counter-reset:srcn;display:block}
 .src-line{display:block;white-space:pre-wrap;padding:0 8px;border-left:2px solid transparent}
 .src-line::before{counter-increment:srcn;content:counter(srcn);display:inline-block;width:2.4em;margin-right:10px;text-align:right;color:var(--subtle);font-size:10px}
-.src-hl{background:#fff3b0;border-left-color:#e8a200}
+/* 原始日志类别变量（注释行左色条与图例色块共用）；无注释行素色，仅注释行琥珀底+类别左色条 */
+.cat-crash{--cat-color:#b04a4a;--cat-bg:#fbf1f1}
+.cat-esr{--cat-color:#926321;--cat-bg:#fbf6ec}
+.cat-loc{--cat-color:#c25e00;--cat-bg:#fbf3e9}
+.cat-regs{--cat-color:#5b7fa6;--cat-bg:#f1f5f9}
+.cat-trace{--cat-color:#2e7d5b;--cat-bg:#f0f7f3}
+.cat-code{--cat-color:#8a5fb0;--cat-bg:#f5f1f9}
+.cat-kdump{--cat-color:#6f7d8a;--cat-bg:#f2f4f6}
+.cat-info{--cat-color:#b7c4bc;--cat-bg:transparent}
+.cat-hl{--cat-color:#e8a200;--cat-bg:#fff3b0}
+/* 只有带 ◀ 注释的行着色：琥珀底 + 类别色左色条（无类别注释行左色条回退琥珀）；无注释行素色 */
+.src-line.src-hl{background:#fff3b0;border-left-color:var(--cat-color,#e8a200)}
 .src-hl::before{color:#a06a00;font-weight:700}
+/* 原始崩溃日志图例（紧凑、可点击跳转；色块与行同色同形：浅底 + 左色条） */
+.log-legend{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;margin:4px 0 8px;font-size:11px;color:var(--muted)}
+.log-legend-item{display:inline-flex;align-items:center;gap:4px;white-space:nowrap;border:0;background:none;padding:1px 4px;border-radius:4px;font:inherit;color:inherit;cursor:pointer}
+.log-legend-item:hover{background:var(--accent-soft);color:var(--accent-strong)}
+.log-sw{width:10px;height:10px;border-radius:3px;border-left:3px solid var(--cat-color);background:var(--cat-bg);display:inline-block;flex-shrink:0}
+.src-line.log-flash{box-shadow:inset 0 0 0 2px var(--accent)}
 /* 推理步内联证据块（details 可折叠）：kind 徽标自由字符串，常见类配色、未知类中性灰兜底 */
 .snippet{border:1px solid var(--line);border-radius:7px;background:#fff;margin:9px 0;overflow:hidden}
 .snippet>summary{display:flex;align-items:center;gap:8px;padding:7px 11px;font-size:12px;font-weight:550;cursor:pointer;list-style:none}
@@ -678,6 +695,46 @@ function rawLogMarks(text, annData){
   return {hl: [...hlSet], ann};
 }
 
+/* 原始日志逐行语义分类与可点击图例；颜色由 CSS 类别变量统一定义（行与图例同源），解释由 ◀ 注释承担 */
+const RAWLOG_CAT_META = [['cat-crash','崩溃类型'],['cat-esr','异常综合征/故障地址'],['cat-loc','崩溃指令定位'],['cat-regs','寄存器'],['cat-trace','调用栈'],['cat-code','崩溃机器码'],['cat-kdump','kdump 捕获'],['cat-info','现场环境']];
+/* 只为带 ◀ 注释的行记录类别（无注释行不加类别 → 素色） */
+function rawLogCats(text, hlLines){
+  const map = {};
+  const hl = new Set(toArr(hlLines).map(n=>parseInt(n,10)));
+  String(text||'').split('\n').forEach((l, i)=>{
+    if(!hl.has(i+1)) return;
+    const cat = (classifyLogLine(l)||{}).cat;
+    if(cat) map[i+1] = cat;
+  });
+  return map;
+}
+/* 图例只列「有注释行的类别」，顺序 = 各类别在日志中首次出现的顺序；项项可点击跳转 */
+function rawLogLegendHtml(cats){
+  const labelOf = {};
+  RAWLOG_CAT_META.forEach(([c,l])=>{ labelOf[c] = l; });
+  const seen = [];
+  Object.keys(cats||{}).map(n=>parseInt(n,10)).filter(n=>Number.isInteger(n)).sort((a,b)=>a-b).forEach(n=>{
+    const cat = cats[n];
+    if(cat && !seen.includes(cat)) seen.push(cat);
+  });
+  const items = seen.map(cat=>`<button type="button" class="log-legend-item" data-jump=".src-line.${cat}" title="跳转到第一处「${labelOf[cat]||cat}」注释行"><i class="log-sw ${cat}"></i>${labelOf[cat]||cat}</button>`);
+  return items.length ? `<div class="log-legend">${items.join('')}</div>` : '';
+}
+/* 图例点击跳转：同一日志块内定位第一条匹配行并短暂闪烁 */
+function initLogLegend(){
+  document.querySelectorAll('.log-legend-item[data-jump]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const wrap = btn.closest('.log-legend');
+      const scope = wrap ? wrap.parentElement : document;
+      const target = scope ? scope.querySelector(btn.getAttribute('data-jump')) : null;
+      if(!target) return;
+      target.scrollIntoView({behavior:'smooth', block:'center'});
+      target.classList.add('log-flash');
+      setTimeout(()=>target.classList.remove('log-flash'), 1200);
+    });
+  });
+}
+
 /* 补丁来源四档分级（从 verdict/mode/type 自动推断） */
 function classifyFixProvenance(ss, diag){
   if(!ss || ss.type === 'none' || !toArr(ss.patch_list).length) return 'none';
@@ -716,23 +773,8 @@ function stackImpression(){
 function renderFeatures(){
   let h = `<section class="section" id="features" aria-labelledby="features-title">`;
   h += `<div class="section-heading"><span class="section-no">02</span><h2 id="features-title">宕机现场有哪些特征</h2></div>`;
-  h += `<p class="section-intro">先看现场发生了什么：异常、崩溃位置与原始崩溃日志的关键行（已高亮并附 ◀ 注释）；宕机栈见技术附件。</p>`;
 
-  const rows = [];
-  const bt = cf.bug_type || '';
-  rows.push(['异常类型', bt ? bt.replace(/_/g,' ') : '内核崩溃']);
-  const addr = faultAddr();
-  if(addr) rows.push(['故障地址', `<code>${esc(addr)}</code>`]);
-  const ripFn = cf.rip_function ? (cf.rip_function + (cf.rip_offset ? ('+'+String(cf.rip_offset).replace(/^\+/,'')) : '')) : (cf.rip || '');
-  if(has(ripFn)) rows.push(['崩溃位置', `<code>${esc(ripFn)}</code>`]);
-  const ctx = sceneContext();
-  if(has(ctx)) rows.push(['现场上下文', esc(ctx)]);
-
-  h += `<dl class="crash-facts">`;
-  rows.forEach(r=>{ h += `<div><dt>${esc(r[0])}</dt><dd>${r[1]}</dd></div>`; });
-  h += `</dl>`;
-
-  /* 现场初印象（宕机栈已移入技术附件） */
+  /* 现场初印象（宕机栈已移入技术附件；异常类型/故障地址等并入附件「主机与运行环境」） */
   const impression = stackImpression();
   if(has(impression)) h += `<p class="stack-impression"><b>现场初印象：</b>${esc(impression)}</p>`;
 
@@ -754,12 +796,13 @@ function renderFeatures(){
       const logTitle = rawFull ? '原始崩溃日志' : '原始崩溃日志（关键行摘录）';
       const logNote = rawSrc ? (rawFull ? `逐字摘自 ${rawSrc}（完整连续崩溃段，行号为文件真实行号）。` : `按行号排序摘自 ${rawSrc}（关键行摘录，非连续全文）。`) : '';
       const marks = rawLogMarks(logText, cf.raw_crash_log_ann);
-      const logBody = `${has(logNote)?`<p class="caption">${esc(logNote)}</p>`:''}<code class="src-excerpt${rawStart?' absno':''} rawlog-body">${snippetLinesHTML(logText, marks.hl, parseAnn(marks.ann), rawStart)}</code>`;
+      const cats = rawLogCats(logText, marks.hl);
+      const logBody = `${has(logNote)?`<p class="caption">${esc(logNote)}</p>`:''}${rawLogLegendHtml(cats)}<code class="src-excerpt${rawStart?' absno':''} rawlog-body">${snippetLinesHTML(logText, marks.hl, parseAnn(marks.ann), rawStart, cats)}</code>`;
       h += `<details class="reading-group"><summary><span class="appendix-summary-label">${esc(logTitle)} <span class="appendix-count">${logText.split('\n').length} 行</span></span><span class="chevron" aria-hidden="true"></span></summary><div class="detail-body">${logBody}</div></details>`;
     } else if(has(cf.call_trace_text)){
       const traceText = String(cf.call_trace_text);
       const marks = rawLogMarks(traceText, null);
-      const logBody = `<code class="src-excerpt rawlog-body">${snippetLinesHTML(traceText, marks.hl, parseAnn(marks.ann), 0)}</code>`;
+      const logBody = `<code class="src-excerpt rawlog-body">${snippetLinesHTML(traceText, marks.hl, parseAnn(marks.ann), 0, rawLogCats(traceText, marks.hl))}</code>`;
       h += `<details class="reading-group"><summary><span class="appendix-summary-label">崩溃调用栈 <span class="appendix-count">${traceText.split('\n').length} 行</span></span><span class="chevron" aria-hidden="true"></span></summary><div class="detail-body">${logBody}</div></details>`;
     }
   }
@@ -818,13 +861,14 @@ function parseAnn(annObj){
   });
   return annMap;
 }
-function snippetLinesHTML(content, hlLines, annMap, firstLine){
+function snippetLinesHTML(content, hlLines, annMap, firstLine, catMap){
   const hasAbs = Number.isInteger(firstLine) && firstLine > 0;
   return String(content).split('\n').map((ln,i)=>{
     const on = hlLines.includes(i+1);
     const no = hasAbs ? (firstLine + i) : (i + 1);
+    const cat = (catMap && catMap[i+1]) ? (' ' + catMap[i+1]) : '';
     const ann = annMap[i+1] ? ` <span class="src-ann">◀ ${esc(annMap[i+1])}</span>` : '';
-    return `<span class="src-line${on?' src-hl':''}"><span class="src-no">${no}</span>${esc(ln)||'&nbsp;'}${ann}</span>`;
+    return `<span class="src-line${cat}${on?' src-hl':''}"><span class="src-no">${no}</span>${esc(ln)||'&nbsp;'}${ann}</span>`;
   }).join('');
 }
 function snippetRefLink(sn){
@@ -1285,6 +1329,8 @@ function renderAppendix(){
     if(host.cpu_num!=null) pushEnv('CPU 数量', host.cpu_num);
     pushEnv('内存', host.memory_size);
     pushEnv('机型', host.machine_model);
+    pushEnv('异常类型', cf.bug_type ? String(cf.bug_type).replace(/_/g,' ') : '');
+    pushEnv('故障地址', faultAddr());
     pushEnv('现场进程', sceneContext());
     pushEnv('崩溃位置', cf.rip_function ? (cf.rip_function+(cf.rip_offset?('+'+cf.rip_offset):'')) : '');
     pushEnv('报告 ID', R.report_id);
@@ -1467,6 +1513,7 @@ function render(){
     renderOverview() + renderFeatures() + renderMechanism() + renderEvidence() + renderAppendix();
   initNav();
   initButtons();
+  initLogLegend();
 }
 
 /* 单按钮控制所有折叠面板，并用文案明确反馈当前状态。 */
