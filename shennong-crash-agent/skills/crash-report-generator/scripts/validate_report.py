@@ -124,7 +124,8 @@ def validate_quality(report: Any) -> list[str]:
     - deep.evidence[].title 必填且设问式（缺失会被 HTML 渲染成「依据 N」）
     - deep.evidence[].level 证据级别（HTML 渲染为结论行徽标）
     - deep.evidence 建议以「推导与结论」步收尾（可复核推导 → conclusion）
-    - 现场日志/反汇编/调用栈的 snippet 有 hl 应配 ann（行尾 ◀ 注释）
+    - 现场日志/反汇编/调用栈/源码/内存取证的 snippet 有 hl 应配 ann（行尾 ◀ 注释）
+    - raw_crash_log 存在时应有 raw_crash_log_ann（关键行注释）
     - evidence/detail 禁止堆检索工具原始输出（应翻译成人话）
     - type=patch 必须有非空 patch_list[].diff
     - local_source.refs 的 id 唯一、excerpt 非空
@@ -179,8 +180,8 @@ def validate_quality(report: Any) -> list[str]:
             "step=\"推导与结论\" 收尾（detail=可复核推导，conclusion=该条结论）"
         )
 
-    # 1d) 现场日志/反汇编/调用栈的关键行注释（有 hl 应有 ann）
-    ANN_REQUIRED_KINDS = ("现场日志", "反汇编", "调用栈")
+    # 1d) 五类原文块的关键行注释（有 hl 应有 ann）
+    ANN_REQUIRED_KINDS = ("现场日志", "反汇编", "调用栈", "源码", "内存取证")
     for i, ev in enumerate(evs):
         for j, r in enumerate(ev.get("reasoning") or []):
             if not isinstance(r, dict):
@@ -259,6 +260,28 @@ def validate_quality(report: Any) -> list[str]:
             "三路检索均无 confirmed 补丁，但 fixed_brief 宣称「已有补丁」；"
             "应直写「上游无对应补丁，需自研适配或提供更多信息诊断」"
         )
+
+    # 6) 原始崩溃日志关键行注释（有 raw_crash_log 应有 raw_crash_log_ann；注释要讲清函数职责/中断现场/数值来由）
+    cfi = report.get("crash_feature_info") or {}
+    if isinstance(cfi, dict) and str(cfi.get("raw_crash_log") or "").strip():
+        rla = cfi.get("raw_crash_log_ann")
+        if not isinstance(rla, dict) or not rla:
+            warns.append(
+                "crash_feature_info.raw_crash_log 存在但 raw_crash_log_ann 缺失/为空 —— "
+                "应给关键行（BUG/故障地址/RIP/Call Trace/Code/panic 等 3~8 行）补 ◀ 行尾注释"
+            )
+        else:
+            generic_labels = {
+                "崩溃类型行", "崩溃类型/故障地址", "崩溃指令位置", "故障指令机器码",
+                "调用栈帧", "调用栈：自崩溃点向上回溯", "停机/捕获信息",
+            }
+            for key, val in rla.items():
+                text = str(val or "").strip()
+                if len(text) < 8 or text in generic_labels:
+                    warns.append(
+                        f"crash_feature_info.raw_crash_log_ann[{key}] 注释过于简略或标签化（「{text[:24]}」）——"
+                        f"应写清函数职责 / 中断现场 / 数值来由，让读者一眼看懂"
+                    )
 
     return warns
 
