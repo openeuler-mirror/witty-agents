@@ -311,7 +311,7 @@ async function exerciseExplicitSetup(installation, environment) {
   const setupPython = join(sandbox, "setup-python")
   writeFileSync(setupLog, "")
   writeFileSync(setupPython, `#!/bin/sh
-printf '%s\n' "$*" >> "$SETUP_PYTHON_LOG"
+printf 'PYTHONPATH=%s :: %s\n' "$PYTHONPATH" "$*" >> "$SETUP_PYTHON_LOG"
 if [ "$1" = "-c" ]; then
   case "$2" in
     *platform.python_version*) printf '%s\n' '${pythonInfoJson}' ;;
@@ -344,6 +344,9 @@ exit 0
     SETUP_PYTHON_LOG: setupLog,
     SHENNONG_FAKE_NODE: process.execPath,
     SHENNONG_MCP_START_TIMEOUT_MS: "5000",
+    // Ascend/CANN 等环境的 set_env.sh 会把工具链 site-packages 注入 PYTHONPATH；
+    // venv 里的 pip 若继承该变量，就会看到外部包并报出缺失依赖的冲突。
+    PYTHONPATH: join(sandbox, "decoy-toolkit-site-packages"),
   }
 
   // online 包 setup 需要从网络下载 OCR 模型；用本地 HTTP server 提供仓库内的
@@ -463,6 +466,14 @@ server.listen(0, "127.0.0.1", () => {
   assert(!firstCalls.includes(join(installation.packageRoot, ".venvs")), "setup: venv was created inside the package directory")
   assert(firstCalls.includes("-m pip install"), "setup: pip install was not invoked")
   assert(firstCalls.includes("-m pip check"), "setup: pip check was not invoked")
+  for (const line of firstCalls.split("\n")) {
+    if (/-m (venv|pip)\b/.test(line)) {
+      assert(
+        line.startsWith("PYTHONPATH= :: "),
+        `setup: venv/pip inherited PYTHONPATH and can see external packages: ${line}`,
+      )
+    }
+  }
   if (offline) {
     const installCalls = firstCalls.split("\n").filter((line) => line.includes("-m pip install"))
     assert(installCalls.length >= 3, "offline setup: expected pip install calls were not recorded")

@@ -445,6 +445,10 @@ function verifyWheelManifest(metadata) {
 function childEnvironment(offline) {
   return {
     ...process.env,
+    // 置空 PYTHONPATH：Ascend/CANN 等环境的 set_env.sh 会把工具链 site-packages 写进
+    // PYTHONPATH，venv 里的 python 会照常继承，pip 因此把外部包（asc-opc-tool、te 等）
+    // 当成已安装并报出它们的缺失依赖，pip check 随即非零退出导致 setup 中断。
+    PYTHONPATH: "",
     PYTHONNOUSERSITE: "1",
     PIP_DISABLE_PIP_VERSION_CHECK: "1",
     PIP_REQUIRE_VIRTUALENV: "1",
