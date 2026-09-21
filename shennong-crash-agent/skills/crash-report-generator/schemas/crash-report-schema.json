@@ -807,6 +807,10 @@
                   "title": {
                     "type": "string"
                   },
+                  "short": {
+                    "type": "string",
+                    "description": "第 4 章顶部索引导航的短标签（4~10 字，如「定位空指针」）；缺失时模板回退为标题截断。"
+                  },
                   "summary": {
                     "type": "string"
                   },
