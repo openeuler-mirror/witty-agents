@@ -1,7 +1,7 @@
 {
   "report_id": "hldy_mstore_noahhlsecllm01_chunkserver03.mt-20260907-20260907",
   "parse_log_range": [
-    "/opt/zhaoxuedong/crash/hldy-mstore-noahhlsecllm01-chunkserver03/vmcore-dmesg.txt"
+    "vmcore-dmesg.txt"
   ],
   "host_base_info": {
     "host_name": "hldy-mstore-noahhlsecllm01-chunkserver03.mt",
@@ -133,26 +133,26 @@
     "raw_crash_log": "[3898677.870981] BUG: kernel NULL pointer dereference, address: 0000000000000018\n[3898677.871492] #PF: supervisor read access in kernel mode\n[3898677.871965] #PF: error_code(0x0000) - not-present page\n[3898677.872386] PGD 6180feaa067 P4D 618096ab067 PUD 61807626067 PMD 0 \n[3898677.872828] Oops: 0000 [#1] SMP NOPTI\n[3898677.873252] CPU: 6 PID: 281800 Comm: chunkserver Kdump: loaded Tainted: G S         OE     5.10.0-218.0.0.mt20241202.564.mt2203sp4.x86_64 #1\n[3898677.874075] Hardware name: H3C R4900 G7/RS37M2C17S, BIOS 7.00.24 01/30/2026\n[3898677.874495] RIP: 0010:dma_direct_unmap_sg+0x44/0x1a0\n[3898677.874923] Code: 89 4c 24 04 4c 89 44 24 08 85 d2 0f 8e c0 00 00 00 48 89 fb 49 89 f6 89 d5 45 31 ed 4c 8b 0d 13 b9 8b 01 48 8b bb d8 02 00 00 <45> 8b 7e 18 49 8b 76 10 4c 8b 1d e5 c0 71 02 49 f7 d1 48 85 ff 0f\n[3898677.875769] RSP: 0018:ff2de6de80f54eb0 EFLAGS: 00010012\n[3898677.876177] RAX: 0000000000000000 RBX: ff182c20a13a30b8 RCX: 0000000000000001\n[3898677.876572] RDX: 0000000000000000 RSI: 0000000000000000 RDI: 0000000000000000\n[3898677.876963] RBP: 0000000000000020 R08: 0000000000000000 R09: 0000000000000000\n[3898677.877371] R10: 0000000000000000 R11: 0000000073800000 R12: 0000000000000000\n[3898677.877751] R13: 000000000000000d R14: 0000000000000000 R15: 0000000000000000\n[3898677.878145] FS:  00007f3736dfc640(0000) GS:ff182c4ec0300000(0000) knlGS:0000000000000000\n[3898677.878512] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033\n[3898677.878899] CR2: 0000000000000018 CR3: 000006180741e005 CR4: 0000000000771ee0\n[3898677.879257] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000\n[3898677.879631] DR3: 0000000000000000 DR6: 00000000fffe07f0 DR7: 0000000000000400\n[3898677.879987] PKRU: 55555554\n[3898677.880329] Call Trace:\n[3898677.880685]  <IRQ>\n[3898677.881023]  ? __die_body.cold+0x8/0xd\n[3898677.881344]  ? no_context+0x170/0x250\n[3898677.881683]  ? __bad_area_nosemaphore+0x52/0x1a0\n[3898677.882016]  ? exc_page_fault+0x2dc/0x550\n[3898677.882321]  ? asm_exc_page_fault+0x1e/0x30\n[3898677.882622]  ? dma_direct_unmap_sg+0x44/0x1a0\n[3898677.882920]  nvme_unmap_data.part.0+0x3e/0xc0 [nvme]\n[3898677.883204]  nvme_pci_complete_rq+0x88/0xd0 [nvme]\n[3898677.883479]  nvme_irq+0x152/0x220 [nvme]\n[3898677.883749]  __handle_irq_event_percpu+0x3d/0x160\n[3898677.884024]  handle_irq_event+0x5a/0xc0\n[3898677.884277]  handle_edge_irq+0x90/0x240\n[3898677.884547]  asm_call_irq_on_stack+0xf/0x20\n[3898677.884792]  </IRQ>\n[3898677.885041]  common_interrupt+0xb0/0x130\n[3898677.885271]  asm_common_interrupt+0x1e/0x40\n[3898677.885532] RIP: 0010:blk_bvec_map_sg+0x8a/0x110\n[3898677.885752] Code: 05 cb 2e f0 00 44 01 fa 48 c1 f8 06 89 d6 48 c1 e0 0c 48 01 f0 48 89 fe 48 f7 d0 49 23 85 80 04 00 00 48 83 c0 01 74 11 89 c6 <48> 85 ff 74 0a 48 39 f8 48 0f 46 f8 48 89 fe 39 f5 89 d0 49 8b 3c\n[3898677.886193] RSP: 0018:ff2de6dea8a179e0 EFLAGS: 00000216\n[3898677.886406] RAX: 000000002fb2c000 RBX: 0000000000000000 RCX: ffcc355b1b413500\n[3898677.886624] RDX: 0000000000000000 RSI: 000000002fb2c000 RDI: 00000000ffffffff\n[3898677.886828] RBP: 0000000000002000 R08: 0000000000019000 R09: 0000000000002000\n[3898677.887029] R10: 0000000000020000 R11: 0000000000000000 R12: ff2de6dea8a17af8\n[3898677.887251] R13: ff182c20a4a524e0 R14: ff2de6dea8a17a68 R15: 0000000000000000\n[3898677.887459]  __blk_bios_map_sg+0x274/0x3b0\n[3898677.887667]  ? __rq_qos_issue+0x21/0x40\n[3898677.887883]  __blk_rq_map_sg+0xb5/0x160\n[3898677.888094]  nvme_map_data+0xa4/0x360 [nvme]\n[3898677.888280]  nvme_queue_rq+0x8b/0x140 [nvme]\n[3898677.888471]  __blk_mq_issue_directly+0x70/0x120\n[3898677.888652]  blk_mq_try_issue_list_directly+0xc9/0x220\n[3898677.888829]  ? blk_mq_submit_bio+0x257/0x540\n[3898677.888998]  blk_mq_sched_insert_requests+0x9a/0xe0\n[3898677.889169]  blk_mq_flush_plug_list+0x100/0x1a0\n[3898677.889335]  blk_finish_plug+0x3a/0x60\n[3898677.889515]  ext4_writepages+0x6ae/0x880 [ext4]\n[3898677.889713]  ? do_iter_readv_writev+0x1aa/0x1d0\n[3898677.889886]  do_writepages+0x31/0xc0\n[3898677.890057]  ? do_iter_read+0xc3/0x150\n[3898677.890228]  ? wbc_attach_and_unlock_inode+0xbd/0x160\n[3898677.890400]  __filemap_fdatawrite_range+0xcd/0x110\n[3898677.890562]  file_write_and_wait_range+0x40/0x90\n[3898677.890735]  ext4_sync_file+0xe2/0x300 [ext4]\n[3898677.890899]  __x64_sys_fdatasync+0x44/0x90\n[3898677.891058]  do_syscall_64+0x3d/0x80\n[3898677.891243]  entry_SYSCALL_64_after_hwframe+0x62/0xc7\n[3898677.891405] RIP: 0033:0x7f379aac27cb\n[3898677.891566] Code: 4b 00 00 00 0f 05 48 3d 00 f0 ff ff 77 41 c3 48 83 ec 18 89 7c 24 0c e8 33 42 f8 ff 8b 7c 24 0c 41 89 c0 b8 4b 00 00 00 0f 05 <48> 3d 00 f0 ff ff 77 35 44 89 c7 89 44 24 0c e8 91 42 f8 ff 8b 44\n[3898677.891922] RSP: 002b:00007f3715903390 EFLAGS: 00000293 ORIG_RAX: 000000000000004b\n[3898677.892103] RAX: ffffffffffffffda RBX: 00007f3787866010 RCX: 00007f379aac27cb\n[3898677.892313] RDX: 0000000000000002 RSI: 0000000000000002 RDI: 00000000000074d5\n[3898677.892502] RBP: 00007f37159033f0 R08: 0000000000000000 R09: 00007f3787829878\n[3898677.892698] R10: 00007ffeeb5cb080 R11: 0000000000000293 R12: 00000000003b7d52\n[3898677.892886] R13: 0000000013161500 R14: 00007f37071ebaa8 R15: 00007f37159033b0\n[3898677.893077] Modules linked in: tcp_diag inet_diag bridge stp bonding rdma_ucm(OE) rdma_cm(OE) iw_cm(OE) ib_ipoib(OE) ib_cm(OE) ib_umad(OE) i10nm_edac nfit libnvdimm x86_pkg_temp_thermal coretemp kvm_intel kvm irqbypass crct10dif_pclmul crc32_pclmul ast isst_tpmi ghash_clmulni_intel intel_rapl_tpmi intel_uncore_frequency_tpmi drm_vram_helper intel_rapl_common isst_tpmi_core intel_uncore_frequency_common drm_ttm_helper intel_cstate intel_pmt_telemetry iTCO_wdt i2c_algo_bit iTCO_vendor_support intel_vsec_tpmi intel_pmt_class ttm ipmi_si drm_kms_helper ipmi_devintf syscopyarea intel_uncore sysfillrect ipmi_msghandler pcspkr sysimgblt fb_sys_fops sg cec mlx5_ib(OE) isst_if_mmio isst_if_common idxd i2c_i801 intel_vsec idxd_bus i2c_smbus xsc_ib(OE) ib_uverbs(OE) ib_core(OE) xsc_eth(OE) xsc_pci(OE) drm fuse ext4 mbcache jbd2 sd_mod mlx5_core(OE) mlxfw(OE) tls ahci nvme libahci psample crc32c_intel mlxdevm(OE) nvme_core libata t10_pi mlx_compat(OE) pci_hyperv_intf wmi llc hisdk3(OE)\n[3898677.893122]  hinic3(OE) hiudk3(OE)\n[3898677.895110] CR2: 0000000000000018\n[3898677.895337] ---[ end trace 49e9d21ede0ff5a9 ]---\n[3898677.959476] RIP: 0010:dma_direct_unmap_sg+0x44/0x1a0\n[3898677.959722] Code: 89 4c 24 04 4c 89 44 24 08 85 d2 0f 8e c0 00 00 00 48 89 fb 49 89 f6 89 d5 45 31 ed 4c 8b 0d 13 b9 8b 01 48 8b bb d8 02 00 00 <45> 8b 7e 18 49 8b 76 10 4c 8b 1d e5 c0 71 02 49 f7 d1 48 85 ff 0f\n[3898677.960184] RSP: 0018:ff2de6de80f54eb0 EFLAGS: 00010012\n[3898677.960420] RAX: 0000000000000000 RBX: ff182c20a13a30b8 RCX: 0000000000000001\n[3898677.960658] RDX: 0000000000000000 RSI: 0000000000000000 RDI: 0000000000000000\n[3898677.960898] RBP: 0000000000000020 R08: 0000000000000000 R09: 0000000000000000\n[3898677.961135] R10: 0000000000000000 R11: 0000000073800000 R12: 0000000000000000\n[3898677.961372] R13: 000000000000000d R14: 0000000000000000 R15: 0000000000000000\n[3898677.961607] FS:  00007f3736dfc640(0000) GS:ff182c4ec0300000(0000) knlGS:0000000000000000\n[3898677.961846] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033\n[3898677.962086] CR2: 0000000000000018 CR3: 000006180741e005 CR4: 0000000000771ee0\n[3898677.962328] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000\n[3898677.962571] DR3: 0000000000000000 DR6: 00000000fffe07f0 DR7: 0000000000000400\n[3898677.962811] PKRU: 55555554\n[3898677.963051] Kernel panic - not syncing: Fatal exception in interrupt\n[3898678.007991] Kernel Offset: 0x22a00000 from 0xffffffff81000000 (relocation range: 0xffffffff80000000-0xffffffffbfffffff)\n[3898678.075179] kexec: Bye!",
     "log_features": {
       "related_ref": {
-        "file": "/opt/zhaoxuedong/crash/hldy-mstore-noahhlsecllm01-chunkserver03/vmcore-dmesg.txt",
+        "file": "vmcore-dmesg.txt",
         "lines": "3226-3323"
       },
       "related_errors": [
         {
-          "file": "/opt/zhaoxuedong/crash/hldy-mstore-noahhlsecllm01-chunkserver03/vmcore-dmesg.txt",
+          "file": "vmcore-dmesg.txt",
           "lines": "3226",
           "line": "[3898677.870981] BUG: kernel NULL pointer dereference, address: 0000000000000018",
           "relevance": "强相关",
           "desc": "崩溃首行：内核在解引用空指针时访问了地址 0x18（空指针 + 偏移 0x18），这是崩溃的直接类型声明。"
         },
         {
-          "file": "/opt/zhaoxuedong/crash/hldy-mstore-noahhlsecllm01-chunkserver03/vmcore-dmesg.txt",
+          "file": "vmcore-dmesg.txt",
           "lines": "3233",
           "line": "[3898677.874495] RIP: 0010:dma_direct_unmap_sg+0x44/0x1a0",
           "relevance": "强相关",
           "desc": "崩溃指令位置：RIP 落在 DMA 直接映射释放函数 dma_direct_unmap_sg 内偏移 0x44 处，是崩溃发生的函数与偏移。"
         },
         {
-          "file": "/opt/zhaoxuedong/crash/hldy-mstore-noahhlsecllm01-chunkserver03/vmcore-dmesg.txt",
+          "file": "vmcore-dmesg.txt",
           "lines": "3321",
           "line": "[3898677.963051] Kernel panic - not syncing: Fatal exception in interrupt",
           "relevance": "强相关",
@@ -165,7 +165,7 @@
           "count": "约 200+ 行",
           "window": "启动阶段 [12.87s] 附近",
           "ref": {
-            "file": "/opt/zhaoxuedong/crash/hldy-mstore-noahhlsecllm01-chunkserver03/vmcore-dmesg.txt",
+            "file": "vmcore-dmesg.txt",
             "lines": "2760-2920"
           },
           "note": "i10nm_edac 内存控制器探测的 DEBUG 日志，与本次 NVMe DMA 崩溃无因果关系，属启动阶段背景噪声。",
@@ -181,7 +181,7 @@
           "count": "多组（每组 5 条）",
           "window": "整个运行周期（约 36 万秒起反复出现）",
           "ref": {
-            "file": "/opt/zhaoxuedong/crash/hldy-mstore-noahhlsecllm01-chunkserver03/vmcore-dmesg.txt",
+            "file": "vmcore-dmesg.txt",
             "lines": "3210-3225"
           },
           "note": "系统服务单元文件兼容性提示，纯用户态 systemd 提示，与崩溃无关。",
@@ -198,7 +198,7 @@
           "count": 0,
           "span": "崩溃前日志",
           "ref": {
-            "file": "/opt/zhaoxuedong/crash/hldy-mstore-noahhlsecllm01-chunkserver03/vmcore-dmesg.txt",
+            "file": "vmcore-dmesg.txt",
             "lines": "全文"
           },
           "note": "全文检索 nvme/scsi/block/I/O error/timeout/reset 等关键词，除崩溃现场外无任何存储链路告警，说明是瞬时软件缺陷而非渐进式硬件退化。",
@@ -594,14 +594,18 @@
               "snippets": [
                 {
                   "kind": "反汇编",
-                  "title": "反汇编：mov 0x18(%r14),%r15d（读 r14+0x18 处",
+                  "title": "dis：dma_direct_unmap_sg 崩溃点前后",
                   "loc": "反汇编/机器码摘录",
-                  "content": "汇编 ｜ mov 0x18(%r14),%r15d（读 r14+0x18 处 4 字节；机器码 <45> 8b 7e 18）\n寄存器｜ R14=0（当前分段指针，已为空） · R13=13（已遍历段数） · RBP=0x20（记录段数 32）\n结构体｜ scatterlist.dma_length（传输长度）字段偏移 0x18（crash struct -o 实证）\n日志 ｜ CR2=0x18，与 0+0x18 完全吻合",
+                  "content": "crash> dis -l dma_direct_unmap_sg\n0xffffffffa3b89cd3 <dma_direct_unmap_sg+35>:\ttest   %edx,%edx\n0xffffffffa3b89cd5 <dma_direct_unmap_sg+37>:\tjle    0xffffffffa3b89d9b <dma_direct_unmap_sg+235>\n0xffffffffa3b89cde <dma_direct_unmap_sg+46>:\tmov    %rsi,%r14\n0xffffffffa3b89ce1 <dma_direct_unmap_sg+49>:\tmov    %edx,%ebp\n0xffffffffa3b89cf4 <dma_direct_unmap_sg+68>:\tmov    0x18(%r14),%r15d\n0xffffffffa3b89cf8 <dma_direct_unmap_sg+72>:\tmov    0x10(%r14),%rsi\n",
                   "hl": [
-                    1
+                    4,
+                    6,
+                    7
                   ],
                   "ann": {
-                    "1": "R14=0 代入 0+0x18=0x18，与 CR2 完全吻合"
+                    "4": "散列表指针存进 r14——循环靠它逐项读",
+                    "6": "崩溃指令：读 r14+0x18；r14=0 → 访问 0x18",
+                    "7": "下一行才读 dma_address——执行不到，证明崩在上一行"
                   }
                 }
               ]
@@ -612,15 +616,17 @@
               "snippets": [
                 {
                   "kind": "调用栈",
-                  "title": "调用栈：RIP: dma_direct_unmap_sg+0x44/0x",
+                  "title": "Call Trace：完成中断路径（dmesg 原文）",
                   "loc": "vmcore-dmesg.txt（Call Trace 段）",
-                  "content": "调用栈 ｜ RIP: dma_direct_unmap_sg+0x44/0x1a0（对应 kernel/dma/direct.c:423）\n调用链 ｜ nvme_irq → nvme_pci_complete_rq → nvme_unmap_data → dma_direct_unmap_sg",
+                  "content": "[3898677.880329] Call Trace:\n[3898677.880685]  <IRQ>\n[3898677.882622]  ? dma_direct_unmap_sg+0x44/0x1a0\n[3898677.882920]  nvme_unmap_data.part.0+0x3e/0xc0 [nvme]\n[3898677.883204]  nvme_pci_complete_rq+0x88/0xd0 [nvme]\n[3898677.883479]  nvme_irq+0x152/0x220 [nvme]\n[3898677.884792]  </IRQ>\n",
                   "hl": [
-                    1
+                    3,
+                    6
                   ],
                   "ref": "src-dma-direct-unmap",
                   "ann": {
-                    "1": "崩溃帧：解除 DMA 映射函数 +0x44（direct.c:423）"
+                    "3": "崩溃帧：解除 DMA 映射 +0x44",
+                    "6": "硬中断入口——崩溃发生在中断里"
                   }
                 }
               ]
@@ -644,15 +650,19 @@
               "snippets": [
                 {
                   "kind": "反汇编",
-                  "title": "反汇编：dma_direct_unmap_sg +211~+229 循环",
+                  "title": "dis：顺链与循环回边（sg_next → 写回 r14）",
                   "loc": "反汇编/机器码摘录",
-                  "content": "反汇编 ｜ dma_direct_unmap_sg +211~+229 循环体：call sg_next → mov %rax,%r14\n源码  ｜ for_each_sg(sgl, sg, nents, i)（include/linux/scatterlist.h:151）",
+                  "content": "crash> dis -l dma_direct_unmap_sg\n0xffffffffa3b89d83 <dma_direct_unmap_sg+211>:\tmov    %r14,%rdi\n0xffffffffa3b89d86 <dma_direct_unmap_sg+214>:\tadd    $0x1,%r13d\n0xffffffffa3b89d8a <dma_direct_unmap_sg+218>:\tcall   0xffffffffa3f73e90 <sg_next>\n0xffffffffa3b89d8f <dma_direct_unmap_sg+223>:\tmov    %rax,%r14\n0xffffffffa3b89d92 <dma_direct_unmap_sg+226>:\tcmp    %r13d,%ebp\n0xffffffffa3b89d95 <dma_direct_unmap_sg+229>:\tjne    0xffffffffa3b89ce6 <dma_direct_unmap_sg+54>\n",
                   "hl": [
-                    1
+                    4,
+                    5,
+                    7
                   ],
                   "ref": "src-sgl-macro",
                   "ann": {
-                    "1": "循环体逐段推进：call sg_next → 返回值写回 R14"
+                    "4": "sg_next 返回下一项；遇结束标记返回 NULL",
+                    "5": "返回值写回 r14——下一轮直接使用",
+                    "7": "只比计数 13<32、不判指针——循环继续"
                   }
                 }
               ]
@@ -663,15 +673,15 @@
               "snippets": [
                 {
                   "kind": "内存取证",
-                  "title": "内存取证：sg[12].page_link=0x2（SG_END 结束标",
-                  "loc": "crash 内存取证（实测值整理）",
-                  "content": "内存取证 ｜ sg[12].page_link=0x2（SG_END 结束标记）\n源码  ｜ sg_next()：sg_is_last(sg) 时返回 NULL（lib/scatterlist.c:23-34）\n宏定义 ｜ #define SG_END 0x02UL（include/linux/scatterlist.h:65）",
+                  "title": "crash rd：散列表第 13 项（SG_END）",
+                  "loc": "散列表第 13 项（实测值）",
+                  "content": "crash> rd -32 0xff182c3bff3d9180 8\nff182c3bff3d9180:  00000002 00000000 00000000 00000000 00000000 00000000 00000000 00000000\n",
                   "hl": [
-                    1
+                    2
                   ],
                   "ref": "src-sgl-macro",
                   "ann": {
-                    "1": "第 13 项带结束标记——表实际到此为止"
+                    "2": "第 13 项（sg[12]）只剩结束标记——表到此为止"
                   }
                 }
               ]
@@ -707,7 +717,6 @@
           "short": "链长失配",
           "summary": "记录说要走 32 段，链实际第 13 段就结束了——「链的长度」和「记录的段数」对不上，这是触发崩溃的根本矛盾；至于链为什么会变成这样，单次转储还定不了案。",
           "level": "实测+推断",
-          "caveat": "链为何被损坏（提前释放 / 越界写 / 并发复用）无法从单次转储唯一确定；需复现或结合厂商源码定位。",
           "reasoning": [
             {
               "step": "记录的段数是多少",
@@ -715,14 +724,14 @@
               "snippets": [
                 {
                   "kind": "内存取证",
-                  "title": "内存取证：crash 读 iod+0x74：nvme_iod.nents",
-                  "loc": "crash 内存取证（实测值整理）",
-                  "content": "内存取证 ｜ crash 读 iod+0x74：nvme_iod.nents=0x20（即 32）",
+                  "title": "crash p：请求附属结构记录的段数（32）",
+                  "loc": "请求 A 附属结构 nents（实测值）",
+                  "content": "crash> p/x ((struct nvme_iod *)0xff182c209518a440)->nents\n$1 = 0x20\n",
                   "hl": [
-                    1
+                    2
                   ],
                   "ann": {
-                    "1": "记录段数 32 与后文链实际 13 段冲突"
+                    "2": "记录段数 32 与链实际 13 段冲突"
                   }
                 }
               ]
@@ -733,14 +742,18 @@
               "snippets": [
                 {
                   "kind": "内存取证",
-                  "title": "内存取证：crash rd iod->sg：sg[0..8] 有页但 d",
-                  "loc": "crash 内存取证（实测值整理）",
-                  "content": "内存取证 ｜ crash rd iod->sg：sg[0..8] 有页但 dma_address=0 · sg[9..11] 全零 · sg[12]=SG_END 结束标记 · sg[13] 起又有有效 dma_address",
+                  "title": "crash rd：散列表缓冲区 第 0~16 项",
+                  "loc": "散列表缓冲区 第 0~16 项（实测值）",
+                  "content": "crash> rd -32 0xff182c3bff3d9000 136\nff182c3bff3d9000:  4177b800 ffcc355b 00000000 00001000 00000000 00000000 00000000 00000000\nff182c3bff3d9020:  4177ba00 ffcc355b 00000000 00002000 00000000 00000000 00000000 00000000\nff182c3bff3d9040:  4177bc00 ffcc355b 00000000 00002000 00000000 00000000 00000000 00000000\nff182c3bff3d9060:  4177be00 ffcc355b 00000000 00002000 00000000 00000000 00000000 00000000\nff182c3bff3d9080:  4177c000 ffcc355b 00000000 00002000 00000000 00000000 00000000 00000000\nff182c3bff3d90a0:  4177c200 ffcc355b 00000000 00002000 00000000 00000000 00000000 00000000\nff182c3bff3d90c0:  4177c400 ffcc355b 00000000 00002000 00000000 00000000 00000000 00000000\nff182c3bff3d90e0:  4177c600 ffcc355b 00000000 00002000 00000000 00000000 00000000 00000000\nff182c3bff3d9100:  4177c800 ffcc355b 00000000 00002000 00000000 00000000 00000000 00000000\nff182c3bff3d9120:  00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000\nff182c3bff3d9140:  00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000\nff182c3bff3d9160:  00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000\nff182c3bff3d9180:  00000002 00000000 00000000 00000000 00000000 00000000 00000000 00000000\nff182c3bff3d91a0:  4177ba00 ffcc355b 00000000 00002000 1e006000 00000005 00002000 00000000\nff182c3bff3d91c0:  4177bc00 ffcc355b 00000000 00001000 a53b6000 00000019 00001000 00000000\nff182c3bff3d91e0:  4177be00 ffcc355b 00000000 00002000 1e006000 00000005 00002000 00000000\nff182c3bff3d9200:  4177c002 ffcc355b 00000000 00001000 00000000 00000000 00000000 00000000",
                   "hl": [
-                    1
+                    2,
+                    14,
+                    15
                   ],
                   "ann": {
-                    "1": "表只填了一部分（地址未填/中间全零/第13项结束）"
+                    "2": "前 9 项有页指针但 DMA 地址为 0——拼表到一半",
+                    "14": "第 13 项只剩结束标记——表实际到此为止",
+                    "15": "之后又出现有效 DMA 地址——旧请求映射残留"
                   }
                 }
               ]
@@ -789,7 +802,8 @@
                     "2": "只按 i<nr 循环，取到空指针也会继续"
                   },
                   "content": "#define for_each_sg(sglist, sg, nr, __i)\t\\\n\tfor (__i = 0, sg = (sglist); __i < (nr); __i++, sg = sg_next(sg))",
-                  "ref": "src-sgl-macro"
+                  "ref": "src-sgl-macro",
+                  "title": "源码：for_each_sg 只按计数循环（scatterlist.h:151-152）"
                 }
               ]
             },
@@ -799,15 +813,15 @@
               "snippets": [
                 {
                   "kind": "反汇编",
-                  "title": "反汇编：崩溃指令 mov 0x18(%r14),%r15d 之前无 te",
+                  "title": "dis：崩溃指令前无判空",
                   "loc": "反汇编/机器码摘录",
-                  "content": "反汇编 ｜ 崩溃指令 mov 0x18(%r14),%r15d 之前无 test %r14,%r14 判空\n源码  ｜ dma_direct_unmap_sg（kernel/dma/direct.c:384-392）循环体直接读 sg->dma_address / sg_dma_len(sg)",
+                  "content": "crash> dis -l dma_direct_unmap_sg\n0xffffffffa3b89cde <dma_direct_unmap_sg+46>:\tmov    %rsi,%r14\n0xffffffffa3b89ce1 <dma_direct_unmap_sg+49>:\tmov    %edx,%ebp\n0xffffffffa3b89cf4 <dma_direct_unmap_sg+68>:\tmov    0x18(%r14),%r15d\n",
                   "hl": [
-                    1
+                    4
                   ],
                   "ref": "src-dma-direct-unmap",
                   "ann": {
-                    "1": "崩溃指令前没有 test %r14,%r14 判空"
+                    "4": "读字段前没有任何判空/测试指令——空指针直接用"
                   }
                 }
               ]

@@ -125,6 +125,7 @@ def validate_quality(report: Any) -> list[str]:
     - deep.evidence[].level 证据级别（HTML 渲染为结论行徽标）
     - deep.evidence 建议以「推导与结论」步收尾（可复核推导 → conclusion）
     - 现场日志/反汇编/调用栈/源码/内存取证的 snippet 有 hl 应配 ann（行尾 ◀ 注释）
+    - 第 4 章 snippet 应有 title；crash 块 loc 不重复命令；禁止自造「项N」编号摘要
     - raw_crash_log 存在时应有 raw_crash_log_ann（关键行注释）
     - evidence/detail 禁止堆检索工具原始输出（应翻译成人话）
     - type=patch 必须有非空 patch_list[].diff
@@ -197,6 +198,32 @@ def validate_quality(report: Any) -> list[str]:
                     warns.append(
                         f"deep.evidence[{i}].reasoning[{j}].snippets[{k}]（{sn.get('kind')}）有 hl 但无 ann ——"
                         f"崩溃行/故障指令行/关键调用帧应补行尾 ◀ 注释"
+                    )
+
+    # 1e) 第 4 章 snippet 规范：title 必填；crash 块 loc 不重复命令；禁止自造编号摘要
+    for i, ev in enumerate(evs):
+        for j, r in enumerate(ev.get("reasoning") or []):
+            if not isinstance(r, dict):
+                continue
+            for k, sn in enumerate(r.get("snippets") or []):
+                if not isinstance(sn, dict):
+                    continue
+                label = f"deep.evidence[{i}].reasoning[{j}].snippets[{k}]"
+                title = str(sn.get("title") or "").strip()
+                if not title:
+                    warns.append(f"{label} 缺少 title —— 应写一句话说明这块看的是什么")
+                loc = str(sn.get("loc") or "")
+                content = str(sn.get("content") or "").lstrip()
+                m_cmd = re.match(r"crash>\s*(\S+)", content)
+                if m_cmd and loc.strip().lower().startswith("crash"):
+                    sub = m_cmd.group(1).rstrip(">").lower()
+                    if sub and sub in [t.lower().rstrip(":：") for t in loc.split()[:4]]:
+                        warns.append(
+                            f"{label} loc 与内容首行命令重复 —— 命令放 content 首行，loc 只写范围/对象"
+                        )
+                if re.search(r"项\s*\d+", content) and not content.startswith("crash>"):
+                    warns.append(
+                        f"{label} 疑似自造的「项N」编号摘要 —— crash 类块应贴 crash 原始输出（首行 `crash>` 命令）"
                     )
 
     # 2) evidence/detail 禁止工具原始输出

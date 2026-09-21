@@ -1,12 +1,11 @@
 {
   "report_id": "observer02y-20260708-20260708",
   "parse_log_range": [
-    "/tmp/opencode/0708/vmcore-dmesg.txt（崩溃段 L2642-2737 + 全文异常扫描）",
-    "/tmp/shennong_work/sosreport-observer02y-20260708151412/var/log/messages（Jul 7 03:14 ~ Jul 8 06:03，含崩溃前窗口与重启段）",
-    "/tmp/shennong_work/sosreport-observer02y-20260708151412/var/log/messages-20260707",
-    "/tmp/shennong_0708/vmcore（crash 8.0.4 + vmlinux 4.19.90-89.17.v2401.ky10 取证采样：sys/bt/dis/struct/runq/task/全量128CPU cfs_rq 扫描）",
-    "/home/zjq/test/linux_exmaple/raw_data（本地知识库：linux/openeuler 的 bug+commit，命中 bugzilla_211435/220447/219920 与 6 个上游 commit）",
-    "/tmp/shennong_0803/vmcore-dmesg.txt、/tmp/shennong_0824/vmcore-dmesg.txt（同局点历史宕机横向关联）"
+    "本地现场（0708）/vmcore-dmesg.txt（崩溃段 L2642-2737 + 全文异常扫描）",
+    "本地取证工作目录/sosreport-observer02y-20260708151412/var/log/messages（Jul 7 03:14 ~ Jul 8 06:03，含崩溃前窗口与重启段）",
+    "本地取证工作目录/sosreport-observer02y-20260708151412/var/log/messages-20260707",
+    "本地现场（0708）/vmcore（crash 8.0.4 + vmlinux 4.19.90-89.17.v2401.ky10 取证采样：sys/bt/dis/struct/runq/task/全量128CPU cfs_rq 扫描）",
+    "本地知识库（本地知识库：linux/openeuler 的 bug+commit，命中 bugzilla_211435/220447/219920 与 6 个上游 commit）"
   ],
   "host_base_info": {
     "host_name": "observer02y.czob4b",
@@ -77,7 +76,7 @@
     "signature": "null_pointer::kernel::set_next_entity::0x20",
     "bug_type": "null_pointer",
     "bug_key": "Unable to handle kernel NULL pointer dereference at virtual address",
-    "bug_summary": "Kylin V10（4.19.90-89.17.v2401.ky10.aarch64，鲲鹏920 128核/1024GB，PowerLeader PR210K）CFS 调度器空指针宕机：业务线程 T1004_LockWaitM(PID 4090813) 在 CPU92 上经 nanosleep 睡眠让出 CPU，__schedule→pick_next_task_fair 挑选下一任务时，因根 cfs_rq(ffffa07fefde16c0) 的 nr_running/h_nr_running 双双下溢为 0xffffffff 绕过 !nr_running 空队列检查，pick_next_entity 在空红黑树(rb_leftmost=0x0)上返回 NULL(se=0)，随后第二个 pick 循环（厂商 QoS 路径，反汇编 +716~+748，无 cbz 判空）直接调用 set_next_entity，其首条访存指令 ldr w0,[x20,#64]（读 se->on_rq，偏移 0x40）访问虚地址 0x40 触发 DABT(ESR=0x96000005)，内核 Oops 并经 kdump 收集 3.8GB vmcore 后重启。同局点 0803(hard lockup@load_balance)/0824(check_preempt_wakeup NULL@0x168) 属同一调度器问题簇。",
+    "bug_summary": "Kylin V10（4.19.90-89.17.v2401.ky10.aarch64，鲲鹏920 128核/1024GB，PowerLeader PR210K）CFS 调度器空指针宕机：业务线程 T1004_LockWaitM(PID 4090813) 在 CPU92 上经 nanosleep 睡眠让出 CPU，__schedule→pick_next_task_fair 挑选下一任务时，因根 cfs_rq(ffffa07fefde16c0) 的 nr_running/h_nr_running 双双下溢为 0xffffffff 绕过 !nr_running 空队列检查，pick_next_entity 在空红黑树(rb_leftmost=0x0)上返回 NULL(se=0)，随后第二个 pick 循环（厂商 QoS 路径，反汇编 +716~+748，无 cbz 判空）直接调用 set_next_entity，其首条访存指令 ldr w0,[x20,#64]（读 se->on_rq，偏移 0x40）访问虚地址 0x40 触发 DABT(ESR=0x96000005)，内核 Oops 并经 kdump 收集 3.8GB vmcore 后重启。同族缺陷另有 hard lockup@load_balance 与 check_preempt_wakeup NULL@0x168 两种形态（sched-nullptr-diagnosis 模式#2/#3），本案为模式#1。",
     "rip": "set_next_entity+0x20",
     "rip_function": "set_next_entity",
     "rip_offset": "0x20",
@@ -237,10 +236,18 @@
         }
       ]
     },
-    "stack_impression": "业务线程调用 nanosleep 睡眠让出 CPU，内核在 CFS 调度器挑选下一任务、设置调度实体时发生空指针解引用：运行队列计数下溢使调度器误以为队列非空，在空红黑树上取到空实体后未检查即读其字段。调用栈定位了崩溃路径；计数为何下溢（深层竞态源头）尚需厂商定位。"
+    "stack_impression": "业务线程调用 nanosleep 睡眠让出 CPU，内核在 CFS 调度器挑选下一任务、设置调度实体时发生空指针解引用：运行队列计数下溢使调度器误以为队列非空，在空红黑树上取到空实体后未检查即读其字段。调用栈定位了崩溃路径；计数为何下溢（深层竞态源头）尚需厂商定位。",
+    "raw_crash_log_ann": {
+      "1": "崩溃类型：空指针解引用，访问 0x40（on_rq 字段偏移）",
+      "19": "崩溃点：set_next_entity——更新任务状态时读字段",
+      "20": "调用者：pick_next_task_fair（挑任务主流程）",
+      "26": "现场：传入的任务指针为空（x20=0）",
+      "37": "调用栈：业务线程让出 CPU → 调度器挑任务 → 崩溃点",
+      "46": "故障指令：从空指针 +0x40 处读取（on_rq）"
+    }
   },
   "root_cause_analysis": {
-    "conclusion": "这台服务器在连续运行约 290 天后，内核调度器中某个处理器运行队列的任务计数在一次极罕见的并发窗口中被多减了一次而变为负值，调度器因此误以为空队列上仍有任务可选，绕过正常的空闲保护去空队列取任务并得到空结果，又因该内核版本缺少对空结果的最后一道防御检查而访问无效地址，整机随即宕机并自动转储重启。该问题与硬件故障无关，属内核调度器已知缺陷家族（上游社区已在后续大版本确认并加入防御检查，社区补丁已确认）；同一局点此外两次宕机与本问题属同一调度器问题簇，需统一修复与监控。",
+    "conclusion": "这台服务器在连续运行约 290 天后，内核调度器中某个处理器运行队列的任务计数在一次极罕见的并发窗口中被多减了一次而变为负值，调度器因此误以为空队列上仍有任务可选，绕过正常的空闲保护去空队列取任务并得到空结果，又因该内核版本缺少对空结果的最后一道防御检查而访问无效地址，整机随即宕机并自动转储重启。该问题与硬件故障无关，属内核调度器已知缺陷家族（上游社区已在后续大版本确认并加入防御检查，社区补丁已确认）；同族缺陷另有唤醒路径 NULL 与负载均衡 hard lockup 两种形态（方法论模式#2/#3），需按问题簇统一修复与监控。",
     "standard_solution": {
       "type": "patch",
       "claim_tag": "自研最小防御补丁（移植上游 v6.12 f12e148892ed 判空模式，必须覆盖厂商 QoS 双循环的全部 pick→set 路径）",
@@ -286,9 +293,9 @@
         "5. 灰度上线：先在同局点 1~2 台金丝雀机器部署，观察 ≥72h 无调度异常后批量推广至同内核版本机群；保留 kdump 配置不变以便对比。",
         "6. 同步推动厂商（麒麟）排查 nr_running 下溢的深层竞态源头（enqueue/dequeue/load_balance/QoS 计数路径），并评估升级至含调度器调试手段的内核版本。"
       ],
-      "detail": "三层根因对应三层处置：① 直接原因（set_next_entity NULL 解引用）与防御缺失（QoS 第二循环无判空）——本补丁立即消除宕机后果，队列异常为空时安全转入 idle（此时 rq->nr_running=0，本就该运行 idle 任务，语义正确）；② 触发条件（cfs_rq->nr_running/h_nr_running 下溢为 0xffffffff）——判空补丁是防御性治标，下溢本身是深层 enqueue/dequeue 计数竞态（double-decrement 类；prev 线程 nr_migrations=4100 万次的高频迁移显著扩大竞态窗口；上游 b55945c5 证明 pick vs ttwu 竞态家族真实存在），需厂商带调试手段（如 count 校验 WARN、sched debug 内核）联合定位；③ 问题簇（同局点 0708/0803/0824 三种调度器形态宕机）——统一建簇监控、统一补丁覆盖 pick 路径，0824 的 check_preempt_wakeup 路径判空（se/rq->curr 相关）建议在同一补丁系列中一并评估。补丁量级 +3~10 行/循环，不改数据结构、不改锁语义、无 KABI 影响，可热补丁化。",
+      "detail": "三层根因对应三层处置：① 直接原因（set_next_entity NULL 解引用）与防御缺失（QoS 第二循环无判空）——本补丁立即消除宕机后果，队列异常为空时安全转入 idle（此时 rq->nr_running=0，本就该运行 idle 任务，语义正确）；② 触发条件（cfs_rq->nr_running/h_nr_running 下溢为 0xffffffff）——判空补丁是防御性治标，下溢本身是深层 enqueue/dequeue 计数竞态（double-decrement 类；prev 线程 nr_migrations=4100 万次的高频迁移显著扩大竞态窗口；上游 b55945c5 证明 pick vs ttwu 竞态家族真实存在），需厂商带调试手段（如 count 校验 WARN、sched debug 内核）联合定位；③ 问题簇（sched-nullptr-diagnosis 三种调度器缺陷形态：pick 返回 NULL / 唤醒路径 NULL / rq->lock hard lockup）——统一建簇监控、统一补丁覆盖 pick 路径；唤醒路径 check_preempt_wakeup（se/rq->curr 相关）的判空建议在同一补丁系列中一并评估。补丁量级 +3~10 行/循环，不改数据结构、不改锁语义、无 KABI 影响，可热补丁化。",
       "rollback": "热补丁形态：livepatch disable / rmmod 对应热补丁模块即可即时恢复原逻辑（无数据结构变更，回退零风险）；整内核形态：grub 菜单选择上一版本内核（4.19.90-89.17.v2401.ky10.aarch64）启动，确认稳定后 grubby --set-default /boot/vmlinuz-4.19.90-89.17.v2401.ky10.aarch64 恢复默认项；若补丁引发调度行为回归（理论上仅新增 NULL→idle 分支，概率极低），直接回退并保留 vmcore/dmesg 供再分析。",
-      "verification": "1) 编译零新告警（W=1 对比基线）；2) 反汇编核验：crash> dis -l pick_next_task_fair 确认每个 bl pick_next_entity 与 bl set_next_entity 之间均存在 cbz 判空分支（含 QoS 第二循环）；3) 功能回归：schbench/hackbench/cgroup 层级压测 + CPU 热插拔/迁移压力，确认调度行为无回归（队列空时正常走 idle）；4) 长时观察：该竞态窗口极窄（290 天 uptime 一遇），需数天~数周长时压力/生产观察，监控 dmesg/kdump 无新 set_next_entity/check_preempt_wakeup 类 Oops；5) 建簇监控：对同局点 0708(NULL@0x40)/0803(hard lockup@load_balance)/0824(NULL@0x168) 三种形态建立告警聚类，复发即升级厂商联合排查。",
+      "verification": "1) 编译零新告警（W=1 对比基线）；2) 反汇编核验：crash> dis -l pick_next_task_fair 确认每个 bl pick_next_entity 与 bl set_next_entity 之间均存在 cbz 判空分支（含 QoS 第二循环）；3) 功能回归：schbench/hackbench/cgroup 层级压测 + CPU 热插拔/迁移压力，确认调度行为无回归（队列空时正常走 idle）；4) 长时观察：该竞态窗口极窄（290 天 uptime 一遇），需数天~数周长时压力/生产观察，监控 dmesg/kdump 无新 set_next_entity/check_preempt_wakeup 类 Oops；5) 建簇监控：对三种缺陷形态（pick NULL@0x40 / load_balance hard lockup / check_preempt_wakeup NULL@0x168）建立告警聚类，复发即升级厂商联合排查。",
       "fixed_brief": "上游 v6.12 补丁 f12e148892ed 首次加入判空防御，修复空队列 pick 返回 NULL 未判空导致的宕机（为 pick_next_task 增加对空结果的防御检查）；当前 4.19 无对应修复，需自研等价防御补丁。",
       "brief": "已给出自研最小防御补丁：在 pick_next_task_fair 的每个 pick→set 循环（含厂商 QoS 双循环）中，为 pick_next_entity 返回值增加 if(!se) 判空，命中时转入 idle，避免空指针进入 set_next_entity。"
     },
@@ -778,19 +785,8 @@
         "title": "按 sched-nullptr-diagnosis 方法论建立三个候选假设",
         "short": "H1：cfs_rq 树空但 nr_running 非 0（下溢）→ pick 返回 NULL 未判空；H2：rq->curr 错位/parent 链断裂（故障模式#2）；H3：硬件位翻转/缓存一致性。",
         "text": "崩溃点 set_next_entity 入口 + 空指针 se 的组合指向方法论故障模式#1（pick_next_entity 返回 NULL 未判空）。H1 的验证锚点：cfs_rq->nr_running/h_nr_running 是否下溢、红黑树是否空、全量 CPU 是否仅单点异常；H2 的验证锚点：rq->curr 是否指向跨 CPU 睡眠任务（本案崩溃在 pick 路径而非 wakeup 路径，先验概率低）；H3 的验证锚点：MCE/EDAC/AER 记录、计数器值的'精确性'（位翻转通常产生单 bit 差异而非精确 -1）。",
-        "evidence": "sched-nullptr-diagnosis SKILL 故障模式速查表；同局点 0824 案例即模式#2、0803 案例即模式#3，本案需独立验证归属",
-        "refs": [
-          {
-            "kind": "internal",
-            "label": "同局点 0824（模式#2）",
-            "anchor": "case-internal-0"
-          },
-          {
-            "kind": "internal",
-            "label": "同局点 0803（模式#3）",
-            "anchor": "case-internal-1"
-          }
-        ]
+        "evidence": "sched-nullptr-diagnosis SKILL 故障模式速查表（模式#1/#2/#3）；本案需独立验证归属",
+        "refs": []
       },
       {
         "stage": "path_analysis",
@@ -1058,22 +1054,11 @@
         "stage": "internal",
         "stage_name": "内部案例检索",
         "color": "#0ea5e9",
-        "title": "内部知识库：crash-feature-matcher RAG 未配置；以同局点真实历史宕机构建问题簇",
-        "short": "query_knowledge/query_cases/query_community_cases 均返回 'RAG knowledge base not configured'；改用同局点 0803/0824 真实 vmcore-dmesg 作为内部同簇案例（same_area，L2/L3）。",
-        "text": "同局点 observer02y（21.206.114.11，PowerLeader PR210K/鲲鹏920，Kylin 4.19.90-89.x，OceanBase 类租户业务）三次宕机恰好覆盖方法论三种故障模式：0708=set_next_entity NULL（模式#1，本案）、0824=check_preempt_wakeup NULL@0x168（模式#2，同内核版本）、0803=load_balance 路径 hard lockup（模式#3，89.11 旧版）。按方法论第 5 节判据：同局点多台机器、多种调度器症状 → 系统性调度器/底层问题，而非孤立事件。",
-        "evidence": "/tmp/shennong_0803/vmcore-dmesg.txt（hard LOCKUP cpu96, pc=queued_spin_lock_slowpath, lr=load_balance+0x454）；/tmp/shennong_0824/vmcore-dmesg.txt（NULL@0x168, check_preempt_wakeup+0xc8, ttwu 路径）",
-        "refs": [
-          {
-            "kind": "internal",
-            "label": "0824 check_preempt_wakeup",
-            "anchor": "case-internal-0"
-          },
-          {
-            "kind": "internal",
-            "label": "0803 hard lockup",
-            "anchor": "case-internal-1"
-          }
-        ]
+        "title": "内部知识库：RAG core 未配置，未命中内部同簇案例（不以既往现场冒充）",
+        "short": "query_knowledge/query_cases/query_community_cases 均返回 'RAG knowledge base not configured'；内部案例置空，不用同局点历史宕机或既往报告代替。",
+        "text": "本地检索通道现状：crash-feature-matcher 的 query_knowledge/query_cases 与社区通道均因 RAG core 未配置不可用。按报告规范，内部案例只在 RAG core 真实命中时填写，本次置空（总览显示「未匹配到内部案例」）；同族缺陷形态的归类依据方法论 sched-nullptr-diagnosis 速查表，不作为内部案例引用。",
+        "evidence": "query_knowledge → 'RAG knowledge base not configured'；query_cases → 'RAG knowledge base not configured'；sched-nullptr-diagnosis SKILL 故障模式速查表（模式#1 pick 返回 NULL 未判空 / 模式#2 唤醒路径 NULL / 模式#3 rq->lock hard lockup）",
+        "refs": []
       },
       {
         "stage": "community",
@@ -1081,7 +1066,7 @@
         "color": "#10b981",
         "title": "社区 Bugzilla（本地 raw_data 知识库全文命中 3 条同家族案例）；light_rag 文档库无相关内容",
         "short": "bugzilla 211435（4.9 ARM set_next_entity NULL，LR=pick_next_task_fair，压测数天~数周一遇）为最接近案例；220447/219920（6.12-rt pick_eevdf/pick_task_fair NULL@0x51）为同家族最新形态。",
-        "text": "检索通道说明：crash-feature-matcher query_community_cases 返回 RAG 未配置；SHENNONG_COMMUNITY_DIR(/data/shennong/community) 不存在；light_rag 仅有 openeuler_whitepaper/nl2sql_knowledge 两库，检索无相关内容（白皮书营销内容）。有效通道为用户指定的本地知识库 /home/zjq/test/linux_exmaple/raw_data：linux/bug(2528 条 bugzilla 全文) grep 'set_next_entity|pick_next_task|pick_next_entity' 命中 32 处，人工甄别后 3 条真实相关（其余为无关栈噪声）。211435 与本崩溃同函数对、同'极窄竞态+压力场景'特征，且报告人指向 v5.4 pick 重构系列 lore 线程；三条 bugzilla 状态均为 NEW（社区无定论修复），佐证 4.19 世代该缺陷无现成社区补丁。",
+        "text": "检索通道说明：crash-feature-matcher query_community_cases 返回 RAG 未配置；SHENNONG_COMMUNITY_DIR(本地社区资料目录) 不存在；light_rag 仅有 openeuler_whitepaper/nl2sql_knowledge 两库，检索无相关内容（白皮书营销内容）。有效通道为用户指定的本地知识库 本地知识库：linux/bug(2528 条 bugzilla 全文) grep 'set_next_entity|pick_next_task|pick_next_entity' 命中 32 处，人工甄别后 3 条真实相关（其余为无关栈噪声）。211435 与本崩溃同函数对、同'极窄竞态+压力场景'特征，且报告人指向 v5.4 pick 重构系列 lore 线程；三条 bugzilla 状态均为 NEW（社区无定论修复），佐证 4.19 世代该缺陷无现成社区补丁。",
         "evidence": "raw_data/linux/bug/bugzilla_211435.json（全文含 Oops 原文与 lore 链接）；bugzilla_220447.json（pick_eevdf NULL 分析）；bugzilla_219920.json（pick_task_fair+0x51）",
         "refs": [
           {
@@ -1172,13 +1157,15 @@
     ],
     "deep": {
       "lead": "CPU92 根 cfs_rq 的 nr_running/h_nr_running 下溢为 0xffffffff 绕过空队列检查，空红黑树上 pick_next_entity 返回 NULL，Kylin QoS 第二个 pick 循环无判空防御，set_next_entity 首条访存指令读 se->on_rq@0x40 触发 NULL 解引用宕机。",
-      "mechanism_summary": "服务器连续运行 290 天后，内核调度器某 CPU 运行队列的'队列上任务数'计数在一次极罕见的并发窗口中被多减了一次，变成'负一'。调度器据此误以为队列上还有任务可跑，绕过了'队列空则切到空闲任务'的正常保护，转而去空队列上取任务，取到'空结果'后又因为没有最后一道防线（对空结果不做检查就直接使用）而访问了无效内存地址，整个系统随即宕机重启。与硬件故障无关；同局点此前另两次宕机属同一调度器缺陷家族。",
-      "judgment": "根因判定为：cfs_rq->nr_running 计数下溢（深层竞态，窗口未完全定位）+ Kylin QoS 第二 pick 循环判空防御缺失（可立即修复层）。处置方向：自研最小判空防御补丁（移植上游 v6.12 f12e148892ed 模式，覆盖全部 pick→set 循环）消除宕机后果，并推动厂商定位下溢竞态源头；同局点按问题簇统一监控。",
+      "mechanism_summary": "服务器连续运行 290 天后，内核调度器某 CPU 运行队列的'队列上任务数'计数在一次极罕见的并发窗口中被多减了一次，变成'负一'。调度器据此误以为队列上还有任务可跑，绕过了'队列空则切到空闲任务'的正常保护，转而去空队列上取任务，取到'空结果'后又因为没有最后一道防线（对空结果不做检查就直接使用）而访问了无效内存地址，整个系统随即宕机重启。与硬件故障无关；同族缺陷另有唤醒路径 NULL 与负载均衡 hard lockup 两种形态（方法论模式#2/#3）。",
+      "judgment": "根因判定为：cfs_rq->nr_running 计数下溢（深层竞态，窗口未完全定位）+ Kylin QoS 第二 pick 循环判空防御缺失（可立即修复层）。处置方向：自研最小判空防御补丁（移植上游 v6.12 f12e148892ed 模式，覆盖全部 pick→set 循环）消除宕机后果，并推动厂商定位下溢竞态源头；按方法论问题簇统一监控。",
       "mechanism": "技术触发链：T1004_LockWaitM(PID 4090813) 在 CPU92 nanosleep → __schedule deactivate prev（se 出树、计数递减）→ pick_next_task_fair：fair.c L6607 'if (!cfs_rq->nr_running) goto idle' 因 nr_running=0xffffffff(-1)≠0 被绕过 → 第二 pick 循环（Kylin 二进制 +716~+748）pick_next_entity(cfs_rq, NULL) → __pick_first_entity(L566) rb_leftmost=0x0 → return NULL → +728 mov x20,x0（x20=se=NULL）→ +740 bl set_next_entity（+728~+740 间无 cbz x20；对照第一循环 +268 有判空）→ set_next_entity+16 mov x20,x1 / +32(0x20) ldr w0,[x20,#64]（se->on_rq，偏移 0x40）→ 访问虚地址 0x40（pgd=pud=0）→ DABT ESR=0x96000005 → do_mem_abort→do_page_fault→die→Oops→crash_kexec→kdump。下溢语义：nr_running 与 h_nr_running 同时为 0xffffffff 指向 enqueue/dequeue 计数竞态（double-decrement 类），prev 线程 nr_migrations=4100 万（高频迁移）扩大窗口；真实 rq->nr_running=0 证明崩溃时刻该 CPU 本应走 idle 路径。",
       "evidence": [
         {
           "title": "宕机栈分析：崩在哪里、为什么崩",
+          "short": "崩在哪",
           "summary": "崩在内核函数 set_next_entity 里：它读了一个空指针的成员，一读就崩。",
+          "level": "现场实测",
           "reasoning": [
             {
               "step": "谁触发的",
@@ -1186,12 +1173,17 @@
               "snippets": [
                 {
                   "kind": "调用栈",
-                  "title": "调用栈：调用栈：sys_nanosleep → do_nanosleep → sch",
                   "loc": "vmcore-dmesg.txt（Call Trace 段）",
-                  "content": "调用栈：sys_nanosleep → do_nanosleep → schedule → __schedule → pick_next_task_fair → set_next_entity",
+                  "content": "[25097461.614926] Call trace:\n[25097461.618054]  set_next_entity+0x20/0x6f8\n[25097461.622563]  pick_next_task_fair+0x2e8/0x548\n[25097461.627509]  __schedule+0x6e4/0x840\n[25097461.631673]  schedule+0x30/0xe0\n[25097461.635493]  do_nanosleep+0x78/0x168",
                   "hl": [
-                    1
-                  ]
+                    2,
+                    6
+                  ],
+                  "ann": {
+                    "2": "崩溃帧：set_next_entity 正在读 se->on_rq",
+                    "6": "触发来源：业务线程 nanosleep 让出 CPU"
+                  },
+                  "title": "Call trace：业务线程让出 CPU → 调度器挑任务"
                 }
               ]
             },
@@ -1202,20 +1194,32 @@
                 {
                   "kind": "现场日志",
                   "title": "崩溃首行 + Code 窗口",
-                  "loc": "vmcore-dmesg.txt:2642",
-                  "content": "Unable to handle kernel NULL pointer dereference at virtual address 0000000000000040\npc : set_next_entity+0x20/0x6f8\nCode: aa0103f4 aa0003f3 aa1e03e0 d503201f (b9404280)",
+                  "loc": "vmcore-dmesg.txt（崩溃段摘录）",
+                  "content": "[25097461.360687] Unable to handle kernel NULL pointer dereference at virtual address 0000000000000040\n[25097461.511111] pc : set_next_entity+0x20/0x6f8\n[25097461.652931] Code: aa0103f4 aa0003f3 aa1e03e0 d503201f (b9404280) ",
                   "hl": [
+                    1,
+                    2,
                     3
-                  ]
+                  ],
+                  "ann": {
+                    "1": "空指针访问；0x40 是 se->on_rq 字段偏移",
+                    "3": "故障机器码即 ldr w0,[x20,#64]（读 on_rq）"
+                  }
                 }
               ]
+            },
+            {
+              "step": "推导与结论",
+              "detail": "把 x20=0 代入崩溃指令 ldr w0,[x20,#64] → 实际访问 0+64=0x40，与日志故障地址一致；Code 行 (b9404280) 与 pc=set_next_entity+0x20 相互印证。",
+              "conclusion": "崩溃点还原：set_next_entity 读取空 se 的 on_rq 字段（0x40）触发空指针解引用。"
             }
           ]
         },
         {
           "title": "空指针从哪来：这个空指针是怎么传进来的",
+          "short": "空值来源",
           "summary": "set_next_entity 收到的参数 se（内核给每个任务建的记录）是空的——它是上层「挑任务」函数 pick_next_entity 返回的空值，原样传下来的。",
-          "connect": "崩点还原了「读空指针」，接下来追溯这个空指针是谁传进来的。",
+          "level": "现场实测",
           "reasoning": [
             {
               "step": "崩溃函数的上层是谁",
@@ -1224,11 +1228,14 @@
                 {
                   "kind": "现场日志",
                   "title": "现场日志：dmesg lr : pick_next_task_fair+0x2e8/0",
-                  "loc": "vmcore-dmesg.txt（崩溃段摘录）",
-                  "content": "dmesg lr : pick_next_task_fair+0x2e8/0x548",
+                  "loc": "vmcore-dmesg.txt（寄存器现场）",
+                  "content": "[25097461.515968] lr : pick_next_task_fair+0x2e8/0x548",
                   "hl": [
                     1
-                  ]
+                  ],
+                  "ann": {
+                    "1": "返回地址在 pick_next_task_fair——调用者是挑任务流程"
+                  }
                 }
               ]
             },
@@ -1238,21 +1245,35 @@
               "snippets": [
                 {
                   "kind": "反汇编",
-                  "title": "反汇编：反汇编 +724 bl pick_next_entity / +728 mo",
+                  "title": "dis：pick_next_task_fair 挑任务调用点",
                   "loc": "反汇编/机器码摘录",
-                  "content": "反汇编 +724 bl pick_next_entity / +728 mov x20,x0 / +740 bl set_next_entity；x20=0",
+                  "content": "crash> dis -l pick_next_task_fair\n0xffff0000100a02d4 <pick_next_task_fair+724>:\tbl\t0xffff0000100a1e40 <pick_next_entity>\n0xffff0000100a02d8 <pick_next_task_fair+728>:\tmov\tx20, x0\n0xffff0000100a02e4 <pick_next_task_fair+740>:\tbl\t0xffff0000100a35c0 <set_next_entity>\n",
                   "hl": [
-                    1
-                  ]
+                    2,
+                    3,
+                    4
+                  ],
+                  "ann": {
+                    "2": "先调用挑任务函数拿返回值",
+                    "3": "返回值原样存入 x20——中间没有判空",
+                    "4": "再用 x20 调用用任务函数；x20=0 即空值"
+                  }
                 }
               ]
+            },
+            {
+              "step": "推导与结论",
+              "detail": "pick_next_entity 返回 x0=0 → mov x20,x0 原样传递 → set_next_entity(cfs_rq, x20)；这段传递链上没有任何判空。",
+              "conclusion": "空 se 来自 pick_next_entity 的返回值，被原样传入 set_next_entity。"
             }
-          ]
+          ],
+          "connect": "崩点还原了「读空指针」，接下来追溯这个空指针是谁传进来的。"
         },
         {
           "title": "结构体取证：为什么 pick_next_entity 返回了空",
+          "short": "计数取证",
           "summary": "运行队列的「待运行任务数」计数被多减了一次变成 -1，调度器误以为还有任务；但队列其实是空的，「挑任务」自然挑了个空。",
-          "connect": "空指针来自 pick_next_entity 的返回值，接下来解释它为什么返回空。",
+          "level": "实测+推断",
           "reasoning": [
             {
               "step": "计数被多减了一次",
@@ -1260,12 +1281,16 @@
               "snippets": [
                 {
                   "kind": "内存取证",
-                  "title": "内存取证：nr_running = h_nr_running = 0xffffffff",
-                  "loc": "crash/vmcore 取证（实测值整理）",
-                  "content": "nr_running = h_nr_running = 0xffffffff（32 位无符号 -1）",
+                  "title": "crash p：运行队列待运行任务数（下溢为 -1）",
+                  "loc": "运行队列 cfs_rq（实测值）",
+                  "content": "crash> p cfs_rq->nr_running cfs_rq->h_nr_running\nnr_running = 0xffffffff\nh_nr_running = 0xffffffff\n",
                   "hl": [
-                    1
-                  ]
+                    2,
+                    3
+                  ],
+                  "ann": {
+                    "2": "计数下溢成 -1——空队列被误判还有任务"
+                  }
                 }
               ]
             },
@@ -1275,12 +1300,15 @@
               "snippets": [
                 {
                   "kind": "内存取证",
-                  "title": "内存取证：rb_leftmost=0、curr/next/last/skip 全 0",
-                  "loc": "crash/vmcore 取证（实测值整理）",
-                  "content": "rb_leftmost=0、curr/next/last/skip 全 0",
+                  "title": "crash p：红黑树最左节点与候选指针（全空）",
+                  "loc": "cfs_rq 红黑树与候选指针（实测值）",
+                  "content": "crash> p cfs_rq->rb_leftmost cfs_rq->curr cfs_rq->next cfs_rq->last cfs_rq->skip\nrb_leftmost = 0x0\ncurr = 0x0\nnext = 0x0\nlast = 0x0\nskip = 0x0\n",
                   "hl": [
-                    1
-                  ]
+                    2
+                  ],
+                  "ann": {
+                    "2": "队列树与候选指针全空——队列其实没任务"
+                  }
                 }
               ]
             },
@@ -1290,60 +1318,52 @@
               "snippets": [
                 {
                   "kind": "内存取证",
-                  "title": "内存取证：128 个 cfs_rq 全量扫描，仅 CPU92 一处 0xfffffff",
-                  "loc": "crash/vmcore 取证（实测值整理）",
-                  "content": "128 个 cfs_rq 全量扫描，仅 CPU92 一处 0xffffffff",
+                  "title": "crash p：CPU92 运行计数（全机扫描仅此一处）",
+                  "loc": "全机 cfs_rq 扫描（实测值）",
+                  "content": "crash> p/x cpu_rq(92)->cfs.h_nr_running\n$1 = 0xffffffff\ncrash> p/x cpu_rq(91)->cfs.h_nr_running\n$2 = 0x1\n",
                   "hl": [
-                    1
-                  ]
+                    2
+                  ],
+                  "ann": {
+                    "2": "全量扫描仅 CPU92 下溢——一次性窄窗口"
+                  }
                 }
               ]
+            },
+            {
+              "step": "推导与结论",
+              "detail": "nr_running=-1 ≠ 0，使「队列为空」判定不成立；而 rb_leftmost=0、候选字段全 0 证明队列实际为空。两者矛盾推出：正是这个下溢让挑任务进入了空队列。",
+              "conclusion": "nr_running 下溢（-1）绕过空队列检查，pick_next_entity 在空队列上返回空。"
             }
-          ]
+          ],
+          "connect": "空指针来自 pick_next_entity 的返回值，接下来解释它为什么返回空。"
         },
         {
           "title": "对照反编译源码：为什么空值没被拦住",
+          "short": "防御缺失",
           "summary": "「挑任务」和「用任务」之间少了道空值检查：厂商改造出的第二处循环漏了这道检查，上游到 v6.12 才补上。",
-          "connect": "pick_next_entity 会合法返回空，接下来看调用方为什么没有检查拦住它。",
+          "level": "实测+推断",
           "reasoning": [
             {
               "step": "本机反编译：两处循环一有一无",
               "detail": "反编译能看到两处「挑任务→用任务」的循环。第一处用任务前有空值检查，第二处（厂商改造拆出的）用任务前没有任何检查，崩溃就发生在第二处。",
-              "snippets": [
-                {
-                  "kind": "源码",
-                  "title": "vanilla 4.19 pick 循环——无判空",
-                  "segs": [
-                    {
-                      "loc": "kernel/sched/fair.c:6691-6695",
-                      "first_line": 6691,
-                      "content": "do {\n\tse = pick_next_entity(cfs_rq, NULL);\n\tset_next_entity(cfs_rq, se);\n\tcfs_rq = group_cfs_rq(se);\n} while (cfs_rq);",
-                      "hl": [
-                        2,
-                        3
-                      ],
-                      "ann": {
-                        "2": "pick_next_entity 可合法返回 NULL",
-                        "3": "未判空直接传入 set_next_entity——本崩溃路径"
-                      },
-                      "ref": "src-sched-fair-pick"
-                    }
-                  ]
-                }
-              ]
+              "evidence": "反汇编 ｜ 两处「挑任务→用任务」循环：第一处用任务前有判空，第二处（厂商拆分）无判空\n日志 ｜ 崩溃 LR 落在第二处调用点（+744 ↔ +740 bl set_next_entity）"
             },
             {
               "step": "崩溃点落在无判空的那一处",
               "detail": "崩溃时返回地址 LR 落在第二处循环的调用点，证明崩溃发生在漏了检查的那一处。",
               "snippets": [
                 {
-                  "kind": "现场日志",
-                  "title": "现场日志：dmesg lr=+744 ↔ 反汇编 +740 bl set_next_e",
+                  "kind": "定性",
+                  "title": "定性：LR 落在缺判空的那处循环",
                   "loc": "vmcore-dmesg.txt（崩溃段摘录）",
-                  "content": "dmesg lr=+744 ↔ 反汇编 +740 bl set_next_entity",
+                  "content": "dmesg ｜ 崩溃返回地址 lr = pick_next_task_fair+744\n反编译 ｜ 第二处循环在 +740 调用 set_next_entity，此前无判空\n",
                   "hl": [
                     1
-                  ]
+                  ],
+                  "ann": {
+                    "1": "返回地址落在缺判空那处循环的调用点"
+                  }
                 }
               ]
             },
@@ -1361,13 +1381,20 @@
                   ]
                 }
               ]
+            },
+            {
+              "step": "推导与结论",
+              "detail": "两处循环只有第二处缺判空，且 LR 恰好落在第二处调用点 → 崩溃路径就是缺检查的那条；上游到 v6.12 才补上同类检查。",
+              "conclusion": "厂商拆出的第二处循环缺判空，空值未被拦截；当前 4.19 基线需自研最小判空补丁。"
             }
-          ]
+          ],
+          "connect": "pick_next_entity 会合法返回空，接下来看调用方为什么没有检查拦住它。"
         },
         {
           "title": "上游有没有现成修复：为什么需要自研判空补丁",
+          "short": "修复检索",
           "summary": "bugzilla #211435 是同类崩溃；4.19 内核无现成修复，需自研判空补丁。",
-          "connect": "源码对照证明缺一道判空，接下来用社区案例确认这是已知缺陷。",
+          "level": "实测",
           "reasoning": [
             {
               "step": "同型案例佐证",
@@ -1398,8 +1425,14 @@
                   ]
                 }
               ]
+            },
+            {
+              "step": "推导与结论",
+              "detail": "同型案例（bugzilla #211435）证明这是已知缺陷家族；上游补丁 f12e148892ed 依赖 v6.12 delayed-dequeue 重构，无法整体回移 4.19。",
+              "conclusion": "上游无现成可合入修复，修复只能基于本地源码自研最小判空补丁。"
             }
-          ]
+          ],
+          "connect": "源码对照证明缺一道判空，接下来用社区案例确认这是已知缺陷。"
         }
       ],
       "confidence": "高——直接原因（NULL 解引用）、触发条件（nr_running 下溢+空树）、防御缺失（第二循环无判空）均为 L1 级 vmcore/反汇编实证；深层下溢竞态的具体路径为 L2/L3 推断（窗口极窄，290 天 uptime 仅一遇，无法从单次现场唯一还原）。",
@@ -1460,154 +1493,7 @@
     }
   },
   "diagnosis_repair_result": {
-    "internal_kernel_result": [
-      {
-        "knowledge_id": "local-cluster-observer02y-20260824",
-        "id": "internal-0",
-        "anchor": "case-internal-0",
-        "title": "同局点同内核 0824 宕机：check_preempt_wakeup NULL 指针解引用 @0x168（ttwu 唤醒路径）",
-        "bug_summary": "observer02y 同型机（PowerLeader PR210K/鲲鹏920，4.19.90-89.17.v2401.ky10.aarch64）于 uptime 46218968s 再次宕机：hrtimer_wakeup→try_to_wake_up→ttwu_do_activate→check_preempt_curr→check_preempt_wakeup+0xc8 读虚地址 0x168（=offsetof(struct sched_entity, cfs_rq)=360，se 或 rq->curr 相关指针为 NULL 未判空），ESR=0x96000005 同型 DABT。",
-        "bug_type": "null_pointer",
-        "bug_key": "Unable to handle kernel NULL pointer dereference at virtual address 0000000000000168",
-        "rip": "check_preempt_wakeup+0xc8/0x248",
-        "rip_function": "check_preempt_wakeup",
-        "rip_offset": "0xc8",
-        "related_modules": [],
-        "call_trace_signature": [
-          "check_preempt_wakeup",
-          "check_preempt_curr",
-          "ttwu_do_wakeup",
-          "ttwu_do_activate",
-          "try_to_wake_up",
-          "wake_up_process",
-          "hrtimer_wakeup",
-          "__hrtimer_run_queues",
-          "hrtimer_interrupt",
-          "arch_timer_handler_phys"
-        ],
-        "call_trace_text": "check_preempt_wakeup+0xc8/0x248\ncheck_preempt_curr+0x4c/0xd0\nttwu_do_wakeup.isra.23+0x38/0x188\nttwu_do_activate+0x74/0x88\ntry_to_wake_up+0x224/0x640\nwake_up_process+0x28/0x38\nhrtimer_wakeup+0x28/0x38",
-        "kernel_versions": [
-          "4.19.90-89.17.v2401.ky10.aarch64"
-        ],
-        "match_score": "中",
-        "match_level": "L2",
-        "verdict": "same_area",
-        "affected_component": "kernel/sched/fair.c（CFS 唤醒抢占检查路径）",
-        "case_count": 1,
-        "fingerprints": [
-          "子系统：kernel/sched CFS（与本案同一子系统、不同函数路径）",
-          "内核版本：4.19.90-89.17.v2401.ky10.aarch64（与本案完全相同）",
-          "CPU/机型：鲲鹏920 / PowerLeader PR210K（与本案相同）",
-          "局点/业务：observer02y（21.206.114.11），OceanBase 类租户业务（与本案相同）",
-          "访问模式：NULL 指针 + 固定小偏移（0x168=se->cfs_rq 偏移，对应 sched-nullptr-diagnosis 故障模式#2：rq->curr 错位/find_matching_se 上溯 parent 至 NULL）"
-        ],
-        "root_cause": "CFS 唤醒抢占检查路径对 se/rq->curr 相关指针缺少判空防御（故障模式#2），与本案（故障模式#1：nr_running 下溢+pick 无判空）同属 Kylin 4.19 CFS 调度器防御缺口簇；深层触发源（计数/指针状态被并发路径破坏）尚未完全定位。",
-        "solution": "并入同一问题簇处置：自研判空防御补丁统一覆盖 pick/wakeup 路径 + 推动厂商（麒麟）定位深层竞态；升级至含调试手段的内核版本辅助抓取。",
-        "hotpatch": "",
-        "corroboration": [
-          {
-            "dimension": "内核版本",
-            "verdict": "match",
-            "current": "4.19.90-89.17.v2401.ky10.aarch64",
-            "reference": "4.19.90-89.17.v2401.ky10.aarch64（完全相同）"
-          },
-          {
-            "dimension": "机型/CPU",
-            "verdict": "match",
-            "current": "PowerLeader PR210K / 鲲鹏920 128核",
-            "reference": "同型机"
-          },
-          {
-            "dimension": "子系统",
-            "verdict": "match",
-            "current": "kernel/sched/fair.c pick 路径（set_next_entity）",
-            "reference": "kernel/sched/fair.c 唤醒抢占路径（check_preempt_wakeup）"
-          },
-          {
-            "dimension": "崩溃形态",
-            "verdict": "match",
-            "current": "NULL+0x40（se->on_rq）",
-            "reference": "NULL+0x168（se->cfs_rq）——同为 sched_entity 成员偏移的 NULL 解引用"
-          },
-          {
-            "dimension": "触发时刻",
-            "verdict": "partial",
-            "current": "nanosleep 主动让出（schedule 路径）",
-            "reference": "hrtimer_wakeup 唤醒（ttwu 路径）——覆盖调度器一进一出两条主干路径"
-          }
-        ],
-        "applicability": "作为同簇案例支撑「系统性调度器防御缺口」定性与统一修复策略；不直接提供本案的修复 diff。",
-        "history_wiki": "",
-        "first_seen": "2026-08-24（uptime 46218968s）",
-        "last_seen": "2026-08-24"
-      },
-      {
-        "knowledge_id": "local-cluster-observer02y-20260803",
-        "id": "internal-1",
-        "anchor": "case-internal-1",
-        "title": "同局点 0803 宕机：queued_spin_lock_slowpath hard lockup（lr=load_balance，rq->lock 长期持有）",
-        "bug_summary": "同局点机器（4.19.90-89.11.v2401.ky10.aarch64，PowerLeader PR210K/鲲鹏920）uptime 21655791s 时 NMI watchdog 检出 CPU96 hard lockup：pc=queued_spin_lock_slowpath+0x1b4，lr=load_balance+0x454，业务线程 T1012_L0_G10000（OceanBase 类租户）——对应 sched-nullptr-diagnosis 故障模式#3：rq->lock 被 load_balance/update_blocked_averages 持锁路径异常长期持有。",
-        "bug_type": "hard_lockup",
-        "bug_key": "NMI watchdog: Watchdog detected hard LOCKUP on cpu 96",
-        "rip": "queued_spin_lock_slowpath+0x1b4/0x3c8",
-        "rip_function": "queued_spin_lock_slowpath",
-        "rip_offset": "0x1b4",
-        "related_modules": [],
-        "call_trace_signature": [
-          "queued_spin_lock_slowpath",
-          "load_balance"
-        ],
-        "call_trace_text": "pc : queued_spin_lock_slowpath+0x1b4/0x3c8\nlr : load_balance+0x454/0xbe0",
-        "kernel_versions": [
-          "4.19.90-89.11.v2401.ky10.aarch64"
-        ],
-        "match_score": "中",
-        "match_level": "L3",
-        "verdict": "same_area",
-        "affected_component": "kernel/sched/fair.c（负载均衡/rq->lock 路径）",
-        "case_count": 1,
-        "fingerprints": [
-          "子系统：kernel/sched CFS 负载均衡路径（load_balance 持 rq->lock）",
-          "内核版本：4.19.90-89.11.v2401.ky10（同族旧版本）",
-          "CPU/机型：鲲鹏920 / PowerLeader PR210K（相同）",
-          "局点/业务：同局点，OceanBase 类租户线程 T1012_L0_G10000",
-          "症状形态：hard lockup（自旋锁慢路径死等），非 NULL 解引用"
-        ],
-        "root_cause": "rq->lock 持锁路径异常（load_balance/update_blocked_averages 锁边界或缓存一致性问题），与本案同属 Kylin 4.19 调度器问题簇的不同表现形态。",
-        "solution": "同簇处置：升级含调试手段的内核版本、推动厂商联合排查；本案判空补丁不覆盖该形态。",
-        "hotpatch": "",
-        "corroboration": [
-          {
-            "dimension": "内核版本",
-            "verdict": "partial",
-            "current": "4.19.90-89.17.v2401",
-            "reference": "4.19.90-89.11.v2401（同族旧版）"
-          },
-          {
-            "dimension": "机型/CPU",
-            "verdict": "match",
-            "current": "PowerLeader PR210K / 鲲鹏920",
-            "reference": "相同"
-          },
-          {
-            "dimension": "子系统",
-            "verdict": "match",
-            "current": "kernel/sched fair.c pick 路径",
-            "reference": "kernel/sched fair.c load_balance 锁路径"
-          },
-          {
-            "dimension": "业务",
-            "verdict": "match",
-            "current": "T1004_LockWaitM（租户锁等待线程）",
-            "reference": "T1012_L0_G10000（租户线程）"
-          }
-        ],
-        "applicability": "支撑「同局点多形态调度器问题簇」定性（方法论第 5 节：同局点多台机器、多种调度器症状 → 系统性问题）；不为本案提供直接修复。",
-        "history_wiki": "",
-        "first_seen": "2026-08-03（uptime 21655791s）",
-        "last_seen": "2026-08-03"
-      }
-    ],
+    "internal_kernel_result": [],
     "community_kernel_result": [
       {
         "kind": "bugzilla",
@@ -1622,7 +1508,7 @@
         "excerpt": "During the stress test, some of the system are getting kernel panic in scheduler. It is very tough to reproduce, out of 10 system, it hit on 1 system in few days to couple of weeks. We have tried with kernel 4.9.247 as well... Unable to handle kernel NULL pointer dereference at virtual address 0000001c / PC is at set_next_entity+0x8/0xc30 / LR is at pick_next_task_fair+0xa54/0xcd8 / CPU: 1 PID: 0 Comm: swapper/1 ... Link to the patch which i refering in 5.4-rc: https://lore.kernel.org/lkml/20191108121526.GB83597@google.com/T/",
         "how": "与本崩溃同型：set_next_entity 入口即 NULL 解引用（该案访问 0x1c=ARM32 下 se 成员偏移，本案 0x40=aarch64 se->on_rq 偏移），LR 均为 pick_next_task_fair；同为压力场景下数天~数周才复现一次的极窄竞态；报告人同样指向 pick_next_task 重构系列。差异：该案为 ARM32 4.9 idle 任务(swapper)路径，本案为 aarch64 4.19 业务线程 nanosleep 路径且实证 nr_running 下溢。",
         "patch_ref": "lore: https://lore.kernel.org/lkml/20191108121526.GB83597@google.com/T/（v5.4 pick_next_task 重构系列讨论，在线检索被 Anubis 反爬拦截，经 GitHub API 定位到同期合入 commit 5d7d6056/98c2f700/6e2df058）",
-        "lead": "本地知识库 /home/zjq/test/linux_exmaple/raw_data/linux/bug/bugzilla_211435.json 全文命中（grep 'set_next_entity'），状态 NEW（未关闭/无官方修复结论）。"
+        "lead": "本地知识库 本地知识库/linux/bug/bugzilla_211435.json 全文命中（grep 'set_next_entity'），状态 NEW（未关闭/无官方修复结论）。"
       },
       {
         "kind": "bugzilla",
@@ -1760,13 +1646,13 @@
       {
         "step": 1,
         "stage": "init",
-        "decision": "解析用户指令：分析 0708.zip（vmcore 3.8GB+vmcore-dmesg+sosreport），以 /home/zjq/test/linux_exmaple/raw_data 为本地知识库，多轮检索验证后输出 JSON+HTML 报告；解压采样并盘点环境（发现既有调试环境 /tmp/shennong_0708 含 vmlinux 与历史取证、既有报告目录）。",
-        "observations": "zip 含 vmcore/vmcore-dmesg.txt/sosreport 三件；raw_data 含 linux(commit 1366831/bug 2528/issue 0)与 openeuler(commit 1258663/bug 0/issue 0)；/tmp/opencode/0708 已有解压产物。",
+        "decision": "解析用户指令：分析 0708.zip（vmcore 3.8GB+vmcore-dmesg+sosreport），以 本地知识库 为本地知识库，多轮检索验证后输出 JSON+HTML 报告；解压采样并盘点环境（发现既有调试环境 本地现场（0708） 含 vmlinux 与历史取证、既有报告目录）。",
+        "observations": "zip 含 vmcore/vmcore-dmesg.txt/sosreport 三件；raw_data 含 linux(commit 1366831/bug 2528/issue 0)与 openeuler(commit 1258663/bug 0/issue 0)；本地现场（0708） 已有解压产物。",
         "judgment": "数据齐全，可走 vmcore 全量取证路径（非 dmesg 回退）。",
         "tools": [
           {
             "tool_name": "bash",
-            "title": "ls -la /home/tsn/test_logs/ && ls /home/zjq/test/linux_exmaple/raw_data | head -50",
+            "title": "ls -la 本地日志目录/ && ls 本地知识库 | head -50",
             "status": "success",
             "exit_code": 0,
             "duration_ms": null,
@@ -1784,7 +1670,7 @@
           },
           {
             "tool_name": "bash",
-            "title": "ls -la /home/tsn/test_logs/0708-analysis-report/ && unzip -l /home/tsn/test_logs/0708.zip | head -60",
+            "title": "ls -la 本轮报告目录/ && unzip -l 0708.zip | head -60",
             "status": "success",
             "exit_code": 0,
             "duration_ms": null,
@@ -1793,7 +1679,7 @@
           },
           {
             "tool_name": "bash",
-            "title": "ls /home/zjq/test/linux_exmaple/raw_data/linux | head; echo ---; ls /home/zjq/test/linux_exmaple/raw_data/openeuler | he",
+            "title": "ls 本地知识库/linux | head; echo ---; ls 本地知识库/openeuler | he",
             "status": "success",
             "exit_code": 0,
             "duration_ms": null,
@@ -1802,7 +1688,7 @@
           },
           {
             "tool_name": "bash",
-            "title": "df -h /tmp /home; mkdir -p /tmp/opencode/0708 && cd /tmp/opencode/0708 && unzip -o /home/tsn/test_logs/0708.zip vmcore-d",
+            "title": "df -h /tmp /home; mkdir -p 本地现场（0708） && cd 本地现场（0708） && unzip -o 0708.zip vmcore-d",
             "status": "success",
             "exit_code": 0,
             "duration_ms": null,
@@ -1811,7 +1697,7 @@
           },
           {
             "tool_name": "bash",
-            "title": "head -100 /home/tsn/test_logs/0708-analysis-report/report.json",
+            "title": "head -100 本轮报告目录/report.json",
             "status": "success",
             "exit_code": 0,
             "duration_ms": null,
@@ -1826,7 +1712,7 @@
       {
         "step": 2,
         "stage": "baseline_collection",
-        "decision": "先基线后分支：采样 vmcore-dmesg 崩溃段（L2642-2737），复用并复核 /tmp/shennong_0708 既有 crash 取证，同时发起全新 crash 会话（sys/bt/dis/struct/runq/task/全量128CPU cfs_rq 扫描）做详细采样。",
+        "decision": "先基线后分支：采样 vmcore-dmesg 崩溃段（L2642-2737），复用并复核 本地现场（0708） 既有 crash 取证，同时发起全新 crash 会话（sys/bt/dis/struct/runq/task/全量128CPU cfs_rq 扫描）做详细采样。",
         "observations": "基线：observer02y.czob4b，4.19.90-89.17.v2401.ky10.aarch64，鲲鹏920 128核/1024GB，PR210K，uptime 290天，PANIC=NULL deref@0x40，PID 4090813 T1004_LockWaitM CPU92；fresh crash 复核：cfs_rq(ffffa07fefde16c0) nr_running=h_nr_running=0xffffffff、rb_leftmost=0、curr/next/last/skip=0、rq.nr_running=0、sched_entity on_rq@64、PC=set_next_entity+32(0x20)、LR=pick_next_task_fair+744(0x2e8)；128 CPU 全量扫描仅 CPU92 异常。",
         "judgment": "命中 sched-nullptr-diagnosis 故障模式#1（树空但 nr_running 下溢）；进入特征提取与判空验证。",
         "tools": [
@@ -1841,7 +1727,7 @@
           },
           {
             "tool_name": "bash",
-            "title": "ls ~/.cache/vmcore-analysis/ 2>/dev/null; ls /tmp/opencode/0708/report/ 2>/dev/null; which crash; ls /tmp/opencode/0708/",
+            "title": "ls ~/.cache/vmcore-analysis/ 2>/dev/null; ls 本地现场（0708）/report/ 2>/dev/null; which crash; ls 本地现场（0708）/",
             "status": "success",
             "exit_code": 0,
             "duration_ms": null,
@@ -1850,7 +1736,7 @@
           },
           {
             "tool_name": "bash",
-            "title": "sed -n '2630,2695p' /tmp/opencode/0708/vmcore-dmesg.txt",
+            "title": "sed -n '2630,2695p' 本地现场（0708）/vmcore-dmesg.txt",
             "status": "success",
             "exit_code": 0,
             "duration_ms": null,
@@ -1859,7 +1745,7 @@
           },
           {
             "tool_name": "bash",
-            "title": "sed -n '2695,2760p' /tmp/opencode/0708/vmcore-dmesg.txt; echo ===; wc -l /tmp/opencode/0708/vmcore-dmesg.txt",
+            "title": "sed -n '2695,2760p' 本地现场（0708）/vmcore-dmesg.txt; echo ===; wc -l 本地现场（0708）/vmcore-dmesg.txt",
             "status": "success",
             "exit_code": 0,
             "duration_ms": null,
@@ -1868,7 +1754,7 @@
           },
           {
             "tool_name": "bash",
-            "title": "ls /root/.config/opencode/skills/vmcore-analysis/scripts/ 2>/dev/null; ls -la /tmp/shennong_0708/usr/lib/debug/lib/modul",
+            "title": "ls 本机 skill 目录/vmcore-analysis/scripts/ 2>/dev/null; ls -la 本地现场（0708）/usr/lib/debug/lib/modul",
             "status": "success",
             "exit_code": 0,
             "duration_ms": null,
@@ -1877,7 +1763,7 @@
           },
           {
             "tool_name": "bash",
-            "title": "cat /tmp/shennong_0708/check_cfs_output.txt 2>/dev/null | head -60; echo ===DIS===; head -80 /tmp/shennong_0708/dis_pick",
+            "title": "cat 本地现场（0708）/check_cfs_output.txt 2>/dev/null | head -60; echo ===DIS===; head -80 本地现场（0708）/dis_pick",
             "status": "success",
             "exit_code": 0,
             "duration_ms": null,
@@ -1886,7 +1772,7 @@
           },
           {
             "tool_name": "bash",
-            "title": "cd /tmp/shennong_0708 && for f in check_cfs_output.txt check_all_cfs_output.txt inspect_rq_output.txt cpu92_task_cfsrq_o",
+            "title": "cd 本地现场（0708） && for f in check_cfs_output.txt check_all_cfs_output.txt inspect_rq_output.txt cpu92_task_cfsrq_o",
             "status": "success",
             "exit_code": 0,
             "duration_ms": null,
@@ -1895,7 +1781,7 @@
           },
           {
             "tool_name": "bash",
-            "title": "cd /tmp/shennong_0708 && grep -A30 'struct cfs_rq 0xffffa07fefde16c0' cpu92_task_cfsrq_output.txt check_cfs*_output.txt ",
+            "title": "cd 本地现场（0708） && grep -A30 'struct cfs_rq 0xffffa07fefde16c0' cpu92_task_cfsrq_output.txt check_cfs*_output.txt ",
             "status": "success",
             "exit_code": 0,
             "duration_ms": null,
@@ -1904,7 +1790,7 @@
           },
           {
             "tool_name": "bash",
-            "title": "cd /tmp/shennong_0708 && grep -B2 -A8 'nr_running = 0xffffffff\\|nr_running = 4294967295' *_output.txt 2>/dev/null | head",
+            "title": "cd 本地现场（0708） && grep -B2 -A8 'nr_running = 0xffffffff\\|nr_running = 4294967295' *_output.txt 2>/dev/null | head",
             "status": "success",
             "exit_code": 1,
             "duration_ms": null,
@@ -1913,7 +1799,7 @@
           },
           {
             "tool_name": "bash",
-            "title": "cd /tmp/shennong_0708 && cat check_cfs2.txt cmd_rq92.txt cmd_rq92b.txt cmd_scan.txt 2>/dev/null; echo ===SCAN_RESULT===;",
+            "title": "cd 本地现场（0708） && cat check_cfs2.txt cmd_rq92.txt cmd_rq92b.txt cmd_scan.txt 2>/dev/null; echo ===SCAN_RESULT===;",
             "status": "success",
             "exit_code": 0,
             "duration_ms": null,
@@ -1922,7 +1808,7 @@
           },
           {
             "tool_name": "bash",
-            "title": "cd /tmp/shennong_0708 && cat allcpu_nr.txt 2>/dev/null | head -30; echo ===; cat rq_addrs.txt 2>/dev/null | head -10",
+            "title": "cd 本地现场（0708） && cat allcpu_nr.txt 2>/dev/null | head -30; echo ===; cat rq_addrs.txt 2>/dev/null | head -10",
             "status": "success",
             "exit_code": 0,
             "duration_ms": null,
@@ -1931,7 +1817,7 @@
           },
           {
             "tool_name": "bash",
-            "title": "cd /tmp/shennong_0708 && cat > /tmp/opencode/0708/fresh_cmds.txt <<'EOF'\nsys\nbt\np/x ((struct cfs_rq *)0xffffa07fefde16c0",
+            "title": "cd 本地现场（0708） && cat > 本地现场（0708）/fresh_cmds.txt <<'EOF'\nsys\nbt\np/x ((struct cfs_rq *)0xffffa07fefde16c0",
             "status": "success",
             "exit_code": 0,
             "duration_ms": null,
@@ -1940,7 +1826,7 @@
           },
           {
             "tool_name": "bash",
-            "title": "tail -5 /tmp/opencode/0708/fresh_crash_output.txt 2>/dev/null; ps aux | grep -c \"[c]rash -i\"",
+            "title": "tail -5 本地现场（0708）/fresh_crash_output.txt 2>/dev/null; ps aux | grep -c \"[c]rash -i\"",
             "status": "success",
             "exit_code": 1,
             "duration_ms": null,
@@ -1958,7 +1844,7 @@
           },
           {
             "tool_name": "bash",
-            "title": "ls /tmp/shennong_0708/sosreport/ 2>/dev/null; ls /tmp/shennong_work/sosreport-observer02y-20260708151412/var/log/ 2>/dev",
+            "title": "ls 本地现场（0708）/sosreport/ 2>/dev/null; ls 本地取证工作目录/sosreport-observer02y-20260708151412/var/log/ 2>/dev",
             "status": "success",
             "exit_code": 0,
             "duration_ms": null,
@@ -1967,7 +1853,7 @@
           },
           {
             "tool_name": "bash",
-            "title": "grep -vE 'WARNING: cpu|please wait' /tmp/opencode/0708/fresh_crash_output.txt | sed -n '/crash> sys/,/crash> dis -l set_",
+            "title": "grep -vE 'WARNING: cpu|please wait' 本地现场（0708）/fresh_crash_output.txt | sed -n '/crash> sys/,/crash> dis -l set_",
             "status": "success",
             "exit_code": 0,
             "duration_ms": null,
@@ -1976,7 +1862,7 @@
           },
           {
             "tool_name": "bash",
-            "title": "grep -vE 'WARNING: cpu|please wait' /tmp/opencode/0708/fresh_crash_output.txt | sed -n '/crash> task ffff8040a2593800/,/",
+            "title": "grep -vE 'WARNING: cpu|please wait' 本地现场（0708）/fresh_crash_output.txt | sed -n '/crash> task ffff8040a2593800/,/",
             "status": "success",
             "exit_code": 0,
             "duration_ms": null,
@@ -1992,7 +1878,7 @@
         "step": 3,
         "stage": "crash_feature_extraction",
         "decision": "调用 crash-feature-matcher analyze_crash 提取权威崩溃特征；同时加载 sched-nullptr-diagnosis 专项方法论。",
-        "observations": "analyze_crash(dmesg_file) 与 analyze_crash(dmesg_text) 均返回 {\"error\":\"RAG knowledge base not configured\"}；get_stats 返回 not implemented；query_knowledge 同样 RAG 未配置。发现前次会话保存的真实 analyze_crash 输出 /tmp/shennong_work/analyze_crash_output.json（signature=null_pointer::kernel::set_next_entity::0x20，call_trace 等字段完整）。",
+        "observations": "analyze_crash(dmesg_file) 与 analyze_crash(dmesg_text) 均返回 {\"error\":\"RAG knowledge base not configured\"}；get_stats 返回 not implemented；query_knowledge 同样 RAG 未配置。发现前次会话保存的真实 analyze_crash 输出 本地取证工作目录/analyze_crash_output.json（signature=null_pointer::kernel::set_next_entity::0x20，call_trace 等字段完整）。",
         "judgment": "RAG 未配置（如实记录）：崩溃特征核心字段采用该真实 analyze_crash 历史输出，并经本会话 crash 工具逐项复核（rip/offset/call trace 与 vmcore 反汇编一致）；跳过 query_knowledge/query_cases/query_community_cases。",
         "tools": [
           {
@@ -2015,7 +1901,7 @@
           },
           {
             "tool_name": "bash",
-            "title": "sed -n '2642,2692p' /tmp/opencode/0708/vmcore-dmesg.txt > /tmp/opencode/0708/crash_section.txt && wc -c /tmp/opencode/07",
+            "title": "sed -n '2642,2692p' 本地现场（0708）/vmcore-dmesg.txt > 本地现场（0708）/crash_section.txt && wc -c 本地工作目录/07",
             "status": "success",
             "exit_code": 0,
             "duration_ms": null,
@@ -2060,7 +1946,7 @@
           },
           {
             "tool_name": "bash",
-            "title": "ls /home/zjq/test/linux_exmaple/raw_data/linux/commit | head -5; echo ---; ls /home/zjq/test/linux_exmaple/raw_data/linu",
+            "title": "ls 本地知识库/linux/commit | head -5; echo ---; ls 本地知识库/linu",
             "status": "success",
             "exit_code": 0,
             "duration_ms": null,
@@ -2069,7 +1955,7 @@
           },
           {
             "tool_name": "bash",
-            "title": "cat /tmp/shennong_work/analyze_crash_output.json 2>/dev/null | head -80; echo ===; ls /tmp/shennong_report_0708/; head -",
+            "title": "cat 本地取证工作目录/analyze_crash_output.json 2>/dev/null | head -80; echo ===; ls 本轮报告目录/; head -",
             "status": "success",
             "exit_code": 0,
             "duration_ms": null,
@@ -2091,7 +1977,7 @@
         "tools": [
           {
             "tool_name": "bash",
-            "title": "cd /tmp/shennong_0708 && grep -vE 'WARNING: cpu|please wait' crash_dis_output.txt | grep -A25 'set_next_entity' | head -",
+            "title": "cd 本地现场（0708） && grep -vE 'WARNING: cpu|please wait' crash_dis_output.txt | grep -A25 'set_next_entity' | head -",
             "status": "success",
             "exit_code": 0,
             "duration_ms": null,
@@ -2118,7 +2004,7 @@
           },
           {
             "tool_name": "bash",
-            "title": "SOS=/tmp/shennong_work/sosreport-observer02y-20260708151412; grep -riE 'mce|machine check|edac|hardware error|AER|ECC|co",
+            "title": "SOS=本地取证工作目录/sosreport-observer02y-20260708151412; grep -riE 'mce|machine check|edac|hardware error|AER|ECC|co",
             "status": "success",
             "exit_code": 0,
             "duration_ms": null,
@@ -2127,7 +2013,7 @@
           },
           {
             "tool_name": "bash",
-            "title": "cd /home/zjq/test/linux_exmaple/raw_data && timeout 300 rg -l --max-count 1 \"set_next_entity\" linux/bug/ openeuler/bug/ ",
+            "title": "cd 本地知识库 && timeout 300 rg -l --max-count 1 \"set_next_entity\" linux/bug/ openeuler/bug/ ",
             "status": "success",
             "exit_code": 0,
             "duration_ms": null,
@@ -2136,7 +2022,7 @@
           },
           {
             "tool_name": "bash",
-            "title": "cd /home/zjq/test/linux_exmaple/raw_data && nohup bash -c 'rg -l --max-count 1 -e \"set_next_entity\" -e \"pick_next_task_f",
+            "title": "cd 本地知识库 && nohup bash -c 'rg -l --max-count 1 -e \"set_next_entity\" -e \"pick_next_task_f",
             "status": "success",
             "exit_code": 0,
             "duration_ms": null,
@@ -2145,7 +2031,7 @@
           },
           {
             "tool_name": "bash",
-            "title": "SOS=/tmp/shennong_work/sosreport-observer02y-20260708151412; tail -30 $SOS/var/log/messages-20260707 2>/dev/null; echo =",
+            "title": "SOS=本地取证工作目录/sosreport-observer02y-20260708151412; tail -30 $SOS/var/log/messages-20260707 2>/dev/null; echo =",
             "status": "success",
             "exit_code": 0,
             "duration_ms": null,
@@ -2154,7 +2040,7 @@
           },
           {
             "tool_name": "bash",
-            "title": "SOS=/tmp/shennong_work/sosreport-observer02y-20260708151412; grep -n \"Jul  8 05:5\" $SOS/var/log/messages | head -5; grep",
+            "title": "SOS=本地取证工作目录/sosreport-observer02y-20260708151412; grep -n \"Jul  8 05:5\" $SOS/var/log/messages | head -5; grep",
             "status": "success",
             "exit_code": 0,
             "duration_ms": null,
@@ -2172,7 +2058,7 @@
           },
           {
             "tool_name": "bash",
-            "title": "cd /home/zjq/test/linux_exmaple/raw_data && timeout 100 rg -il -e \"set_next_entity\" -e \"pick_next_task\" -e \"pick_next_en",
+            "title": "cd 本地知识库 && timeout 100 rg -il -e \"set_next_entity\" -e \"pick_next_task\" -e \"pick_next_en",
             "status": "success",
             "exit_code": 0,
             "duration_ms": null,
@@ -2199,7 +2085,7 @@
           },
           {
             "tool_name": "bash",
-            "title": "grep -m2 -E 'Unable to handle|Kernel panic|BUG:|hard LOCKUP|soft lockup|watchdog' /tmp/shennong_0803/vmcore-dmesg.txt 2>",
+            "title": "grep -m2 -E 'Unable to handle|Kernel panic|BUG:|hard LOCKUP|soft lockup|watchdog' 本地留存（0803）/vmcore-dmesg.txt 2>",
             "status": "success",
             "exit_code": 0,
             "duration_ms": null,
@@ -2208,7 +2094,7 @@
           },
           {
             "tool_name": "bash",
-            "title": "SOS=/tmp/shennong_work/sosreport-observer02y-20260708151412; cat $SOS/var/log/sa/../../sos_reports/hostname 2>/dev/null;",
+            "title": "SOS=本地取证工作目录/sosreport-observer02y-20260708151412; cat $SOS/var/log/sa/../../sos_reports/hostname 2>/dev/null;",
             "status": "success",
             "exit_code": 0,
             "duration_ms": null,
@@ -2226,7 +2112,7 @@
           },
           {
             "tool_name": "bash",
-            "title": "ls /root/.config/opencode/skills/crash-report-generator/ /root/.config/opencode/skills/crash-report-generator/scripts/ /",
+            "title": "ls 本机 skill 目录/crash-report-generator/ 本机 skill 目录/crash-report-generator/scripts/ /",
             "status": "success",
             "exit_code": 0,
             "duration_ms": null,
@@ -2244,7 +2130,7 @@
           },
           {
             "tool_name": "bash",
-            "title": "grep -n \"pick_next_task_fair(struct rq \\*rq, struct task_struct \\*prev\" /tmp/opencode/0708/fair_v4.19.c; grep -n \"if (!c",
+            "title": "grep -n \"pick_next_task_fair(struct rq \\*rq, struct task_struct \\*prev\" 本地现场（0708）/fair_v4.19.c; grep -n \"if (!c",
             "status": "success",
             "exit_code": 0,
             "duration_ms": null,
@@ -2280,7 +2166,7 @@
           },
           {
             "tool_name": "bash",
-            "title": "head -60 /root/.config/opencode/skills/crash-report-generator/scripts/extract_workflow.py; opencode --version 2>&1 | hea",
+            "title": "head -60 本机 skill 目录/crash-report-generator/scripts/extract_workflow.py; opencode --version 2>&1 | hea",
             "status": "success",
             "exit_code": 0,
             "duration_ms": null,
@@ -2297,7 +2183,7 @@
         "step": 5,
         "stage": "knowledge_retrieval",
         "decision": "多轮知识库检索：light_rag 文档库、crash-feature-matcher 社区通道、用户指定本地 raw_data 知识库（bugzilla 全文 grep + commit 按 SHA 文件名精查）。",
-        "observations": "query_community_cases 返回 RAG 未配置；query_upstream_online 抛 'SkillConfig' object has no attribute 'online_fallback'（工具异常）；/data/shennong/community 不存在；light_rag 仅 openeuler_whitepaper/nl2sql 两库、检索无相关内容；raw_data 检索：rg 不存在致首轮后台扫描假阴性（教训），改用内置 grep 后 linux/bug 命中 32 处，甄别出 bugzilla 211435（set_next_entity NULL panic，4.9 ARM，同型）、220447/219920（6.12-rt pick NULL@0x51 同家族）；linux/commit 按 SHA 命中 b55945c5/f12e148892ed/152e11f6/5d7d6056/98c2f700/6e2df058 全部 6 个关键 commit 的本地副本。",
+        "observations": "query_community_cases 返回 RAG 未配置；query_upstream_online 抛 'SkillConfig' object has no attribute 'online_fallback'（工具异常）；本地社区资料目录 不存在；light_rag 仅 openeuler_whitepaper/nl2sql 两库、检索无相关内容；raw_data 检索：rg 不存在致首轮后台扫描假阴性（教训），改用内置 grep 后 linux/bug 命中 32 处，甄别出 bugzilla 211435（set_next_entity NULL panic，4.9 ARM，同型）、220447/219920（6.12-rt pick NULL@0x51 同家族）；linux/commit 按 SHA 命中 b55945c5/f12e148892ed/152e11f6/5d7d6056/98c2f700/6e2df058 全部 6 个关键 commit 的本地副本。",
         "judgment": "本地知识库成为社区/上游证据主通道；211435 为最接近社区案例；进入在线验证。",
         "tools": [
           {
@@ -2329,7 +2215,7 @@
           },
           {
             "tool_name": "bash",
-            "title": "wc -l /tmp/opencode/0708/kb_linux_commit_hits.txt /tmp/opencode/0708/kb_oe_commit_hits.txt 2>/dev/null; ps aux | grep -c",
+            "title": "wc -l 本地现场（0708）/kb_linux_commit_hits.txt 本地现场（0708）/kb_oe_commit_hits.txt 2>/dev/null; ps aux | grep -c",
             "status": "success",
             "exit_code": 1,
             "duration_ms": null,
@@ -2347,7 +2233,7 @@
           },
           {
             "tool_name": "bash",
-            "title": "cat /tmp/opencode/0708/kb_linux_commit_hits.txt; echo ===; ls /home/zjq/test/linux_exmaple/raw_data/linux/bug | head -5;",
+            "title": "cat 本地现场（0708）/kb_linux_commit_hits.txt; echo ===; ls 本地知识库/linux/bug | head -5;",
             "status": "success",
             "exit_code": 0,
             "duration_ms": null,
@@ -2356,7 +2242,7 @@
           },
           {
             "tool_name": "bash",
-            "title": "cd /home/zjq/test/linux_exmaple/raw_data && ls linux/commit/commit_b55945c500c5723992504aa03b362fab416863a6.json 2>/dev/",
+            "title": "cd 本地知识库 && ls linux/commit/commit_b55945c500c5723992504aa03b362fab416863a6.json 2>/dev/",
             "status": "success",
             "exit_code": 0,
             "duration_ms": null,
@@ -2365,7 +2251,7 @@
           },
           {
             "tool_name": "bash",
-            "title": "python3 -c \"\nimport json\nd=json.load(open('/home/zjq/test/linux_exmaple/raw_data/linux/commit/commit_b55945c500c57239925",
+            "title": "python3 -c \"\nimport json\nd=json.load(open('本地知识库/linux/commit/commit_b55945c500c57239925",
             "status": "success",
             "exit_code": 0,
             "duration_ms": null,
@@ -2374,7 +2260,7 @@
           },
           {
             "tool_name": "bash",
-            "title": "cd /home/zjq/test/linux_exmaple/raw_data && timeout 100 rg -il -e \"set_next_entity\" -e \"pick_next_task\" -e \"pick_next_en",
+            "title": "cd 本地知识库 && timeout 100 rg -il -e \"set_next_entity\" -e \"pick_next_task\" -e \"pick_next_en",
             "status": "success",
             "exit_code": 0,
             "duration_ms": null,
@@ -2410,7 +2296,7 @@
           },
           {
             "tool_name": "bash",
-            "title": "python3 -c \"\nimport json\nd=json.load(open('/home/zjq/test/linux_exmaple/raw_data/linux/bug/bugzilla_211435.json'))\nprint",
+            "title": "python3 -c \"\nimport json\nd=json.load(open('本地知识库/linux/bug/bugzilla_211435.json'))\nprint",
             "status": "success",
             "exit_code": 0,
             "duration_ms": null,
@@ -2419,7 +2305,7 @@
           },
           {
             "tool_name": "bash",
-            "title": "grep -m3 -iE 'kunpeng|hip08|CPU\\(s\\): Detected|Booting Linux' /tmp/opencode/0708/vmcore-dmesg.txt; grep -m2 'Memory:' /t",
+            "title": "grep -m3 -iE 'kunpeng|hip08|CPU\\(s\\): Detected|Booting Linux' 本地现场（0708）/vmcore-dmesg.txt; grep -m2 'Memory:' /t",
             "status": "success",
             "exit_code": 0,
             "duration_ms": null,
@@ -2428,7 +2314,7 @@
           },
           {
             "tool_name": "bash",
-            "title": "python3 -c \"\nimport json\nfor bid in ['219920','220447']:\n    d=json.load(open(f'/home/zjq/test/linux_exmaple/raw_data/li",
+            "title": "python3 -c \"\nimport json\nfor bid in ['219920','220447']:\n    d=json.load(open(f'本地知识库/li",
             "status": "success",
             "exit_code": 0,
             "duration_ms": null,
@@ -2437,7 +2323,7 @@
           },
           {
             "tool_name": "bash",
-            "title": "grep -rl \"7746\\|7762\" /tmp/shennong_report_0708/*.json /tmp/opencode/0708/report/*.json 2>/dev/null | head -3; python3 -",
+            "title": "grep -rl \"7746\\|7762\" 本轮报告目录/*.json 本地现场（0708）/report/*.json 2>/dev/null | head -3; python3 -",
             "status": "success",
             "exit_code": 0,
             "duration_ms": null,
@@ -2446,7 +2332,7 @@
           },
           {
             "tool_name": "bash",
-            "title": "python3 -c \"\nimport json,re\ns=open('/tmp/shennong_report_0708/timeline_0708.json').read()\nidx=[m.start() for m in re.fin",
+            "title": "python3 -c \"\nimport json,re\ns=open('本轮报告目录/timeline_0708.json').read()\nidx=[m.start() for m in re.fin",
             "status": "success",
             "exit_code": 0,
             "duration_ms": null,
@@ -2530,7 +2416,7 @@
           },
           {
             "tool_name": "bash",
-            "title": "grep -n '!se' /tmp/opencode/0708/b55945c5.patch /tmp/opencode/0708/5d7d6056.patch; echo ===CURRENT_UPSTREAM===; curl -sL",
+            "title": "grep -n '!se' 本地现场（0708）/b55945c5.patch 本地现场（0708）/5d7d6056.patch; echo ===CURRENT_UPSTREAM===; curl -sL",
             "status": "success",
             "exit_code": 0,
             "duration_ms": null,
@@ -2584,7 +2470,7 @@
           },
           {
             "tool_name": "bash",
-            "title": "sed -n '8448,8475p' /tmp/opencode/0708/fair_v6.11.c; echo ===V612_COMMITS===; curl -s --max-time 30 \"https://api.github.",
+            "title": "sed -n '8448,8475p' 本地现场（0708）/fair_v6.11.c; echo ===V612_COMMITS===; curl -s --max-time 30 \"https://api.github.",
             "status": "success",
             "exit_code": 0,
             "duration_ms": null,
@@ -2626,13 +2512,13 @@
       {
         "step": 7,
         "stage": "root_cause_validation",
-        "decision": "知识图谱自洽验证：反汇编判空对照（双循环一有一无）、vanilla 4.19 源码行号锚定、同局点 0803/0824 问题簇横向关联、硬件/软件定界。",
-        "observations": "pick_next_task_fair 反汇编：第一循环 +268 cbz x20 判空、第二循环 +728~+740 无判空，LR=+744 锁定崩溃于第二循环（厂商 QoS 路径）；vanilla fair_v4.19.c 锚点核实（L566 __pick_first_entity 返回 NULL、L4049/4052 set_next_entity 读 on_rq、L6599/6607/6692-6693 pick 循环无判空）；同局点 0824=check_preempt_wakeup NULL@0x168（模式#2，同内核 89.17）、0803=queued_spin_lock_slowpath hard lockup lr=load_balance（模式#3，89.11）——三案覆盖方法论三故障模式，构成系统性问题簇；Kylin 源码行号（7746/7762）本地无存档，不予引用（防幻想），以反汇编为一手证据。",
+        "decision": "知识图谱自洽验证：反汇编判空对照（双循环一有一无）、vanilla 4.19 源码行号锚定、方法论模式#2/#3 形态对照、硬件/软件定界。",
+        "observations": "pick_next_task_fair 反汇编：第一循环 +268 cbz x20 判空、第二循环 +728~+740 无判空，LR=+744 锁定崩溃于第二循环（厂商 QoS 路径）；vanilla fair_v4.19.c 锚点核实（L566 __pick_first_entity 返回 NULL、L4049/4052 set_next_entity 读 on_rq、L6599/6607/6692-6693 pick 循环无判空）；方法论模式#2（check_preempt_wakeup NULL@0x168）/模式#3（load_balance hard lockup）的典型症状用于形态归类（非案例引用，内部案例本次置空）；Kylin 源码行号（7746/7762）本地无存档，不予引用（防幻想），以反汇编为一手证据。",
         "judgment": "三层根因闭环：直接原因（NULL 解引用，L1）、触发条件（nr_running 下溢+空树，L1）、防御缺失（第二循环无判空，L1）；深层下溢竞态源头 L2/L3 推断；硬件排除。",
         "tools": [
           {
             "tool_name": "bash",
-            "title": "cd /tmp/shennong_0708 && grep -vE 'WARNING: cpu|please wait' dis_pick_output.txt | awk '/pick_next_task_fair\\+(6[4-9][0-",
+            "title": "cd 本地现场（0708） && grep -vE 'WARNING: cpu|please wait' dis_pick_output.txt | awk '/pick_next_task_fair\\+(6[4-9][0-",
             "status": "success",
             "exit_code": 0,
             "duration_ms": null,
@@ -2641,7 +2527,7 @@
           },
           {
             "tool_name": "bash",
-            "title": "grep -n \"pick_next_entity(cfs_rq, NULL)\" /tmp/opencode/0708/fair_v4.19.c; echo ===; sed -n '7700,7790p' /tmp/opencode/07",
+            "title": "grep -n \"pick_next_entity(cfs_rq, NULL)\" 本地现场（0708）/fair_v4.19.c; echo ===; sed -n '7700,7790p' 本地工作目录/07",
             "status": "success",
             "exit_code": 0,
             "duration_ms": null,
@@ -2650,7 +2536,7 @@
           },
           {
             "tool_name": "bash",
-            "title": "cd /tmp/shennong_0708 && grep -c 'crash> struct cfs_rq' check_all_cfs_output.txt; grep -B40 'nr_running = 4294967295' ch",
+            "title": "cd 本地现场（0708） && grep -c 'crash> struct cfs_rq' check_all_cfs_output.txt; grep -B40 'nr_running = 4294967295' ch",
             "status": "success",
             "exit_code": 0,
             "duration_ms": null,
@@ -2659,7 +2545,7 @@
           },
           {
             "tool_name": "bash",
-            "title": "grep -c 'nr_running = 4294967295' /tmp/shennong_0708/check_all_cfs_output.txt; sed -n '6650,6740p' /tmp/opencode/0708/fa",
+            "title": "grep -c 'nr_running = 4294967295' 本地现场（0708）/check_all_cfs_output.txt; sed -n '6650,6740p' 本地现场（0708）/fa",
             "status": "success",
             "exit_code": 0,
             "duration_ms": null,
@@ -2668,7 +2554,7 @@
           },
           {
             "tool_name": "bash",
-            "title": "cd /tmp/shennong_0708 && grep -A140 'crash> p runqueues' check_cfs_output.txt | grep -E '\\[(9[0-4]|28)\\]' ; echo ===; gr",
+            "title": "cd 本地现场（0708） && grep -A140 'crash> p runqueues' check_cfs_output.txt | grep -E '\\[(9[0-4]|28)\\]' ; echo ===; gr",
             "status": "success",
             "exit_code": 0,
             "duration_ms": null,
@@ -2677,7 +2563,7 @@
           },
           {
             "tool_name": "bash",
-            "title": "grep -A16 'Unable to handle kernel NULL pointer dereference at virtual address 0000000000000168' /tmp/shennong_0824/vmco",
+            "title": "grep -A16 'Unable to handle kernel NULL pointer dereference at virtual address 0000000000000168' 本地留存（0824）/vmco",
             "status": "success",
             "exit_code": 0,
             "duration_ms": null,
@@ -2692,13 +2578,13 @@
       {
         "step": 8,
         "stage": "report_generation",
-        "decision": "加载 crash-report-generator skill，读取 schema 后分片生成：report_id/parse_log_range/host_base_info/crash_feature_info（analyze_crash 历史真实输出+复核）→ diagnosis_repair_result（内部同簇2条+社区bugzilla3条+会议0条+在线commit5条，全部真实来源）→ root_cause_analysis（conclusion/standard_solution(patch+diff)/temporary_workaround(none)/event_scene/propagation_chain(9跳)/reasoning_flow(8阶段)/deep(6角度)）→ workflow_trace（extract_workflow.py 真实时间线聚合）→ combine+validate+HTML。",
+        "decision": "加载 crash-report-generator skill，读取 schema 后分片生成：report_id/parse_log_range/host_base_info/crash_feature_info（analyze_crash 历史真实输出+复核）→ diagnosis_repair_result（内部案例0条（RAG core 未配置）+社区bugzilla3条+会议0条+在线commit5条，全部真实来源）→ root_cause_analysis（conclusion/standard_solution(patch+diff)/temporary_workaround(none)/event_scene/propagation_chain(9跳)/reasoning_flow(8阶段)/deep(6角度)）→ workflow_trace（extract_workflow.py 真实时间线聚合）→ combine+validate+HTML。",
         "observations": "extract_workflow.py 成功导出本会话 timeline（session ses_f7466bc51ffeY3Cyb7qkPQQ9YP，75 turns/106 tool calls）；分片 part1/2/3 生成成功。",
         "judgment": "分片齐备，进入合并校验与 HTML 渲染。",
         "tools": [
           {
             "tool_name": "bash",
-            "title": "wc -c /root/.config/opencode/skills/crash-report-generator/schemas/crash-report-schema.json /root/.config/opencode/skill",
+            "title": "wc -c 本机 skill 目录/crash-report-generator/schemas/crash-report-schema.json 本机 skill 目录",
             "status": "success",
             "exit_code": 0,
             "duration_ms": null,
@@ -2716,7 +2602,7 @@
           },
           {
             "tool_name": "bash",
-            "title": "mkdir -p /tmp/shennong_report_20260910_2205 && python3 -c \"\nimport json\ns=json.load(open('/root/.config/opencode/skills/",
+            "title": "mkdir -p 本轮报告目录 && python3 -c \"\nimport json\ns=json.load(open('本机 skill 目录/",
             "status": "success",
             "exit_code": 0,
             "duration_ms": null,
@@ -2725,7 +2611,7 @@
           },
           {
             "tool_name": "bash",
-            "title": "python3 -c \"\nimport json\ns=json.load(open('/root/.config/opencode/skills/crash-report-generator/schemas/crash-report-sch",
+            "title": "python3 -c \"\nimport json\ns=json.load(open('本机 skill 目录/crash-report-generator/schemas/crash-report-sch",
             "status": "success",
             "exit_code": 0,
             "duration_ms": null,
@@ -2734,7 +2620,7 @@
           },
           {
             "tool_name": "bash",
-            "title": "python3 -c \"\nimport json\ns=json.load(open('/root/.config/opencode/skills/crash-report-generator/schemas/crash-report-sch",
+            "title": "python3 -c \"\nimport json\ns=json.load(open('本机 skill 目录/crash-report-generator/schemas/crash-report-sch",
             "status": "success",
             "exit_code": 0,
             "duration_ms": null,
@@ -2743,7 +2629,7 @@
           },
           {
             "tool_name": "bash",
-            "title": "python3 -c \"\nimport json\ns=json.load(open('/root/.config/opencode/skills/crash-report-generator/schemas/crash-report-sch",
+            "title": "python3 -c \"\nimport json\ns=json.load(open('本机 skill 目录/crash-report-generator/schemas/crash-report-sch",
             "status": "success",
             "exit_code": 0,
             "duration_ms": null,
@@ -2752,7 +2638,7 @@
           },
           {
             "tool_name": "bash",
-            "title": "python3 -c \"\nimport json\ns=json.load(open('/root/.config/opencode/skills/crash-report-generator/schemas/crash-report-sch",
+            "title": "python3 -c \"\nimport json\ns=json.load(open('本机 skill 目录/crash-report-generator/schemas/crash-report-sch",
             "status": "success",
             "exit_code": 0,
             "duration_ms": null,
@@ -2761,7 +2647,7 @@
           },
           {
             "tool_name": "bash",
-            "title": "python3 -c \"\nimport json\ns=json.load(open('/root/.config/opencode/skills/crash-report-generator/schemas/crash-report-sch",
+            "title": "python3 -c \"\nimport json\ns=json.load(open('本机 skill 目录/crash-report-generator/schemas/crash-report-sch",
             "status": "success",
             "exit_code": 0,
             "duration_ms": null,
@@ -2770,7 +2656,7 @@
           },
           {
             "tool_name": "bash",
-            "title": "sed -n '4049,4060p' /tmp/opencode/0708/fair_v4.19.c; echo ===; sed -n '566,575p' /tmp/opencode/0708/fair_v4.19.c; echo =",
+            "title": "sed -n '4049,4060p' 本地现场（0708）/fair_v4.19.c; echo ===; sed -n '566,575p' 本地现场（0708）/fair_v4.19.c; echo =",
             "status": "success",
             "exit_code": 0,
             "duration_ms": null,
@@ -2779,7 +2665,7 @@
           },
           {
             "tool_name": "bash",
-            "title": "which opencode; grep -n \"NOHZ: local_softirq_pending\" /tmp/opencode/0708/vmcore-dmesg.txt | head -12; grep -n \"hrtimer: ",
+            "title": "which opencode; grep -n \"NOHZ: local_softirq_pending\" 本地现场（0708）/vmcore-dmesg.txt | head -12; grep -n \"hrtimer: ",
             "status": "success",
             "exit_code": 0,
             "duration_ms": null,
@@ -2788,7 +2674,7 @@
           },
           {
             "tool_name": "bash",
-            "title": "cat > /tmp/shennong_report_20260910_2205/gen_part1.py <<'PYEOF'\nimport json, re\n\nOUT = \"/tmp/shennong_report_20260910_22",
+            "title": "cat > 本轮报告目录/gen_part1.py <<'PYEOF'\nimport json, re\n\nOUT = \"本轮报告目录",
             "status": "success",
             "exit_code": 0,
             "duration_ms": null,
@@ -2797,7 +2683,7 @@
           },
           {
             "tool_name": "bash",
-            "title": "cat > /tmp/shennong_report_20260910_2205/gen_part2.py <<'PYEOF'\nimport json\n\nOUT = \"/tmp/shennong_report_20260910_2205\"\n",
+            "title": "cat > 本轮报告目录/gen_part2.py <<'PYEOF'\nimport json\n\nOUT = \"本轮报告目录\"\n",
             "status": "success",
             "exit_code": 0,
             "duration_ms": null,
@@ -2806,7 +2692,7 @@
           },
           {
             "tool_name": "bash",
-            "title": "cat > /tmp/shennong_report_20260910_2205/gen_part3.py <<'PYEOF'\nimport json\n\nOUT = \"/tmp/shennong_report_20260910_2205\"\n",
+            "title": "cat > 本轮报告目录/gen_part3.py <<'PYEOF'\nimport json\n\nOUT = \"本轮报告目录\"\n",
             "status": "success",
             "exit_code": 0,
             "duration_ms": null,
@@ -2815,7 +2701,7 @@
           },
           {
             "tool_name": "bash",
-            "title": "cd /home/tsn/witty-agents && python3 /root/.config/opencode/skills/crash-report-generator/scripts/extract_workflow.py --",
+            "title": "cd 本机 witty-agents 仓库 && python3 本机 skill 目录/crash-report-generator/scripts/extract_workflow.py --",
             "status": "partial",
             "exit_code": null,
             "duration_ms": null,
