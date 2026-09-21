@@ -4,12 +4,12 @@
 <!-- 字体使用本机优先的系统栈，保证导出的 HTML 在离线环境仍可完整渲染。 -->
 <style>
 :root{--ink:#222b30;--muted:#5f6d72;--subtle:#89959a;--line:#e4e9e7;--line-strong:#d5ddd9;--paper:#fff;--bg:#f6f8f7;--surface:#fff;--surface-2:#fafcfb;--surface-3:#f0f5f2;--accent:#27685b;--accent-strong:#1f5348;--accent-soft:#e6f0eb;--red:#b54b41;--amber:#8a5f22;--radius:12px;--radius-sm:8px;--shadow-sm:0 1px 2px rgba(23,42,36,.05);--shadow:0 2px 8px rgba(23,42,36,.06);--trans:.16s ease;--font-sans:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;--font-mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Consolas,"Noto Sans Mono CJK SC",monospace}
-*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:60px}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.8 var(--font-sans);-webkit-font-smoothing:antialiased}a{color:var(--accent);text-underline-offset:4px;overflow-wrap:anywhere}button{font:inherit;cursor:pointer}button:focus-visible,a:focus-visible,summary:focus-visible{outline:3px solid var(--accent);outline-offset:5px}p{margin:0 0 12px}h1,h2,h3,h4{line-height:1.45;margin:0;color:var(--ink)}h1{font-size:clamp(22px,2.4vw,28px);letter-spacing:-1px;font-weight:650}h2{font-size:20px;font-weight:650}h3{font-size:16px;font-weight:600}h4{font-size:14px;margin:10px 0}ul,ol{padding-left:22px;margin:12px 0}li{margin:8px 0}.shell{max-width:1280px;margin:auto;padding:0 44px}.topbar{height:80px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:16px}.brand{display:flex;align-items:center;gap:10px;font-weight:650;letter-spacing:.5px}.brand-icon{width:25px;height:25px;border:1px solid var(--line-strong);border-radius:7px;display:grid;place-items:center;color:var(--accent);font-size:17px}.top-meta{color:var(--muted);font-size:12px}.layout{display:block;padding-top:0}.topnav{position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:4px;margin:0 -44px;padding:0 44px;background:var(--bg);border-bottom:1px solid var(--line);overflow-x:hidden;overflow-y:hidden}.topnav a{padding:12px 16px;text-decoration:none;color:var(--muted);font-size:13px;border-bottom:2px solid transparent;display:flex;gap:8px;white-space:nowrap;margin-bottom:-1px}.topnav a span{opacity:.6;font-size:11px}.topnav a.active{color:var(--accent);font-weight:650;border-bottom-color:var(--accent)}.topnav a:hover{color:var(--accent)}.eyebrow{font-size:11px;letter-spacing:1.8px;color:var(--muted);font-weight:650}.main{min-width:0;padding-bottom:32px}.identity{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:14px}.status{display:inline-flex;align-items:center;gap:7px;font-size:12px;color:var(--red);white-space:nowrap}.status:before{content:"";width:6px;height:6px;background:var(--red);border-radius:50%}.subline{color:var(--muted);font-size:13px;margin:13px 0 26px;display:flex;gap:18px;flex-wrap:wrap}.hero{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:30px 32px}.hero-label{font-size:12px;color:var(--accent);font-weight:650;display:flex;align-items:center;gap:8px;margin-bottom:12px}.hero-label:before{content:"";width:3px;height:14px;background:var(--accent);border-radius:2px}.hero h2{font-size:20px;max-width:720px;letter-spacing:-.4px}.hero-copy{font-size:14px;color:var(--muted);max-width:710px;margin:15px 0 23px}.facts{display:grid;grid-template-columns:1fr 1fr 1.2fr;border-top:1px solid var(--line);padding-top:20px;gap:24px}.fact-label{font-size:12px;color:var(--muted);margin-bottom:4px}.fact-value{font-size:14px;font-weight:600}.fact-note{font-size:12px;color:var(--muted);margin-top:4px;line-height:1.7}.amber{color:var(--amber)}.actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:25px}.btn{border:1px solid var(--line);background:white;color:var(--ink);padding:9px 16px;border-radius:7px;text-decoration:none;font-size:13px;display:inline-flex;align-items:center;gap:16px}.btn.primary{background:var(--accent);border-color:var(--accent);color:white}.btn:hover{filter:brightness(.96)}.section{margin-top:48px}.section-heading{display:flex;align-items:baseline;gap:12px;margin-bottom:9px}.section-no{font:12px/1.5 var(--font-mono);color:var(--subtle)}.section-intro{font-size:14px;color:var(--muted);margin-bottom:23px}.plan{display:grid;grid-template-columns:1.15fr 1fr;gap:22px}.plan-card{border-top:2px solid var(--accent-strong);padding:22px 0 0}.small-label{font-size:11px;letter-spacing:1px;color:var(--muted);margin-bottom:8px}.plan-card h3{margin-bottom:12px}.plan-card p{font-size:14px;color:var(--muted)}.owner{font-size:12px;color:var(--muted);margin:14px 0}.notice{font-size:12px!important;color:var(--amber)!important;padding-left:11px;border-left:2px solid #d7bc8f;margin-top:15px}.reading-group{margin-top:20px}details{border-top:1px solid var(--line);margin:0}details:last-child{border-bottom:1px solid var(--line)}summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 0;font-size:14px;font-weight:550}summary::-webkit-details-marker{display:none}summary:hover{color:var(--accent)}.chevron{width:7px;height:7px;border-right:1.5px solid var(--subtle);border-bottom:1.5px solid var(--subtle);transform:rotate(45deg);margin-right:5px;flex-shrink:0;transition:transform .15s}details[open]>summary .chevron{transform:rotate(225deg)}.detail-body{padding:0 0 21px;font-size:14px;color:var(--muted);overflow-wrap:anywhere}.detail-body details{margin-top:8px}.detail-body details .detail-body{padding-left:12px;border-left:2px solid var(--line)}.evidence{display:grid;grid-template-columns:auto minmax(0,1fr);gap:13px;border-top:1px solid var(--line);padding:23px 0 0}.evidence-number{height:26px;padding:0 12px;border:1px solid var(--line-strong);background:var(--accent-soft);display:flex;align-items:center;border-radius:var(--radius);font:11px var(--font-sans);font-weight:650;color:var(--accent);white-space:nowrap;width:fit-content}.evidence h3{font-size:16px;margin-bottom:8px}.evidence p{font-size:14px;color:var(--muted)}.evidence details{border:0}.evidence summary{font-size:12px;color:var(--accent);justify-content:flex-start;gap:13px;padding:8px 0 20px}.evidence summary .chevron{width:6px;height:6px}.source-label{font:11px/1.8 var(--font-mono);color:var(--muted);overflow-wrap:anywhere;margin:7px 0}.source-item{margin-top:18px}.caption{font-size:12px!important;color:var(--muted)!important}.muted{color:var(--muted)}code{font:12px/1.8 var(--font-mono);background:var(--accent-soft);padding:2px 5px;border-radius:3px;overflow-wrap:anywhere}pre{margin:12px 0 18px;padding:18px 20px;font-family:var(--font-mono);background:var(--surface-3);border:1px solid var(--line);border-radius:6px;max-height:440px;overflow:auto;white-space:pre-wrap;word-break:break-word;tab-size:4}pre code{background:none;padding:0;font-size:12px;color:var(--ink);font-family:var(--font-mono)}.reference-list{list-style:none;padding:0}.reference-list li{padding-bottom:12px}.reference-list a{font-size:13px}.mechanism{background:white;border:1px solid var(--line);border-radius:var(--radius);padding:26px 28px}.parallel{display:grid;grid-template-columns:1fr 1fr;gap:18px;position:relative}.branch{border:1px solid var(--line);border-radius:7px;padding:17px 19px;position:relative;background:var(--surface-2)}.branch-label{font-size:11px;color:var(--muted);margin-bottom:7px}.branch b{font-size:14px;font-weight:550;display:block}.branch p{font-size:12px;color:var(--muted);margin:5px 0 0}.merge{height:34px;position:relative;width:52%;margin:auto;border-left:1px solid var(--line-strong);border-right:1px solid var(--line-strong);border-bottom:1px solid var(--line-strong);border-radius:0 0 6px 6px}.merge:after{content:"";position:absolute;height:18px;top:33px;left:50%;border-left:1px solid var(--line-strong)}.flow-node{margin:17px auto 0;max-width:460px;border:1px solid var(--line);border-radius:7px;padding:14px 18px;text-align:center;font-size:14px;background:var(--surface-2)}.flow-node small{display:block;font-size:12px;color:var(--muted);margin-top:3px}.flow-node.fault{border-color:#e4c9c5;background:#fcf5f3;color:var(--red)}.flow-arrow{height:23px;margin:auto;width:1px;background:var(--line-strong);position:relative}.flow-arrow:after{content:"";position:absolute;bottom:0;left:-3px;width:6px;height:6px;border-right:1px solid var(--line-strong);border-bottom:1px solid var(--line-strong);transform:rotate(45deg)}.flow-arrow+.flow-node{margin-top:0}.diagram-caption{margin:20px 0 0;font-size:12px;color:var(--muted);text-align:center}.trace-step{display:grid;grid-template-columns:28px minmax(0,1fr);gap:14px;margin:16px 0 26px}.trace-index{font:12px var(--font-mono);color:var(--subtle);margin-top:14px}.trace-step h4{font-family:var(--font-mono);font-size:13px;overflow-wrap:anywhere}.parameter{padding:8px 0;display:flex;gap:12px;flex-wrap:wrap;font-size:12px}.env-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin:6px 0}.env-grid dt{font-size:12px;color:var(--muted)}.env-grid dd{margin:4px 0 0;font-size:13px;color:var(--ink);overflow-wrap:anywhere}.raw-row{padding:8px 0}.raw-row b{font-size:12px}.raw-row p{font-size:13px;margin:4px 0}.footer{margin-top:40px;padding:23px 0;border-top:1px solid var(--line);display:flex;justify-content:space-between;gap:20px;font-size:11px;color:var(--muted)}.footer p{margin:0}.footer-actions{display:flex;gap:14px;white-space:nowrap}.text-button{font-size:12px;border:0;padding:0;background:none;color:var(--accent)}#copy-status{font-size:12px;color:var(--accent)}.skip-link{position:absolute;top:-100px}.skip-link:focus{top:10px;left:10px;z-index:20;background:#fff;padding:10px}
+*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:60px}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.8 var(--font-sans);-webkit-font-smoothing:antialiased}a{color:var(--accent);text-underline-offset:4px;overflow-wrap:anywhere}button{font:inherit;cursor:pointer}button:focus-visible,a:focus-visible,summary:focus-visible{outline:3px solid var(--accent);outline-offset:5px}p{margin:0 0 12px}h1,h2,h3,h4{line-height:1.45;margin:0;color:var(--ink)}h1{font-size:clamp(22px,2.4vw,28px);letter-spacing:-1px;font-weight:650}h2{font-size:20px;font-weight:650}h3{font-size:16px;font-weight:600}h4{font-size:14px;margin:10px 0}ul,ol{padding-left:22px;margin:12px 0}li{margin:8px 0}.shell{max-width:1280px;margin:auto;padding:0 44px}.topbar{height:80px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:16px}.brand{display:flex;align-items:center;gap:10px;font-weight:650;letter-spacing:.5px}.brand-icon{width:25px;height:25px;border:1px solid var(--line-strong);border-radius:7px;display:grid;place-items:center;color:var(--accent);font-size:17px}.top-meta{color:var(--muted);font-size:12px}.layout{display:block;padding-top:0}.topnav{position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:4px;margin:0 -44px;padding:0 44px;background:var(--bg);border-bottom:1px solid var(--line);overflow-x:hidden;overflow-y:hidden}.topnav a{padding:12px 16px;text-decoration:none;color:var(--muted);font-size:13px;border-bottom:2px solid transparent;display:flex;gap:8px;white-space:nowrap;margin-bottom:-1px}.topnav a span{opacity:.6;font-size:11px}.topnav a.active{color:var(--accent);font-weight:650;border-bottom-color:var(--accent)}.topnav a:hover{color:var(--accent)}.eyebrow{font-size:11px;letter-spacing:1.8px;color:var(--muted);font-weight:650}.main{min-width:0;padding-bottom:32px}.identity{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:14px}.status{display:inline-flex;align-items:center;gap:7px;font-size:12px;color:var(--red);white-space:nowrap}.status:before{content:"";width:6px;height:6px;background:var(--red);border-radius:50%}.subline{color:var(--muted);font-size:13px;margin:13px 0 26px;display:flex;gap:18px;flex-wrap:wrap}.hero{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:30px 32px}.hero-label{font-size:12px;color:var(--accent);font-weight:650;display:flex;align-items:center;gap:8px;margin-bottom:12px}.hero-label:before{content:"";width:3px;height:14px;background:var(--accent);border-radius:2px}.hero h2{font-size:20px;max-width:720px;letter-spacing:-.4px}.hero-copy{font-size:14px;color:var(--muted);max-width:710px;margin:15px 0 23px}.facts{display:grid;grid-template-columns:1fr 1fr 1.2fr;border-top:1px solid var(--line);padding-top:20px;gap:24px}.fact-label{font-size:12px;color:var(--muted);margin-bottom:4px}.fact-value{font-size:14px;font-weight:600}.fact-note{font-size:12px;color:var(--muted);margin-top:4px;line-height:1.7}.amber{color:var(--amber)}.actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:25px}.btn{border:1px solid var(--line);background:white;color:var(--ink);padding:9px 16px;border-radius:7px;text-decoration:none;font-size:13px;display:inline-flex;align-items:center;gap:16px}.btn.primary{background:var(--accent);border-color:var(--accent);color:white}.btn:hover{filter:brightness(.96)}.section{margin-top:48px}.section-heading{display:flex;align-items:baseline;gap:12px;margin-bottom:9px}.section-no{font:12px/1.5 var(--font-mono);color:var(--subtle)}.section-intro{font-size:14px;color:var(--muted);margin-bottom:23px}.plan{display:grid;grid-template-columns:1.15fr 1fr;gap:22px}.plan-card{border-top:2px solid var(--accent-strong);padding:22px 0 0}.small-label{font-size:11px;letter-spacing:1px;color:var(--muted);margin-bottom:8px}.plan-card h3{margin-bottom:12px}.plan-card p{font-size:14px;color:var(--muted)}.owner{font-size:12px;color:var(--muted);margin:14px 0}.notice{font-size:12px!important;color:var(--amber)!important;padding-left:11px;border-left:2px solid #d7bc8f;margin-top:15px}.reading-group{margin-top:20px}details{border-top:1px solid var(--line);margin:0}details:last-child{border-bottom:1px solid var(--line)}summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 0;font-size:14px;font-weight:550}summary::-webkit-details-marker{display:none}summary:hover{color:var(--accent)}.chevron{width:7px;height:7px;border-right:1.5px solid var(--subtle);border-bottom:1.5px solid var(--subtle);transform:rotate(45deg);margin-right:5px;flex-shrink:0;transition:transform .15s}details[open]>summary .chevron{transform:rotate(225deg)}.detail-body{padding:0 0 21px;font-size:14px;color:var(--muted);overflow-wrap:anywhere}.detail-body details{margin-top:8px}.detail-body details .detail-body{padding-left:12px;border-left:2px solid var(--line)}.source-label{font:11px/1.8 var(--font-mono);color:var(--muted);overflow-wrap:anywhere;margin:7px 0}.source-item{margin-top:18px}.caption{font-size:12px!important;color:var(--muted)!important}.muted{color:var(--muted)}code{font:12px/1.8 var(--font-mono);background:var(--accent-soft);padding:2px 5px;border-radius:3px;overflow-wrap:anywhere}pre{margin:12px 0 18px;padding:18px 20px;font-family:var(--font-mono);background:var(--surface-3);border:1px solid var(--line);border-radius:6px;max-height:440px;overflow:auto;white-space:pre-wrap;word-break:break-word;tab-size:4}pre code{background:none;padding:0;font-size:12px;color:var(--ink);font-family:var(--font-mono)}.reference-list{list-style:none;padding:0}.reference-list li{padding-bottom:12px}.reference-list a{font-size:13px}.mechanism{background:white;border:1px solid var(--line);border-radius:var(--radius);padding:26px 28px}.parallel{display:grid;grid-template-columns:1fr 1fr;gap:18px;position:relative}.branch{border:1px solid var(--line);border-radius:7px;padding:17px 19px;position:relative;background:var(--surface-2)}.branch-label{font-size:11px;color:var(--muted);margin-bottom:7px}.branch b{font-size:14px;font-weight:550;display:block}.branch p{font-size:12px;color:var(--muted);margin:5px 0 0}.merge{height:34px;position:relative;width:52%;margin:auto;border-left:1px solid var(--line-strong);border-right:1px solid var(--line-strong);border-bottom:1px solid var(--line-strong);border-radius:0 0 6px 6px}.merge:after{content:"";position:absolute;height:18px;top:33px;left:50%;border-left:1px solid var(--line-strong)}.flow-node{margin:17px auto 0;max-width:460px;border:1px solid var(--line);border-radius:7px;padding:14px 18px;text-align:center;font-size:14px;background:var(--surface-2)}.flow-node small{display:block;font-size:12px;color:var(--muted);margin-top:3px}.flow-node.fault{border-color:#e4c9c5;background:#fcf5f3;color:var(--red)}.flow-arrow{height:23px;margin:auto;width:1px;background:var(--line-strong);position:relative}.flow-arrow:after{content:"";position:absolute;bottom:0;left:-3px;width:6px;height:6px;border-right:1px solid var(--line-strong);border-bottom:1px solid var(--line-strong);transform:rotate(45deg)}.flow-arrow+.flow-node{margin-top:0}.diagram-caption{margin:20px 0 0;font-size:12px;color:var(--muted);text-align:center}.trace-step{display:grid;grid-template-columns:28px minmax(0,1fr);gap:14px;margin:16px 0 26px}.trace-index{font:12px var(--font-mono);color:var(--subtle);margin-top:14px}.trace-step h4{font-family:var(--font-mono);font-size:13px;overflow-wrap:anywhere}.parameter{padding:8px 0;display:flex;gap:12px;flex-wrap:wrap;font-size:12px}.env-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin:6px 0}.env-grid dt{font-size:12px;color:var(--muted)}.env-grid dd{margin:4px 0 0;font-size:13px;color:var(--ink);overflow-wrap:anywhere}.raw-row{padding:8px 0}.raw-row b{font-size:12px}.raw-row p{font-size:13px;margin:4px 0}.footer{margin-top:40px;padding:23px 0;border-top:1px solid var(--line);display:flex;justify-content:space-between;gap:20px;font-size:11px;color:var(--muted)}.footer p{margin:0}.footer-actions{display:flex;gap:14px;white-space:nowrap}.text-button{font-size:12px;border:0;padding:0;background:none;color:var(--accent)}#copy-status{font-size:12px;color:var(--accent)}.skip-link{position:absolute;top:-100px}.skip-link:focus{top:10px;left:10px;z-index:20;background:#fff;padding:10px}
 @media(min-width:1500px){.shell{max-width:1340px}.layout{gap:60px}}
 @media(max-width:950px){.shell{padding:0 24px}.layout{padding-top:16px}.topnav{margin:0 -24px;padding:0 24px}.topbar{height:66px}.hero{padding:26px}.main{padding-top:4px}}
-@media(max-width:600px){.shell{padding:0 18px}.top-meta{display:none}.topbar{height:60px}.topnav{margin:0 -18px;padding:0 18px;overflow-x:auto;overflow-y:hidden}.topnav a{padding:10px 12px;font-size:12px}.layout{padding-top:8px}.identity{margin-top:6px}.hero{padding:23px 20px}.hero h2{font-size:20px}.facts{grid-template-columns:1fr;gap:15px}.fact{border-bottom:1px solid var(--line);padding-bottom:12px}.fact:last-child{border:0;padding-bottom:0}.fact-note{margin-top:1px}.plan{grid-template-columns:1fr;gap:22px}.section{margin-top:35px}.parallel{gap:10px}.branch{padding:12px}.mechanism{padding:19px 14px}.env-grid{grid-template-columns:1fr}.footer{flex-direction:column}.subline{gap:5px 14px}.hero-copy{margin-bottom:18px}.evidence{grid-template-columns:27px 1fr;gap:10px}.actions .btn{padding:9px 12px}.identity .eyebrow{letter-spacing:.6px}}
+@media(max-width:600px){.shell{padding:0 18px}.top-meta{display:none}.topbar{height:60px}.topnav{margin:0 -18px;padding:0 18px;overflow-x:auto;overflow-y:hidden}.topnav a{padding:10px 12px;font-size:12px}.layout{padding-top:8px}.identity{margin-top:6px}.hero{padding:23px 20px}.hero h2{font-size:20px}.facts{grid-template-columns:1fr;gap:15px}.fact{border-bottom:1px solid var(--line);padding-bottom:12px}.fact:last-child{border:0;padding-bottom:0}.fact-note{margin-top:1px}.plan{grid-template-columns:1fr;gap:22px}.section{margin-top:35px}.parallel{gap:10px}.branch{padding:12px}.mechanism{padding:19px 14px}.env-grid{grid-template-columns:1fr}.footer{flex-direction:column}.subline{gap:5px 14px}.hero-copy{margin-bottom:18px}.actions .btn{padding:9px 12px}.identity .eyebrow{letter-spacing:.6px}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important}}
-@media print{body{background:white;font-size:11pt}.shell{padding:0;max-width:none}.topbar,.topnav,.actions,.footer-actions,.skip-link{display:none}.layout{display:block;padding:0}.hero{padding:20px}.section{margin-top:26px;break-inside:auto}.hero,.mechanism,.plan-card,.evidence{break-inside:avoid}.main{padding:0}summary{padding:10px 0}pre{max-height:none;overflow:visible}a{color:inherit}.footer{font-size:9pt}.section-intro{margin-bottom:14px}.chevron{display:none}}
+@media print{body{background:white;font-size:11pt}.shell{padding:0;max-width:none}.topbar,.topnav,.actions,.footer-actions,.skip-link{display:none}.layout{display:block;padding:0}.hero{padding:20px}.section{margin-top:26px;break-inside:auto}.hero,.mechanism,.plan-card{break-inside:avoid}.main{padding:0}summary{padding:10px 0}pre{max-height:none;overflow:visible}a{color:inherit}.footer{font-size:9pt}.section-intro{margin-bottom:14px}.chevron{display:none}}
 
 /* Clear chapter boundaries and the concurrent execution sequence. */
 .section{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:24px 28px;margin-top:28px;box-shadow:var(--shadow-sm)}
@@ -41,10 +41,8 @@
 
 .plan-card{min-width:0}.plan-card>.reading-group{border:1px solid var(--line);border-radius:7px;padding:0 12px;background:var(--surface-2)}.plan-card>.reading-group>details:first-child{border-top:0}.plan-card>.reading-group>details:last-child{border-bottom:0}.plan-card .detail-body{font-size:13px}.plan-card pre{padding:12px;font-size:11px;white-space:pre;overflow-x:auto}.plan-card pre code{font-size:11px}.plan{align-items:start}
 
-.reasoning{list-style:none;counter-reset:reason;padding:0;margin:8px 0}.reasoning>li{counter-increment:reason;position:relative;margin:0;padding:0 0 22px 34px;border-left:1px solid var(--line);margin-left:11px}.reasoning>li:last-child{border-left-color:transparent;padding-bottom:6px}.reasoning>li:before{content:counter(reason);position:absolute;left:-12px;top:0;width:23px;height:23px;border-radius:50%;border:1px solid var(--line-strong);background:var(--accent-soft);color:var(--accent-strong);display:grid;place-items:center;font:11px var(--font-mono)}.reasoning h4{margin:0 0 8px;font-size:14px}.reasoning p{font-size:13px}.reasoning pre{margin:10px 0 8px;padding:13px 15px}.reason-result{border-left:3px solid var(--accent);background:var(--surface-3);padding:10px 12px;margin-top:12px!important;color:var(--accent-strong)!important}.evidence .detail-body{padding-top:6px}
-@media(max-width:600px){reasoning>li{padding-left:23px}.reasoning pre{padding:10px}.reasoning pre code{font-size:11px}}
+.reason-result{border-left:3px solid var(--accent);background:var(--surface-3);padding:10px 12px;margin-top:12px!important;color:var(--accent-strong)!important}
 @media(max-width:600px){.appendix-stats{grid-template-columns:1fr}.appendix-card{padding:0 11px}.appendix-card>details>summary{font-size:13px}}
-@media print{.reasoning>li{break-inside:avoid}}
 
 /* A compact, unified first-screen overview. */
 .topbar{height:60px}.layout{padding-top:25px}.report-header{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin:0 0 4px;padding:0 0 20px;border-bottom:1px solid var(--line)}.report-header-main{min-width:0}.report-header-kicker{font-size:11px;letter-spacing:1.8px;color:var(--muted);font-weight:650;margin-bottom:7px}.report-header h1{font-size:24px;letter-spacing:-.5px;line-height:1.3}.report-header .subline{margin:9px 0 0;font-size:13px;gap:14px}.overview-tools{display:flex;align-items:flex-end;flex-direction:column;gap:7px}.hero{padding:23px 25px}.hero h2{font-size:20px;max-width:none}.hero-copy{font-size:14px;margin:9px 0 17px;max-width:none;line-height:1.7}.facts{padding-top:15px;grid-template-columns:.95fr 1.15fr 1.15fr}.fact-label{font-size:11px;margin-bottom:5px}.fact-value{font-size:13px}.fact-note{font-size:11px}.fact-note a{margin:0}.overview-treatment{margin-top:18px;border-top:1px solid var(--line);padding-top:14px}.treatment-heading{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}.treatment-heading>h3{font-size:16px}.treatment-heading>span{font-size:11px;color:var(--subtle)}.overview-treatment .plan{display:grid;grid-template-columns:1fr;gap:18px}.overview-treatment .plan-card{border:1px solid var(--line);border-radius:7px;padding:13px 14px;background:var(--surface-2)}.overview-treatment .small-label{font-size:11px;letter-spacing:0;margin-bottom:4px}.overview-treatment .plan-card h3{font-size:14px;margin-bottom:6px}.overview-treatment .plan-card p{font-size:12px;line-height:1.7;margin-bottom:7px}.overview-treatment .reading-group{margin-top:10px;padding:0;border:0;background:transparent}.overview-treatment summary{font-size:11px;padding:8px 0}.overview-treatment .reading-group>details:last-child{border-top:1px solid var(--line)}.overview-treatment .notice{margin-top:10px;font-size:11px!important}.overview-treatment .detail-body p{font-size:12px}.overview-treatment .detail-body{font-size:12px}
@@ -131,16 +129,16 @@
 .step-mode{display:inline-block;font-size:9px;font-weight:600;padding:0 6px;border-radius:8px;margin:2px 0 0 6px;vertical-align:middle;background:#eef2f7;color:#475569;border:1px solid #dbe2ea}
 .seq-event.crash .step-mode{background:#f7e2de;color:#a8483c;border-color:#e5b7af}
 /* 证据链逻辑串联 */
-.evidence-connect{display:flex;align-items:flex-start;gap:10px;padding:10px 14px;margin:14px 0;border-left:3px solid var(--accent);background:var(--accent-soft);border-radius:6px}
-.evidence-connect span{color:var(--accent-strong);font-size:15px;line-height:1.5;font-weight:650;flex-shrink:0}
-.evidence-connect p{margin:0;font-size:13px;color:var(--accent-strong);line-height:1.6}
-.evidence-summary-label{display:inline-block;font-size:11px;font-weight:650;color:var(--accent-strong);background:var(--accent-soft);border:1px solid var(--line-strong);border-radius:4px;padding:0 6px;margin-right:6px;vertical-align:1px}
+
+
+
+
 .evidence-level{display:inline-block;font-size:11px;font-weight:650;border:1px solid var(--line-strong);border-radius:4px;padding:0 6px;margin-right:6px;vertical-align:1px;background:var(--surface-2);color:var(--muted)}
 .evidence-level.lv-measured{color:#2e7d5b;background:#eaf4ee;border-color:#cfe3d7}
 .evidence-level.lv-inferred{color:#8a6d3b;background:#faf6ec;border-color:#e2d6bd}
 .evidence-level.lv-unresolved{color:#5f6d72;background:#f4f6f7;border-color:#d5dadd}
-.evidence-caveat{font-size:12px!important;color:var(--muted)!important;margin:6px 0 0;padding-left:11px;border-left:2px solid #d7bc8f}
-@media print{.evidence-connect{break-inside:avoid}}
+
+
 summary,a{transition:color var(--trans)}
 /* 故障总览：与后续章节一致，走标准卡片框 */
 .section.overview .hero{margin-top:16px}
@@ -225,6 +223,49 @@ summary,a{transition:color var(--trans)}
 .snippet-inline-head{display:flex;align-items:center;gap:8px;padding:2px 8px}
 .snippet-inline .source-label{margin:2px 10px}
 .snippet-body .source-label{display:block;margin:6px 10px 2px}
+/* ===== 第 4 章：推导链（修订版壳样式；日志/源码卡仍用 snippet 样式） ===== */
+.proof-index{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 22px}
+.proof-index a{padding:5px 11px;border:1px solid var(--line);border-radius:5px;font-size:12px;text-decoration:none;background:var(--surface-2);color:var(--ink)}
+.proof-index a:hover{border-color:var(--accent);color:var(--accent)}
+.proof-step{border:1px solid var(--line-strong);border-radius:10px;background:#fff;margin:0 0 18px;overflow:hidden;scroll-margin-top:70px}
+.proof-step>summary{display:block;padding:16px 20px;font-weight:400;background:#fff}
+.proof-step>summary:hover{background:#fafcfb}
+.proof-step[open]>summary{border-bottom:1px solid var(--line)}
+.proof-heading{display:flex;align-items:center;gap:12px}
+.proof-no{font:14px var(--font-mono);color:var(--accent);flex-shrink:0}
+.proof-heading h3{flex:1;min-width:0;font-size:17px}
+.proof-preview{margin:12px 0 0;padding:10px 13px;border-left:3px solid #43856a;border-radius:0 5px 5px 0;background:#eaf5ee;color:#274c3c;font-size:13px;line-height:1.8}
+.proof-step[open] .proof-step-summary .proof-preview{display:none}
+.proof-body{padding:16px 20px 20px}
+.proof-evidence{display:grid;gap:9px;padding:13px;background:#edf4fb;border:1px solid #cbdaea;border-radius:8px}
+.proof-label{display:flex;justify-content:space-between;gap:12px;color:#315777;font-weight:600;font-size:13px;margin-bottom:2px}
+.proof-label span{font-weight:400;font-size:12px;color:#617990}
+.proof-card{border:1px solid var(--line);border-radius:7px;overflow:hidden;background:#fff}
+.proof-card>summary{padding:11px 14px;font-size:13px;font-weight:400;line-height:1.8;background:#f8fbff;color:#283e51;align-items:flex-start;gap:14px}
+.proof-card>summary:hover{background:#e5effa}
+.proof-card[open]>summary{border-bottom:1px solid var(--line);background:#eef5f1}
+.proof-card>summary>span:first-child{min-width:0;overflow-wrap:anywhere}
+.proof-card>summary b{font-size:13px;color:#1f3b52;margin-right:6px}
+.proof-meaning-text{color:#3c556b}
+.proof-raw{padding:4px 12px 12px;background:#fff}
+.proof-raw .reason-result{margin-top:10px}
+.proof-deduction{display:grid;grid-template-columns:24px minmax(0,1fr);gap:12px;padding:16px 2px 6px}
+.deduction-arrow{display:block;width:2px;background:#7391a4;margin:0 auto;align-self:stretch}
+.proof-deduction h4{font-size:13px;color:var(--muted);margin:0 0 5px}
+.proof-deduction p{margin:0;color:#4b5862;font-size:14px;line-height:1.9}
+.proof-result{padding:13px 16px;border-left:3px solid var(--accent);background:var(--accent-soft);border-radius:0 6px 6px 0;scroll-margin-top:80px}
+.proof-result-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;color:var(--accent-strong)}
+.proof-result-head b{font-size:13px}
+.proof-result-head .evidence-level{margin-right:0}
+.proof-result p{margin:6px 0 0;font-size:14px;line-height:1.85;color:#274c3c}
+.proof-boundary{font-size:12px;color:#826125;margin:12px 0 0;padding:10px 12px;background:#fffaf0;border-radius:5px}
+.proof-transition{display:grid;grid-template-columns:24px minmax(0,1fr);gap:12px;align-items:center;padding:0 20px}
+.transition-arrow{display:block;position:relative;width:2px;min-height:50px;margin:auto;background:#a0b7c5}
+.transition-arrow:after{content:"";position:absolute;bottom:0;left:-3px;width:6px;height:6px;border-right:2px solid #a0b7c5;border-bottom:2px solid #a0b7c5;transform:rotate(45deg)}
+.proof-transition p{font-size:13px;line-height:1.8;color:#576d7b;margin:0;padding:12px 0}
+@media(max-width:600px){.proof-step>summary{padding:14px 13px}.proof-body{padding:12px 13px 14px}.proof-heading h3{font-size:15px}.proof-transition{padding:0 4px}.proof-index a{padding:4px 8px;font-size:11px}}
+@media print{.proof-step{break-inside:auto}.proof-card,.proof-result{break-inside:avoid}.proof-index{display:none}}
+
 </style></head>
 <body>
 <a class="skip-link" href="#overview">跳到报告正文</a>
@@ -875,13 +916,33 @@ function snippetRefLink(sn){
   if(!sn || !has(sn.ref)) return '';
   return `<a href="#${esc(sn.ref)}" onclick="openAttachmentCase('${esc(sn.ref)}'); return false;" class="attachment-link" title="查看完整摘录">完整摘录 ↗</a>`;
 }
-function renderSnippet(sn){
+function renderSnippet(sn, forceInline){
   if(!sn) return '';
   const segs = toArr(sn.segs).filter(sg2=>sg2 && has(sg2.content));
   if(!has(sn.content) && !segs.length) return '';
   const kind = has(sn.kind) ? String(sn.kind) : inferSnippetKind(sn.content || '');
   const cls = SNIPPET_KIND_CLS[kind] || '';
   const refLink = snippetRefLink(sn);
+  /* 第 4 章证据卡内完全内联（forceInline：不再二次折叠）；短日志 sn.inline 仍走内联 */
+  if(forceInline === true || sn.inline === true){
+    const head = `<div class="snippet-inline-head"><span class="snippet-kind ${cls}">${esc(kind)}</span><span class="snippet-title">${esc(sn.title||'')}</span></div>`;
+    if(segs.length){
+      const segsInline = segs.map(sg2=>{
+        const firstLine = parseInt(sg2.first_line,10);
+        const hasAbs = Number.isInteger(firstLine) && firstLine > 0;
+        const code = snippetLinesHTML(sg2.content, parseHl(sg2.hl), parseAnn(sg2.ann), firstLine);
+        const loc = has(sg2.loc) ? `<span class="source-label">📍 ${esc(sg2.loc)}</span>` : '';
+        const segRef = has(sg2.ref) ? snippetRefLink(sg2) : '';
+        return `<div class="snippet-seg">${loc}<code class="src-excerpt${hasAbs?' absno':''}">${code}</code>${segRef?`<div style="padding:2px 10px 6px">${segRef}</div>`:''}</div>`;
+      }).join('');
+      return `<div class="snippet snippet-inline">${head}${segsInline}${refLink?`<div>${refLink}</div>`:''}</div>`;
+    }
+    const firstLine = parseInt(sn.first_line,10);
+    const hasAbs = Number.isInteger(firstLine) && firstLine > 0;
+    const lines = snippetLinesHTML(sn.content, parseHl(sn.hl), parseAnn(sn.ann), firstLine);
+    const locLine = has(sn.loc) ? `<span class="source-label">📍 ${esc(sn.loc)}</span>` : '';
+    return `<div class="snippet snippet-inline">${head}${locLine}<code class="src-excerpt">${lines}</code>${refLink?`<div>${refLink}</div>`:''}</div>`;
+  }
   /* 多段源码：一个框内多个子框，每段独立文件行号/高亮/注释（行号与文件行号一致） */
   if(segs.length){
     const segsHtml = segs.map(sg2=>{
@@ -898,9 +959,6 @@ function renderSnippet(sn){
   const hasAbs = Number.isInteger(firstLine) && firstLine > 0;
   const lines = snippetLinesHTML(sn.content, parseHl(sn.hl), parseAnn(sn.ann), firstLine);
   const locLine = has(sn.loc) ? `<span class="source-label">📍 ${esc(sn.loc)}</span>` : '';
-  if(sn.inline === true){
-    return `<div class="snippet snippet-inline"><div class="snippet-inline-head"><span class="snippet-kind ${cls}">${esc(kind)}</span><span class="snippet-title">${esc(sn.title||'')}</span></div>${locLine}<code class="src-excerpt">${lines}</code>${refLink?`<div>${refLink}</div>`:''}</div>`;
-  }
   return `<details class="snippet"><summary><span class="snippet-kind ${cls}">${esc(kind)}</span><span class="snippet-title">${esc(sn.title||'')}</span><span class="chevron" aria-hidden="true"></span></summary><div class="snippet-body">${locLine}<code class="src-excerpt${hasAbs?' absno':''}">${lines}</code>${refLink}</div></details>`;
 }
 
@@ -909,7 +967,7 @@ function evidenceKindOf(line){
   const m = String(line).match(/^\s*([^｜|]{2,6})\s*[｜|]\s*/);
   return m ? m[1].trim() : '';
 }
-function renderEvidenceBlock(text){
+function renderEvidenceBlock(text, forceInline){
   const rawLines = String(text).split('\n').flatMap(l=>l.split('；')).map(s=>s.trim()).filter(has);
   if(!rawLines.length) return '';
   const kind = evidenceKindOf(rawLines[0]) || inferSnippetKind(text);
@@ -919,6 +977,9 @@ function renderEvidenceBlock(text){
     const on = hlRe.test(ln);
     return `<span class="src-line${on?' src-hl':''}"><span class="src-no">${i+1}</span>${esc(ln)||'&nbsp;'}</span>`;
   }).join('');
+  if(forceInline === true){
+    return `<div class="snippet snippet-inline"><div class="snippet-inline-head"><span class="snippet-kind ${cls}">${esc(kind||'事实记录')}</span><span class="snippet-title">${rawLines.length} 条事实</span></div><code class="src-excerpt">${lines}</code></div>`;
+  }
   return `<details class="snippet"><summary><span class="snippet-kind ${cls}">${esc(kind||'事实记录')}</span><span class="snippet-title">${rawLines.length} 条事实 · 点击展开</span><span class="chevron" aria-hidden="true"></span></summary><div class="snippet-body"><code class="src-excerpt">${lines}</code></div></details>`;
 }
 
@@ -930,52 +991,65 @@ function evidenceLevelCls(level){
   return 'lv-measured';
 }
 function renderEvidence(){
-  let h = `<section class="section" id="evidence" aria-labelledby="evidence-title">`;
+  let h = `<section class="section proof-section" id="evidence" aria-labelledby="evidence-title">`;
   h += `<div class="section-heading"><span class="section-no">04</span><h2 id="evidence-title">为什么得出这个结论</h2></div>`;
   const evs = toArr(deep.evidence).filter(has);
   if(evs.length){
     h += `<p class="section-intro">从崩溃现场出发，一步步追溯根因并交叉验证。</p>`;
+    const shortOf = (e,i)=>{
+      if(e && typeof e === 'object' && has(e.short)) return String(e.short);
+      const t = String((e && e.title) || ('依据 '+(i+1)));
+      const m = t.match(/^([^，,、；;：:？！?]{2,12})/);
+      return m ? m[1] : ('依据 '+(i+1));
+    };
+    h += `<nav class="proof-index" aria-label="推理步骤">${evs.map((e,i)=>`<a href="#proof-${i+1}">${i+1}. ${esc(shortOf(e,i))}</a>`).join('')}</nav>`;
     evs.forEach((e,i)=>{
       const isObj = typeof e === 'object' && e !== null;
-      const title = isObj ? (e.title || ('依据 '+(i+1))) : evidenceTitle(e, i);
+      const title = isObj ? (e.title || ('依据 '+(i+1))) : shortOf(e,i);
       const summary = isObj ? (e.summary || '') : String(e);
       const reasoning = isObj ? toArr(e.reasoning) : [];
       const connect = isObj ? (e.connect || '') : '';
-      if(has(connect)) h += `<div class="evidence-connect"><span aria-hidden="true">↓</span><p>${esc(connect)}</p></div>`;
-      h += `<article class="evidence"><div class="evidence-number">${i+1}</div><div>`;
-      h += `<h3>${esc(title)}</h3>`;
-      if(has(summary)) h += `<p class="evidence-summary">${isObj && has(e.level)?`<span class="evidence-level ${evidenceLevelCls(e.level)}">证据级别：${esc(e.level)}</span>`:''}<span class="evidence-summary-label">结论</span>${linkifyBody(summary)}</p>`;
-      if(isObj && has(e.caveat)) h += `<p class="evidence-caveat">边界：${linkifyBody(e.caveat)}</p>`;
-      if(reasoning.length){
-        h += `<details><summary>查看推理细节与证据<span class="chevron" aria-hidden="true"></span></summary><div class="detail-body"><ol class="reasoning">`;
-        reasoning.forEach(st=>{
-          h += `<li><h4>${esc(st.step||'')}</h4>`;
-          if(has(st.detail)) h += `<p>${linkifyBody(st.detail)}</p>`;
-          /* 原文块/事实块均默认收起：有 snippet 走原文，无 snippet 走 evidence 事实块 */
-          const hasSnippets = toArr(st.snippets).some(sn=>sn && (has(sn.content) || toArr(sn.segs).some(g=>g && has(g.content))));
-          if(hasSnippets) toArr(st.snippets).forEach(sn=>{ h += renderSnippet(sn); });
-          else if(has(st.evidence)) h += renderEvidenceBlock(st.evidence);
-          if(has(st.conclusion)) h += `<p class="reason-result">${linkifyBody(st.conclusion)}</p>`;
-          h += `</li>`;
-        });
-        h += `</ol></div></details>`;
+      const level = isObj ? (e.level || '') : '';
+      const caveat = isObj ? (e.caveat || '') : '';
+      if(has(connect)) h += `<div class="proof-transition"><span class="transition-arrow" aria-hidden="true"></span><p>${linkifyBody(connect)}</p></div>`;
+      let ded = null; const cards = [];
+      reasoning.forEach(st=>{
+        if(!ded && /推导/.test(String((st && st.step) || ''))) ded = st;
+        else cards.push(st);
+      });
+      if(!ded && reasoning.length){
+        /* 无「推导」步的报告：仅当末步不带原文且给出结论时才视为推导步（避免误删真实证据卡） */
+        const last = reasoning[reasoning.length-1];
+        const lastSnips = toArr(last && last.snippets).some(sn=>sn && (has(sn.content) || toArr(sn.segs).some(g=>g && has(g.content))));
+        if(!lastSnips && has(last && last.conclusion)){ ded = last; cards.pop(); }
       }
-      h += `</div></article>`;
+      const dedDetail = (ded && has(ded.detail)) ? ded.detail : (has(summary) ? firstSentence(summary) : '');
+      const conclusion = has(summary) ? summary : ((ded && ded.conclusion) || '');
+      h += `<details class="proof-step" id="proof-${i+1}"><summary class="proof-step-summary"><div class="proof-heading"><span class="proof-no">${String(i+1).padStart(2,'0')}</span><h3>${esc(title)}</h3><span class="chevron" aria-hidden="true"></span></div>`;
+      if(has(summary)) h += `<p class="proof-preview">${linkifyBody(summary)}</p>`;
+      h += `</summary><div class="proof-body">`;
+      if(cards.length){
+        h += `<div class="proof-evidence"><div class="proof-label">现场证据 <span>点击卡片展开原始记录</span></div>`;
+        cards.forEach(st=>{
+          h += `<details class="proof-card"><summary><span>${has(st.step)?`<b>${esc(st.step)}</b>`:''}${has(st.detail)?`<span class="proof-meaning-text">${linkifyBody(st.detail)}</span>`:''}</span><span class="chevron" aria-hidden="true"></span></summary><div class="proof-raw">`;
+          const hasSnippets = toArr(st.snippets).some(sn=>sn && (has(sn.content) || toArr(sn.segs).some(g=>g && has(g.content))));
+          if(hasSnippets) toArr(st.snippets).forEach(sn=>{ h += renderSnippet(sn, true); });
+          else if(has(st.evidence)) h += renderEvidenceBlock(st.evidence, true);
+          if(has(st.conclusion)) h += `<p class="reason-result">${linkifyBody(st.conclusion)}</p>`;
+          h += `</div></details>`;
+        });
+        h += `</div>`;
+      }
+      if(has(dedDetail)) h += `<div class="proof-deduction"><span class="deduction-arrow" aria-hidden="true"></span><div><h4>由此推导</h4><p>${linkifyBody(dedDetail)}</p></div></div>`;
+      if(has(conclusion)) h += `<div class="proof-result" id="conclusion-${i+1}"><div class="proof-result-head"><b>结论</b>${has(level)?`<span class="evidence-level ${evidenceLevelCls(level)}">证据级别：${esc(level)}</span>`:''}</div><p>${linkifyBody(conclusion)}</p></div>`;
+      if(has(caveat)) h += `<p class="proof-boundary"><b>证据边界：</b>${linkifyBody(caveat)}</p>`;
+      h += `</div></details>`;
     });
   } else {
     h += `<p class="section-intro">原报告未提供结构化证据要点，详见技术附件中的原始诊断数据。</p>`;
   }
-
   h += `</section>`;
   return h;
-}
-
-/* 依据标题：摘取证据开头关键词 */
-function evidenceTitle(e, i){
-  const s = String(e||'');
-  const m = s.match(/^([^：:，,。（(]{2,24})/);
-  if(m) return m[1].trim();
-  return '核心依据 ' + (i+1);
 }
 
 /* 事件之间流向箭头：同泳道用 ↓，任意跨泳道均使用 S 形曲线。 */
