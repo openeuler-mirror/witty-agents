@@ -129,6 +129,8 @@ def validate_quality(report: Any) -> list[str]:
     - snippet 行号一致性：hl/ann 键不得越界、hl 不得指向空行/省略行
     - deep.evidence 环间 connect 不得缺失（i>0）、单条 reasoning 至少 2 步、step/detail 非空
     - 源码块必须 first_line（跳段拆 segs）、内容不得带行号前缀或用「...」跳段
+    - 源码块 ann 关键标识必须落在所标行（错位/缺锚点告警）
+    - 行内注释（行尾 `◀ 注释`）与 ann 重复、只有 ◀ 无文本、清单类块使用行内注释 → WARN
     - raw_crash_log 存在时应有 raw_crash_log_ann（关键行注释）
     - evidence/detail 禁止堆检索工具原始输出（应翻译成人话）
     - type=patch 必须有非空 patch_list[].diff
@@ -186,6 +188,7 @@ def validate_quality(report: Any) -> list[str]:
 
     # 1d) 五类原文块的关键行注释（有 hl 应有 ann）
     ANN_REQUIRED_KINDS = ("现场日志", "反汇编", "调用栈", "源码", "内存取证")
+    LIST_KINDS = ("定性", "推断", "上游对照", "版本对照", "检索记录", "事实记录")
     for i, ev in enumerate(evs):
         for j, r in enumerate(ev.get("reasoning") or []):
             if not isinstance(r, dict):
@@ -274,7 +277,11 @@ def validate_quality(report: Any) -> list[str]:
         toks = []
         for m in ANN_TOKEN_RE.finditer(str(text or "")):
             t = m.group(0)
-            if len(t) < 3 and not t.isdigit():
+            if t.isdigit():
+                # 纯数字过短（如 1/12/13）过于泛化，不作为锚点；保留 ≥3 位（如 100）
+                if len(t) < 3:
+                    continue
+            elif len(t) < 3:
                 continue
             if t.lower() in ANN_TOKEN_STOP:
                 continue
@@ -307,6 +314,36 @@ def validate_quality(report: Any) -> list[str]:
                     hl = [x for x in (blk.get("hl") or []) if isinstance(x, int)]
                     ann = _ann_dict(blk.get("ann"))
                     hint = f"1..{n}" + ("（或绝对行号）" if abs_start else "")
+                    # 行内注释（保守规则：整行只有一个 ◀，且前后均有非空文本）
+                    inline_ann = {}
+                    inline_empty = []
+                    for ln_i, ln_txt in enumerate(lines, 1):
+                        pos = ln_txt.rfind("◀")
+                        if pos < 0:
+                            continue
+                        if "◀" in ln_txt[:pos]:
+                            continue  # 多个 ◀ → 视为正文，不解析
+                        before, after = ln_txt[:pos], ln_txt[pos + 1:]
+                        if not before.strip():
+                            continue
+                        if after.strip():
+                            # 与模板同规则：◀ 前必须紧邻空白，避免把代码里的 "◀" 字符串误判为注释
+                            if before.endswith((" ", "\t")):
+                                inline_ann[ln_i] = after.strip()
+                        else:
+                            if before.endswith((" ", "\t")):
+                                inline_empty.append(ln_i)
+                    if str(kind or "") in LIST_KINDS and (inline_ann or inline_empty):
+                        warns.append(f"{blabel}（{kind}）清单类块不支持行内注释 —— 请把小结写入 ann（卡底展示）")
+                    for ln_i in inline_empty:
+                        warns.append(f"{blabel} 第 {ln_i} 行只有 ◀ 没有注释文本 —— 请补文本或删除该符号")
+                    for ln_i in sorted(inline_ann):
+                        if ann.get(ln_i) is not None or (
+                            abs_start is not None and ann.get(abs_start + ln_i - 1) is not None
+                        ):
+                            warns.append(
+                                f"{blabel} 第 {ln_i} 行同时有行内注释与 ann 条目 —— 行内优先，请删掉重复的 ann"
+                            )
                     for key in sorted(set(hl)):
                         if not _key_ok(key, n, abs_start):
                             warns.append(f"{blabel} hl 行号 {key} 越界 —— 键按内容第 N 行：{hint}")
@@ -321,7 +358,7 @@ def validate_quality(report: Any) -> list[str]:
                             warns.append(f"{blabel} hl 指向空行/省略行（第 {rel} 行）—— 请标注有效内容行")
                         if kind in ANN_REQUIRED_KINDS and ann.get(rel) is None and (
                             abs_start is None or ann.get(abs_start + rel - 1) is None
-                        ):
+                        ) and rel not in inline_ann:
                             warns.append(f"{blabel} hl 第 {rel} 行缺少 ann —— 高亮行应配行尾 ◀ 注释")
                     if kind == "源码":
                         if abs_start is None:

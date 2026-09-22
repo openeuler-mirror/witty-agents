@@ -795,13 +795,7 @@
                   "kind": "源码",
                   "loc": "include/linux/scatterlist.h:151-152",
                   "first_line": 151,
-                  "hl": [
-                    2
-                  ],
-                  "ann": {
-                    "2": "只按 i<nr 循环，取到空指针也会继续"
-                  },
-                  "content": "#define for_each_sg(sglist, sg, nr, __i)\t\\\n\tfor (__i = 0, sg = (sglist); __i < (nr); __i++, sg = sg_next(sg))",
+                  "content": "#define for_each_sg(sglist, sg, nr, __i)\t\\\n\tfor (__i = 0, sg = (sglist); __i < (nr); __i++, sg = sg_next(sg))   ◀ 只按 i<nr 循环，取到空指针也会继续",
                   "ref": "src-sgl-macro",
                   "title": "源码：for_each_sg 只按计数循环（scatterlist.h:151-152）"
                 }
