@@ -872,11 +872,11 @@
                                   "type": "integer",
                                   "minimum": 1
                                 },
-                                "description": "1-based 高亮行号。"
+                                "description": "关键行高亮：默认按内容第 N 行（1-based）；若设置了 first_line，模板也兼容绝对文件行号写法。"
                               },
                               "ann": {
                                 "type": "object",
-                                "description": "1-based 行号→注释文本（行尾 ◀ 注释）。"
+                                "description": "行号→注释文本（行尾 ◀ 注释）：键默认按内容第 N 行（1-based），first_line 存在时也兼容绝对文件行号；非原文类块（定性/检索记录等）的 ann 渲染为卡底「小结/结论」。"
                               },
                               "loc": {
                                 "type": "string",
@@ -896,7 +896,7 @@
                               "first_line": {
                                 "type": "integer",
                                 "minimum": 1,
-                                "description": "绝对文件行号基线。"
+                                "description": "绝对文件行号基线：内容不带行号前缀，左栏按此渲染真实文件行号（跳段请拆 segs）。"
                               }
                             }
                           }
@@ -1044,7 +1044,7 @@
                         "first_line": {
                           "type": "integer",
                           "minimum": 1,
-                          "description": "该段的绝对文件行号基线。"
+                          "description": "该段的绝对文件行号基线（内容不带行号前缀，左栏按此渲染真实行号）。"
                         },
                         "content": {
                           "type": "string",
@@ -1056,11 +1056,11 @@
                             "type": "integer",
                             "minimum": 1
                           },
-                          "description": "该段内 1-based 高亮行号。"
+                          "description": "该段内高亮行号（按内容第 N 行；first_line 存在时也兼容绝对行号）。"
                         },
                         "ann": {
                           "type": "object",
-                          "description": "该段内 1-based 行号→注释文本。"
+                          "description": "该段内行号→注释文本（按内容第 N 行；first_line 存在时也兼容绝对行号）。"
                         },
                         "ref": {
                           "type": "string",

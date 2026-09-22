@@ -211,7 +211,7 @@ summary,a{transition:color var(--trans)}
 /* 证据块代码段过长时出现纵向滚动条（约 16 行可见高度） */
 .snippet .src-excerpt{max-height:360px;overflow-y:auto}
 .snippet-body .src-line{padding-right:10px}
-.snippet .attachment-link{margin:4px 10px;display:inline-block}
+.snippet .attachment-link{margin:4px 10px}
 /* snippet / 原始崩溃日志行号一律 JS 显式渲染（支持绝对文件行号）；关闭 CSS counter 防双编号 */
 .snippet .src-line::before,.rawlog-body .src-line::before{display:none}
 .src-no{display:inline-block;width:2.4em;margin-right:10px;text-align:right;color:var(--subtle);font-size:10px}
@@ -223,6 +223,20 @@ summary,a{transition:color var(--trans)}
 .snippet-inline-head{display:flex;align-items:center;gap:8px;padding:2px 8px}
 .snippet-inline .source-label{margin:2px 10px}
 .snippet-body .source-label{display:block;margin:6px 10px 2px}
+/* 非原文类证据块（检索记录/定性/上游对照/版本对照/事实记录）→ 结论清单卡：无行号、非等宽、底部小结 */
+.snippet-list-card .sn-list{margin:6px 10px 2px;padding:0;list-style:none;display:grid;gap:5px}
+.sn-list .sn-li{display:flex;gap:8px;align-items:flex-start;padding:5px 10px;font-size:12.5px;line-height:1.75;color:#1c262b;background:var(--surface-2);border:1px solid var(--line);border-radius:6px}
+.sn-list .sn-li .sn-li-text{font-weight:550;min-width:0;overflow-wrap:anywhere}
+.sn-li-marker{flex-shrink:0;min-width:14px;color:var(--subtle);font-weight:700}
+.sn-list .sn-li.sn-li-mark .sn-li-marker{color:#2e7d5b}
+.sn-list .sn-li.sn-li-x .sn-li-marker{color:#b04a4a}
+.sn-list .sn-li.sn-li-approx .sn-li-marker{color:#926321}
+.sn-list .sn-li.sn-li-hl{background:#fdf8eb;border-color:#dbcdab}
+.sn-list .sn-li.sn-li-sub{background:transparent;border-style:dashed;color:var(--muted);padding-top:3px;padding-bottom:3px}
+.sn-list .sn-li.sn-li-sub .sn-li-text{font-weight:400}
+.sn-list-note{margin:6px 10px 2px;padding:6px 10px;font-size:12px;line-height:1.7;color:#826125;background:#fffaf0;border:1px solid #f0e0bd;border-radius:6px}
+.sn-list-note b{color:#8a6d3b}
+.sn-list-note span{display:block}
 /* ===== 第 4 章：推导链（修订版壳样式；日志/源码卡仍用 snippet 样式） ===== */
 .proof-index{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 22px}
 .proof-index a{padding:5px 11px;border:1px solid var(--line);border-radius:5px;font-size:12px;text-decoration:none;background:var(--surface-2);color:var(--ink)}
@@ -455,7 +469,7 @@ function linkifyJudgment(s){
     const url=m.replace(/[.,，。；;!?\)\]'">]+$/,'');
     const tail=m.slice(url.length);
     const id = findAttachmentId(url);
-    if(id) return `<a href="#${id}" onclick="openAttachmentCase('${id}'); return false;" class="attachment-link" title="跳转到技术附件">查看关联技术附件 ↗</a>${tail}`;
+    if(id) return `<a href="#${id}" onclick="openAttachmentCase('${id}'); return false;" class="attachment-link" title="跳转到技术附件">查看关联技术附件</a>${tail}`;
     return url + tail; /* 未命中索引的 URL 保持纯文本 */
   });
 }
@@ -521,7 +535,7 @@ function relatedCaseLine(r){
   if(has(desc)) h += `<p>${linkifyBody(desc)}</p>`;
   let meta = '';
   if(typeBadge) meta += `<span class="case-type">${esc(typeBadge)}</span>`;
-  if(r.id) meta += `<a href="#${r.id}" onclick="openAttachmentCase('${r.id}'); return false;" class="attachment-link" title="跳转到技术附件">详情 ↗</a>`;
+  if(r.id) meta += `<a href="#${r.id}" onclick="openAttachmentCase('${r.id}'); return false;" class="attachment-link" title="跳转到技术附件">详情</a>`;
   else if(has(url)) meta += `<a href="${esc(url)}" target="_blank" rel="noopener noreferrer">原文 ↗</a>`;
   if(meta) h += `<div class="related-case-meta">${meta}</div>`;
   return h + `</div>`;
@@ -593,7 +607,7 @@ function renderOverview(){
         if(has(p.why)) det += `<div class="patch-rationale"><b>为什么这个补丁能修复当前问题</b><p>${linkifyBody(p.why)}</p></div>`;
         if(toArr(p.files).length) det += `<p>涉及文件：${toArr(p.files).map(f=>{
           const sid = findSourceRefId(f);
-          return sid ? `<a href="#${sid}" onclick="openAttachmentCase('${sid}'); return false;" class="attachment-link" title="查看本地源码摘录">${esc(f)} ↗</a>` : esc(f);
+          return sid ? `<a href="#${sid}" onclick="openAttachmentCase('${sid}'); return false;" class="attachment-link" title="查看本地源码摘录">${esc(f)}</a>` : esc(f);
         }).join(' · ')}</p>`;
         if(has(p.diff)) det += `<pre class="${fixLevel==='speculative'?'patch-speculative-bg':''}"><code>${esc(p.diff)}</code></pre>`;
       });
@@ -904,16 +918,72 @@ function parseAnn(annObj){
 function snippetLinesHTML(content, hlLines, annMap, firstLine, catMap){
   const hasAbs = Number.isInteger(firstLine) && firstLine > 0;
   return String(content).split('\n').map((ln,i)=>{
-    const on = hlLines.includes(i+1);
-    const no = hasAbs ? (firstLine + i) : (i + 1);
-    const cat = (catMap && catMap[i+1]) ? (' ' + catMap[i+1]) : '';
-    const ann = annMap[i+1] ? ` <span class="src-ann">◀ ${esc(annMap[i+1])}</span>` : '';
-    return `<span class="src-line${cat}${on?' src-hl':''}"><span class="src-no">${no}</span>${esc(ln)||'&nbsp;'}${ann}</span>`;
+    const rel = i + 1;
+    const abs = hasAbs ? (firstLine + i) : null;
+    const blank = !String(ln).trim() || /^[.\u2026]{2,}$/.test(String(ln).trim());
+    /* hl/ann 键兼容两种写法：内容第 N 行（推荐）或绝对文件行号（需 first_line/segs.first_line） */
+    const on = hlLines.includes(rel) || (abs !== null && hlLines.includes(abs));
+    const no = hasAbs ? abs : rel;
+    const cat = (catMap && catMap[rel]) ? (' ' + catMap[rel]) : '';
+    const annText = annMap[rel] || (abs !== null ? annMap[abs] : '');
+    const ann = annText ? ` <span class="src-ann">◀ ${esc(annText)}</span>` : '';
+    return `<span class="src-line${cat}${on && !blank ? ' src-hl' : ''}${blank ? ' src-blank' : ''}"><span class="src-no">${no}</span>${esc(ln)||'&nbsp;'}${ann}</span>`;
   }).join('');
 }
 function snippetRefLink(sn){
   if(!sn || !has(sn.ref)) return '';
-  return `<a href="#${esc(sn.ref)}" onclick="openAttachmentCase('${esc(sn.ref)}'); return false;" class="attachment-link" title="查看完整摘录">完整摘录 ↗</a>`;
+  return `<a href="#${esc(sn.ref)}" onclick="openAttachmentCase('${esc(sn.ref)}'); return false;" class="attachment-link" title="查看完整摘录">完整摘录</a>`;
+}
+const SNIPPET_LIST_KINDS = new Set(['定性','推断','上游对照','版本对照','检索记录','事实记录']);
+const SNIPPET_ORDERED_KINDS = new Set(['定性','推断']);
+function listItemsHTML(content, hlLines, ordered){
+  const cir = '①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳';
+  let seq = 0;
+  const items = [];
+  String(content||'').split('\n').forEach((raw,i)=>{
+    const t = String(raw).trim();
+    if(!t || /^[.\u2026]{2,}$/.test(t)) return; /* 空行/省略行不入清单 */
+    const rel = i + 1;
+    const on = hlLines.includes(rel);
+    const sub = /^[-•·]\s+/.test(t);
+    let text = sub ? t.replace(/^[-•·]\s+/,'') : t;
+    let mark = '', markCls = '';
+    const m = text.match(/^([✓✔×✗≈])\s*/);
+    if(m){
+      mark = m[1]; text = text.slice(m[0].length);
+      markCls = (m[1] === '✓' || m[1] === '✔') ? ' sn-li-mark' : (m[1] === '≈' ? ' sn-li-approx' : ' sn-li-x');
+    } else if(ordered && !sub){
+      mark = cir[seq] || ('(' + (seq + 1) + ')'); seq++;
+    } else if(!sub){
+      mark = '•';
+    }
+    const marker = mark ? `<span class="sn-li-marker">${esc(mark)}</span>` : '';
+    items.push(`<li class="sn-li${sub?' sn-li-sub':''}${markCls}${on?' sn-li-hl':''}">${marker}<span class="sn-li-text">${esc(text)}</span></li>`);
+  });
+  return items.join('');
+}
+function listNotesHTML(annMap, label){
+  const vals = Object.keys(annMap||{}).map(k=>parseInt(k,10)).filter(n=>Number.isInteger(n)).sort((a,b)=>a-b).map(k=>annMap[k]).filter(v=>has(v));
+  if(!vals.length) return '';
+  return `<div class="sn-list-note"><b>${label}：</b>${vals.map(v=>`<span>${esc(v)}</span>`).join('')}</div>`;
+}
+function renderListSnippet(sn, kind, cls, inlineLayout, refLink, segs){
+  const ordered = SNIPPET_ORDERED_KINDS.has(kind);
+  const noteLabel = ordered ? '结论' : '小结';
+  const parts = [];
+  const loc = has(sn.loc) ? `<span class="source-label">📍 ${esc(sn.loc)}</span>` : '';
+  if(segs.length){
+    segs.forEach(sg2=>{
+      const sgLoc = has(sg2.loc) ? `<span class="source-label">📍 ${esc(sg2.loc)}</span>` : '';
+      parts.push(`<div class="snippet-seg">${sgLoc}<ul class="sn-list${ordered?' sn-list-ordered':''}">${listItemsHTML(sg2.content, parseHl(sg2.hl), ordered)}</ul>${listNotesHTML(parseAnn(sg2.ann), noteLabel)}</div>`);
+    });
+  } else {
+    parts.push(`<ul class="sn-list${ordered?' sn-list-ordered':''}">${listItemsHTML(sn.content, parseHl(sn.hl), ordered)}</ul>${listNotesHTML(parseAnn(sn.ann), noteLabel)}`);
+  }
+  const inner = `${loc}${parts.join('')}${refLink?`<div>${refLink}</div>`:''}`;
+  const head = `<span class="snippet-kind ${cls}">${esc(kind)}</span><span class="snippet-title">${esc(sn.title||'')}</span>`;
+  if(inlineLayout) return `<div class="snippet snippet-inline snippet-list-card"><div class="snippet-inline-head">${head}</div>${inner}</div>`;
+  return `<details class="snippet snippet-list-card"><summary>${head}<span class="chevron" aria-hidden="true"></span></summary><div class="snippet-body">${inner}</div></details>`;
 }
 function renderSnippet(sn, forceInline){
   if(!sn) return '';
@@ -922,8 +992,11 @@ function renderSnippet(sn, forceInline){
   const kind = has(sn.kind) ? String(sn.kind) : inferSnippetKind(sn.content || '');
   const cls = SNIPPET_KIND_CLS[kind] || '';
   const refLink = snippetRefLink(sn);
+  const inlineLayout = forceInline === true || sn.inline === true;
+  /* 非原文类（检索记录/定性/上游对照/版本对照/事实记录）→ 结论清单卡 */
+  if(SNIPPET_LIST_KINDS.has(kind)) return renderListSnippet(sn, kind, cls, inlineLayout, refLink, segs);
   /* 第 4 章证据卡内完全内联（forceInline：不再二次折叠）；短日志 sn.inline 仍走内联 */
-  if(forceInline === true || sn.inline === true){
+  if(inlineLayout){
     const head = `<div class="snippet-inline-head"><span class="snippet-kind ${cls}">${esc(kind)}</span><span class="snippet-title">${esc(sn.title||'')}</span></div>`;
     if(segs.length){
       const segsInline = segs.map(sg2=>{
