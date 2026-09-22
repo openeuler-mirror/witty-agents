@@ -6,10 +6,14 @@ import { applyEdits, modify, parse, printParseErrorCode } from "jsonc-parser"
 import { readManagedFile, writeManagedFile } from "../backup.mjs"
 import { syncAllSkills } from "../../sync-skills.mjs"
 
-/* install/sync-skills 时强制同步到用户级目录的核心 skill（OpenCode 优先解析用户级副本） */
+/* install/sync-skills 时强制同步到用户级目录的核心 skill（OpenCode 优先解析用户级副本）
+   需与 dist/index.js 中 agent.shennong.skills 一致，否则部分 skill 永远停留在旧副本 */
 export const CORE_SKILLS = Object.freeze([
+  "crash-feature-matcher",
   "crash-report-generator",
+  "gitcode",
   "vmcore-analysis",
+  "witty-log-detection",
 ])
 
 function syncCoreSkills(packageRoot) {
