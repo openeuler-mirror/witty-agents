@@ -258,7 +258,6 @@ summary,a{transition:color var(--trans)}
 .proof-result-head b{font-size:13px}
 .proof-result-head .evidence-level{margin-right:0}
 .proof-result p{margin:6px 0 0;font-size:14px;line-height:1.85;color:#274c3c}
-.proof-boundary{font-size:12px;color:#826125;margin:12px 0 0;padding:10px 12px;background:#fffaf0;border-radius:5px}
 .proof-transition{display:grid;grid-template-columns:24px minmax(0,1fr);gap:12px;align-items:center;padding:0 20px}
 .transition-arrow{display:block;position:relative;width:2px;min-height:50px;margin:auto;background:#a0b7c5}
 .transition-arrow:after{content:"";position:absolute;bottom:0;left:-3px;width:6px;height:6px;border-right:2px solid #a0b7c5;border-bottom:2px solid #a0b7c5;transform:rotate(45deg)}
@@ -1010,7 +1009,6 @@ function renderEvidence(){
       const reasoning = isObj ? toArr(e.reasoning) : [];
       const connect = isObj ? (e.connect || '') : '';
       const level = isObj ? (e.level || '') : '';
-      const caveat = isObj ? (e.caveat || '') : '';
       if(has(connect)) h += `<div class="proof-transition"><span class="transition-arrow" aria-hidden="true"></span><p>${linkifyBody(connect)}</p></div>`;
       let ded = null; const cards = [];
       reasoning.forEach(st=>{
@@ -1042,7 +1040,6 @@ function renderEvidence(){
       }
       if(has(dedDetail)) h += `<div class="proof-deduction"><span class="deduction-arrow" aria-hidden="true"></span><div><h4>由此推导</h4><p>${linkifyBody(dedDetail)}</p></div></div>`;
       if(has(conclusion)) h += `<div class="proof-result" id="conclusion-${i+1}"><div class="proof-result-head"><b>结论</b>${has(level)?`<span class="evidence-level ${evidenceLevelCls(level)}">证据级别：${esc(level)}</span>`:''}</div><p>${linkifyBody(conclusion)}</p></div>`;
-      if(has(caveat)) h += `<p class="proof-boundary"><b>证据边界：</b>${linkifyBody(caveat)}</p>`;
       h += `</div></details>`;
     });
   } else {
