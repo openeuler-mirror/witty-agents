@@ -261,6 +261,27 @@ def validate_quality(report: Any) -> list[str]:
             return key - abs_start + 1
         return None
 
+    ANN_TOKEN_RE = re.compile(
+        r"0x[0-9a-fA-F]+|[A-Za-z_][A-Za-z0-9_]*(?:->[A-Za-z_][A-Za-z0-9_]*)?|\b\d+\b"
+    )
+    ANN_TOKEN_STOP = {
+        "the", "and", "for", "with", "from", "this", "that", "not", "are", "to", "of",
+        "in", "on", "is", "it", "if", "else", "return", "goto", "while", "int", "void",
+        "struct", "static", "const", "unsigned", "char", "long", "size", "num", "line",
+    }
+
+    def _ann_tokens(text: str):
+        toks = []
+        for m in ANN_TOKEN_RE.finditer(str(text or "")):
+            t = m.group(0)
+            if len(t) < 3 and not t.isdigit():
+                continue
+            if t.lower() in ANN_TOKEN_STOP:
+                continue
+            if t not in toks:
+                toks.append(t)
+        return toks
+
     for i, ev in enumerate(evs):
         for j, r in enumerate(ev.get("reasoning") or []):
             if not isinstance(r, dict):
@@ -314,6 +335,41 @@ def validate_quality(report: Any) -> list[str]:
                             )
                         if not segs and any(DOTS_LINE_RE.match(ln.strip()) for ln in lines):
                             warns.append(f"{blabel} 源码块用「...」表示跳段 —— 请拆成 segs（每段独立 first_line）")
+                        # 注释错位检测：ann 文本中的关键标识（标识符/字段/数值）应出现在所标注行；
+                        # 只出现在邻近 ±3 行 → 疑似错位；四处都没有 → 缺锚点（均为 WARN）
+                        for key in sorted(ann):
+                            rel = _rel_of(key, n, abs_start)
+                            if rel is None:
+                                continue
+                            toks = _ann_tokens(ann[key])
+                            if not toks:
+                                continue
+                            if any(t in lines[rel - 1] for t in toks):
+                                continue
+                            found_at = None
+                            found_tok = None
+                            for off in range(1, 4):
+                                for rr in (rel - off, rel + off):
+                                    if not (1 <= rr <= n):
+                                        continue
+                                    for t in toks:
+                                        if t in lines[rr - 1]:
+                                            found_at, found_tok = rr, t
+                                            break
+                                    if found_at:
+                                        break
+                                if found_at:
+                                    break
+                            if found_at:
+                                warns.append(
+                                    f"{blabel} 源码注释疑似错位：关键标识「{found_tok}」在第 {found_at} 行，"
+                                    f"但注释挂在第 {rel} 行 —— 请把 ann 移到对应行"
+                                )
+                            else:
+                                warns.append(
+                                    f"{blabel} 源码注释缺少行内锚点：关键标识 "
+                                    f"{'/'.join(sorted(_ann_tokens(ann[key]))[:3])} 未出现在第 {rel} 行"
+                                )
 
     # 1g) deep.evidence 内容结构：环间连接、步骤完整性、步骤字段非空
     for i, ev in enumerate(evs):
