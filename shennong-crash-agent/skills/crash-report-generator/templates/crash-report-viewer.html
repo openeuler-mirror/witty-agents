@@ -851,12 +851,12 @@ function renderFeatures(){
       const logNote = rawSrc ? (rawFull ? `逐字摘自 ${rawSrc}（完整连续崩溃段，行号为文件真实行号）。` : `按行号排序摘自 ${rawSrc}（关键行摘录，非连续全文）。`) : '';
       const marks = rawLogMarks(logText, cf.raw_crash_log_ann);
       const cats = rawLogCats(logText, marks.hl);
-      const logBody = `${has(logNote)?`<p class="caption">${esc(logNote)}</p>`:''}${rawLogLegendHtml(cats)}<code class="src-excerpt${rawStart?' absno':''} rawlog-body">${snippetLinesHTML(logText, marks.hl, parseAnn(marks.ann), rawStart, cats)}</code>`;
+      const logBody = `${has(logNote)?`<p class="caption">${esc(logNote)}</p>`:''}${rawLogLegendHtml(cats)}<code class="src-excerpt${rawStart?' absno':''} rawlog-body">${snippetLinesHTML(logText, marks.hl, parseAnn(marks.ann), rawStart, cats, false)}</code>`;
       h += `<details class="reading-group"><summary><span class="appendix-summary-label">${esc(logTitle)} <span class="appendix-count">${logText.split('\n').length} 行</span></span><span class="chevron" aria-hidden="true"></span></summary><div class="detail-body">${logBody}</div></details>`;
     } else if(has(cf.call_trace_text)){
       const traceText = String(cf.call_trace_text);
       const marks = rawLogMarks(traceText, null);
-      const logBody = `<code class="src-excerpt rawlog-body">${snippetLinesHTML(traceText, marks.hl, parseAnn(marks.ann), 0, rawLogCats(traceText, marks.hl))}</code>`;
+      const logBody = `<code class="src-excerpt rawlog-body">${snippetLinesHTML(traceText, marks.hl, parseAnn(marks.ann), 0, rawLogCats(traceText, marks.hl), false)}</code>`;
       h += `<details class="reading-group"><summary><span class="appendix-summary-label">崩溃调用栈 <span class="appendix-count">${traceText.split('\n').length} 行</span></span><span class="chevron" aria-hidden="true"></span></summary><div class="detail-body">${logBody}</div></details>`;
     }
   }
@@ -915,19 +915,32 @@ function parseAnn(annObj){
   });
   return annMap;
 }
-function snippetLinesHTML(content, hlLines, annMap, firstLine, catMap){
+function snippetLinesHTML(content, hlLines, annMap, firstLine, catMap, allowInline){
   const hasAbs = Number.isInteger(firstLine) && firstLine > 0;
   return String(content).split('\n').map((ln,i)=>{
     const rel = i + 1;
     const abs = hasAbs ? (firstLine + i) : null;
-    const blank = !String(ln).trim() || /^[.\u2026]{2,}$/.test(String(ln).trim());
+    let lineText = String(ln);
+    let inlineAnn = '';
+    /* 行内注释：仅在「非空内容 + 空白 + ◀ + 非空文本」且全行只有一个 ◀ 时解析（保守规则） */
+    if(allowInline !== false){
+      const idx = lineText.lastIndexOf('◀');
+      if(idx > 0 && !lineText.slice(0, idx).includes('◀')){
+        const before = lineText.slice(0, idx), after = lineText.slice(idx + 1);
+        /* 硬约束：◀ 前必须紧邻空白（避免代码里的 "◀" 字符串被误判为注释） */
+        if(before.trim() && /\s$/.test(before) && after.trim()){
+          lineText = before.replace(/\s+$/, ''); inlineAnn = after.trim();
+        }
+      }
+    }
+    const blank = !lineText.trim() || /^[.\u2026]{2,}$/.test(lineText.trim());
     /* hl/ann 键兼容两种写法：内容第 N 行（推荐）或绝对文件行号（需 first_line/segs.first_line） */
-    const on = hlLines.includes(rel) || (abs !== null && hlLines.includes(abs));
+    const on = hlLines.includes(rel) || (abs !== null && hlLines.includes(abs)) || !!inlineAnn;
     const no = hasAbs ? abs : rel;
     const cat = (catMap && catMap[rel]) ? (' ' + catMap[rel]) : '';
-    const annText = annMap[rel] || (abs !== null ? annMap[abs] : '');
+    const annText = inlineAnn || annMap[rel] || (abs !== null ? annMap[abs] : '');
     const ann = annText ? ` <span class="src-ann">◀ ${esc(annText)}</span>` : '';
-    return `<span class="src-line${cat}${on && !blank ? ' src-hl' : ''}${blank ? ' src-blank' : ''}"><span class="src-no">${no}</span>${esc(ln)||'&nbsp;'}${ann}</span>`;
+    return `<span class="src-line${cat}${on && !blank ? ' src-hl' : ''}${blank ? ' src-blank' : ''}"><span class="src-no">${no}</span>${esc(lineText)||'&nbsp;'}${ann}</span>`;
   }).join('');
 }
 function snippetRefLink(sn){
