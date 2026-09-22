@@ -124,8 +124,11 @@ def validate_quality(report: Any) -> list[str]:
     - deep.evidence[].title 必填且设问式（缺失会被 HTML 渲染成「依据 N」）
     - deep.evidence[].level 证据级别（HTML 渲染为结论行徽标）
     - deep.evidence 建议以「推导与结论」步收尾（可复核推导 → conclusion）
-    - 现场日志/反汇编/调用栈/源码/内存取证的 snippet 有 hl 应配 ann（行尾 ◀ 注释）
+    - 现场日志/反汇编/调用栈/源码/内存取证的 snippet 每个 hl 行都应配 ann（行尾 ◀ 注释）
     - 第 4 章 snippet 应有 title；crash 块 loc 不重复命令；禁止自造「项N」编号摘要
+    - snippet 行号一致性：hl/ann 键不得越界、hl 不得指向空行/省略行
+    - deep.evidence 环间 connect 不得缺失（i>0）、单条 reasoning 至少 2 步、step/detail 非空
+    - 源码块必须 first_line（跳段拆 segs）、内容不得带行号前缀或用「...」跳段
     - raw_crash_log 存在时应有 raw_crash_log_ann（关键行注释）
     - evidence/detail 禁止堆检索工具原始输出（应翻译成人话）
     - type=patch 必须有非空 patch_list[].diff
@@ -225,6 +228,109 @@ def validate_quality(report: Any) -> list[str]:
                     warns.append(
                         f"{label} 疑似自造的「项N」编号摘要 —— crash 类块应贴 crash 原始输出（首行 `crash>` 命令）"
                     )
+
+    # 1f) snippet 行号/注释一致性：first_line/segs、hl/ann 键范围、空行、逐行覆盖、源码前缀
+    SRC_NUM_PREFIX_RE = re.compile(r"^\s*\d+\s+\S")
+    DOTS_LINE_RE = re.compile(r"^[.\u2026]{2,}$")
+
+    def _is_blank_line(line: str) -> bool:
+        t = line.strip()
+        return (not t) or bool(DOTS_LINE_RE.match(t))
+
+    def _ann_dict(raw):
+        out = {}
+        if isinstance(raw, dict):
+            for ak, av in raw.items():
+                try:
+                    ak2 = int(ak)
+                except (TypeError, ValueError):
+                    continue
+                if ak2 > 0 and isinstance(av, str) and av.strip():
+                    out[ak2] = av
+        return out
+
+    def _key_ok(key: int, n: int, abs_start) -> bool:
+        if 1 <= key <= n:
+            return True
+        return abs_start is not None and abs_start <= key <= abs_start + n - 1
+
+    def _rel_of(key: int, n: int, abs_start):
+        if 1 <= key <= n:
+            return key
+        if abs_start is not None and abs_start <= key <= abs_start + n - 1:
+            return key - abs_start + 1
+        return None
+
+    for i, ev in enumerate(evs):
+        for j, r in enumerate(ev.get("reasoning") or []):
+            if not isinstance(r, dict):
+                continue
+            for k, sn in enumerate(r.get("snippets") or []):
+                if not isinstance(sn, dict):
+                    continue
+                label = f"deep.evidence[{i}].reasoning[{j}].snippets[{k}]"
+                kind = str(sn.get("kind") or "")
+                blocks = []
+                segs = [sg for sg in (sn.get("segs") or []) if isinstance(sg, dict)]
+                if segs:
+                    blocks = [(f"{label}.segs[{si}]", sg) for si, sg in enumerate(segs)]
+                else:
+                    blocks = [(label, sn)]
+                for blabel, blk in blocks:
+                    if not isinstance(blk.get("content"), str):
+                        continue
+                    lines = str(blk.get("content") or "").split("\n")
+                    n = len(lines)
+                    first_line = blk.get("first_line")
+                    abs_start = first_line if isinstance(first_line, int) and first_line > 0 else None
+                    hl = [x for x in (blk.get("hl") or []) if isinstance(x, int)]
+                    ann = _ann_dict(blk.get("ann"))
+                    hint = f"1..{n}" + ("（或绝对行号）" if abs_start else "")
+                    for key in sorted(set(hl)):
+                        if not _key_ok(key, n, abs_start):
+                            warns.append(f"{blabel} hl 行号 {key} 越界 —— 键按内容第 N 行：{hint}")
+                    for key in sorted(ann):
+                        if not _key_ok(key, n, abs_start):
+                            warns.append(f"{blabel} ann 行号 {key} 越界 —— 键按内容第 N 行：{hint}")
+                    for key in sorted(set(hl)):
+                        rel = _rel_of(key, n, abs_start)
+                        if rel is None:
+                            continue
+                        if _is_blank_line(lines[rel - 1]):
+                            warns.append(f"{blabel} hl 指向空行/省略行（第 {rel} 行）—— 请标注有效内容行")
+                        if kind in ANN_REQUIRED_KINDS and ann.get(rel) is None and (
+                            abs_start is None or ann.get(abs_start + rel - 1) is None
+                        ):
+                            warns.append(f"{blabel} hl 第 {rel} 行缺少 ann —— 高亮行应配行尾 ◀ 注释")
+                    if kind == "源码":
+                        if abs_start is None:
+                            warns.append(
+                                f"{blabel} 源码块缺少 first_line —— 内容不带行号前缀，行号由 first_line/segs 渲染"
+                            )
+                        first_text = next((ln for ln in lines if ln.strip()), "")
+                        if abs_start is None and SRC_NUM_PREFIX_RE.match(first_text):
+                            warns.append(
+                                f"{blabel} 源码块内容带行号前缀（如「422 for_each_sg…」）—— 去掉前缀并改用 first_line/segs"
+                            )
+                        if not segs and any(DOTS_LINE_RE.match(ln.strip()) for ln in lines):
+                            warns.append(f"{blabel} 源码块用「...」表示跳段 —— 请拆成 segs（每段独立 first_line）")
+
+    # 1g) deep.evidence 内容结构：环间连接、步骤完整性、步骤字段非空
+    for i, ev in enumerate(evs):
+        if not isinstance(ev, dict):
+            continue
+        if i > 0 and not str(ev.get("connect") or "").strip():
+            warns.append(
+                f"deep.evidence[{i}] 缺少 connect —— 应先复述上一环结论（人话一句）再引出本环问题"
+            )
+        reasoning = [r for r in (ev.get("reasoning") or []) if isinstance(r, dict)]
+        if len(reasoning) < 2:
+            warns.append(f"deep.evidence[{i}] 的 reasoning 少于 2 步 —— 至少「证据步 + 推导与结论步」")
+        for j, r in enumerate(reasoning):
+            if not str(r.get("step") or "").strip():
+                warns.append(f"deep.evidence[{i}].reasoning[{j}] 缺少 step —— 每步都要有一个设问短句")
+            if not str(r.get("detail") or "").strip():
+                warns.append(f"deep.evidence[{i}].reasoning[{j}] 缺少 detail —— 每步都要有一句人话发现")
 
     # 2) evidence/detail 禁止工具原始输出
     for i, ev in enumerate(deep.get("evidence") or []):
