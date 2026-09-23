@@ -2,7 +2,7 @@
 
 import { createHash } from "node:crypto"
 import { execFileSync, spawnSync } from "node:child_process"
-import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs"
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { dirname, join, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
@@ -66,16 +66,27 @@ function readPackageReport(agent, variant, plan) {
   return report
 }
 
-function rebuildAgentPackages(agent, plan) {
+function rebuildAgentPackages(agent, plan, supersededVersion) {
   const directory = resolve(REPO_ROOT, agent.directory)
   console.log(`[publish] rebuilding artifacts for ${agent.id} after the version bump`)
-  execFileSync(process.execPath, [
+  const phaseArgs = (phase) => [
     resolve(directory, agent.driver),
-    "--phase=build",
+    `--phase=${phase}`,
     `--variants=${agent.variants.join(",")}`,
     `--package-style=${plan.packageStyle}`,
     `--target-arch=${plan.targetArchitecture}`,
-  ], { cwd: directory, env: process.env, stdio: "inherit" })
+  ]
+  execFileSync(process.execPath, phaseArgs("build"), { cwd: directory, env: process.env, stdio: "inherit" })
+  if (supersededVersion) {
+    const pattern = new RegExp(`(^|[^0-9.])${supersededVersion.replace(/\./g, "\\.")}([^0-9.]|$)`)
+    const artifactsDir = join(directory, "artifacts")
+    for (const entry of readdirSync(artifactsDir)) {
+      if (!pattern.test(entry)) continue
+      rmSync(join(artifactsDir, entry), { force: true })
+      console.log(`[publish] removed superseded artifact ${entry}`)
+    }
+  }
+  execFileSync(process.execPath, phaseArgs("artifact-gates"), { cwd: directory, env: process.env, stdio: "inherit" })
 }
 
 function buildRegistryTarget({ agent, report, registryPackageName, workingRoot }) {
@@ -250,7 +261,7 @@ function main() {
             env: environment,
             stdio: "inherit",
           })
-          rebuildAgentPackages(agent, plan)
+          rebuildAgentPackages(agent, plan, report.version)
           bump = { agentId: agent.id, directory: agent.directory, from: report.version, to: nextVersion }
           report = readPackageReport(agent, variant, plan)
           target = buildRegistryTarget({ agent, report, registryPackageName: registryName, workingRoot })
