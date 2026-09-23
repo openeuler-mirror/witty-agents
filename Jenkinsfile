@@ -124,6 +124,7 @@ pipeline {
                     set -eu
                     rm -rf ci-artifacts
                     mkdir -p ci-artifacts
+                    rm -rf */artifacts */ci-reports
                     git config --global --add safe.directory "$WORKSPACE"
                     git rev-parse --show-toplevel >/dev/null
                     node -e 'const major=Number(process.versions.node.split(".")[0]); if (major < 20) throw new Error(`Node.js 20+ required, got ${process.version}`)'
