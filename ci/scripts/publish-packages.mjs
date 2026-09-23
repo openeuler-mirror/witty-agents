@@ -158,6 +158,35 @@ function commitAndPushVersionBumps(bumps) {
   }
 }
 
+function waitForPublishedIntegrity({ packageName, version, registry, environment, expectedIntegrity }) {
+  const attempts = Number(process.env.PUBLISH_VERIFY_ATTEMPTS || 40)
+  const delayMs = Number(process.env.PUBLISH_VERIFY_DELAY_MS || 15000)
+  let lastError = null
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      const visible = npmOutput(
+        ["view", `${packageName}@${version}`, "dist.integrity", "--registry", registry],
+        environment,
+      )
+      if (visible === expectedIntegrity) return visible
+      lastError = new Error(`registry integrity mismatch: ${visible} != ${expectedIntegrity}`)
+    } catch (error) {
+      lastError = error
+    }
+    if (attempt < attempts) {
+      console.log(`[publish] ${packageName}@${version} is not visible yet (attempt ${attempt}/${attempts}); waiting ${delayMs}ms`)
+      sleepSync(delayMs)
+    }
+  }
+  throw new Error(
+    `${packageName}@${version}: registry integrity verification failed（等待可见超时，共 ${attempts} 次）：${lastError?.message ?? "unknown"}`,
+  )
+}
+
+function sleepSync(milliseconds) {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, milliseconds)
+}
+
 function main() {
   const { planPath } = parseArgs(process.argv.slice(2))
   const token = process.env.NPM_TOKEN
@@ -230,8 +259,8 @@ function main() {
           }
           expectedIntegrity = sha512Integrity(target.path)
           currentIntegrity = existingIntegrity(target.packageName, target.version, registry, environment)
-          if (currentIntegrity) {
-            throw new Error(`${target.packageName}@${target.version} already exists after the auto bump`)
+          if (currentIntegrity && currentIntegrity !== expectedIntegrity && currentIntegrity !== sourceIntegrity) {
+            throw new Error(`${target.packageName}@${target.version} already exists with different content after the auto bump`)
           }
         }
         let action = "published"
@@ -241,12 +270,13 @@ function main() {
           const args = ["publish", target.path, "--ignore-scripts", "--tag", distTag, "--registry", registry]
           if (target.packageName.startsWith("@")) args.push("--access", "public")
           execFileSync("npm", args, { cwd: REPO_ROOT, env: environment, stdio: "inherit" })
-          const publishedIntegrity = npmOutput([
-            "view", `${target.packageName}@${target.version}`, "dist.integrity", "--registry", registry,
-          ], environment)
-          if (publishedIntegrity !== expectedIntegrity) {
-            throw new Error(`${target.packageName}@${target.version}: registry integrity verification failed`)
-          }
+          waitForPublishedIntegrity({
+            packageName: target.packageName,
+            version: target.version,
+            registry,
+            environment,
+            expectedIntegrity,
+          })
         }
         published.push({
           agent: agent.id,
