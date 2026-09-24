@@ -1,0 +1,225 @@
+name: vllm-benchmark
+initial: IDLE
+states:
+  IDLE:
+    type: tool
+  ENV_CHECK:
+    type: tool
+  REPORT:
+    type: tool
+  PROBE_SERVICE:
+    type: tool
+  START_SERVICE:
+    type: tool
+  HEALTH:
+    type: tool
+  BENCHMARK:
+    type: tool
+  COLLECT:
+    type: tool
+  ANALYZE:
+    type: llm
+  STOP_SERVICE:
+    type: tool
+  WAIT_USER_DECISION:
+    type: llm
+  WAITING_RESOURCE:
+    type: llm
+  WAITING_DEVICE:
+    type: llm
+  DONE:
+    type: terminal
+  FAILED:
+    type: terminal
+  CANCELLED:
+    type: terminal
+transitions:
+  - from: IDLE
+    event: start
+    to: ENV_CHECK
+  - from: ENV_CHECK
+    event: done
+    to: REPORT
+  - from: REPORT
+    event: continue
+    to: PROBE_SERVICE
+  - from: PROBE_SERVICE
+    event: already_running
+    to: HEALTH
+  - from: PROBE_SERVICE
+    event: need_start
+    to: START_SERVICE
+  - from: PROBE_SERVICE
+    event: waiting_resource
+    to: WAITING_RESOURCE
+  - from: PROBE_SERVICE
+    event: waiting_device
+    to: WAITING_DEVICE
+  - from: START_SERVICE
+    event: done
+    to: HEALTH
+  - from: HEALTH
+    event: ok
+    to: BENCHMARK
+  - from: BENCHMARK
+    event: done
+    to: COLLECT
+  - from: COLLECT
+    event: done
+    to: ANALYZE
+  - from: ANALYZE
+    event: done
+    to: STOP_SERVICE
+  - from: STOP_SERVICE
+    event: done
+    to: DONE
+  - from: IDLE
+    event: block
+    to: WAIT_USER_DECISION
+  - from: IDLE
+    event: cancel
+    to: CANCELLED
+  - from: IDLE
+    event: fail
+    to: FAILED
+  - from: ENV_CHECK
+    event: block
+    to: WAIT_USER_DECISION
+  - from: ENV_CHECK
+    event: cancel
+    to: CANCELLED
+  - from: ENV_CHECK
+    event: fail
+    to: FAILED
+  - from: REPORT
+    event: block
+    to: WAIT_USER_DECISION
+  - from: REPORT
+    event: cancel
+    to: CANCELLED
+  - from: REPORT
+    event: fail
+    to: FAILED
+  - from: PROBE_SERVICE
+    event: block
+    to: WAIT_USER_DECISION
+  - from: PROBE_SERVICE
+    event: cancel
+    to: CANCELLED
+  - from: PROBE_SERVICE
+    event: fail
+    to: FAILED
+  - from: START_SERVICE
+    event: block
+    to: WAIT_USER_DECISION
+  - from: START_SERVICE
+    event: cancel
+    to: CANCELLED
+  - from: START_SERVICE
+    event: fail
+    to: FAILED
+  - from: HEALTH
+    event: block
+    to: WAIT_USER_DECISION
+  - from: HEALTH
+    event: cancel
+    to: CANCELLED
+  - from: HEALTH
+    event: fail
+    to: FAILED
+  - from: BENCHMARK
+    event: block
+    to: WAIT_USER_DECISION
+  - from: BENCHMARK
+    event: cancel
+    to: CANCELLED
+  - from: BENCHMARK
+    event: fail
+    to: FAILED
+  - from: COLLECT
+    event: block
+    to: WAIT_USER_DECISION
+  - from: COLLECT
+    event: cancel
+    to: CANCELLED
+  - from: COLLECT
+    event: fail
+    to: FAILED
+  - from: ANALYZE
+    event: block
+    to: WAIT_USER_DECISION
+  - from: ANALYZE
+    event: cancel
+    to: CANCELLED
+  - from: ANALYZE
+    event: fail
+    to: FAILED
+  - from: STOP_SERVICE
+    event: block
+    to: WAIT_USER_DECISION
+  - from: STOP_SERVICE
+    event: cancel
+    to: CANCELLED
+  - from: STOP_SERVICE
+    event: fail
+    to: FAILED
+  - from: FAILED
+    event: block
+    to: WAIT_USER_DECISION
+  - from: FAILED
+    event: cancel
+    to: CANCELLED
+  - from: FAILED
+    event: fail
+    to: FAILED
+  - from: WAIT_USER_DECISION
+    event: cancel
+    to: CANCELLED
+  - from: WAIT_USER_DECISION
+    event: resume_idle
+    to: IDLE
+  - from: WAIT_USER_DECISION
+    event: resume_env_check
+    to: ENV_CHECK
+  - from: WAIT_USER_DECISION
+    event: resume_probe_service
+    to: PROBE_SERVICE
+  - from: WAIT_USER_DECISION
+    event: resume_health
+    to: HEALTH
+  - from: WAIT_USER_DECISION
+    event: resume_benchmark
+    to: BENCHMARK
+  - from: WAIT_USER_DECISION
+    event: resume_collect
+    to: COLLECT
+  - from: BENCHMARK
+    event: recheck
+    to: PROBE_SERVICE
+  - from: COLLECT
+    event: recheck
+    to: PROBE_SERVICE
+  - from: WAITING_RESOURCE
+    event: resume_probe_service
+    to: PROBE_SERVICE
+  - from: WAITING_RESOURCE
+    event: block
+    to: WAIT_USER_DECISION
+  - from: WAITING_RESOURCE
+    event: cancel
+    to: CANCELLED
+  - from: WAITING_RESOURCE
+    event: fail
+    to: FAILED
+  - from: WAITING_DEVICE
+    event: resume_probe_service
+    to: PROBE_SERVICE
+  - from: WAITING_DEVICE
+    event: block
+    to: WAIT_USER_DECISION
+  - from: WAITING_DEVICE
+    event: cancel
+    to: CANCELLED
+  - from: WAITING_DEVICE
+    event: fail
+    to: FAILED

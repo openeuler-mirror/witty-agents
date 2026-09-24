@@ -17,8 +17,8 @@ SCM/人工触发
 → 可选 npm 发布
 ```
 
-当前 `ci/agents.json` 已启用 5 个 Agent：`shennong-crash`、`nl2sql`、`openeuler-ops`、
-`xlite-perf-optimizer`、`kernel-dataset`。新增 Agent 必须先在注册表登记并启用，
+当前 `ci/agents.json` 已启用 6 个 Agent：`shennong-crash`、`nl2sql`、`openeuler-ops`、
+`xlite-perf-optimizer`、`kernel-dataset`、`vllm-benchmark`。新增 Agent 必须先在注册表登记并启用，
 否则手工选择该 id 或自动检测到其目录变更时，Pipeline 会在 Resolve Build Plan 阶段给出明确
 错误，不会用无关 Agent 的绿色结果掩盖未验证改动。
 
@@ -228,3 +228,5 @@ aarch64 offline 包必须在原生 openEuler aarch64 Jenkins 节点构建。`TAR
 若新 Pipeline 联调异常，先将 Job 的 Branch Specifier 临时切回最近一次验证通过的
 Git 分支或提交；修复完成后再切回联调分支。不要在 Jenkins 页面中直接维护另一份
 Pipeline 脚本，避免页面配置与仓库代码出现两个版本。
+
+`vllm-benchmark` 当前仅支持 online；使用 `VARIANT=default` 或 `online`。安装与验证见 [Agent README](../vllm-benchmark-agent/README.md)。
