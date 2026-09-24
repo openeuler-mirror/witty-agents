@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "id": "vllm-benchmark",
+  "displayName": "vLLM Benchmark Agent",
+  "directory": "vllm-benchmark-agent",
+  "driver": "ci/driver.mjs",
+  "changedPathPrefixes": [
+    "vllm-benchmark-agent/"
+  ],
+  "variants": [
+    "online"
+  ],
+  "defaultVariant": "online",
+  "packageStyles": [
+    "organization",
+    "plain"
+  ],
+  "supportedArchitectures": [
+    "x86_64",
+    "aarch64"
+  ],
+  "registryPackages": {
+    "online": "witty-agent-vllm-benchmark-online"
+  },
+  "publishRequiresAllVariants": false
+}

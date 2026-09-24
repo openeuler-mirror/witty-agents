@@ -1,0 +1,32 @@
+# 复制到工作目录并填写目标环境；也可通过 --config PATH 指定。
+model:
+  name: example-model
+  path: /models/example-model
+container:
+  name: vllm-bench
+  runtime: docker
+vllm:
+  host: 0.0.0.0
+  port: 8000
+  device: [0]
+  tensor_parallel_size: 1
+  max_model_len: 4096
+  gpu_memory_utilization: 0.9
+  extra_args: []
+benchmark:
+  concurrency: [1, 2, 4]
+  input_tokens: 1024
+  output_tokens: 128
+  requests: 100
+  metric_percentiles: [50, 90, 99]
+slo:
+  ttft_ms: null
+  tpot_ms: null
+  e2el_ms: null
+metrics:
+  collect: [ttft, tpot, latency, throughput, goodput, request_timeline, queue_time, server, gpu]
+  interval: 1
+report:
+  output: ./reports
+cleanup:
+  stop_service: true

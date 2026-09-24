@@ -287,3 +287,15 @@ xlite-perf-optimizer-configure status
 | 卸包 | `npm uninstall -g witty-agent-shennong-online` | `npm uninstall -g witty-agent-nl2sql-online` | `npm uninstall -g witty-agent-openeuler-ops-online` | `npm uninstall -g witty-agent-xlite-perf-optimizer-online` |
 | 清缓存 | `rm -rf ~/.cache/witty-agents/witty-agent-shennong-online` | `rm -rf ~/.cache/witty-agents/witty-agent-nl2sql-online` | — | — |
 | skill 数 | 随包内置 | 1（软链） | 11（软链） | 8（软链） |
+
+## vLLM Benchmark
+
+vLLM 压测 Agent 使用同样的双命令契约：`vllm-benchmark-setup install/check` 和 `vllm-benchmark-configure install/remove/status`。支持 npm 线上安装和本地 tgz 安装，详见 [安装、配置及卸载说明](../vllm-benchmark-agent/README.md)。
+
+```bash
+npm install -g witty-agent-vllm-benchmark-online@0.1.0 --registry=https://registry.npmjs.org
+vllm-benchmark-setup install
+vllm-benchmark-configure install --target=opencode
+```
+
+本地 tgz 安装只需将第一条命令的包名替换为 tgz 文件路径；Python 与 npm 依赖仍需可访问的依赖源。

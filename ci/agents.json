@@ -40,6 +40,14 @@
       "changedPathPrefixes": [
         "kernel-dataset-agent/"
       ]
+    },
+    {
+      "id": "vllm-benchmark",
+      "enabled": true,
+      "configPath": "vllm-benchmark-agent/ci/agent.json",
+      "changedPathPrefixes": [
+        "vllm-benchmark-agent/"
+      ]
     }
   ]
 }

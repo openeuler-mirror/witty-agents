@@ -1,0 +1,130 @@
+# 编辑本文件（推荐）:
+#   1) 在 opencode 中按 Ctrl+Z 挂起终端
+#   2) vim ./benchmark.yaml
+#   3) :wq 退出后按 fg 回到 opencode
+#   也可在对话输入 /benchmark_config 用自然语言修改
+#
+# =============================================================================
+# vLLM Benchmark 配置文件 (benchmark.yaml)
+# -----------------------------------------------------------------------------
+# 这是 benchmark 的唯一配置来源。启动/压测时如未在命令行显式传参，
+# 一律读取本文件。命令行显式参数优先级高于本文件。
+#
+# 修改方式：Ctrl+Z 挂起后用 vim 编辑；或在对话输入 /benchmark_config。
+# 校验方式：python3 ./tools/config.py show
+# =============================================================================
+
+model:
+  # 模型名称（展示 / 校验用）
+  name: qwen3.5
+  # 模型路径，作为 `vllm serve` 的位置参数
+  path: /models/test-model/
+
+container:
+  # 目标容器名（必须已存在）：agent 只会对它执行 docker start / docker exec，
+  # 不会执行 docker run 创建容器；容器不存在时会报错。
+  name: test-vllm-container
+  # 容器运行时：docker 或 podman
+  runtime: docker
+
+vllm:
+  # 服务监听地址（容器使用 --network host）
+  host: 0.0.0.0
+  # 服务端口
+  port: 8000
+  # 物理 NPU 编号（npu-smi 所示）；启动时自动映射为容器逻辑编号。
+  device: [2, 5]
+  # 启动参数；留空时按所选设备数推导，复用服务时核对一致性。
+  tensor_parallel_size: 2
+  # 实际用于 vllm serve 启动与已有服务配置核对。
+  max_model_len: 16384
+  # 实际用于 vllm serve 启动与已有服务配置核对。
+  gpu_memory_utilization: 0.9
+  # 实际用于 vllm serve 启动与已有服务配置核对。
+  extra_args:
+    - "--data-parallel-size"
+    - "1"
+    - "--seed"
+    - "1024"
+    - "--quantization"
+    - "ascend"
+    - "--served-model-name"
+    - "qwen3.5"
+    - "--max-num-seqs"
+    - "48"
+    - "--max-num-batched-tokens"
+    - "12288"
+    - "--trust-remote-code"
+    - "--mamba-ssm-cache-dtype"
+    - "bfloat16"
+    - "--dtype"
+    - "bfloat16"
+    - "--enable-prefix-caching"
+    - "--speculative-config"
+    - '{"method":"qwen3_5_mtp","num_speculative_tokens":2,"enforce_eager":true}'
+    - "--compilation-config"
+    - '{"cudagraph_mode":"FULL"}'
+    - "--additional-config"
+    - '{"enable_cpu_binding":true}'
+
+benchmark:
+  # 并发级别列表：会依次对每个并发跑一轮压测并对比
+  # 单元素列表表示只跑一轮；也可用 CLI --max-concurrency 覆盖
+  concurrency: [1, 2, 4, 8, 16, 32, 64]
+
+  # 可选：受控 QPS 扫描轴（优先级高于 concurrency）。
+  # 设置后每轮用 --request-rate=<rate>；max_concurrency 可选，用于同时限制
+  # 在途并发。留空表示不限制并发，只按速率发请求。
+  # request_rates: [1, 2, 4, 8, 16, 32]
+  max_concurrency: 
+
+  # 可选：所有并发轮共用的单一请求速率；留空表示不限速（request_rate=inf）
+  request_rate: 
+
+  # 随机输入长度（tokens）
+  input_tokens: 4096
+  # 随机输出长度（tokens）
+  output_tokens: 256
+  # 每轮请求数
+  requests: 20
+
+  # 从 `vllm bench serve` 请求的分位数（用于 P50/P90/P99 曲线）
+  metric_percentiles: [50, 90, 99]
+
+# 服务等级目标（毫秒）：用于 goodput 与“是否达标”判断；
+# 任一字段设置后会同时传给 `vllm bench serve --goodput`。
+# 一般先设 TTFT/TPOT 的 P99 SLO。
+slo:
+  ttft_ms: 15000
+  tpot_ms: 100
+  e2el_ms: 
+
+metrics:
+  # 需要收集的指标组：
+  # ttft / tpot / latency / throughput / goodput / request_timeline /
+  # queue_time / server(prefill,decode,KV,preemption,prefix cache) / gpu(NPU 利用率/显存)
+  collect:
+    - ttft
+    - tpot
+    - latency
+    - throughput
+    - goodput
+    - request_timeline
+    - queue_time
+    - server
+    - gpu
+
+  # /metrics 抓取间隔（秒）
+  interval: 5
+
+report:
+  # 报告输出目录；相对路径以数据目录为基准
+  # 数据目录默认 ~/.local/share/witty-agents/vllm-benchmark，可用环境变量
+  # VLLM_BENCHMARK_DATA_DIR 覆盖。
+  output: ./reports
+
+cleanup:
+  # 运行正常完成（ANALYZE 后执行 done）时，是否关闭本次由 agent 启动的
+  # vLLM 服务并释放 NPU 锁。复用的已有服务不会被关闭。
+  # 设为 false 时运行结束后保留服务。
+  stop_service: true

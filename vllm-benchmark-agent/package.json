@@ -1,0 +1,57 @@
+{
+  "name": "@openeuler/agent-vllm-benchmark",
+  "version": "0.1.0",
+  "description": "Ascend vLLM 压测 Agent：配置驱动执行、指标分析和性能报告",
+  "type": "module",
+  "main": "dist/index.js",
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "bin": {
+    "vllm-benchmark-setup": "./bin/vllm-benchmark-setup.mjs",
+    "vllm-benchmark-configure": "./bin/configure.mjs",
+    "vllm-benchmark": "./bin/vllm-benchmark.mjs"
+  },
+  "scripts": {
+    "validate": "node scripts/validate.mjs",
+    "validate:dist": "node scripts/validate-dist.mjs",
+    "pack:variant": "node scripts/build-package.mjs",
+    "ci:verify-artifacts": "node scripts/verify-ci-artifacts.mjs",
+    "test:install-contract": "node tests/test-install-contract.mjs",
+    "test": "node scripts/test.mjs"
+  },
+  "files": [
+    "agent/",
+    "tools/",
+    "workflow/",
+    "dist/",
+    "skills/",
+    "bin/",
+    "lib/",
+    "scripts/",
+    "benchmark.yaml",
+    "requirements.txt",
+    "README.md"
+  ],
+  "wittyAgentDistribution": {
+    "packageNames": {
+      "organization": "@openeuler/agent-vllm-benchmark",
+      "plain": "witty-agent-vllm-benchmark"
+    }
+  },
+  "dependencies": {
+    "jsonc-parser": "^3.3.1"
+  },
+  "keywords": [
+    "vllm",
+    "ascend",
+    "benchmark",
+    "opencode",
+    "witty"
+  ],
+  "author": "",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
